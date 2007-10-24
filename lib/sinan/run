@@ -1,0 +1,9 @@
+#! /bin/sh
+
+WORK_ROOT=~/workspace
+EUNIT=~/tmp/eunit/
+IBROWSE=~/tmp/jungerl/lib/ibrowse/
+KERNEL=~/local/packages/otp-R11B-5/lib/erlang/lib/kernel-2.11.5/
+
+ ~/local/bin/erl -pa $WORK_ROOT/erlware/_build/*/ebin  -pa $IBROWSE/ebin -pa $WORK_ROOT/sinan/_build/development/apps/*/ebin -pa $WORK_ROOT/ktuo/ebin  -pa $EUNIT/ebin -I $EUNIT/include -I $KERNEL/include -pa $WORK_ROOT/fconf/ebin -sname sinan
+

@@ -1,0 +1,124 @@
+build_dir : _build,
+
+ignore_dirs : ["_",
+               "."],
+
+ignore_apps : [],
+
+default_flavor: development,
+
+flavors : {
+
+   development : {
+      build : "+debug_info -W1"
+   },
+
+   release : {
+      build : "-DNOTEST=1 -W1"
+   }
+
+
+},
+
+
+default_task :  build,
+
+config_dir : "config",
+
+tasks : {
+
+   discover : {
+      callable : false
+      description : ["Discovers information about the project and ",
+                     "updates the project information"],
+      handler : sin_discover
+   },
+
+   depends : {
+      callable:true,
+      description : ["Analyzes all of the dependencies in the project ",
+                     "and pulls down those that arn't curently available ",
+                     "locally"],
+      depends : [discover],
+      handler : sin_depends
+   },
+
+ 
+   check_depends : {
+      callable:false,
+      description : ["Checks that dependencies have been run.  ",
+                     "If dependencies have not been run attempts to ",
+                     "run depends task"],
+      depends : [discover],
+      handler : sin_depends_check
+   },
+
+  
+
+
+   build : {
+      description : "Compiles all of the compilable files in the project",
+      depends : [check_depends],
+      handler : sin_erl_builder
+   },
+
+   test : {
+      description : "Runs all of the existing eunit unit tests in the project",
+      depends : [build],
+      handler : sin_test
+   },	
+
+   doc : {
+      description : ["Runs edoc across all sources in the project and ",
+                     "outputs it into the build area"],
+      depends : [build],
+      handler : sin_edoc
+   },
+   
+   clean : {
+      description : ["Removes the build area and everything underneath"],
+      depends : [],
+      handler : sin_clean
+   },
+  
+   analyze : {
+      description : ["Runs dialyzer on the project and outputs information ",
+                     "to the user. This task may take a significant amount "
+                     "of time"],
+      depends : [build],
+      handler : sin_analyze
+   },
+
+  release : {
+      description : ["Creates the *.rel, *.boot and *.script into the ",
+                     "<build-area>/realeases/<vsn> directory. It also ",
+                     "builds up a release tar bal into the ",
+                     "<build-area>/tar/ directory"],
+      depends : [build],
+      handler : sin_release_builder
+   },
+
+   dist : {
+      description : ["Creates an tarball of the distribution including ",
+                     "release information. Check documentation for the ",
+                     "dist task for configuration information "],
+      depends : [release],
+      handler : sin_dist_builder
+   },
+   
+   shell : {
+      description : ["Starts an erlang shell with all of the correct ",
+                     "paths preset so the developer can noodle with the ",
+                     "code to his hearts content"],
+      depends : [build],
+      handler : sin_shell
+   },
+
+   help : {
+      description : ["Provides help information for the available tasks"],
+      handler : sin_help
+   }
+
+
+}
+

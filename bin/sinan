@@ -1,0 +1,47 @@
+#!/bin/sh
+#
+
+found=0
+progname="$0"
+curdir=`dirname "$progname"`
+progbase=`basename "$progname"`
+run_erl="$curdir/ebuild.sh"
+if test -x "$run_erl"; then
+  dist_bin="$curdir"
+  found=1
+else
+  here=`/bin/pwd`
+  while [ -h "$progname" ]; do
+    bn=`basename "$progname"`
+    cd `dirname "$progname"`
+    progname=`/bin/ls -l "$bn" | sed -e 's/^.* -> //' `
+    if [ ! -x "$progname" ]; then
+      break
+    fi
+    curdir=`dirname "$progname"`
+    run_erl="$curdir/ebuild.sh"
+    if [ -x "$run_erl" ]; then
+      cd "$curdir"
+      dist_bin=`pwd`
+      run_erl="$dist_bin/ebuild.sh"
+      found=1
+      break
+    fi
+  done
+  cd "$here"
+fi
+if [ $found = 0 ]; then
+  # Check default compile-time libdir
+  if [ -x "/opt/sinan/ebuild.sh" ]; then
+    dist_bin="/opt/sinan/"
+  else 
+    echo "Cannot find sinan directory. Exiting."
+    exit 1
+  fi
+fi
+
+"$dist_bin/ebuild.sh" "$@"
+exitcode=$?
+
+exit $exitcode
+# EOF.

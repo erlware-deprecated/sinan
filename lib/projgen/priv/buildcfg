@@ -1,0 +1,63 @@
+project : {
+   name : $project_name$
+   vsn  : "$project_version$"
+},
+
+repositories : [$repositories$],
+
+build_dir : _build,
+
+ignore_dirs : ["_",
+               "."],
+
+ignore_apps : [],
+
+default_task :  build,
+
+tasks : {
+
+   discover : {
+      handler : sin_discover
+   },
+
+   depends : {
+      depends : [discover],
+      handler : sin_depends
+   },
+
+   build : {
+      depends : [depends],
+      handler : sin_erl_builder
+   },
+
+   test : {
+      depends : [build],
+      handler : sin_test
+   },	
+
+   doc : {
+      depends : [build],
+      handler : sin_edoc
+   },
+   
+   clean : {
+      depends : [],
+      handler : sin_clean
+   },
+  
+   analyze : {
+      depends : [build],
+      handler : sin_analyze
+   },
+
+  release : {
+      depends : [build],
+      handler : sin_release_builder
+   },
+
+   dist : {
+      depends : [build],
+      handler : sin_dist_builder
+   }
+}
+
