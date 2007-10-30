@@ -23,8 +23,6 @@
 
 -record(state, {tasks}).
 
-
-
 %%====================================================================
 %% API
 %%====================================================================
@@ -84,7 +82,7 @@ gen_task_chain(TaskName) when is_atom(TaskName) ->
 
 
 %%--------------------------------------------------------------------
-%% @spec get_task_def(TaskName) -> TaskDef
+%% @spec get_task_def(TaskName) -> {value, TaskDef} | none
 %%
 %% @type TaskDef = {TaskImplementation::atom(), Deps::list(), Callable::bool(), Desc::string()}
 %%
@@ -95,7 +93,7 @@ gen_task_chain(TaskName) when is_atom(TaskName) ->
 %% @end
 %%--------------------------------------------------------------------
 get_task_def(TaskName) when is_atom(TaskName) ->
-    gen_server:cast(?SERVER, {task_def, TaskName}).
+    gen_server:call(?SERVER, {task_def, TaskName}).
 
 
 %%====================================================================
@@ -131,7 +129,11 @@ init([]) ->
 %%--------------------------------------------------------------------
 handle_call({task_chain, TaskName}, _From, State = #state{tasks=Tasks}) ->
     TaskChain = resolve_tasks(reorder_tasks(gather_tasks(Tasks, TaskName, [])), Tasks, []),
-    {reply, TaskChain, State}.
+    {reply, TaskChain, State};
+handle_call({task_def, TaskName}, _From, State = #state{tasks=Tasks}) ->
+    Res = gb_trees:lookup(TaskName, Tasks),
+    {reply, Res, State}.
+
 
 %%--------------------------------------------------------------------
 %% @spec handle_cast(Msg, State) -> {noreply, State} |
@@ -309,6 +311,8 @@ gen_deps_test() ->
     [task3_impl, task4_impl, task2_impl, task1_impl] == TaskList.
 
 gen_server_test() ->
+    %% Give the server a chance to shut down. wait 100 millis
+    timer:sleep(100),
     {ok, _} = start_link(),
     register_task(task1, task1_impl, [task2, task3], true, ""),
     register_task(task2, task2_impl, [task3, task4], true, ""),
@@ -316,5 +320,17 @@ gen_server_test() ->
     register_task(task4, task4_impl, [task3], true, ""),
     TaskList = gen_task_chain(task1),
     shutdown(),
-    io:format("~w", [TaskList]),
     [task3_impl, task4_impl, task2_impl, task1_impl] ==  TaskList.
+
+
+get_task_def_test() ->
+    %% Give the server a chance to shut down. wait 100 millis
+    timer:sleep(100),
+    {ok, _} = start_link(),
+    register_task(task1, task1_impl, [task2, task3], true, ""),
+    register_task(task2, task2_impl, [task3, task4], true, ""),
+    register_task(task3, task3_impl, [], true, ""),
+    register_task(task4, task4_impl, [task3], true, ""),
+    TaskDef = get_task_def(task1),
+    shutdown(),
+    {value, {task1_impl, [task2, task3], true, ""}} = TaskDef.
