@@ -65,7 +65,16 @@ make_shell(BuildRef, ProjectApps, ProjectRepoApps, Repo) ->
     AppDir = filename:join([BuildDir, "apps"]),
     Paths = gather_paths(AppDir, ProjectApps, []) ++ 
         gather_paths(Repo, ProjectRepoApps, []),
-    Cmdline = lists:flatten([" xterm -e erl -sname sinan_shell ", 
+    Prefix = os:getenv("ROOTDIR"),
+    ErlBin = filename:join([Prefix, "bin", "erl"]),
+    case filelib:is_regular(ErlBin) of
+        true ->
+            ok;
+        false ->
+            ewl_talk:say("erl binary missing: ~s", [ErlBin]),
+            throw({error, missing_erl_binary})
+    end,
+    Cmdline = lists:flatten(["xterm -e ", ErlBin, " -sname sinan_shell ", 
                              create_cmdline(Paths, [])]),
     os:cmd(Cmdline).
     
