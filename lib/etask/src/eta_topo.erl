@@ -1,22 +1,22 @@
 %%%-------------------------------------------------------------------
 %%% @author Joe Armstrong
 %%  @auther Eric Merritt
-%%% @doc 
-%%%  This is a pretty simple topological sort for erlang. It 
+%%% @doc
+%%%  This is a pretty simple topological sort for erlang. It
 %%%  was originally written for ermake by Joe Armstrong back in '98.
 %%%  --
 %%%  -type([{X, X}]) -> {ok, [{X,Y}]} | {cycle, [{X,Y}]}
-%%%  topological_sort:pairs(L) 
+%%%  topological_sort:pairs(L)
 %%%
 %%%  A partial order on the set S is a set of pairs {Xi,Xj} such that
-%%%  some relation between Xi and Xj is obeyed. 
+%%%  some relation between Xi and Xj is obeyed.
 %%%
 %%%  A topological sort of a partial order is a sequence of elements
 %%%  [X1, X2, X3 ...] such that if whenever {Xi, Xj} is in the partial
 %%%  order i < j
 %%% @end
 %%%-------------------------------------------------------------------
--module(sin_topo).
+-module(eta_topo).
 
 -include("eunit.hrl").
 
@@ -27,8 +27,8 @@
 %%====================================================================
 %%--------------------------------------------------------------------
 %% @spec sort(Pairs) -> {ok, L1} | {cycle, Pairs}.
-%% 
-%% @doc 
+%%
+%% @doc
 %%  Do a topological sort on the list of pairs.
 %% @end
 %%--------------------------------------------------------------------
@@ -40,8 +40,8 @@ sort(Pairs) ->
 %%====================================================================
 %%--------------------------------------------------------------------
 %% @spec iterate(L1, L2, All) -> {ok, L3}.
-%% 
-%% @doc 
+%%
+%% @doc
 %%  Iterate over the system.
 %% @end
 %% @private
@@ -50,45 +50,45 @@ iterate([], L, All) ->
     {ok, remove_duplicates(L ++ subtract(All, L))};
 iterate(Pairs, L, All) ->
     case subtract(lhs(Pairs), rhs(Pairs)) of
-	[]  -> 
+	[]  ->
 	    {cycle, Pairs};
-	Lhs -> 
+	Lhs ->
 	    iterate(remove_pairs(Lhs, Pairs), L ++ Lhs, All)
     end.
 
-all(L) -> 
+all(L) ->
     lhs(L) ++ rhs(L).
-lhs(L) -> 
+lhs(L) ->
     lists:map(fun({X,_}) -> X end, L).
-rhs(L) -> 
+rhs(L) ->
     lists:map(fun({_,Y}) -> Y end, L).
 
 %%--------------------------------------------------------------------
 %% @spec subtract(L1, L2) -> L3.
-%% 
-%% @doc 
+%%
+%% @doc
 %%  all the elements in L1 which are not in L2
 %% @end
 %% @private
 %%--------------------------------------------------------------------
-subtract(L1, L2) ->  
-    lists:filter(fun(X) -> 
-                         not lists:member(X, L2) 
+subtract(L1, L2) ->
+    lists:filter(fun(X) ->
+                         not lists:member(X, L2)
                  end, L1).
 
 %%--------------------------------------------------------------------
 %% @spec remove_duplicates(List1) -> List2.
-%% 
-%% @doc 
+%%
+%% @doc
 %%  remove dups from the list.
 %% @end
 %% @private
 %%--------------------------------------------------------------------
 remove_duplicates([H|T]) ->
   case lists:member(H, T) of
-      true  -> 
+      true  ->
           remove_duplicates(T);
-      false -> 
+      false ->
           [H|remove_duplicates(T)]
   end;
 remove_duplicates([]) ->
@@ -105,9 +105,9 @@ remove_duplicates([]) ->
 %% @end
 %% @private
 %%-------------------------------------------------------------------
-remove_pairs(L1, L2) -> 
-    lists:filter(fun({X,_Y}) -> 
-                         not lists:member(X, L1) 
+remove_pairs(L1, L2) ->
+    lists:filter(fun({X,_Y}) ->
+                         not lists:member(X, L1)
                  end, L2).
 
 %%====================================================================

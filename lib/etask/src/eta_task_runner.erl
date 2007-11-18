@@ -28,7 +28,7 @@
 %%% @end
 %%% @copyright 2006 Eric Merritt <cyberlync@gmail.com>
 %%%---------------------------------------------------------------------------
--module(sin_task_runner).
+-module(eta_task_runner).
 
 
 %% API
