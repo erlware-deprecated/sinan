@@ -30,6 +30,8 @@
 %%%---------------------------------------------------------------------------
 -module(sin_shell).
 
+-include("eunit.hrl").
+
 %% API
 -export([shell/2, create_cmdline/2]).
 
@@ -113,3 +115,7 @@ gather_paths(_, [], Acc) ->
 %%====================================================================
 %% Tests
 %%====================================================================
+create_cmdline_test() ->
+    "" = create_cmdline([], ""),
+    " -pa \"/my/test/path\"" = create_cmdline(["/my/test/path"], ""),
+    " -pa \"/p1\" -pa \"/p2\"" = create_cmdline(["/p1", "/p2"], "").
