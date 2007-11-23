@@ -63,7 +63,7 @@ shell(BuildRef, _) ->
 make_shell(BuildRef, ProjectApps, ProjectRepoApps, Repo) ->
     BuildDir = fconf:get_value(BuildRef, "build.dir"),
     AppDir = filename:join([BuildDir, "apps"]),
-    Paths = gather_paths(AppDir, ProjectApps, []) ++ 
+    Paths = gather_paths(AppDir, ProjectApps, []) ++
         gather_paths(Repo, ProjectRepoApps, []),
     Prefix = os:getenv("ROOTDIR"),
     ErlBin = filename:join([Prefix, "bin", "erl"]),
@@ -74,12 +74,10 @@ make_shell(BuildRef, ProjectApps, ProjectRepoApps, Repo) ->
             ewl_talk:say("erl binary missing: ~s", [ErlBin]),
             throw({error, missing_erl_binary})
     end,
-    Cmdline = lists:flatten(["xterm -e ", ErlBin, " -sname sinan_shell ", 
+    Cmdline = lists:flatten(["xterm -e ", ErlBin, " -sname sinan_shell ",
                              create_cmdline(Paths, [])]),
     os:cmd(Cmdline).
-    
-    
-    
+
 
 %%--------------------------------------------------------------------
 %% @spec create_cmdline(List, Str) -> CommandLineString.
@@ -110,6 +108,7 @@ gather_paths(RepoDir, [{AppName, Vsn} | T], Acc) ->
     gather_paths(RepoDir, T, [Name | Acc]);
 gather_paths(_, [], Acc) ->
     Acc.
+
 
 %%====================================================================
 %% Tests
