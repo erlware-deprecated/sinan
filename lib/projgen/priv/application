@@ -5,7 +5,7 @@
 %%% @end
 %%% @copyright $year$ $copyright_holder$
 %%%----------------------------------------------------------------,
--module($app_name$).
+-module($app_name$_app).
 -behaviour(application).
 
 %% Application callbacks
