@@ -66,7 +66,7 @@ build_config(Env, FileName) ->
 %%--------------------------------------------------------------------
 write_template(Type, Env, FileName) ->
     Template = compile_template(Type),
-    Out = sgte:render(Template, Env),
+    Out = sgte:render_str(Template, Env),
     file:write_file(FileName, list_to_binary(Out)).
 
 %%--------------------------------------------------------------------
