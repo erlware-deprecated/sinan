@@ -145,7 +145,7 @@ prepare_for_tests(BuildRef, AppName, Modules) ->
     filelib:ensure_dir(filename:join([DocDir, "tmp"])),
     Paths = fconf:get_value(BuildRef, {path, ["apps", AppName, "code_paths"]}),
     code:add_pathsa(Paths),
-    setup_code_coverage(Modules),
+    setup_code_coverage(BuildRef, Modules),
     run_module_tests(Modules),
     CoverageFiles = output_code_coverage(BuildRef, DocDir, Modules, []),
     output_coverage_index(DocDir, AppName, CoverageFiles),
