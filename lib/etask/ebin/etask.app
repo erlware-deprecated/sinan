@@ -6,6 +6,7 @@
   {modules, [eta_event,
              eta_task,
              eta_task_runner,
+             eta_event_guard,
              eta_topo,
              eta_engine,
              eta_app,

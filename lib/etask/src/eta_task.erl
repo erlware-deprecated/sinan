@@ -1,3 +1,4 @@
+%% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
 %%%-------------------------------------------------------------------
 %%% Copyright (c) 2006, 2007 Eric Merritt
 %%%
@@ -34,11 +35,14 @@
 -behaviour(gen_server).
 
 -include("eunit.hrl").
+-include("etask.hrl").
 
 -define(SERVER, ?MODULE).
 
 %% API
--export([start_link/0, register_task/5, unregister_task/1, gen_task_chain/1, get_task_def/1, shutdown/0]).
+-export([start_link/0, register_task/6, register_task/5, register_task/1,
+         unregister_task/1, gen_task_chain/1, get_task_def/1,
+         shutdown/0, get_task_defs/0, get_task_opts/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -61,8 +65,8 @@ start_link() ->
 
 %%--------------------------------------------------------------------
 %% @spec shutdown() -> ok
-%% 
-%% @doc 
+%%
+%% @doc
 %%  Tell this server to shutdown.
 %% @end
 %%--------------------------------------------------------------------
@@ -80,22 +84,35 @@ register_task(TaskName, TaskImpl, Deps, Callable, Desc) when is_atom(TaskName), 
     register_task(TaskName, TaskImpl, Deps, Callable, Desc, []).
 
 %%--------------------------------------------------------------------
-%% @spec register_task(TaskName::atom(), TaskImpl::atom(), Deps::list(), Callable::bool(), 
+%% @spec register_task(TaskName::atom(), TaskImpl::atom(), Deps::list(), Callable::bool(),
 %%                     Desc::string(), Opt::string()) -> ok
 %%
 %% @doc
 %%  Register a task with the task handler.
 %% @end
 %%--------------------------------------------------------------------
-register_task(TaskName, TaskImpl, Deps, Callable, Desc, Opts) when is_atom(TaskName), is_atom(TaskImpl) ->
+register_task(TaskName, TaskImpl, Deps, Callable, Desc, Opts)
+  when is_atom(TaskName), is_atom(TaskImpl) ->
     NewCallable = case Callable of
                       true ->
                           true;
                       _ ->
                           false
                   end,
-    gen_server:cast(?SERVER, {register_task, TaskName, TaskImpl, Deps, NewCallable, Desc, Opts}).
-    
+    register_task(#task{name=TaskName, task_impl=TaskImpl,
+                        deps=Deps, callable=NewCallable,
+                        desc=Desc, opts=Opts}).
+
+%%--------------------------------------------------------------------
+%% @spec register_task(TaskRecord::task()) -> ok
+%%
+%% @doc
+%%  Register a task with the task handler.
+%% @end
+%%--------------------------------------------------------------------
+register_task(TaskRecord) when is_record(TaskRecord, task) ->
+    gen_server:cast(?SERVER, {register_task, TaskRecord}).
+
 %%--------------------------------------------------------------------
 %% @spec unregister_task(TaskName::atom()) -> ok
 %%
@@ -134,7 +151,7 @@ get_task_def(TaskName) when is_atom(TaskName) ->
 
 
 %%--------------------------------------------------------------------
-%% @doc 
+%% @doc
 %%  Get the command line options for the system.
 %% @spec get_task_opts(TaskName::atom()) -> Opts::list()
 %% @end
@@ -142,6 +159,14 @@ get_task_def(TaskName) when is_atom(TaskName) ->
 get_task_opts(TaskName) when is_atom(TaskName) ->
     gen_server:call(?SERVER, {task_opts, TaskName}).
 
+%%--------------------------------------------------------------------
+%% @doc
+%%  get all the task descriptions in the system
+%% @spec get_task_defs() -> [{Key::atom(), Value::task()}]
+%% @end
+%%--------------------------------------------------------------------
+get_task_defs() ->
+    gen_server:call(?SERVER, all_task_defs).
 
 %%====================================================================
 %% gen_server callbacks
@@ -182,7 +207,9 @@ handle_call({task_def, TaskName}, _From, State = #state{tasks=Tasks}) ->
 handle_call({task_opts, TaskName}, _From, State = #state{tasks=Tasks}) ->
     Res = gb_trees:lookup(TaskName, Tasks),
     Opts = get_opts(Res),
-    {reply, Opts, State}.
+    {reply, Opts, State};
+handle_call(all_task_defs, _From, State = #state{tasks=Tasks}) ->
+    {reply, gb_trees:to_list(Tasks), State}.
 
 %%--------------------------------------------------------------------
 %% @spec handle_cast(Msg, State) -> {noreply, State} |
@@ -193,8 +220,9 @@ handle_call({task_opts, TaskName}, _From, State = #state{tasks=Tasks}) ->
 %% Handling cast messages
 %% @end
 %%--------------------------------------------------------------------
-handle_cast({register_task, TaskName, TaskImpl, Deps, Callable, Desc, Opts}, #state{tasks=Tasks}) ->
-    {noreply, #state{tasks=register_task(TaskName, {TaskImpl, Deps, Callable, Desc, Opts}, Tasks)}};
+handle_cast({register_task, TaskDesc}, #state{tasks=Tasks}) ->
+    TaskName = TaskDesc#task.name,
+    {noreply, #state{tasks=register_task(TaskName, TaskDesc, Tasks)}};
 handle_cast({unregister_task, TaskName}, #state{tasks=Tasks}) ->
     {noreply, #state{tasks=unregister_task(TaskName, Tasks)}};
 handle_cast(shutdown, _) ->
@@ -245,7 +273,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%  Take a task name and task desc and register it with the task list.
 %% @end
 %%--------------------------------------------------------------------
-register_task(TaskName, TaskDesc = {_, _, _, _, _}, Tasks) ->
+register_task(TaskName, TaskDesc, Tasks) when is_record(TaskDesc, task) ->
     gb_trees:enter(TaskName, TaskDesc, Tasks).
 
 %%--------------------------------------------------------------------
@@ -302,8 +330,9 @@ reorder_tasks(Tasks) ->
         {ok, TaskList} ->
             TaskList;
         {cycle, _} ->
-            ewl_talk:say("There was a cycle in the task list. "
-                         "Unable to complete build!"),
+            eta_event:meta_event(cycle_fault,
+                                 "There was a cycle in the task list. "
+                                 "Unable to complete build!"),
             throw(task_list_cycle)
     end.
 
@@ -330,8 +359,8 @@ resolve_tasks([], _Tasks, Acc) ->
 %%  Retrieve the deps from the task tuple.
 %% @end
 %%--------------------------------------------------------------------
-get_deps({value, {_, Deps, _, _, _}}) ->
-    Deps;
+get_deps({value, TaskDesc}) ->
+    TaskDesc#task.deps;
 get_deps(none) ->
     none.
 
@@ -343,13 +372,13 @@ get_deps(none) ->
 %%  Get the task implementation from the lyst
 %% @end
 %%--------------------------------------------------------------------
-get_impl({value, {Impl, _, _, _, _}}) ->
-    Impl;
+get_impl({value, TaskDesc}) ->
+    TaskDesc#task.task_impl;
 get_impl(none) ->
     none.
 
 %%--------------------------------------------------------------------
-%% @doc 
+%% @doc
 %%  Get the opts for the system.
 %% @spec get_opts(TaskDesc::tuple()) -> Opts
 %% @end

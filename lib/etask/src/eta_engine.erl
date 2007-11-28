@@ -32,7 +32,7 @@
 
 
 %% API
--export([start_link/0]).
+-export([start_link/0, run/1, run/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -53,9 +53,25 @@
 %% @end
 %%--------------------------------------------------------------------
 start_link() ->
-    gen_server:start_link(?MODULE,
+    gen_server:start_link({local, ?SERVER}, ?MODULE,
                           [], []).
+%%--------------------------------------------------------------------
+%% @doc 
+%%  Run a task chain
+%% @spec run(Args) -> ok
+%% @end
+%%--------------------------------------------------------------------
+run(Args) ->
+    gen_server:call(?SERVER, {run, Args}).
 
+%%--------------------------------------------------------------------
+%% @doc 
+%%  Run the task with ards.
+%% @spec run(Task, Args) -> ok
+%% @end
+%%--------------------------------------------------------------------
+run(Task, Args) ->
+    gen_server:call(?SERVER, {run, [Task | Args]}).
 
 %%====================================================================
 %% gen_server callbacks
@@ -85,8 +101,8 @@ init([]) ->
 %% Handling call messages
 %% @end
 %%--------------------------------------------------------------------
-handle_call({run, Args}, _From, State) ->
-    eta_task_runner:run_task(Args),
+handle_call({run, Args}, From, State) ->
+    eta_task_runner:run_task(From, Args),
     {noreply, State};
 handle_call(_Request, _From, State) ->
     Reply = ok,
