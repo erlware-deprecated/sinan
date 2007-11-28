@@ -1,3 +1,4 @@
+%% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
 %%%-------------------------------------------------------------------
 %%% Copyright (c) 2006, 2007 Eric Merritt
 %%%
@@ -32,7 +33,24 @@
 -module(eta_event).
 
 %% API
--export([start_link/0, event/2, add_handler/2]).
+-export([start_link/0, 
+         event_name/0,
+         meta_fault/2,
+         run_event/2, 
+         task_event/3, 
+         task_event/4, 
+         add_handler/2,
+         add_sup_handler/2,
+         run_start/1, 
+         run_stop/1,
+         run_fault/1,
+         run_fault/2,
+         task_start/2,
+         task_start/3,
+         task_stop/2,
+         task_stop/3,
+         task_fault/2,
+         task_fault/3]).
 
 -define(SERVER, ?MODULE).
 
@@ -42,23 +60,149 @@
 %%====================================================================
 %%--------------------------------------------------------------------
 %% @doc
+%%  Starts the gen_event with the eta_event name.
 %% @spec start_link() -> ok
-%%
-%%  Starts the gen_event with the sin_event name.
 %% @end
 %%--------------------------------------------------------------------
 start_link() ->
     gen_event:start_link({local, ?SERVER}).
 
 %%--------------------------------------------------------------------
-%% @doc
-%% @spec event(RunRef, Event) -> ok
-%%
-%%  Send an event to the event system.
+%% @doc 
+%%  Get the event name from the system.
+%% @spec event_name() -> EventName. 
 %% @end
 %%--------------------------------------------------------------------
-event(RunRef, Event) ->
+event_name() ->
+    ?SERVER.
+
+%%--------------------------------------------------------------------
+%% @doc
+%%  add a task fault to the system tha tis independent of 
+%%  a run
+%% @spec meta_fault(Event, Desc) -> ok
+%% @end
+%%--------------------------------------------------------------------
+meta_fault(Event, Desc) ->
+    gen_event:notify(?SERVER, {meta_event, Event, Desc}).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%%  Send an event to the event system.
+%% @spec run_event(RunRef, Event) -> ok
+%% @end
+%%--------------------------------------------------------------------
+run_event(RunRef, Event) ->
     gen_event:notify(?SERVER, {run_event, RunRef, Event}).
+
+%%--------------------------------------------------------------------
+%% @doc
+%%  Indicate that a run has started
+%% @spec run_start(RunRef) -> ok
+%% @end
+%%--------------------------------------------------------------------
+run_start(RunRef) ->
+    gen_event:notify(?SERVER, {run_event, RunRef, start}).
+
+%%--------------------------------------------------------------------
+%% @doc
+%%  Indicate that a run has stoped
+%% @spec run_stop(RunRef) -> ok
+%% @end
+%%--------------------------------------------------------------------
+run_stop(RunRef) ->
+    gen_event:notify(?SERVER, {run_event, RunRef, stop}).
+
+%%--------------------------------------------------------------------
+%% @doc
+%%  Indicate that a run has stopped due to a fault
+%% @spec run_fault(RunRef) -> ok
+%% @end
+%%--------------------------------------------------------------------
+run_fault(RunRef) ->
+    gen_event:notify(?SERVER, {run_event, RunRef, fault}).
+
+%%--------------------------------------------------------------------
+%% @doc
+%%  Indicate that a run has stopped due to a fault
+%% @spec run_start(RunRef, Reason) -> ok
+%% @end
+%%--------------------------------------------------------------------
+run_fault(RunRef, Reason) ->
+    gen_event:notify(?SERVER, {run_event, RunRef, fault, Reason}).
+
+%%--------------------------------------------------------------------
+%% @doc 
+%%  send a task event to the system. 
+%% @spec task_event(RunRef, Task, Event) -> ok
+%% @end
+%%--------------------------------------------------------------------
+task_event(RunRef, Task, Event) ->
+    gen_event:notify(?SERVER, {task_event, Task, RunRef, Event}).
+
+%%--------------------------------------------------------------------
+%% @doc 
+%%  task_event with description.
+%% @spec task_event(RunRef, Task, Event) -> ok
+%% @end
+%%--------------------------------------------------------------------
+task_event(RunRef, Task, Event, Desc) ->
+    gen_event:notify(?SERVER, {task_event, Task, RunRef, Event, Desc}).
+
+%%--------------------------------------------------------------------
+%% @doc 
+%%  indicate that a task has started
+%% @spec task_start(RunRef, Task) -> ok
+%% @end
+%%--------------------------------------------------------------------
+task_start(RunRef, Task) ->
+    gen_event:notify(?SERVER, {task_event, Task, RunRef, start}).
+
+%%--------------------------------------------------------------------
+%% @doc 
+%%  indicate that a task has started
+%% @spec task_start(RunRef, Task, Desc) -> ok
+%% @end
+%%--------------------------------------------------------------------
+task_start(RunRef, Task, Desc) ->
+    gen_event:notify(?SERVER, {task_event, Task, RunRef, start, Desc}).
+
+%%--------------------------------------------------------------------
+%% @doc 
+%%  indicate that a task has stopped
+%% @spec task_stop(RunRef, Task) -> ok
+%% @end
+%%--------------------------------------------------------------------
+task_stop(RunRef, Task) ->
+    gen_event:notify(?SERVER, {task_event, Task, RunRef, stop}).
+
+%%--------------------------------------------------------------------
+%% @doc 
+%%  indicate that a task has stopped
+%% @spec task_stop(RunRef, Task, Desc) -> ok
+%% @end
+%%--------------------------------------------------------------------
+task_stop(RunRef, Task, Desc) ->
+    gen_event:notify(?SERVER, {task_event, Task, RunRef, stop, Desc}).
+
+%%--------------------------------------------------------------------
+%% @doc 
+%%  indicate that a task has stopped due to a fault
+%% @spec task_fault(RunRef, Task) -> ok
+%% @end
+%%--------------------------------------------------------------------
+task_fault(RunRef, Task) ->
+    gen_event:notify(?SERVER, {task_event, Task, RunRef, fault}).
+
+%%--------------------------------------------------------------------
+%% @doc 
+%%  indicate that a task has stopped due to a fault
+%% @spec task_fault(RunRef, Task, Reason) -> ok
+%% @end
+%%--------------------------------------------------------------------
+task_fault(RunRef, Task, Reason) ->
+    gen_event:notify(?SERVER, {task_event, Task, RunRef, fault, Reason}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -69,6 +213,16 @@ event(RunRef, Event) ->
 %%--------------------------------------------------------------------
 add_handler(Handler, Args) ->
     gen_event:add_handler(?SERVER, Handler, Args).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec add_sup_handler(Handler, Args) -> ok
+%%
+%% Add a handler for this event system.
+%% @end
+%%--------------------------------------------------------------------
+add_sup_handler(Handler, Args) ->
+    gen_event:add_sup_handler(?SERVER, Handler, Args).
 
 
 %%====================================================================
