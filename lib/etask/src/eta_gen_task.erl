@@ -23,31 +23,24 @@
 %%% OTHER DEALINGS IN THE SOFTWARE.
 %%%---------------------------------------------------------------------------
 %%% @author Eric Merritt <cyberlync@gmail.com>
-%%% @doc 
-%%%  Behaviour that tasks must implement.
+%%% @doc
+%%%   Task runner for the system.
 %%% @end
-%%% @copyright (C) 2007, Eric Merritt
-%%% Created : 18 Nov 2007 by Eric Merritt <cyberlync@gmail.com>
-%%%-------------------------------------------------------------------
+%%% @copyright 2006 Eric Merritt <cyberlync@gmail.com>
+%%%---------------------------------------------------------------------------
 -module(eta_gen_task).
+
 
 %% API
 -export([behaviour_info/1]).
 
-%%====================================================================
-%% API
-%%====================================================================
 %%--------------------------------------------------------------------
-%% @spec behaviour_info(Type) -> Callbacks
-%% @doc
-%%  define the correct behaviour.
-%% @end 
+%% @doc 
+%%  Define the do task.
+%% @spec behaviour_info(InfoTarget) -> Info.
+%% @end
 %%--------------------------------------------------------------------
 behaviour_info(callbacks) ->
-    [{do_task, 2}];
+    [{do_task,2}];
 behaviour_info(_Other) ->    
     undefined.
-
-%%====================================================================
-%% Internal functions
-%%====================================================================

@@ -94,13 +94,17 @@ get_target([]) ->
 %%--------------------------------------------------------------------
 do_tasks(Task, Args) ->
     RunRef = setup_run(),
-    sin_event:event(RunRef, {run, start}),
+    eta_event:run_start(RunRef),
     Tasks = get_tasks(Task),
     try run_tasks(RunRef, Tasks, Args) catch
+    _:problem ->
+        eta_event:run_fault(RunRef, "Task failed");
     _:Error ->
-        sin_event:event(RunRef, {{run, error}, {Error, erlang:get_stacktrace()}})
+        eta_event:run_fault(RunRef, 
+                            {"Error : ~p, Stacktrace : \n ~p", 
+                             [Error, erlang:get_stacktrace()]})
     after
-        sin_event:event(RunRef, {run, complete})
+        eta_event:run_stop(RunRef)
     end.
 
 
@@ -114,7 +118,7 @@ do_tasks(Task, Args) ->
 get_tasks(Task) when is_list(Task) ->
     get_tasks(list_to_atom(Task));
 get_tasks(Task) when is_atom(Task) ->
-    case sin_task:get_task_chain(Task) of
+    case eta_task:gen_task_chain(Task) of
         [] ->
             throw(invalid_task);
         TaskImplList ->
@@ -128,20 +132,40 @@ get_tasks(Task) when is_atom(Task) ->
 %% @end
 %% @private
 %%-------------------------------------------------------------------
-run_tasks(RunRef, [Task | RestTasks], Args) ->
-    sin_event:event(RunRef, {{task, start}, Task}),
-    case catch Task:do_task(RunRef, Args) of
-        {'EXIT', {undef, _}} ->
-            sin_event:event(RunRef, {{task, fail}, {undefined, Task}}),
-            throw({undefined_task, {"Undefined task handler", Task}});
-        {'EXIT', _} ->
-            sin_event:event(RunRef, {{task, fail}, {error, Task}});
-         _ ->
-            sin_event:event(RunRef, {task, complete})
-    end,
-    run_tasks(RunRef, RestTasks, Args);
+run_tasks(RunRef, [Task | RestTasks], Args)  ->
+    eta_event:task_start(RunRef, Task),
+    try apply_task(Task, RunRef, Args),
+        run_tasks(RunRef, RestTasks, Args) catch
+        _:{eta_exec, Problem} ->
+            eta_event:task_fault(RunRef, Task, {"~p", Problem}),
+            throw(problem);
+        _:{eta_excep, _Problem, Description} ->
+            eta_event:task_fault(RunRef, Task, Description),
+            throw(problem);
+        _:{'EXIT', {undef, _}} ->
+            eta_event:task_fault(RunRef, Task, "Undefined implementation"),
+            throw(problem);       
+        _:{'EXIT', Reason} ->
+            eta_event:task_fault(RunRef, Task, {"~p", [Reason]}),
+            throw(problem);
+        _:Error ->
+            eta_event:task_fault(RunRef, Task, {"~p", [Error]}),
+            throw(problem)
+    end;
 run_tasks(_, [], _) ->
     ok.
+
+%%--------------------------------------------------------------------
+%% @doc 
+%%  Apply the task. If its a fun, call the fun. If its an atom call
+%%  its do_task function.
+%% @spec apply_task(Task, RunRef, Args) -> Result
+%% @end
+%%--------------------------------------------------------------------
+apply_task(Task, RunRef, Args) when is_function(Task) ->
+    Task(RunRef, Args);
+apply_task(Task, RunRef, Args) when is_atom(Task) ->
+    Task:do_task(RunRef, Args).
 
 %%--------------------------------------------------------------------
 %% @doc
