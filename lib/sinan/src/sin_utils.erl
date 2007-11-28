@@ -1,25 +1,26 @@
+%% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
 %%%-------------------------------------------------------------------
 %%% Copyright (c) 2006, 2007 Eric Merritt
 %%%
-%%% Permission is hereby granted, free of charge, to any 
-%%% person obtaining a copy of this software and associated 
-%%% documentation files (the "Software"), to deal in the 
-%%% Software without restriction, including without limitation 
+%%% Permission is hereby granted, free of charge, to any
+%%% person obtaining a copy of this software and associated
+%%% documentation files (the "Software"), to deal in the
+%%% Software without restriction, including without limitation
 %%% the rights to use, copy, modify, merge, publish, distribute,
-%%% sublicense, and/or sell copies of the Software, and to permit 
-%%% persons to whom the Software is furnished to do so, subject to 
+%%% sublicense, and/or sell copies of the Software, and to permit
+%%% persons to whom the Software is furnished to do so, subject to
 %%% the following conditions:
 %%%
-%%% The above copyright notice and this permission notice shall 
+%%% The above copyright notice and this permission notice shall
 %%% be included in all copies or substantial portions of the Software.
 %%%
 %%% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-%%% EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES 
-%%% OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND 
-%%% NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
+%%% EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+%%% OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+%%% NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
 %%% HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 %%% WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-%%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR 
+%%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 %%% OTHER DEALINGS IN THE SOFTWARE.
 %%%---------------------------------------------------------------------------
 %%% @author Eric Merritt
@@ -33,8 +34,8 @@
 -include("file.hrl").
 
 %% API
--export([copy_dir/3, 
-         copy_dir/4, 
+-export([copy_dir/3,
+         copy_dir/4,
          parent_dir/1,
          delete_dir/1,
          remove_code_paths/1,
@@ -48,7 +49,7 @@
 %%-------------------------------------------------------------------
 %% @doc
 %%  Check to see if a file exists.
-%% 
+%%
 %% @spec file_exists(FileName) -> true | false.
 %% @end
 %%-------------------------------------------------------------------
@@ -83,12 +84,12 @@ copy_dir(BuildDir, TargetDir, SubDir, Ignorables) ->
             {ok, Files} = file:list_dir(CpyTarget),
             lists:foldl(fun(IFile, _Acc) ->
                                 File = filename:join([CpyTarget, IFile]),
-                                case {is_dir_ignorable(IFile, Ignorables), 
+                                case {is_dir_ignorable(IFile, Ignorables),
                                       filelib:is_dir(File)} of
                                     {true, _} ->
                                         ok;
                                     {_, true} ->
-                                        copy_dir(BuildDir, TargetDir, SubDir ++ 
+                                        copy_dir(BuildDir, TargetDir, SubDir ++
                                                  [IFile], Ignorables);
                                     {_, false} ->
                                         copy_file(Target, IFile, File)
@@ -125,8 +126,8 @@ parent_dir([H | T], Acc) ->
 
 %%--------------------------------------------------------------------
 %% @spec remove_code_path(Paths) -> ok.
-%% 
-%% @doc 
+%%
+%% @doc
 %%  Remove the set code paths from the system.
 %% @end
 %%--------------------------------------------------------------------
@@ -138,15 +139,15 @@ remove_code_paths([]) ->
 
 %%--------------------------------------------------------------------
 %% @spec is_dir_ignorable(Directory, ListOfIgnores) -> true | false.
-%% 
-%% @doc 
+%%
+%% @doc
 %%  Return wether the directory is in the list of ignorables. If it
 %%  is then return true, otherwise return false.
 %% @end
 %% @private
 %%--------------------------------------------------------------------
 is_dir_ignorable(Sub, [Ignore | Rest]) ->
-    case ignore_dir(Sub, Ignore) of 
+    case ignore_dir(Sub, Ignore) of
         true ->
             true;
         false ->
@@ -163,7 +164,7 @@ is_dir_ignorable(_Sub, []) ->
 %%-------------------------------------------------------------------
 %% @spec copy_file( Target, IFile, File) -> ok.
 %% @doc
-%%  Copies the file specified by file to the target specified by 
+%%  Copies the file specified by file to the target specified by
 %%  ifile.
 %% @end
 %% @private
@@ -189,26 +190,26 @@ copy_file(Target, IFile, File) ->
 
 %%--------------------------------------------------------------------
 %% @spec delete_dir(Dir) -> ok.
-%% 
-%% @doc 
+%%
+%% @doc
 %%  Delete the directory and all of its sub directories.
 %% @end
 %% @private
 %%--------------------------------------------------------------------
 delete_dir(Dir) ->
     case file:list_dir(Dir) of
-        {ok, Files} -> 
+        {ok, Files} ->
             lists:foldl(fun(File, _Acc) ->
                                 NFile = filename:join([Dir, File]),
                                 case filelib:is_dir(NFile) of
-                                    true -> 
+                                    true ->
                                         case is_symlink(NFile) of
                                             true ->
                                                 file:delete(NFile);
                                             false ->
                                                 delete_dir(NFile)
                                         end;
-                                    false -> 
+                                    false ->
                                         file:delete(NFile)
                                 end
                         end, [], Files),
@@ -220,8 +221,8 @@ delete_dir(Dir) ->
 
 %%--------------------------------------------------------------------
 %% @spec is_symlink(Name) -> true | false.
-%% 
-%% @doc 
+%%
+%% @doc
 %%  Check to see if the file is a symlink.
 %% @end
 %%--------------------------------------------------------------------
@@ -235,9 +236,9 @@ is_symlink(Name) ->
 
 %%--------------------------------------------------------------------
 %% @spec ignore_dir(Directory, PossibleIgnorePrefix) -> true | false.
-%% 
-%% @doc 
-%%  Check the directory against teh possible ignores to see if the 
+%%
+%% @doc
+%%  Check the directory against teh possible ignores to see if the
 %%  prefix matches.
 %% @end
 %% @private
@@ -251,8 +252,8 @@ ignore_dir(_Sub, _Ignorable) ->
 
 %%--------------------------------------------------------------------
 %% @spec are_dirs_ignorable([H | T], Igs) -> ok.
-%% 
-%% @doc 
+%%
+%% @doc
 %%  If any dirs in the list are ignorable ignore it
 %% @end
 %%--------------------------------------------------------------------

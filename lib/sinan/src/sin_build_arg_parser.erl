@@ -1,6 +1,7 @@
+%% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
 %%%-------------------------------------------------------------------
 %%% @author Eric Merritt <cyberlync@gmail.com>
-%%% @doc 
+%%% @doc
 %%%  Supports generating 'compile' args from a string using standard
 %%%  erlc arguments.
 %%% @end
@@ -21,7 +22,7 @@
 %% @doc
 %%  Compile build args into terms the compiler understands.
 %% @spec compile_build_args(String) -> CompileOpts
-%% @end 
+%% @end
 %%--------------------------------------------------------------------
 compile_build_args([]) ->
     [];
@@ -32,8 +33,8 @@ compile_build_args(ArgString) ->
 %% Internal functions
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @doc 
-%% 
+%% @doc
+%%
 %% @spec compile_build_args(String, Acc) -> ok.
 %% @end
 %%--------------------------------------------------------------------
@@ -41,13 +42,13 @@ compile_build_args([$+ | T], Acc) ->
     parse_term(T, [], Acc);
 compile_build_args([$\ | T], Acc) ->
     compile_build_args(T, Acc);
-compile_build_args([$\r | T], Acc) ->    
+compile_build_args([$\r | T], Acc) ->
     compile_build_args(T, Acc);
-compile_build_args([$\l | T], Acc) ->    
+compile_build_args([$\l | T], Acc) ->
     compile_build_args(T,  Acc);
-compile_build_args([$\n | T], Acc) ->    
+compile_build_args([$\n | T], Acc) ->
     compile_build_args(T,  Acc);
-compile_build_args([$\t | T], Acc) ->    
+compile_build_args([$\t | T], Acc) ->
     compile_build_args(T, Acc);
 compile_build_args([$-, $I | T], Acc) ->
     eat_space(T, Acc, fun parse_include/3);
@@ -69,40 +70,40 @@ compile_build_args([], Acc) ->
     Acc.
 
 %%--------------------------------------------------------------------
-%% @doc 
+%% @doc
 %%  eat space until you get a non space character.
-%% @spec eat_space(Stream, Acc, Handler) -> Opts. 
+%% @spec eat_space(Stream, Acc, Handler) -> Opts.
 %% @end
 %%--------------------------------------------------------------------
 eat_space([$\ | T], Acc, Handler) ->
     eat_space(T, Acc, Handler);
-eat_space([$\r | T], Acc, Handler) ->    
+eat_space([$\r | T], Acc, Handler) ->
     eat_space(T, Acc, Handler);
-eat_space([$\l | T], Acc, Handler) ->    
+eat_space([$\l | T], Acc, Handler) ->
     eat_space(T, Acc, Handler);
-eat_space([$\n | T], Acc, Handler) ->    
+eat_space([$\n | T], Acc, Handler) ->
     eat_space(T, Acc, Handler);
-eat_space([$\t | T], Acc, Handler) ->    
+eat_space([$\t | T], Acc, Handler) ->
     eat_space(T, Acc, Handler);
-eat_space(Stream, Acc, Handler) ->    
+eat_space(Stream, Acc, Handler) ->
     Handler(Stream, [], Acc).
 
 
 %%--------------------------------------------------------------------
-%% @doc 
+%% @doc
 %%  Parse out the define.
 %% @spec parse_define(String, LAcc, Acc) -> ParseOpts
 %% @end
 %%--------------------------------------------------------------------
 parse_define([$\ | T], LAcc, Acc) ->
     compile_build_args(T, [{d, list_to_atom(lists:reverse(LAcc))} | Acc]);
-parse_define([$\r | T], LAcc, Acc) ->    
+parse_define([$\r | T], LAcc, Acc) ->
     compile_build_args(T, [{d, list_to_atom(lists:reverse(LAcc))} | Acc]);
-parse_define([$\l | T], LAcc, Acc) ->    
+parse_define([$\l | T], LAcc, Acc) ->
     compile_build_args(T, [{d,list_to_atom(lists:reverse(LAcc))} | Acc]);
-parse_define([$\n | T], LAcc, Acc) ->    
+parse_define([$\n | T], LAcc, Acc) ->
     compile_build_args(T, [{d, list_to_atom(lists:reverse(LAcc))} | Acc]);
-parse_define([$\t | T], LAcc, Acc) ->    
+parse_define([$\t | T], LAcc, Acc) ->
     compile_build_args(T, [{d, list_to_atom(lists:reverse(LAcc))} | Acc]);
 parse_define([$= | _], [], _Acc) ->
     throw({build_arg_error, "Invalid define"});
@@ -110,7 +111,7 @@ parse_define([$= | T], LAcc, Acc) ->
     Key = list_to_atom(lists:reverse(LAcc)),
     {Value, NewT} = parse_define_value(T, []),
     compile_build_args(NewT, [{d, Key, Value} | Acc]);
-parse_define([H | T], LAcc, Acc) ->    
+parse_define([H | T], LAcc, Acc) ->
     parse_define(T, [H | LAcc], Acc);
 parse_define([], [], _Acc) ->
     throw({build_arg_error, "Invalid define"});
@@ -119,7 +120,7 @@ parse_define([], LAcc, Acc) ->
 
 
 %%--------------------------------------------------------------------
-%% @doc 
+%% @doc
 %%  Parse an include directive out.
 %% @spec parse_define_value(String, LAcc, Acc) -> ParsedOpts.
 %% @end
@@ -129,13 +130,13 @@ parse_define_value([$\" | T], _LAcc) ->
    {Dir, NewT};
 parse_define_value([$\ | T], LAcc) ->
     {lists:reverse(LAcc), T};
-parse_define_value([$\r | T], LAcc) ->    
+parse_define_value([$\r | T], LAcc) ->
     {lists:reverse(LAcc), T};
-parse_define_value([$\l | T], LAcc) ->    
+parse_define_value([$\l | T], LAcc) ->
     {lists:reverse(LAcc), T};
-parse_define_value([$\n | T], LAcc) ->    
+parse_define_value([$\n | T], LAcc) ->
     {lists:reverse(LAcc), T};
-parse_define_value([$\t | T], LAcc) ->    
+parse_define_value([$\t | T], LAcc) ->
     {lists:reverse(LAcc), T};
 parse_define_value([H | T], LAcc) ->
     parse_define_value(T, [H | LAcc]);
@@ -146,23 +147,23 @@ parse_define_value([], LAcc) ->
 
 
 %%--------------------------------------------------------------------
-%% @doc 
+%% @doc
 %%  Parse an include directive out.
 %% @spec parse_include(String, LAcc, Acc) -> ParsedOpts.
 %% @end
 %%--------------------------------------------------------------------
 parse_include([$\" | T], _LAcc, Acc) ->
    {Dir, NewT, _} =  ktuo_parse_utils:stringish_body($\", T, [], 0, 0),
-   compile_build_args(NewT, [{i, lists:reverse(Dir)} | Acc]);  
+   compile_build_args(NewT, [{i, lists:reverse(Dir)} | Acc]);
 parse_include([$\ | T], LAcc, Acc) ->
     compile_build_args(T, [{i, lists:reverse(LAcc)} | Acc]);
-parse_include([$\r | T], LAcc, Acc) ->    
+parse_include([$\r | T], LAcc, Acc) ->
     compile_build_args(T, [{i, lists:reverse(LAcc)} | Acc]);
-parse_include([$\l | T], LAcc, Acc) ->    
+parse_include([$\l | T], LAcc, Acc) ->
     compile_build_args(T, [{i, lists:reverse(LAcc)} | Acc]);
-parse_include([$\n | T], LAcc, Acc) ->    
+parse_include([$\n | T], LAcc, Acc) ->
     compile_build_args(T, [{i, lists:reverse(LAcc)} | Acc]);
-parse_include([$\t | T], LAcc, Acc) ->    
+parse_include([$\t | T], LAcc, Acc) ->
     compile_build_args(T, [{i, lists:reverse(LAcc)} | Acc]);
 parse_include([H | T], LAcc, Acc) ->
     parse_include(T, [H | LAcc], Acc);
@@ -173,20 +174,20 @@ parse_include([], LAcc, Acc) ->
 
 
 %%--------------------------------------------------------------------
-%% @doc 
+%% @doc
 %%  Parse a strait term.
 %% @spec parse_term(ParseString, LAcc, Acc) -> ParsedOpts
 %% @end
 %%--------------------------------------------------------------------
 parse_term([$\ | T], LAcc, Acc) ->
     compile_build_args(T, [list_to_atom(lists:reverse(LAcc)) | Acc]);
-parse_term([$\r | T], LAcc, Acc) ->    
+parse_term([$\r | T], LAcc, Acc) ->
     compile_build_args(T, [list_to_atom(lists:reverse(LAcc)) | Acc]);
-parse_term([$\l | T], LAcc, Acc) ->    
+parse_term([$\l | T], LAcc, Acc) ->
     compile_build_args(T, [list_to_atom(lists:reverse(LAcc)) | Acc]);
-parse_term([$\n | T], LAcc, Acc) ->    
+parse_term([$\n | T], LAcc, Acc) ->
     compile_build_args(T, [list_to_atom(lists:reverse(LAcc)) | Acc]);
-parse_term([$\t | T], LAcc, Acc) ->    
+parse_term([$\t | T], LAcc, Acc) ->
     compile_build_args(T, [list_to_atom(lists:reverse(LAcc)) | Acc]);
 parse_term([H | T], LAcc, Acc) ->
     parse_term(T, [H | LAcc], Acc);
@@ -210,7 +211,7 @@ define_parse_test() ->
     ?assertMatch([{d, this_is_a_test}], compile_build_args("-Dthis_is_a_test")).
 
 define_value_parse_test() ->
-    ?assertMatch([{d, this_is_a_test, "this_a"}], 
+    ?assertMatch([{d, this_is_a_test, "this_a"}],
                  compile_build_args("-Dthis_is_a_test=this_a")).
 
 

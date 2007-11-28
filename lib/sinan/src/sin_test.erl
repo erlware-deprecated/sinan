@@ -1,66 +1,106 @@
+%% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
 %%%-------------------------------------------------------------------
 %%% Copyright (c) 2006, 2007 Eric Merritt
 %%%
-%%% Permission is hereby granted, free of charge, to any 
-%%% person obtaining a copy of this software and associated 
-%%% documentation files (the "Software"), to deal in the 
-%%% Software without restriction, including without limitation 
+%%% Permission is hereby granted, free of charge, to any
+%%% person obtaining a copy of this software and associated
+%%% documentation files (the "Software"), to deal in the
+%%% Software without restriction, including without limitation
 %%% the rights to use, copy, modify, merge, publish, distribute,
-%%% sublicense, and/or sell copies of the Software, and to permit 
-%%% persons to whom the Software is furnished to do so, subject to 
+%%% sublicense, and/or sell copies of the Software, and to permit
+%%% persons to whom the Software is furnished to do so, subject to
 %%% the following conditions:
 %%%
-%%% The above copyright notice and this permission notice shall 
+%%% The above copyright notice and this permission notice shall
 %%% be included in all copies or substantial portions of the Software.
 %%%
 %%% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-%%% EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES 
-%%% OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND 
-%%% NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
+%%% EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+%%% OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+%%% NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
 %%% HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 %%% WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-%%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR 
+%%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 %%% OTHER DEALINGS IN THE SOFTWARE.
 %%%---------------------------------------------------------------------------
 %%% @author Eric Merritt <cyberlync@gmail.com>
-%%% @doc 
+%%% @doc
 %%%   Runs the 'test' function on all modules in an application
 %%%   if that function exits.
 %%% @end
-%%% Created : 16 Oct 2006 by Eric Merritt 
+%%% Created : 16 Oct 2006 by Eric Merritt
 %%%---------------------------------------------------------------------------
 -module(sin_test).
 
+-behaviour(eta_gen_task).
+
+-include("etask.hrl").
 
 %% API
--export([test/2]).
+-export([start/0, do_task/2, test/2]).
+
+-define(TASK, test).
+-define(DEPS, [build]).
 
 
 %%====================================================================
 %% API
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @doc 
+%% @spec start() -> ok.
+%%
+%% @doc
+%% Starts the server
+%% @end
+%%--------------------------------------------------------------------
+start() ->
+    Desc = "Runs all of the existing eunit unit tests in the project",
+    TaskDesc = #task{name = ?TASK,
+                     task_impl = ?MODULE,
+                     deps = ?DEPS,
+                     desc = Desc,
+                     callable = true,
+                     opts = []},
+    eta_task:register_task(TaskDesc).
+
+
+%%--------------------------------------------------------------------
+%% @spec do_task(BuildRef, Args) -> ok
+%%
+%% @doc
+%%  dO the task defined in this module.
+%% @end
+%%--------------------------------------------------------------------
+do_task(BuildRef, Args) ->
+    test(BuildRef, Args).
+
+%%--------------------------------------------------------------------
+%% @doc
 %%  Run the application tests.
 %% @spec test() -> ok.
 %% @end
 %%--------------------------------------------------------------------
-test(_BuildRef, "notest") ->
-    ok;
+test(BuildRef, "notest") ->
+    eta_event:task_start(BuildRef, ?TASK),
+    ok,
+    eta_event:task_stop(BuildRef, ?TASK);
 test(BuildRef, _) ->
+    eta_event:task_start(BuildRef, ?TASK),
     case fconf:get_value(BuildRef, "eunit") of
         "disabled" ->
-            ewl_talk:say("Unit testing is disabled for this project. "
-                         "If you wish to change this change the eunit "
-                         "value of the build config from 'disabled' to "
-                         "'enabled' or remove it.");
+            eta_event:task_fault(BuildRef, ?TASK,
+                                 "Unit testing is disabled for this project. "
+                                 "If you wish to change this change the eunit "
+                                 "value of the build config from 'disabled' to "
+                                 "'enabled' or remove it.");
         _ ->
             Apps = lists:map(fun({App, _Vsn, _Deps}) ->
                                      atom_to_list(App)
-                             end, fconf:get_value(BuildRef, 
+                             end, fconf:get_value(BuildRef,
                                                   "project.apps")),
             test_apps(BuildRef, Apps)
-    end.
+    end,
+    eta_event:task_stop(BuildRef, ?TASK).
 
 
 %%====================================================================
@@ -71,16 +111,17 @@ test(BuildRef, _) ->
 %% @spec test_apps(AppList) -> ok.
 %% @doc
 %%   Run tests for all the applications specified.
-%% @end 
+%% @end
 %% @private
 %%--------------------------------------------------------------------
 test_apps(BuildRef, [AppName | T]) ->
-    Modules = fconf:get_value(BuildRef, 
+    Modules = fconf:get_value(BuildRef,
                               {path, ["apps", AppName, "modules"]}),
     case Modules == undefined orelse length(Modules) =< 0 of
         true ->
-            ewl_talk:say("No modules defined for ~s.",
-                         [AppName]),
+            eta_event:task_fault(BuildRef, ?TASK,
+                                 {"No modules defined for ~s.",
+                                  [AppName]}),
             ok;
         false ->
             prepare_for_tests(BuildRef, AppName, Modules)
@@ -91,9 +132,9 @@ test_apps(_, []) ->
 
 %%--------------------------------------------------------------------
 %% @spec prepare_for_tests(AppName, Modules) -> ok.
-%% 
-%% @doc  
-%%  Prepare for running the tests. This mostly means seting up the 
+%%
+%% @doc
+%%  Prepare for running the tests. This mostly means seting up the
 %%  coverage tools.
 %% @end
 %% @private
@@ -106,7 +147,7 @@ prepare_for_tests(BuildRef, AppName, Modules) ->
     code:add_pathsa(Paths),
     setup_code_coverage(Modules),
     run_module_tests(Modules),
-    CoverageFiles = output_code_coverage(DocDir, Modules, []),
+    CoverageFiles = output_code_coverage(BuildRef, DocDir, Modules, []),
     output_coverage_index(DocDir, AppName, CoverageFiles),
     sin_utils:remove_code_paths(Paths).
 
@@ -114,8 +155,8 @@ prepare_for_tests(BuildRef, AppName, Modules) ->
 %%--------------------------------------------------------------------
 %% @spec output_coverage_index(DocDir, AppName, CoverageFiles) ->
 %%   ok.
-%% @doc 
-%%  Output coverage information to make accessing the files a 
+%% @doc
+%%  Output coverage information to make accessing the files a
 %%  bit easier.
 %% @end
 %% @private
@@ -159,69 +200,69 @@ output_coverage_index(DocDir, AppName, CoverageFiles=[{Name, _Module} | _T]) ->
 
 %%--------------------------------------------------------------------
 %% @spec make_index(FileList, Acc) -> DeepListOfLinks.
-%% 
-%% @doc 
+%%
+%% @doc
 %%  Render the list of modules into a deep list of links.
 %% @end
 %% @private
 %%--------------------------------------------------------------------
 make_index([{File, Module} | T], Acc) ->
-    Acc2 = ["<LI><A href=\"", File, "\" target=\"bodyarea\">", atom_to_list(Module), 
+    Acc2 = ["<LI><A href=\"", File, "\" target=\"bodyarea\">", atom_to_list(Module),
             "</A></LI>" | Acc],
     make_index(T, Acc2);
 make_index([], Acc) ->
     Acc.
-    
+
 
 %%--------------------------------------------------------------------
 %% @spec setup_code_coverage(Modules) -> ok.
-%% 
-%% @doc 
+%%
+%% @doc
 %%  Instrument all of the modules for code coverage checks.
 %% @end
 %% @private
 %%--------------------------------------------------------------------
-setup_code_coverage([Module | T]) ->
+setup_code_coverage(BuildRef, [Module | T]) ->
     case cover:compile_beam(Module) of
         {error, _} ->
-            ewl_talk:say("Couldn't add code coverage to ~w", [Module]);
+            eta_event:task_event(BuildRef, ?TASK, info, {"Couldn't add code coverage to ~w", [Module]});
         _ ->
             ok
     end,
-    setup_code_coverage(T);
-setup_code_coverage([]) ->
+    setup_code_coverage(BuildRef, T);
+setup_code_coverage(_, []) ->
     ok.
 
 %%--------------------------------------------------------------------
 %% @spec output_code_coverage(DocDir, Modules, Acc) -> ListOModules.
-%% 
-%% @doc 
+%%
+%% @doc
 %%  Take the analysis from test running and output it to an html file.
 %% @end
 %% @private
 %%--------------------------------------------------------------------
-output_code_coverage(DocDir, [Module | T], Acc) ->
+output_code_coverage(BuildRef, DocDir, [Module | T], Acc) ->
     File = lists:flatten([atom_to_list(Module), ".html"]),
     OutFile = filename:join([DocDir, File]),
     case cover:analyse_to_file(Module, OutFile, [html]) of
         {ok, _} ->
-            output_code_coverage(DocDir, T, [{File, Module} | Acc]);
+            output_code_coverage(BuildRef, DocDir, T, [{File, Module} | Acc]);
         {error, _} ->
-            ewl_talk:say("Unable to write coverage information for ~w", 
-                         [Module]),
-            output_code_coverage(DocDir, T, Acc)
+            eta_event:task_event(BuildRef, ?TASK, info,
+            {"Unable to write coverage information for ~w",
+             [Module]}),
+            output_code_coverage(BuildRef, DocDir, T, Acc)
     end;
-output_code_coverage(_DocDir, [], Acc) ->
+output_code_coverage(_, _DocDir, [], Acc) ->
     Acc.
 %%--------------------------------------------------------------------
 %% @spec run_module_tests(Modules) -> ok.
 %% @doc
 %%   Run tests for each module that has a test/0 function
-%% @end 
+%% @end
 %% @private
 %%--------------------------------------------------------------------
 run_module_tests([Module | T]) ->
-    ewl_talk:say("Running tests for ~w.", [Module]),
     eunit:test(Module),
     run_module_tests(T);
 run_module_tests([]) ->

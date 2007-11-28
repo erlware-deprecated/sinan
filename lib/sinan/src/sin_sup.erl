@@ -1,6 +1,6 @@
 %% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
 %%%-------------------------------------------------------------------
-%%% Copyright (c) 2006, 2007 Eric Merritt
+%%% Copyright (c) 2007 Eric Merritt
 %%%
 %%% Permission is hereby granted, free of charge, to any
 %%% person obtaining a copy of this software and associated
@@ -22,69 +22,60 @@
 %%% WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 %%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 %%% OTHER DEALINGS IN THE SOFTWARE.
-%%%---------------------------------------------------------------------------
-%%% @author Eric Merritt
+%%%-------------------------------------------------------------------
+%%% @author Eric Merritt <cyberlync@gmail.com>
 %%% @doc
-%%%   Deletes everything in the Build directory
+%%%  Supervisor for all of the sinan build tasks.
 %%% @end
-%%% Created : 11 Oct 2006 by Eric Merritt <cyberlync@gmail.com>
-%%%---------------------------------------------------------------------------
--module(sin_clean).
+%%% @copyright (C) 2007, Eric Merritt
+%%% Created : 18 Nov 2007 by Eric Merritt <cyberlync@gmail.com>
+%%%-------------------------------------------------------------------
+-module(sin_sup).
 
--behaviour(eta_gen_task).
-
--include("etask.hrl").
+-behaviour(supervisor).
 
 %% API
--export([start/0, do_task/2, clean/2]).
+-export([start_link/0]).
 
--define(TASK, clean).
--define(DEPS, []).
+%% Supervisor callbacks
+-export([init/1]).
 
-
-%%====================================================================
-%% API
-%%====================================================================
-%%--------------------------------------------------------------------
-%% @spec start() -> ok.
-%%
-%% @doc
-%% Starts the server
-%% @end
-%%--------------------------------------------------------------------
-start() ->
-    Desc = "Removes the build area and everything underneath",
-    TaskDesc = #task{name = ?TASK,
-                     task_impl = ?MODULE,
-                     deps = ?DEPS,
-                     desc = Desc,
-                     callable = true,
-                     opts = []},
-    eta_task:register_task(TaskDesc).
-
-%%--------------------------------------------------------------------
-%% @spec do_task(BuildRef, Args) -> ok
-%%
-%% @doc
-%%  dO the task defined in this module.
-%% @end
-%%--------------------------------------------------------------------
-do_task(BuildRef, Args) ->
-    clean(BuildRef, Args).
-
-%%--------------------------------------------------------------------
-%% @doc
-%%   Run the clean task.
-%%
-%% @spec clean() -> ok.
-%% @end
-%%--------------------------------------------------------------------
-clean(BuildRef, _) ->
-    eta_event:task_start(BuildRef, ?TASK, "cleaning build artifacts"),
-    BuildDir = fconf:get_value(BuildRef, "build.root"),
-    sin_utils:delete_dir(BuildDir),
-    eta_event:task_stop(BuildRef, ?TASK).
+-define(SERVER, ?MODULE).
 
 %%====================================================================
-%%% Internal functions
+%% API functions
+%%====================================================================
+%%--------------------------------------------------------------------
+%% @spec start_link() -> {ok,Pid} | ignore | {error,Error}.
+%%
+%% @doc
+%% Starts the supervisor
+%% @end
+%%--------------------------------------------------------------------
+start_link() ->
+    supervisor:start_link({local, ?SERVER}, ?MODULE, []).
+
+%%====================================================================
+%% Supervisor callbacks
+%%====================================================================
+%%--------------------------------------------------------------------
+%% @spec init(Args) -> {ok,  {SupFlags,  [ChildSpec]}} |
+%%                     ignore                          |
+%%                     {error, Reason}.
+%%
+%% @doc
+%%  Whenever a supervisor is started using
+%% supervisor:start_link/[2,3], this function is called by the new process
+%% to find out about restart strategy, maximum restart frequency and child
+%% specifications.
+%% @end
+%%--------------------------------------------------------------------
+init([]) ->
+    PrintGuard = {print_guard,{eta_event_guard,start_link,
+                               [sin_print_handler, []]},
+                  permanent,2000,worker,[eta_event_guard]},
+    {ok,{{one_for_one,0,1}, [PrintGuard]}}.
+
+%%====================================================================
+%% Internal functions
 %%====================================================================

@@ -1,56 +1,97 @@
+%% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
 %%%-------------------------------------------------------------------
 %%% Copyright (c) 2006, 2007 Eric Merritt
 %%%
-%%% Permission is hereby granted, free of charge, to any 
-%%% person obtaining a copy of this software and associated 
-%%% documentation files (the "Software"), to deal in the 
-%%% Software without restriction, including without limitation 
+%%% Permission is hereby granted, free of charge, to any
+%%% person obtaining a copy of this software and associated
+%%% documentation files (the "Software"), to deal in the
+%%% Software without restriction, including without limitation
 %%% the rights to use, copy, modify, merge, publish, distribute,
-%%% sublicense, and/or sell copies of the Software, and to permit 
-%%% persons to whom the Software is furnished to do so, subject to 
+%%% sublicense, and/or sell copies of the Software, and to permit
+%%% persons to whom the Software is furnished to do so, subject to
 %%% the following conditions:
 %%%
-%%% The above copyright notice and this permission notice shall 
+%%% The above copyright notice and this permission notice shall
 %%% be included in all copies or substantial portions of the Software.
 %%%
 %%% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-%%% EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES 
-%%% OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND 
-%%% NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
+%%% EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+%%% OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+%%% NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
 %%% HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 %%% WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-%%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR 
+%%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 %%% OTHER DEALINGS IN THE SOFTWARE.
 %%%---------------------------------------------------------------------------
 %%% @author Eric Merritt
 %%% @doc
 %%%   Builds up a distributable application (in the sense of a unix application,
 %%%   not an otp application). It looks for a top level bin and adds
-%%%   all of the apps to the system. Its a little stupid right now, but as 
+%%%   all of the apps to the system. Its a little stupid right now, but as
 %%%   I get a better understanding of my needs its usefulness will grow.
 %%% @end
 %%% @copyright 2007 Eric Merritt
 %%%---------------------------------------------------------------------------
 -module(sin_dist_builder).
 
+-behaviour(eta_gen_task).
+
+-include("etask.hrl").
+
 %% API
--export([dist/2]).
+-export([start/0, do_task/2, dist/2]).
+
+-define(TASK, dist).
+-define(DEPS, [release]).
+
 
 %%====================================================================
 %% API
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @doc 
+%% @spec start() -> ok
+%%
+%% @doc
+%% Starts the server
+%% @end
+%%--------------------------------------------------------------------
+start() ->
+    Desc = "Creates an tarball of the distribution including "
+        "release information. Check documentation for the "
+        "dist task for configuration information ",
+    TaskDesc = #task{name = ?TASK,
+                     task_impl = ?MODULE,
+                     deps = ?DEPS,
+                     desc = Desc,
+                     callable = true,
+                     opts = []},
+    eta_task:register_task(TaskDesc).
+
+%%--------------------------------------------------------------------
+%% @spec do_task(BuildRef, Args) -> ok
+%%
+%% @doc
+%%  dO the task defined in this module.
+%% @end
+%%--------------------------------------------------------------------
+do_task(BuildRef, Args) ->
+    dist(BuildRef, Args).
+
+
+%%--------------------------------------------------------------------
+%% @doc
 %%  Run the dist task.
 %% @spec dist() -> ok.
 %% @end
 %%--------------------------------------------------------------------
 dist(BuildRef, _) ->
+    eta_event:task_start(BuildRef, ?TASK),
     ProjectDir = fconf:get_value(BuildRef, "project.dir"),
     ProjectApps = fconf:get_value(BuildRef, "project.apps"),
     ProjectRepoApps = fconf:get_value(BuildRef, "project.repoapps"),
     Repo = fconf:get_value(BuildRef, "project.repository"),
-    make_tar(BuildRef, ProjectDir, ProjectApps, ProjectRepoApps, Repo).
+    make_tar(BuildRef, ProjectDir, ProjectApps, ProjectRepoApps, Repo),
+    eta_event:task_stop(BuildRef, ?TASK).
 
 
 %%====================================================================
@@ -59,8 +100,8 @@ dist(BuildRef, _) ->
 
 %%--------------------------------------------------------------------
 %% @spec make_tar(ProjectDir, ProjectApps, ProjectRepoApps, Repo) -> ok.
-%% 
-%% @doc 
+%%
+%% @doc
 %%  Go through and actually build up the tar file.
 %% @end
 %%--------------------------------------------------------------------
@@ -73,28 +114,29 @@ make_tar(BuildRef, ProjectDir, ProjectApps, ProjectRepoApps, Repo) ->
     AppDir = filename:join([BuildDir, "apps"]),
     List1 = gather_dirs(LibDir, Repo, ProjectRepoApps, []),
     List2 = gather_dirs(LibDir, AppDir, ProjectApps, List1),
-    List3 = List2 ++ copy_additional_dirs(BuildRef, ProjectName, ProjectDir) ++ 
+    List3 = List2 ++ copy_additional_dirs(BuildRef, ProjectName, ProjectDir) ++
         get_release_dirs(BuildRef, ProjectName, BuildDir),
-    create_tar_file(filename:join([TarDir, 
+    create_tar_file(BuildRef, filename:join([TarDir,
                                    lists:flatten([ProjectName, ".tar.gz"])]),
                                   List3).
 
 %%--------------------------------------------------------------------
 %% @spec create_tar_file(FileName, TarContents) -> ok.
-%% 
-%% @doc 
+%%
+%% @doc
 %%  Actually create the tar file and write in all of the contents.
 %% @end
 %%--------------------------------------------------------------------
-create_tar_file(FileName, TarContents) ->
+create_tar_file(BuildRef, FileName, TarContents) ->
     case erl_tar:open(FileName, [compressed, write]) of
         {error, _} ->
-            ewl_talk:say("Unable to open tar file ~s, unable to build "
-                         "distribution.", [FileName]),
+            eta_event:task_fault(BuildRef, ?TASK,
+                                 {"Unable to open tar file ~s, unable to build "
+                                  "distribution.", [FileName]}),
             throw(unable_to_build_dist);
         {ok, Tar} ->
             lists:foreach(fun({Name, NewName}) ->
-                                  erl_tar:add(Tar, Name, NewName, 
+                                  erl_tar:add(Tar, Name, NewName,
                                               [dereference])
                           end, TarContents),
             erl_tar:close(Tar)
@@ -102,13 +144,13 @@ create_tar_file(FileName, TarContents) ->
 
 %%--------------------------------------------------------------------
 %% @spec copy_additional_dirs(TopLevel, ProjectDir) -> ok.
-%% 
-%% @doc 
+%%
+%% @doc
 %%  Create addition file links for the system.
 %% @end
 %%--------------------------------------------------------------------
 copy_additional_dirs(BuildRef, TopLevel, ProjectDir) ->
-    case fconf:get_value(BuildRef, "dist.include_dirs") of 
+    case fconf:get_value(BuildRef, "dist.include_dirs") of
         undefined ->
             [];
         RequiredDirs ->
@@ -121,8 +163,8 @@ copy_additional_dirs(BuildRef, TopLevel, ProjectDir) ->
 
 %%--------------------------------------------------------------------
 %% @spec gather_local_dirs(LibDir, AppDir, DirList, Acc) -> TarablePairs.
-%% 
-%% @doc 
+%%
+%% @doc
 %%  Gather up theapplications and return a list of {DirName, InTarName}
 %%  pairs.
 %% @end
@@ -140,24 +182,26 @@ gather_dirs(_, _, [], Acc) ->
 
 %%--------------------------------------------------------------------
 %% @spec get_project_name() -> ProjectName.
-%% 
-%% @doc 
+%%
+%% @doc
 %%  Get the project name from the config.
 %% @end
 %%--------------------------------------------------------------------
 get_project_name(BuildRef) ->
     Version = case fconf:get_value(BuildRef, "project.vsn") of
                   undefined ->
-                      ewl_talk:say("No project version defined in build config"
-                                   " aborting!"),
+                      eta_event:task_fault(BuildRef, ?TASK,
+                                           "No project version defined in build config"
+                                           " aborting!"),
                       throw(no_project_version);
                   Vsn ->
                       Vsn
               end,
-    Name = case fconf:get_value(BuildRef, "project.name") of 
+    Name = case fconf:get_value(BuildRef, "project.name") of
                undefined ->
-                   ewl_talk:say("No project name defined in build config "
-                                "aborting!"),
+                   eta_event:task_fault(BuildRef, ?TASK,
+                                        "No project name defined in build config "
+                                        "aborting!"),
                    throw(no_project_name);
                Nm ->
                    Nm
@@ -166,34 +210,36 @@ get_project_name(BuildRef) ->
 
 
 %%--------------------------------------------------------------------
-%% @doc 
+%% @doc
 %%  Get the release information for the system.
-%%  
+%%
 %% @spec get_release_dirs(BuildDir) -> ok.
 %% @end
 %%--------------------------------------------------------------------
 get_release_dirs(BuildRef, TopLevel, BuildDir) ->
     Version = case fconf:get_value(BuildRef, "project.vsn") of
                   undefined ->
-                      ewl_talk:say("No project version defined in build config"
-                                   " aborting!"),
+                      eta_event:task_fault(BuildRef, ?TASK,
+                                           "No project version defined in build config"
+                                           " aborting!"),
                       throw(no_project_version);
                   Vsn ->
                       Vsn
               end,
-    Name = case fconf:get_value(BuildRef, "project.name") of 
+    Name = case fconf:get_value(BuildRef, "project.name") of
                undefined ->
-                   ewl_talk:say("No project name defined in build config "
-                                "aborting!"),
+                   eta_event:task_fault(BuildRef, ?TASK,
+                                        "No project name defined in build config "
+                                        "aborting!"),
                    throw(no_project_name);
                Nm ->
                    Nm
-           end,       
-    case fconf:get_value(BuildRef, "dist.include_release_info") of 
+           end,
+    case fconf:get_value(BuildRef, "dist.include_release_info") of
         Value when Value == true; Value == undefined ->
-            [{filename:join([BuildDir, "releases", Version, 
+            [{filename:join([BuildDir, "releases", Version,
                             lists:flatten([Name, ".boot"])]),
-              filename:join([TopLevel, "releases", Version, 
+              filename:join([TopLevel, "releases", Version,
                              lists:flatten([Name, ".boot"])])},
              {filename:join([BuildDir, "releases", Version,
                              lists:flatten([Name, ".script"])]),
@@ -206,5 +252,5 @@ get_release_dirs(BuildRef, TopLevel, BuildDir) ->
         _ ->
             []
     end.
-                       
-                                          
+
+

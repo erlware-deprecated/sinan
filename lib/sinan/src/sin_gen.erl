@@ -1,19 +1,79 @@
+%% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
+%%%%-------------------------------------------------------------------
+%%% Copyright (c) 2006, 2007 Eric Merritt
+%%%
+%%% Permission is hereby granted, free of charge, to any
+%%% person obtaining a copy of this software and associated
+%%% documentation files (the "Software"), to deal in the
+%%% Software without restriction, including without limitation
+%%% the rights to use, copy, modify, merge, publish, distribute,
+%%% sublicense, and/or sell copies of the Software, and to permit
+%%% persons to whom the Software is furnished to do so, subject to
+%%% the following conditions:
+%%%
+%%% The above copyright notice and this permission notice shall
+%%% be included in all copies or substantial portions of the Software.
+%%%
+%%% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+%%% EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+%%% OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+%%% NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+%%% HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+%%% WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+%%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+%%% OTHER DEALINGS IN THE SOFTWARE.
 %%%-------------------------------------------------------------------
 %%% @author Eric Merritt <cyberlync@gmail.com>
 %%% @doc
-%%%  Provides utitlities to generate an polar complient otp/erlang 
+%%%  Provides utitlities to generate an polar complient otp/erlang
 %%%  project
 %%% @end
 %%% @copyright 2006 Eric Merritt <cyberlync@gmail.com>
 %%%-------------------------------------------------------------------
--module(pjg_gen).
+-module(sin_gen).
+
+-behaviour(eta_gen_task).
+
+-include("etask.hrl").
 
 %% API
--export([gen/0]).
+-export([start/0, do_task/2, gen/2]).
+
+-define(TASK, gen).
+-define(DEPS, []).
 
 %%====================================================================
 %% API
 %%====================================================================
+%%--------------------------------------------------------------------
+%% @spec start() -> ok
+%%
+%% @doc
+%% Starts the server
+%% @end
+%%--------------------------------------------------------------------
+start() ->
+    Desc = "Generates a buildable default project layout ",
+    TaskDesc = #task{name = ?TASK,
+                     task_impl = ?MODULE,
+                     deps = ?DEPS,
+                     desc = Desc,
+                     callable = true,
+                     opts = []},
+    eta_task:register_task(TaskDesc).
+
+
+%%--------------------------------------------------------------------
+%% @spec do_task(BuildRef, Args) -> ok
+%%
+%% @doc
+%%  dO the task defined in this module.
+%% @end
+%%--------------------------------------------------------------------
+do_task(BuildRef, Args) ->
+    gen(BuildRef, Args).
+
+
 %%--------------------------------------------------------------------
 %% @spec gen() -> ok.
 %% @doc
@@ -21,9 +81,11 @@
 %%  in new project generation.
 %% @end
 %%--------------------------------------------------------------------
-gen() ->
+gen(BuildRef, _Args) ->
+    eta_event:task_start(BuildRef, ?TASK),
     {{Year, _, _}, {_, _, _}} = erlang:localtime(),
-    get_user_information([{year, integer_to_list(Year)}]).
+    get_user_information([{year, integer_to_list(Year)}]),
+    eta_event:task_stop(BuildRef, ?TASK).
 
 %%====================================================================
 %% Internal functions
@@ -42,11 +104,11 @@ all_done() ->
 %% @doc
 %%  Builds the build config dir in the root of the project.
 %% @end
-%%-------------------------------------------------------------------- 
+%%--------------------------------------------------------------------
 build_out_build_config(Env) ->
     ProjectDir = get_env(project_dir, Env),
     ConfName = filename:join([ProjectDir, "_build.cfg"]),
-    pjg_skel:build_config(Env, ConfName),
+    sin_skel:build_config(Env, ConfName),
     all_done().
 
 
@@ -90,7 +152,7 @@ build_out_otp(Env, AppSrc, App) ->
         true ->
             build_out_super(Env, AppSrc, App);
         false ->
-            pjg_skel:application(Env, FileName, App), 
+            sin_skel:application(Env, FileName, App),
             build_out_super(Env, AppSrc, App)
     end.
 
@@ -107,7 +169,7 @@ build_out_super(Env, AppSrc, App) ->
         true ->
             ok;
         false ->
-            pjg_skel:supervisor(Env, FileName, App), 
+            sin_skel:supervisor(Env, FileName, App),
             build_out_app_src(Env, App)
     end.
 
@@ -125,13 +187,13 @@ build_out_app_src(Env, App) ->
         true ->
             ok;
         false ->
-            pjg_skel:app_info(Env, FileName, App) 
+            sin_skel:app_info(Env, FileName, App)
     end.
 
 %%--------------------------------------------------------------------
 %% @spec build_out_skeleton(ProjDir, Apps) -> ok.
 %% @doc
-%%  Given the project directory builds out the various directories 
+%%  Given the project directory builds out the various directories
 %%  required for an application.
 %% @end
 %%--------------------------------------------------------------------
@@ -149,12 +211,12 @@ build_out_project(Env) ->
 %%--------------------------------------------------------------------
 %% @spec get_application_names() -> AppNames.
 %% @doc
-%%  Queries the user for a list of application names. The user 
+%%  Queries the user for a list of application names. The user
 %% can choose to skip this part.
 %% @end
 %%--------------------------------------------------------------------
 get_application_names(Env) ->
-    io:put_chars(["Please specify the names of the OTP apps", 
+    io:put_chars(["Please specify the names of the OTP apps",
                   " that belong to this project. One application to a",
                   " line. Finish with a blank line.\n"]),
     get_application_names(Env, trim(io:get_line('app> ')), []).
@@ -164,7 +226,7 @@ get_application_names(Env, [], Acc) ->
     build_out_project(Env2);
 get_application_names(Env, App, Acc) ->
     get_application_names(Env, trim(io:get_line('app> ')), [App | Acc]).
-    
+
 %%--------------------------------------------------------------------
 %% @spec get_new_project_name(Env) -> Env2.
 %% @doc
@@ -173,16 +235,16 @@ get_application_names(Env, App, Acc) ->
 %%--------------------------------------------------------------------
 get_new_project_name(Env) ->
     {ok, CDir} = file:get_cwd(),
-    io:put_chars(["Please specify name of your project \n"]), 
+    io:put_chars(["Please specify name of your project \n"]),
     Name = trim(io:get_line('project name> ')),
     Dir = filename:join(CDir, Name),
-    io:put_chars(["Please specify version of your project \n"]), 
+    io:put_chars(["Please specify version of your project \n"]),
     Version = trim(io:get_line('project version> ')),
-    Env2 = [{project_version, Version}, 
-            {project_name, Name}, 
+    Env2 = [{project_version, Version},
+            {project_name, Name},
             {project_dir, Dir} | Env],
     get_application_names(Env2).
-    
+
 
 
 %%--------------------------------------------------------------------
@@ -192,7 +254,7 @@ get_new_project_name(Env) ->
 %% @end
 %%--------------------------------------------------------------------
 get_user_information(Env) ->
-    io:put_chars("Please specify your name \n"), 
+    io:put_chars("Please specify your name \n"),
     Name = trim(io:get_line('your name> ')),
     io:put_chars("Please specify your email address \n"),
     Address = trim(io:get_line('your email> ')),
@@ -221,7 +283,7 @@ get_repositories(Repo, Acc) ->
 %%--------------------------------------------------------------------
 %% @spec trim(String::string()) -> NewString::string().
 %% @doc
-%% Helper function that removes whitespace from both sides of the 
+%% Helper function that removes whitespace from both sides of the
 %% string.
 %% @end
 %%--------------------------------------------------------------------
@@ -255,7 +317,7 @@ make_dir(DirName) ->
 %%--------------------------------------------------------------------
 %% @spec is_made(DirName, Output) -> ok.
 %% @doc
-%% Helper function that makes sure a directory is made by testing 
+%% Helper function that makes sure a directory is made by testing
 %% the output of file:make_dir().
 %% @end
 %%--------------------------------------------------------------------
@@ -266,8 +328,8 @@ is_made(DirName, ok) ->
 
 %%--------------------------------------------------------------------
 %% @spec get_env(Name, Env) -> Value.
-%% 
-%% @doc 
+%%
+%% @doc
 %%  Get the value from the environment.
 %% @end
 %%--------------------------------------------------------------------

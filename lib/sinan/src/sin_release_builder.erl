@@ -1,25 +1,26 @@
+%% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
 %%%-------------------------------------------------------------------
 %%% Copyright (c) 2006, 2007 Eric Merritt
 %%%
-%%% Permission is hereby granted, free of charge, to any 
-%%% person obtaining a copy of this software and associated 
-%%% documentation files (the "Software"), to deal in the 
-%%% Software without restriction, including without limitation 
+%%% Permission is hereby granted, free of charge, to any
+%%% person obtaining a copy of this software and associated
+%%% documentation files (the "Software"), to deal in the
+%%% Software without restriction, including without limitation
 %%% the rights to use, copy, modify, merge, publish, distribute,
-%%% sublicense, and/or sell copies of the Software, and to permit 
-%%% persons to whom the Software is furnished to do so, subject to 
+%%% sublicense, and/or sell copies of the Software, and to permit
+%%% persons to whom the Software is furnished to do so, subject to
 %%% the following conditions:
 %%%
-%%% The above copyright notice and this permission notice shall 
+%%% The above copyright notice and this permission notice shall
 %%% be included in all copies or substantial portions of the Software.
 %%%
 %%% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-%%% EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES 
-%%% OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND 
-%%% NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
+%%% EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+%%% OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+%%% NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
 %%% HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 %%% WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-%%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR 
+%%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 %%% OTHER DEALINGS IN THE SOFTWARE.
 %%%---------------------------------------------------------------------------
 %%% @author Eric Merritt
@@ -30,28 +31,66 @@
 %%%---------------------------------------------------------------------------
 -module(sin_release_builder).
 
+-behaviour(eta_gen_task).
+
+-include("etask.hrl").
 
 %% API
--export([release/2]).
+-export([start/0, do_task/2, release/2]).
 
+-define(TASK, release).
+-define(DEPS, [build]).
 
 %%====================================================================
 %% API
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @doc 
+%% @spec start() -> ok
+%%
+%% @doc
+%% Starts the server
+%% @end
+%%--------------------------------------------------------------------
+start() ->
+    Desc = "Creates the *.rel, *.boot and *.script into the "
+        "<build-area>/realeases/<vsn> directory. It also "
+        "builds up a release tar bal into the "
+        "<build-area>/tar/ directory",
+    TaskDesc = #task{name = ?TASK,
+                     task_impl = ?MODULE,
+                     deps = ?DEPS,
+                     desc = Desc,
+                     callable = true,
+                     opts = []},
+    eta_task:register_task(TaskDesc).
+
+
+%%--------------------------------------------------------------------
+%% @spec do_task(BuildRef, Args) -> ok
+%%
+%% @doc
+%%  dO the task defined in this module.
+%% @end
+%%--------------------------------------------------------------------
+do_task(BuildRef, Args) ->
+    release(BuildRef, Args).
+
+%%--------------------------------------------------------------------
+%% @doc
 %%  Run the release tasks.
 %% @spec release(BuildRef) -> ok.
 %% @end
 %%--------------------------------------------------------------------
 release(BuildRef, _) ->
+    eta_event:task_start(BuildRef, ?TASK),
     BuildDir = fconf:get_value(BuildRef, "build.dir"),
     Name = project_name(BuildRef),
     Version = project_version(BuildRef),
     ReleaseInfo = generate_rel_file(BuildRef, BuildDir, Name, Version),
     fconf:store(BuildRef, "project.release_info", ReleaseInfo),
     copy_or_generate_sys_config_file(BuildRef, BuildDir, Version),
-    make_boot_script(BuildRef, ReleaseInfo).
+    make_boot_script(BuildRef, ReleaseInfo),
+    eta_event:task_stop(BuildRef, ?TASK).
 
 
 
@@ -61,18 +100,18 @@ release(BuildRef, _) ->
 %%--------------------------------------------------------------------
 %% @spec generate_rel_file(BuildRef, BuildDir, Name, Version) ->
 %% Release.
-%% @doc 
+%% @doc
 %%  Generate release information from info available in the project.
 %% @end
 %% @private
 %%--------------------------------------------------------------------
 generate_rel_file(BuildRef, BuildDir, Name, Version) ->
     Erts = get_erts_info(),
-    Deps = process_deps(BuildRef, fconf:get_value(BuildRef, 
+    Deps = process_deps(BuildRef, fconf:get_value(BuildRef,
                                                   "project.deps"), []),
     Release = {release, {Name, Version}, {erts, Erts},
                Deps},
-    {save_release(BuildDir, Name, Version, Release),
+    {save_release(BuildRef, BuildDir, Name, Version, Release),
      Release}.
 
 
@@ -89,8 +128,9 @@ generate_rel_file(BuildRef, BuildDir, Name, Version) ->
 project_version(BuildRef) ->
     case fconf:get_value(BuildRef, "project.vsn") of
         undefined ->
-            ewl_talk:say("No project version defined in build config; "
-                         "aborting!"),
+            eta_event:task_fault(BuildRef, ?TASK,
+                                 "No project version defined in build config; "
+                                 "aborting!"),
             throw(no_project_version);
         Vsn ->
             Vsn
@@ -108,8 +148,9 @@ project_version(BuildRef) ->
 project_name(BuildRef) ->
     case fconf:get_value(BuildRef, "project.name") of
         undefined ->
-            ewl_talk:say("No project name defined in build config; "
-                         "aborting!"),
+            eta_event:task_fault(BuildRef, ?TASK,
+                                 "No project name defined in build config; "
+                                 "aborting!"),
             throw(no_project_name);
         Nm ->
             Nm
@@ -117,8 +158,8 @@ project_name(BuildRef) ->
 
 %%--------------------------------------------------------------------
 %% @spec process_deps(Deps, Acc) -> AppList.
-%% 
-%% @doc 
+%%
+%% @doc
 %%  Process the dependencies into a format useful for the rel depends
 %% area.
 %% @end
@@ -126,19 +167,19 @@ project_name(BuildRef) ->
 %%--------------------------------------------------------------------
 process_deps(BuildRef, [{App, Vsn} | T], Acc) ->
     case {fconf:get_value(BuildRef, {path, ["project", "release", App, "type"]}),
-          fconf:get_value(BuildRef, {path, ["project", "release", App, 
+          fconf:get_value(BuildRef, {path, ["project", "release", App,
                                          "include_apps"]})} of
         {undefined, undefined} ->
             process_deps(BuildRef, T, [{App, Vsn} | Acc]);
         {Type, undefined} ->
             process_deps(BuildRef, T, [{App, Vsn, list_to_atom(Type)} | Acc]);
         {undefined, IncList} ->
-            process_deps(BuildRef, T, 
+            process_deps(BuildRef, T,
                          [{App, Vsn, process_inc_list(IncList, [])} | Acc]);
         {Type, IncList} ->
             process_deps(BuildRef,
-                         T, [{App, Vsn, list_to_atom(Type), 
-                              process_inc_list(IncList, [])} | Acc]) 
+                         T, [{App, Vsn, list_to_atom(Type),
+                              process_inc_list(IncList, [])} | Acc])
     end;
 process_deps(_BuildRef, [], Acc) ->
     Acc.
@@ -146,8 +187,8 @@ process_deps(_BuildRef, [], Acc) ->
 
 %%--------------------------------------------------------------------
 %% @spec process_inc_list(IncList, Acc) -> NewList.
-%% 
-%% @doc 
+%%
+%% @doc
 %%  Process the optional include list into a list of atoms.
 %% @end
 %%--------------------------------------------------------------------
@@ -158,23 +199,24 @@ process_inc_list([], Acc) ->
 
 %%--------------------------------------------------------------------
 %% @spec save_release(BuildDir, Name, Version, RelInfo) -> Location.
-%% 
-%% @doc 
+%%
+%% @doc
 %%  Save the release terms to a releases file for later use by
 %%  the system.
 %% @end
 %% @private
 %%--------------------------------------------------------------------
-save_release(BuildDir, Name, Version, RelInfo) ->
+save_release(BuildRef, BuildDir, Name, Version, RelInfo) ->
     Location = filename:join([BuildDir, "releases", Version]),
     filelib:ensure_dir(filename:join([Location, "tmp"])),
     Relbase = filename:join([Location, Name]),
     Relf = lists:flatten([Relbase, ".rel"]),
     case file:open(Relf, write) of
         {error, _} ->
-            ewl_talk:say("Couldn't open ~s for writing. Unable to "
-                         "write release information",
-                         [Relf]),
+            eta_event:task_fault(BuildRef, ?TASK,
+                                 {"Couldn't open ~s for writing. Unable to "
+                                  "write release information",
+                                  [Relf]}),
             throw(unable_to_write_rel_info);
         {ok, IoDev} ->
             io:format(IoDev, "~p.", [RelInfo]),
@@ -184,8 +226,8 @@ save_release(BuildDir, Name, Version, RelInfo) ->
 
 %%--------------------------------------------------------------------
 %% @spec get_erts_info() -> ErtsVersion.
-%% 
-%% @doc  
+%%
+%% @doc
 %%  Get the system erts version.
 %% @end
 %% @private
@@ -201,7 +243,7 @@ get_erts_info() ->
 %% @private
 %%-------------------------------------------------------------------
 make_boot_script(BuildRef, {{Location, File}, {release, {Name, _}, _, _}}) ->
-    Options = [{path, [Location | get_code_paths(BuildRef)]}, 
+    Options = [{path, [Location | get_code_paths(BuildRef)]},
                no_module_tests],
     systools_make:make_script(Name, File, [{outdir, Location} | Options]),
     make_tar(BuildRef, File, Options).
@@ -209,8 +251,8 @@ make_boot_script(BuildRef, {{Location, File}, {release, {Name, _}, _, _}}) ->
 
 %%--------------------------------------------------------------------
 %% @spec make_tar(File, Options) -> ok.
-%% 
-%% @doc 
+%%
+%% @doc
 %%  Make a tar file from the release.
 %% @end
 %%--------------------------------------------------------------------
@@ -270,8 +312,8 @@ generate_sys_config_file(RelSysConfPath) ->
 
 %%--------------------------------------------------------------------
 %% @spec get_code_paths() -> Paths.
-%% 
-%% @doc 
+%%
+%% @doc
 %%  Generates the correct set of code paths for the system.
 %% @end
 %% @private
@@ -281,9 +323,9 @@ get_code_paths(BuildRef) ->
     ProjPaths = lists:merge(
                   lists:map(
                     fun({App, _, _}) ->
-                            fconf:get_value(BuildRef, 
-                                            {path, 
-                                             ["apps", atom_to_list(App), 
+                            fconf:get_value(BuildRef,
+                                            {path,
+                                             ["apps", atom_to_list(App),
                                               "code_paths"]})
                     end, ProjApps)),
     RepoDir = fconf:get_value(BuildRef, "project.repository"),

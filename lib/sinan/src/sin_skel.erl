@@ -1,13 +1,14 @@
+%% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
 %%%-------------------------------------------------------------------
-%%% @author Eric Merritt 
+%%% @author Eric Merritt
 %%% @doc
 %%% Provides skeletons for application generation
 %%% @end
 %%%-------------------------------------------------------------------
--module(pjg_skel).
+-module(sin_skel).
 
 %%% API
--export([application/3, supervisor/3, 
+-export([application/3, supervisor/3,
          app_info/3, build_config/2]).
 
 %-include("eunit.hrl").
@@ -32,7 +33,7 @@ application(Env, FileName, AppName) ->
 %%--------------------------------------------------------------------
 supervisor(Env, FileName, AppName) ->
     write_template("supervisor", [{app_name, AppName} | Env], FileName).
-    
+
 
 %%--------------------------------------------------------------------
 %% @spec app_info(Env, FileName, AppName) -> ok.
@@ -46,7 +47,7 @@ app_info(Env, FileName, AppName) ->
 %%--------------------------------------------------------------------
 %% @spec build_config(Env, FileName) -> ok.
 %% @doc
-%%  Writes the build_config to the specified library with 
+%%  Writes the build_config to the specified library with
 %%  the specified repo.
 %% @end
 %%--------------------------------------------------------------------
@@ -59,8 +60,8 @@ build_config(Env, FileName) ->
 %%====================================================================
 %%--------------------------------------------------------------------
 %% @spec write_template(Type, Env, FileName) -> ok.
-%% 
-%% @doc 
+%%
+%% @doc
 %%  Write the template with the Env data to FileName.
 %% @end
 %%--------------------------------------------------------------------
@@ -71,8 +72,8 @@ write_template(Type, Env, FileName) ->
 
 %%--------------------------------------------------------------------
 %% @spec compile_template(Type) -> Template.
-%% 
-%% @doc 
+%%
+%% @doc
 %%  Compile a template for the specified type.
 %% @end
 %%--------------------------------------------------------------------
@@ -84,7 +85,7 @@ compile_template(Type) ->
             exit(unable_to_compile_template_file);
         {ok, Template} ->
             Template
-    end.    
+    end.
 
 %%%====================================================================
 %%% tests

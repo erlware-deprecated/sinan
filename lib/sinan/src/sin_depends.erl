@@ -1,46 +1,84 @@
+%% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
 %%%-------------------------------------------------------------------
 %%% Copyright (c) 2006, 2007 Eric Merritt
 %%%
-%%% Permission is hereby granted, free of charge, to any 
-%%% person obtaining a copy of this software and associated 
-%%% documentation files (the "Software"), to deal in the 
-%%% Software without restriction, including without limitation 
+%%% Permission is hereby granted, free of charge, to any
+%%% person obtaining a copy of this software and associated
+%%% documentation files (the "Software"), to deal in the
+%%% Software without restriction, including without limitation
 %%% the rights to use, copy, modify, merge, publish, distribute,
-%%% sublicense, and/or sell copies of the Software, and to permit 
-%%% persons to whom the Software is furnished to do so, subject to 
+%%% sublicense, and/or sell copies of the Software, and to permit
+%%% persons to whom the Software is furnished to do so, subject to
 %%% the following conditions:
 %%%
-%%% The above copyright notice and this permission notice shall 
+%%% The above copyright notice and this permission notice shall
 %%% be included in all copies or substantial portions of the Software.
 %%%
 %%% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-%%% EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES 
-%%% OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND 
-%%% NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
+%%% EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+%%% OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+%%% NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
 %%% HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 %%% WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-%%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR 
+%%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 %%% OTHER DEALINGS IN THE SOFTWARE.
 %%%---------------------------------------------------------------------------
 %%% @author Eric Merritt
 %%% @doc
-%%%  Checks the dependencies in the system. Pulls down latest dependencies if 
+%%%  Checks the dependencies in the system. Pulls down latest dependencies if
 %%% required.
 %%% @end
 %%% @copyright 2006
 %%%---------------------------------------------------------------------------
 -module(sin_depends).
 
+-behaviour(eta_gen_task).
+
+-include("etask.hrl").
+
 %% API
--export([depends/2]).
+-export([start/0, do_task/2, depends/2]).
+
+-define(TASK, depends).
+-define(DEPS, [discover]).
 
 %%====================================================================
 %% API
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @doc 
+%% @spec start() -> ok.
+%%
+%% @doc
+%% Starts the server
+%% @end
+%%--------------------------------------------------------------------
+start() ->
+    Desc = "Analyzes all of the dependencies in the project "
+        "and pulls down those that arn't curently available "
+        "locally",
+    TaskDesc = #task{name = ?TASK,
+                     task_impl = ?MODULE,
+                     deps = ?DEPS,
+                     desc = Desc,
+                     callable = true,
+                     opts = []},
+    eta_task:register_task(TaskDesc).
+
+
+%%--------------------------------------------------------------------
+%% @spec do_task(BuildRef, Args) -> ok
+%%
+%% @doc
+%%  dO the task defined in this module.
+%% @end
+%%--------------------------------------------------------------------
+do_task(BuildRef, Args) ->
+    depends(BuildRef, Args).
+
+%%--------------------------------------------------------------------
+%% @doc
 %%  Run the depends task.
-%% 
+%%
 %% @spec depends() -> ok.
 %% @end
 %%--------------------------------------------------------------------
@@ -49,33 +87,29 @@ depends(BuildRef, _) ->
     fconf:store(BuildRef, "project.apps", ProjectApps),
     Repos = fconf:get_value(BuildRef, "repositories"),
     case catch ewr_depends:
-               check_project_dependencies(Repos, 
+               check_project_dependencies(Repos,
                                           ProjectApps,
-                                          get_supplimental(BuildRef)) of 
+                                          get_supplimental(BuildRef)) of
                {dependency_resolution_error, Reason} ->
-                 ewl_talk:say(Reason),
-                 throw(dependency_issue);
+                 ?ETA_RAISE_D(dependency_issue, Reason);
                {error, Reason} ->
-                 ewl_talk:say(Reason),
-                 throw(dependency_issue);
+                 ?ETA_RAISE_D(dependency_issue, Reason);
                {'EXIT', Reason} ->
-                 ewl_talk:say(io_lib:format("'EXIT': ~p~n", [Reason])),
-                 throw(dependency_issue);
+                 ?ETA_RAISE_DA(dependency_issue,
+                               "'EXIT': ~p~n", [Reason]);
                AllDeps ->
                  fconf:store(BuildRef, "project.deps", AllDeps),
                  sin_repo_fetcher:fetch(BuildRef, ProjectApps, AllDeps),
                  save_deps(BuildRef, AllDeps),
                  update_sigs(BuildRef)
-            
+
          end.
-
-
 
 %%====================================================================
 %% Internal functions
-%%==================================================================== 
+%%====================================================================
 %%--------------------------------------------------------------------
-%% @doc 
+%% @doc
 %%  Add the latest version of eunit to the dependency list.
 %% @end
 %% @private
@@ -92,8 +126,8 @@ get_supplimental(BuildRef) ->
 
 %%--------------------------------------------------------------------
 %% @spec save_deps(Deps) -> ok
-%% 
-%% @doc 
+%%
+%% @doc
 %%  Saves the list of dependencies for later use.
 %% @end
 %% @private
@@ -104,10 +138,11 @@ save_deps(BuildRef, Deps) ->
     Depsf = filename:join([BuildDir, "info", "deps"]),
     case file:open(Depsf, write) of
         {error, _} ->
-            ewl_talk:say("Couldn't open ~s for writing. Unable to "
-                         "write dependency information",
-                         [Depsf]),
-            throw(unable_to_write_dep_info);
+            ?ETA_RAISE_DA(unable_to_write_dep_info,
+                          "Couldn't open ~s for writing. Unable to "
+                          "write dependency information",
+                          [Depsf]);
+
         {ok, IoDev} ->
             io:format(IoDev, "~p.", [Deps]),
             file:close(IoDev)
@@ -116,8 +151,8 @@ save_deps(BuildRef, Deps) ->
 
 %%--------------------------------------------------------------------
 %% @spec save_repo_apps(BuildDir) -> ok.
-%% 
-%% @doc 
+%%
+%% @doc
 %%  Saves the list of repo apps to info.
 %% @end
 %%--------------------------------------------------------------------
@@ -126,10 +161,10 @@ save_repo_apps(BuildRef, BuildDir) ->
     Repsf = filename:join([BuildDir, "info", "repoapps"]),
     case file:open(Repsf, write) of
         {error, _} ->
-            ewl_talk:say("Couldn't open ~s for writing. Unable to "
-                         "write dependency information",
-                         [Repsf]),
-            throw(unable_to_write_dep_info);
+            ?ETA_RAISE_DA(unable_to_write_dep_info,
+                          "Couldn't open ~s for writing. Unable to "
+                          "write dependency information",
+                          [Repsf]);
         {ok, IoDev} ->
             io:format(IoDev, "~p.", [Apps]),
             file:close(IoDev)
@@ -144,20 +179,20 @@ save_repo_apps(BuildRef, BuildDir) ->
 %% @private
 %%-------------------------------------------------------------------
 gather_project_apps(BuildRef) ->
-    gather_project_apps(BuildRef, 
+    gather_project_apps(BuildRef,
                         fconf:get_value(BuildRef, "project.applist"), []).
 
 gather_project_apps(BuildRef, [AppName | T], Acc) ->
     Vsn = fconf:get_value(BuildRef, {path, ["apps", AppName, "vsn"]}),
     Name = fconf:get_value(BuildRef, {path, ["apps", AppName, "name"]}),
-    OpenDeps = fconf:get_value(BuildRef, {path, 
-                                       ["apps", AppName, 
+    OpenDeps = fconf:get_value(BuildRef, {path,
+                                       ["apps", AppName,
                                         "applications"]}),
     IncludedDeps = fconf:get_value(BuildRef, {path,
                                            ["apps", AppName,
                                             "included_applications"]}),
 
-    VersionedDeps = fconf:get_value(BuildRef, {path, 
+    VersionedDeps = fconf:get_value(BuildRef, {path,
                                           ["apps", AppName,
                                            "versioned_dependencies"]}),
     NDeps = {merge(OpenDeps, IncludedDeps), VersionedDeps},
@@ -170,7 +205,7 @@ gather_project_apps(_BuildRef, [], Acc) ->
 
 
 %%--------------------------------------------------------------------
-%% @doc 
+%% @doc
 %%   Merge the two types of deps removing duplicates.
 %% @spec merge(OpenDeps, IncludedDeps) -> MergedList.
 %% @end
@@ -182,21 +217,21 @@ merge(OpenDeps, IncludedDeps) ->
 
 %%--------------------------------------------------------------------
 %% @spec update_sigs() -> ok
-%% 
-%% @doc 
+%%
+%% @doc
 %%  Update the sigs for all of the 'verifiable' apps.
 %% @end
 %% @private
 %%--------------------------------------------------------------------
 update_sigs(BuildRef) ->
     BuildDir = fconf:get_value(BuildRef, "build.dir"),
-    update_app_sigs(BuildRef, BuildDir, 
+    update_app_sigs(BuildRef, BuildDir,
                     fconf:get_value(BuildRef, "project.applist")).
 
 %%--------------------------------------------------------------------
 %% @spec update_app_sigs(BuildDir, AppList) -> ok
-%% 
-%% @doc 
+%%
+%% @doc
 %%  Update the signatures for each of the *.app files in the AppList.
 %% @end
 %% @private
