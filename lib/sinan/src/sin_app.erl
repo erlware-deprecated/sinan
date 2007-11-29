@@ -37,6 +37,9 @@
 %% Application callbacks
 -export([start/2, stop/1, shell_start/0]).
 
+-define(MAX_FILES, 1).
+-define(MAX_LOG_SIZE, 1048576).
+
 %%====================================================================
 %% API
 %%====================================================================
@@ -84,6 +87,7 @@ shell_start() ->
 %%--------------------------------------------------------------------
 start(_Type, _StartArgs) ->
     register_tasks(),
+    register_loggers(),
     case sin_sup:start_link() of
         {ok, Pid} ->
             {ok, Pid};
@@ -106,6 +110,14 @@ stop(_State) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
+%%--------------------------------------------------------------------
+%% @doc
+%%   Register all of the sinan tasks with the etask task system. In
+%%   this case each task knows how to register itself. Let
+%%   the tasking system worry about persistance.
+%% @spec register_tasks() -> ok
+%% @end
+%%--------------------------------------------------------------------
 register_tasks() ->
     sin_analyze:start(),
     sin_edoc:start(),
@@ -121,3 +133,15 @@ register_tasks() ->
     sin_discover:start(),
     sin_release_builder:start(),
     sin_dist_builder:start().
+
+%%--------------------------------------------------------------------
+%% @doc
+%%  Setup the global sinan logger since non-exist by default.
+%% @spec register_loggers() -> ok
+%% @end
+%%--------------------------------------------------------------------
+register_loggers() ->
+    %% Register a handler for the system.
+    LogDir = filename:join([os:getenv("HOME"), ".sinan", "logs"]),
+    gen_event:add_handler(error_logger, log_mf_h,
+                          [LogDir, ?MAX_LOG_SIZE, ?MAX_FILES]).
