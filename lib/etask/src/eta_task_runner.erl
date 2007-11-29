@@ -100,8 +100,8 @@ do_tasks(Task, Args) ->
     _:problem ->
         eta_event:run_fault(RunRef, "Task failed");
     _:Error ->
-        eta_event:run_fault(RunRef, 
-                            {"Error : ~p, Stacktrace : \n ~p", 
+        eta_event:run_fault(RunRef,
+                            {"Error : ~p, Stacktrace : \n ~p",
                              [Error, erlang:get_stacktrace()]})
     after
         eta_event:run_stop(RunRef)
@@ -144,7 +144,7 @@ run_tasks(RunRef, [Task | RestTasks], Args)  ->
             throw(problem);
         _:{'EXIT', {undef, _}} ->
             eta_event:task_fault(RunRef, Task, "Undefined implementation"),
-            throw(problem);       
+            throw(problem);
         _:{'EXIT', Reason} ->
             eta_event:task_fault(RunRef, Task, {"~p", [Reason]}),
             throw(problem);
@@ -156,7 +156,7 @@ run_tasks(_, [], _) ->
     ok.
 
 %%--------------------------------------------------------------------
-%% @doc 
+%% @doc
 %%  Apply the task. If its a fun, call the fun. If its an atom call
 %%  its do_task function.
 %% @spec apply_task(Task, RunRef, Args) -> Result
@@ -169,8 +169,9 @@ apply_task(Task, RunRef, Args) when is_atom(Task) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%%  Setup the run.
-%% @spec setup_run() -> ok.
+%%   Does all of the work to setup a run. This includes (at the very
+%%   least) generating a unique id for this 'run'.
+%% @spec setup_run() -> UniqueBuildId.
 %% @end
 %%--------------------------------------------------------------------
 setup_run() ->
