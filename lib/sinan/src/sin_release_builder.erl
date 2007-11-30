@@ -27,7 +27,7 @@
 %%% @doc
 %%%   Builds the *.script and *.boot from the project rel file.
 %%% @end
-%%% @copyright 2006 Eric Merritt
+%%% @copyright (C) 2007, Erlware
 %%%---------------------------------------------------------------------------
 -module(sin_release_builder).
 

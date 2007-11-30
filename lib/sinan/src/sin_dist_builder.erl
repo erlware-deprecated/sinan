@@ -30,7 +30,7 @@
 %%%   all of the apps to the system. Its a little stupid right now, but as
 %%%   I get a better understanding of my needs its usefulness will grow.
 %%% @end
-%%% @copyright 2007 Eric Merritt
+%%% @copyright (C) 2007, Erlware
 %%%---------------------------------------------------------------------------
 -module(sin_dist_builder).
 

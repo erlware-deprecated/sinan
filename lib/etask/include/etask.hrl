@@ -1,5 +1,5 @@
 %%%-------------------------------------------------------------------
-%%% Copyright (c) 2007 Eric Merritt
+%%% Copyright (c) 2007 Erlware
 %%%
 %%% Permission is hereby granted, free of charge, to any
 %%% person obtaining a copy of this software and associated
@@ -22,12 +22,11 @@
 %%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 %%% OTHER DEALINGS IN THE SOFTWARE.
 %%%---------------------------------------------------------------------------
-%%%---------------------------------------------------------------------------
 %%% @author Eric Merritt
 %%% @doc
 %%%   Provides the task definition for the system.
 %%% @end
-%%% @copyright 2007
+%%% @copyright 2007 Erlware
 %%%---------------------------------------------------------------------------
 
 -define(ETA_RAISE(Problem), throw({eta_excep, Problem})).

@@ -1,6 +1,6 @@
 %% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
 %%%-------------------------------------------------------------------
-%%% Copyright (c) 2006, 2007 Eric Merritt
+%%% Copyright (c) 2006, 2007 Erlware
 %%%
 %%% Permission is hereby granted, free of charge, to any
 %%% person obtaining a copy of this software and associated
@@ -29,7 +29,7 @@
 %%%  generated. If they have not it asks the user if he wants to run them.
 %%%  If the answer is affermative then he runs depends. If not he errors out.
 %%% @end
-%%% @copyright 2006
+%%% @copyright (C) 2007, Erlware
 %%%---------------------------------------------------------------------------
 -module(sin_depends_check).
 

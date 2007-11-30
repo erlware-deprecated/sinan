@@ -27,7 +27,7 @@
 %%% @doc
 %%%   Describes the extant tasks.
 %%% @end
-%%% @copyright 2007 Eric Merritt
+%%% @copyright (C) 2007, Erlware
 %%%---------------------------------------------------------------------------
 -module(sin_help).
 

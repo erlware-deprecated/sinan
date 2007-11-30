@@ -28,7 +28,7 @@
 %%%  Provides utitlities to generate an polar complient otp/erlang
 %%%  project
 %%% @end
-%%% @copyright 2006 Eric Merritt <cyberlync@gmail.com>
+%%% @copyright (C) 2007, Erlware
 %%%-------------------------------------------------------------------
 -module(sin_gen).
 

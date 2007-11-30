@@ -28,6 +28,7 @@
 %%%  Supports configuration aspects of the build system. Allows
 %%%  applications to query aspects of the data.
 %%% @end
+%%% @copyright (C) 2007, Erlware
 %%%----------------------------------------------------------------------------
 -module(sin_parse_handle).
 

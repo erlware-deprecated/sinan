@@ -1,5 +1,5 @@
 %%%-------------------------------------------------------------------
-%%% Copyright (c) 2006, 2007 Eric Merritt
+%%% Copyright (c) 2006, 2007 Erlware
 %%%
 %%% Permission is hereby granted, free of charge, to any
 %%% person obtaining a copy of this software and associated
@@ -26,7 +26,7 @@
 %%% @doc
 %%%   Task runner for the system.
 %%% @end
-%%% @copyright 2006 Eric Merritt <cyberlync@gmail.com>
+%%% @copyright 2006 Erlware
 %%%---------------------------------------------------------------------------
 -module(eta_engine).
 
@@ -56,7 +56,7 @@ start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE,
                           [], []).
 %%--------------------------------------------------------------------
-%% @doc 
+%% @doc
 %%  Run a task chain
 %% @spec run(Args) -> ok
 %% @end
@@ -65,7 +65,7 @@ run(Args) ->
     gen_server:call(?SERVER, {run, Args}).
 
 %%--------------------------------------------------------------------
-%% @doc 
+%% @doc
 %%  Run the task with ards.
 %% @spec run(Task, Args) -> ok
 %% @end

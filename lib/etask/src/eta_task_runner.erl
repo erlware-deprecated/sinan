@@ -1,5 +1,5 @@
 %%%-------------------------------------------------------------------
-%%% Copyright (c) 2006, 2007 Eric Merritt
+%%% Copyright (c) 2006, 2007 Erlware
 %%%
 %%% Permission is hereby granted, free of charge, to any
 %%% person obtaining a copy of this software and associated
@@ -26,7 +26,7 @@
 %%% @doc
 %%%   The async task runner for the sinan engine
 %%% @end
-%%% @copyright 2006 Eric Merritt <cyberlync@gmail.com>
+%%% @copyright 2006 Erlware
 %%%---------------------------------------------------------------------------
 -module(eta_task_runner).
 

@@ -1,34 +1,34 @@
 %% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
 %%%-------------------------------------------------------------------
-%%% Copyright (c) 2006, 2007 Eric Merritt
+%%% Copyright (c) 2006, 2007 Erlware
 %%%
-%%% Permission is hereby granted, free of charge, to any 
-%%% person obtaining a copy of this software and associated 
-%%% documentation files (the "Software"), to deal in the 
-%%% Software without restriction, including without limitation 
+%%% Permission is hereby granted, free of charge, to any
+%%% person obtaining a copy of this software and associated
+%%% documentation files (the "Software"), to deal in the
+%%% Software without restriction, including without limitation
 %%% the rights to use, copy, modify, merge, publish, distribute,
-%%% sublicense, and/or sell copies of the Software, and to permit 
-%%% persons to whom the Software is furnished to do so, subject to 
+%%% sublicense, and/or sell copies of the Software, and to permit
+%%% persons to whom the Software is furnished to do so, subject to
 %%% the following conditions:
 %%%
-%%% The above copyright notice and this permission notice shall 
+%%% The above copyright notice and this permission notice shall
 %%% be included in all copies or substantial portions of the Software.
 %%%
 %%% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-%%% EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES 
-%%% OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND 
-%%% NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
+%%% EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+%%% OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+%%% NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
 %%% HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 %%% WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-%%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR 
+%%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 %%% OTHER DEALINGS IN THE SOFTWARE.
 %%%---------------------------------------------------------------------------
 %%% @author Eric Merritt <cyberlync@gmail.com>
-%%% @doc 
-%%%   Provides a guard for the printer handler of the 
+%%% @doc
+%%%   Provides a guard for the printer handler of the
 %%%  eta_event gen_event system.
 %%% @end
-%%% @copyright (C) 2007, Eric Merritt
+%%% @copyright (C) 2007, Erlware
 %%% Created : 23 Nov 2007 by Eric Merritt <cyberlync@gmail.com>
 %%%-------------------------------------------------------------------
 -module(eta_event_guard).
@@ -47,13 +47,13 @@
 %%====================================================================
 %%--------------------------------------------------------------------
 %% @spec start_link() -> {ok,Pid} | ignore | {error,Error}.
-%% 
-%% @doc 
+%%
+%% @doc
 %% Starts the server
-%% @end 
+%% @end
 %%--------------------------------------------------------------------
 start_link(HandlerModule, Options) ->
-    gen_server:start_link({local, gen_service_name(HandlerModule)}, 
+    gen_server:start_link({local, gen_service_name(HandlerModule)},
                           ?MODULE, [HandlerModule, Options], []).
 
 %%====================================================================
@@ -65,10 +65,10 @@ start_link(HandlerModule, Options) ->
 %%                     {ok, State, Timeout} |
 %%                     ignore               |
 %%                     {stop, Reason}.
-%% 
-%% @doc 
+%%
+%% @doc
 %% Initiates the server
-%% @end 
+%% @end
 %%--------------------------------------------------------------------
 init([HandlerModule, Options]) ->
     %% Call the new event handler's startup procedure
@@ -88,10 +88,10 @@ init([HandlerModule, Options]) ->
 %%                                      {noreply, State, Timeout} |
 %%                                      {stop, Reason, Reply, State} |
 %%                                      {stop, Reason, State}.
-%% 
-%% @doc 
+%%
+%% @doc
 %% Handling call messages
-%% @end 
+%% @end
 %%--------------------------------------------------------------------
 handle_call(_Request, _From, State) ->
     Reply = ok,
@@ -101,10 +101,10 @@ handle_call(_Request, _From, State) ->
 %% @spec handle_cast(Msg, State) -> {noreply, State} |
 %%                                      {noreply, State, Timeout} |
 %%                                      {stop, Reason, State}.
-%% 
-%% @doc 
+%%
+%% @doc
 %% Handling cast messages
-%% @end 
+%% @end
 %%--------------------------------------------------------------------
 handle_cast(_Msg, State) ->
     {noreply, State}.
@@ -113,10 +113,10 @@ handle_cast(_Msg, State) ->
 %% @spec handle_info(Info, State) -> {noreply, State} |
 %%                                       {noreply, State, Timeout} |
 %%                                       {stop, Reason, State}.
-%% 
-%% @doc 
+%%
+%% @doc
 %% Handling all non call/cast messages
-%% @end 
+%% @end
 %%--------------------------------------------------------------------
 handle_info({gen_event_EXIT, HandlerModule, Reason}, HandlerModule) ->
     %% gen_event manager sends this message if a handler was added using
@@ -132,23 +132,23 @@ handle_info(Other, HandlerModule) ->
 
 %%--------------------------------------------------------------------
 %% @spec terminate(Reason, State) -> void().
-%% 
-%% @doc 
+%%
+%% @doc
 %% This function is called by a gen_server when it is about to
 %% terminate. It should be the opposite of Module:init/1 and do any necessary
 %% cleaning up. When it returns, the gen_server terminates with Reason.
 %% The return value is ignored.
-%% @end 
+%% @end
 %%--------------------------------------------------------------------
 terminate(_Reason, _State) ->
     ok.
 
 %%--------------------------------------------------------------------
 %% @spec code_change(OldVsn, State, Extra) -> {ok, NewState}.
-%% 
-%% @doc 
+%%
+%% @doc
 %% Convert process state when code is changed
-%% @end 
+%% @end
 %%--------------------------------------------------------------------
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
@@ -157,7 +157,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @doc 
+%% @doc
 %%  Generate the name for this service.
 %% @spec gen_service_name(ModuleName) -> NewModuleName
 %% @end

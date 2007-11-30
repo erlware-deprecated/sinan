@@ -1,5 +1,5 @@
 %%%-------------------------------------------------------------------
-%%% Copyright (c) 2006, 2007 Eric Merritt
+%%% Copyright (c) 2006, 2007 Erlware
 %%%
 %%% Permission is hereby granted, free of charge, to any
 %%% person obtaining a copy of this software and associated
@@ -26,7 +26,7 @@
 %%% @doc
 %%%   Task runner for the system.
 %%% @end
-%%% @copyright 2006 Eric Merritt <cyberlync@gmail.com>
+%%% @copyright 2006 Erlware
 %%%---------------------------------------------------------------------------
 -module(eta_gen_task).
 
@@ -35,12 +35,12 @@
 -export([behaviour_info/1]).
 
 %%--------------------------------------------------------------------
-%% @doc 
+%% @doc
 %%  Define the do task.
 %% @spec behaviour_info(InfoTarget) -> Info.
 %% @end
 %%--------------------------------------------------------------------
 behaviour_info(callbacks) ->
     [{do_task,2}];
-behaviour_info(_Other) ->    
+behaviour_info(_Other) ->
     undefined.

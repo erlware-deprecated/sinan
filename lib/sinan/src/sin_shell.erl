@@ -27,7 +27,7 @@
 %%% @doc
 %%%   Starts a shell with the correct code paths.
 %%% @end
-%%% @copyright 2007 Eric Merritt
+%%% @copyright (C) 2007, Erlware
 %%%---------------------------------------------------------------------------
 -module(sin_shell).
 

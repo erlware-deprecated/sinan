@@ -1,6 +1,6 @@
 %% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
 %%%-------------------------------------------------------------------
-%%% Copyright (c) 2006, 2007 Eric Merritt
+%%% Copyright (c) 2006, 2007 Erlware
 %%%
 %%% Permission is hereby granted, free of charge, to any
 %%% person obtaining a copy of this software and associated
@@ -27,6 +27,7 @@
 %%% @doc
 %%%   Deletes everything in the Build directory
 %%% @end
+%%% @copyright (C) 2007, Erlware
 %%% Created : 11 Oct 2006 by Eric Merritt <cyberlync@gmail.com>
 %%%---------------------------------------------------------------------------
 -module(sin_clean).
