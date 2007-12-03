@@ -5,6 +5,7 @@
   {vsn, "0.4.0"},
   {modules, [eta_event,
              eta_task,
+             eta_meta_task,
              eta_task_runner,
              eta_event_guard,
              eta_topo,
