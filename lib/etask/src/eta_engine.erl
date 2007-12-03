@@ -24,7 +24,9 @@
 %%%---------------------------------------------------------------------------
 %%% @author Eric Merritt <cyberlync@gmail.com>
 %%% @doc
-%%%   Task runner for the system.
+%%%   This is a simple gen_server that serves as a front for {@link eta_task_runner}.
+%%%   It just starts a new process ({@link eta_task_runner}) with the required
+%%%   information and whats for a new request
 %%% @end
 %%% @copyright 2006 Erlware
 %%%---------------------------------------------------------------------------
@@ -32,7 +34,7 @@
 
 
 %% API
--export([start_link/0, run/1, run/2]).
+-export([start_link/0, run/2, run/3]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -61,8 +63,8 @@ start_link() ->
 %% @spec run(Args) -> ok
 %% @end
 %%--------------------------------------------------------------------
-run(Args) ->
-    gen_server:call(?SERVER, {run, Args}).
+run(Chain, Args) ->
+    gen_server:call(?SERVER, {run, Chain, Args}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -70,8 +72,8 @@ run(Args) ->
 %% @spec run(Task, Args) -> ok
 %% @end
 %%--------------------------------------------------------------------
-run(Task, Args) ->
-    gen_server:call(?SERVER, {run, [Task | Args]}).
+run(Chain, Task, Args) ->
+    gen_server:call(?SERVER, {run, Chain, [Task | Args]}).
 
 %%====================================================================
 %% gen_server callbacks
@@ -101,8 +103,8 @@ init([]) ->
 %% Handling call messages
 %% @end
 %%--------------------------------------------------------------------
-handle_call({run, Args}, From, State) ->
-    eta_task_runner:run_task(From, Args),
+handle_call({run, Chain, Args}, From, State) ->
+    eta_task_runner:run_task(From, Chain, Args),
     {noreply, State};
 handle_call(_Request, _From, State) ->
     Reply = ok,
@@ -117,8 +119,8 @@ handle_call(_Request, _From, State) ->
 %% Handling cast messages
 %% @end
 %%--------------------------------------------------------------------
-handle_cast({run, Args}, State) ->
-    eta_task_runner:run_task(Args),
+handle_cast({run, Chain, Args}, State) ->
+    eta_task_runner:run_task(Chain, Args),
     {noreply, State};
 handle_cast(_Msg, State) ->
     {noreply, State}.

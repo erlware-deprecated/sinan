@@ -71,13 +71,16 @@ start_link() ->
 %% @end
 %%--------------------------------------------------------------------
 init(_) ->
+    Tid = ets:new(eta_meta_task, [duplicate_bag, public]),
     Event = {eta_event, {eta_event, start_link, []},
              permanent, 2000, worker, [eta_event]},
     Task = {eta_task, {eta_task, start_link, []},
             permanent, 2000, worker, [eta_task, eta_topo]},
+    MetaTask = {eta_meta_task, {eta_meta_task, start_link, [Tid]},
+            permanent, 2000, worker, [eta_meta_task]},
     Engine = {eta_engine, {eta_engine, start_link, []},
               permanent, 2000, worker, [eta_engine]},
-    {ok,{{one_for_one,0,1}, [Event, Task, Engine]}}.
+    {ok,{{one_for_one,0,1}, [Event, Task, MetaTask, Engine]}}.
 
 %%====================================================================
 %% Internal functions
