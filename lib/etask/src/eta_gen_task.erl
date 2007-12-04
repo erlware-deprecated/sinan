@@ -24,7 +24,9 @@
 %%%---------------------------------------------------------------------------
 %%% @author Eric Merritt <cyberlync@gmail.com>
 %%% @doc
-%%%   Task runner for the system.
+%%%   Define a behaviour that tasks must implement. In this case, it
+%%%   just defines the do_task/2 function. In otherwords, it requires that
+%%%   the do_task/2 function be implemented in the requiring modules.
 %%% @end
 %%% @copyright 2006 Erlware
 %%%---------------------------------------------------------------------------
