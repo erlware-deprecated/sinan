@@ -87,6 +87,7 @@ shell_start() ->
 %%--------------------------------------------------------------------
 start(_Type, _StartArgs) ->
     register_tasks(),
+    register_events(),
     register_loggers(),
     case sin_sup:start_link() of
         {ok, Pid} ->
@@ -117,6 +118,7 @@ stop(_State) ->
 %%   the tasking system worry about persistance.
 %% @spec register_tasks() -> ok
 %% @end
+%% @private
 %%--------------------------------------------------------------------
 register_tasks() ->
     sin_analyze:start(),
@@ -136,9 +138,21 @@ register_tasks() ->
 
 %%--------------------------------------------------------------------
 %% @doc
+%%  Register all of the build task events that are required.
+%% @spec register_events() -> ok
+%% @end
+%% @private
+%%--------------------------------------------------------------------
+register_events() ->
+    eta_meta_task:register_post_chain_handler(sinan, sin_post_build_cleanup).
+
+
+%%--------------------------------------------------------------------
+%% @doc
 %%  Setup the global sinan logger since non-exist by default.
 %% @spec register_loggers() -> ok
 %% @end
+%% @private
 %%--------------------------------------------------------------------
 register_loggers() ->
     %% Register a handler for the system.
