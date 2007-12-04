@@ -32,14 +32,14 @@
 %%%  before and after the task.
 %%%
 %%%  Handlers may be functions or the name of a module that implements the
-%%%  {@link task_event_handler} behaviour or a function that takes exactly two args
+%%%  {@link eta_task_event} behaviour or a function that takes exactly two args
 %%%  just like tasks. In either case the function will be called with two
 %%%  arguments. The build identifier and any args for the task chain.
 %%%
 %%%
 %%% @type handler() = atom() | function().
 %%%   The handler may be a function or atom that is the name of a
-%%%  module that implements the {@link task_event_handler} behaviour.
+%%%  module that implements the {@link eta_task_event} behaviour.
 %%%
 %%% @type chain() = atom().
 %%%  The chain is simply a namespace for a group of related tasks.
