@@ -25,6 +25,7 @@
              sin_app,
              sin_sup,
              sin_help,
+             sin_post_build_cleanup,
              sin_depends_check]},
   {registered, [sin_sup]},
   {versioned_dependencies, [{ibrowse, "1.2.4.1", gte},
