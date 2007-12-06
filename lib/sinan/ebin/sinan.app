@@ -18,6 +18,7 @@
              sin_build_arg_parser,
              sin_dist_builder,
              sin_discover,
+             sin_file_logger,
              sin_release_builder,
              sin_print_handler,
              sin_test,
