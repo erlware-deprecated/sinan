@@ -37,9 +37,6 @@
 %% Application callbacks
 -export([start/2, stop/1, shell_start/0]).
 
--define(MAX_FILES, 1).
--define(MAX_LOG_SIZE, 1048576).
-
 %%====================================================================
 %% API
 %%====================================================================
@@ -156,6 +153,6 @@ register_events() ->
 %%--------------------------------------------------------------------
 register_loggers() ->
     %% Register a handler for the system.
-    LogDir = filename:join([os:getenv("HOME"), ".sinan", "logs"]),
-    gen_event:add_handler(error_logger, log_mf_h,
-                          [LogDir, ?MAX_LOG_SIZE, ?MAX_FILES]).
+    LogDir = filename:join([os:getenv("HOME"), ".sinan", "logs", "out.log"]),
+    filelib:ensure_dir(LogDir),
+    gen_event:add_handler(error_logger, sin_file_logger, [LogDir]).
