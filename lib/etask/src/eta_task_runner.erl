@@ -148,9 +148,6 @@ do_post_event_handlers(RunId, Chain, Args) ->
         eta_event:run_fault(RunId,
                             {"Error : ~p, Stacktrace : \n ~p",
                              [Error, erlang:get_stacktrace()]})
-    after
-        do_post_event_handlers(RunId, Chain, Args),
-        eta_event:run_stop(RunId)
     end.
 
 
