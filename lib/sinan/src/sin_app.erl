@@ -85,7 +85,6 @@ shell_start() ->
 start(_Type, _StartArgs) ->
     register_tasks(),
     register_events(),
-    register_loggers(),
     case sin_sup:start_link() of
         {ok, Pid} ->
             {ok, Pid};
@@ -142,17 +141,3 @@ register_tasks() ->
 %%--------------------------------------------------------------------
 register_events() ->
     eta_meta_task:register_post_chain_handler(sinan, sin_post_build_cleanup).
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%%  Setup the global sinan logger since non-exist by default.
-%% @spec register_loggers() -> ok
-%% @end
-%% @private
-%%--------------------------------------------------------------------
-register_loggers() ->
-    %% Register a handler for the system.
-    LogDir = filename:join([os:getenv("HOME"), ".sinan", "logs", "out.log"]),
-    filelib:ensure_dir(LogDir),
-    gen_event:add_handler(error_logger, sin_file_logger, [LogDir]).

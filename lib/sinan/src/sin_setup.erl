@@ -159,54 +159,24 @@ process_build_config(Flavor, BuildRef, BuildConfig) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%%  Register all of the sasl logger for file logging and the
-%%  custom logger for tty logging.
+%%  Register the build specific logger for an 'application' build.
+%%  otherwise don't do anything.
 %%
 %% @spec register_loggers(BuildDir) -> ok.
 %% @end
 %% @private
 %%--------------------------------------------------------------------
 register_loggers(BuildDir) ->
-    remove_existing_loggers(),
-    LogFile = filename:join([BuildDir, "log", "build.log"]),
-    filelib:ensure_dir(LogFile),
-    %% kick off the standard sasl file logger so we can get
-    %% nice build log file
-    gen_event:add_handler(error_logger, sasl_report_file_h, {LogFile, all}).
-%    gen_event:add_handler(error_logger, sin_tty_logger, []).
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%%  remove existing loggers that may or may not exist.
-%%
-%% @spec remove_existing_loggers() -> ok.
-%% @end
-%% @private
-%%--------------------------------------------------------------------
-remove_existing_loggers() ->
-    Loggers = gen_event:which_handlers(error_logger),
-    lists:foreach(fun(Logger) ->
-                          case Logger of
-                              sasl_report_file_h ->
-                                  gen_event:delete_handler(error_logger,
-                                                           Logger,
-                                                           normal);
-                              sin_tty_logger ->
-                                  gen_event:delete_handler(error_logger,
-                                                           Logger,
-                                                           normal);
-                              error_logger ->
-                                  %% Remove the primitive logger.
-                                  gen_event:delete_handler(error_logger,
-                                                           Logger,
-                                                           normal);
-                              _ ->
-                                  ok
-                          end
-                  end, Loggers).
-
-
+    case application:get_env(sinan, application) of
+        {ok, true} ->
+            LogFile = filename:join([BuildDir, "log", "build.log"]),
+            filelib:ensure_dir(LogFile),
+            %% kick off the standard sasl file logger so we can get
+            %% nice build log file
+            gen_event:add_handler(error_logger, sin_file_logger, [LogFile]);
+        _ ->
+            ok
+    end.
 
 %%-------------------------------------------------------------------
 %% @spec find_build_config(Dir::string()) -> ok.

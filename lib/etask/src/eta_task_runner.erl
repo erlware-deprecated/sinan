@@ -192,7 +192,9 @@ run_tasks(RunId, Chain, [Task | RestTasks], Args)  ->
             eta_event:task_fault(RunId, Task, {"~p", [Reason]}),
             throw(problem);
         _:Error ->
-            eta_event:task_fault(RunId, Task, {"~p", [Error]}),
+            eta_event:task_fault(RunId, Task, {"~p: ~p",
+                                               [Error,
+                                                erlang:get_stacktrace()]}),
             throw(problem)
     end,
     run_tasks(RunId, Chain, RestTasks, Args);
@@ -209,10 +211,10 @@ run_tasks(_, _, [], _) ->
 %% @private
 %%--------------------------------------------------------------------
 execute_task_stack(RunId, Chain, Task, Args) ->
-    PreHandlers = eta_meta_event:get_pre_task_handlers(Chain, Task),
+    PreHandlers = eta_meta_task:get_pre_task_handlers(Chain, Task),
     execute_handlers(RunId, PreHandlers, Chain, Args),
     Res = apply_task(RunId, Task, Args),
-    PostHandlers = eta_meta_event:get_post_task_handlers(Chain, Task),
+    PostHandlers = eta_meta_task:get_post_task_handlers(Chain, Task),
     execute_handlers(RunId, PostHandlers, Chain, Args),
     Res.
 
@@ -224,7 +226,7 @@ execute_task_stack(RunId, Chain, Task, Args) ->
 %% @private
 %%--------------------------------------------------------------------
 execute_handlers(RunId, [Handler | Rest], Chain, Args) ->
-    apply_task(RunId, Handler, Args),
+    apply_handler(RunId, Handler, Args),
     execute_handlers(RunId, Rest, Chain, Args);
 execute_handlers(_, [], _, _) ->
     ok.
@@ -241,6 +243,20 @@ apply_task(RunId, Task, Args) when is_function(Task) ->
     Task(RunId, Args);
 apply_task(RunId, Task, Args) when is_atom(Task) ->
     Task:do_task(RunId, Args).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%%  Apply the task. If its a fun, call the fun. If its an atom call
+%%  its do_task function.
+%% @spec apply_handler(RunId::run_id(), Handler::handler(), Args::arg_list()) -> Result::term()
+%% @end
+%% @private
+%%--------------------------------------------------------------------
+apply_handler(RunId, Handler, Args) when is_function(Handler) ->
+    Handler(RunId, Args);
+apply_handler(RunId, Handler, Args) when is_atom(Handler) ->
+    Handler:do_event(RunId, Args).
 
 %%--------------------------------------------------------------------
 %% @doc
