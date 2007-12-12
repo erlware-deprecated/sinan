@@ -64,7 +64,7 @@ start_link() ->
 %% @end
 %%--------------------------------------------------------------------
 run(Chain, Args) ->
-    gen_server:call(?SERVER, {run, Chain, Args}).
+    gen_server:call(?SERVER, {run, Chain, Args}, infinity).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -73,7 +73,7 @@ run(Chain, Args) ->
 %% @end
 %%--------------------------------------------------------------------
 run(Chain, Task, Args) ->
-    gen_server:call(?SERVER, {run, Chain, [Task | Args]}).
+    gen_server:call(?SERVER, {run, Chain, [Task | Args]}, infinity).
 
 %%====================================================================
 %% gen_server callbacks
