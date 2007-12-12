@@ -154,6 +154,7 @@ generate_local_plt(BuildRef, PltPath) ->
     RepoAppList = fconf:get_value(BuildRef, "project.repoapps"),
     ProjectRepo = fconf:get_value(BuildRef, "project.repository"),
     Codepaths = get_code_paths(ProjectRepo, RepoAppList, []),
+
     Opts = [{files_rec, Codepaths},
             {from, byte_code},
             {output_plt, PltPath},
@@ -168,6 +169,7 @@ generate_local_plt(BuildRef, PltPath) ->
                           no_unsafe_beam,
                           no_fail_call,
                          error_handling]}],
+    io:format("~p", [Opts]),
     output_info(BuildRef, dialyzer:run(Opts)),
     eta_event:task_event(BuildRef, ?TASK, plt_generation_complete, "Done generating plt").
 

@@ -139,7 +139,7 @@ handle_event({task_event, Task, RunRef, Event}, State) ->
                  [RunRef, Task, Event]),
     {ok, State};
 handle_event({task_event, Task, RunRef, Event, Desc}, State) ->
-    ewl_talk:say("[RUN:~p] ~p:~p faulted:~s", [RunRef, Task, Event,
+    ewl_talk:say("[RUN:~p] ~p:~p generated event:~s", [RunRef, Task, Event,
                                                format(Desc)]),
     {ok, State};
 handle_event(_, State)->

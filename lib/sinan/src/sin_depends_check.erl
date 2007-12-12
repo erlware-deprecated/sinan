@@ -108,13 +108,13 @@ check_depends(BuildRef, Args) ->
 %% @end
 %%--------------------------------------------------------------------
 interactive_check(BuildRef, Args) ->
-    case ewl_talk:ask("Dependencies are out of date. "
-                      "Should I run dependecies now", boolean) of
-        true ->
-            sin_depends:depends(BuildRef, Args);
-        false ->
-            load_deps(BuildRef)
-    end.
+%    case ewl_talk:ask("Dependencies are out of date. "
+%                      "Should I run dependecies now", boolean) of
+%        true ->
+            sin_depends:depends(BuildRef, Args).
+%        false ->
+%            load_deps(BuildRef)
+%    end.
 
 
 %%--------------------------------------------------------------------

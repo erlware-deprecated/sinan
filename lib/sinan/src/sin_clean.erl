@@ -40,7 +40,7 @@
 -export([start/0, do_task/2, clean/2]).
 
 -define(TASK, clean).
--define(DEPS, []).
+-define(DEPS, [setup]).
 
 
 %%====================================================================

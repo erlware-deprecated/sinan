@@ -35,36 +35,11 @@
 -behaviour(application).
 
 %% Application callbacks
--export([start/2, stop/1, shell_start/0]).
+-export([start/2, stop/1]).
 
 %%====================================================================
 %% API
 %%====================================================================
-
-%%--------------------------------------------------------------------
-%% @doc
-%%  Convience to function to start each in the shell
-%% @spec shell_start() -> ok.
-%% @end
-%%--------------------------------------------------------------------
-shell_start() ->
-    application:start(tools),
-    application:start(compiler),
-    application:start(syntax_tools),
-    application:start(edoc),
-    application:start(sasl),
-    application:start(ewlib),
-    application:start(ibrowse),
-    application:start(ktuo),
-    application:start(ewrepo),
-    application:start(fconf),
-    application:start(eunit),
-    application:start(gs),
-    application:start(hipe),
-    application:start(xmerl),
-    application:start(dialyzer),
-    application:start(etask),
-    application:start(sinan).
 
 %%====================================================================
 %% Application callbacks
