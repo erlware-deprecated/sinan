@@ -34,7 +34,7 @@
 
 
 %% API
--export([start_link/0, run/2, run/3]).
+-export([start_link/0, run/2, run/3, make_run_id/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -63,17 +63,31 @@ start_link() ->
 %% @spec run(Args) -> ok
 %% @end
 %%--------------------------------------------------------------------
-run(Chain, Args) ->
-    gen_server:call(?SERVER, {run, Chain, Args}, infinity).
+run(Chain, Target) ->
+    gen_server:call(?SERVER, {run, Chain, Target}, infinity).
+
 
 %%--------------------------------------------------------------------
 %% @doc
-%%  Run the task with ards.
-%% @spec run(Task, Args) -> ok
+%%  Run a task chain
+%% @spec run(Args) -> ok
 %% @end
 %%--------------------------------------------------------------------
-run(Chain, Task, Args) ->
-    gen_server:call(?SERVER, {run, Chain, [Task | Args]}, infinity).
+run(Chain, Target, RunId) ->
+    gen_server:call(?SERVER, {run, Chain, Target, RunId}, infinity).
+
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%%   Does all of the work to setup a run. This includes (at the very
+%%   least) generating a unique id for this 'run'.
+%% @spec setup_run() -> UniqueBuildId::run_id()
+%% @end
+%% @private
+%%--------------------------------------------------------------------
+make_run_id() ->
+    make_ref().
 
 %%====================================================================
 %% gen_server callbacks
@@ -103,8 +117,11 @@ init([]) ->
 %% Handling call messages
 %% @end
 %%--------------------------------------------------------------------
-handle_call({run, Chain, Args}, From, State) ->
-    eta_task_runner:run_task(From, Chain, Args),
+handle_call({run, Chain, Target}, From, State) ->
+    eta_task_runner:run_task_reply(From, Chain, Target),
+    {noreply, State};
+handle_call({run, Chain, Target, RunId}, From, State) ->
+    eta_task_runner:run_task_reply(From, Chain, Target, RunId),
     {noreply, State};
 handle_call(_Request, _From, State) ->
     Reply = ok,
@@ -119,8 +136,11 @@ handle_call(_Request, _From, State) ->
 %% Handling cast messages
 %% @end
 %%--------------------------------------------------------------------
-handle_cast({run, Chain, Args}, State) ->
-    eta_task_runner:run_task(Chain, Args),
+handle_cast({run, Chain, Target}, State) ->
+    eta_task_runner:run_task(Chain, Target),
+    {noreply, State};
+handle_cast({run, Chain, Target, RunId}, State) ->
+    eta_task_runner:run_task(Chain, Target, RunId),
     {noreply, State};
 handle_cast(_Msg, State) ->
     {noreply, State}.

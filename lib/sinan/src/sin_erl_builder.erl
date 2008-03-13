@@ -39,7 +39,7 @@
 
 
 %% API
--export([start/0, do_task/2, build/2]).
+-export([start/0, do_task/1, build/1]).
 
 
 -record(env,  {project_dir,
@@ -82,8 +82,8 @@ start() ->
 %%  dO the task defined in this module.
 %% @end
 %%--------------------------------------------------------------------
-do_task(BuildRef, Args) ->
-    build(BuildRef, Args).
+do_task(BuildRef) ->
+    build(BuildRef).
 
 
 %%--------------------------------------------------------------------
@@ -92,11 +92,11 @@ do_task(BuildRef, Args) ->
 %% @spec build() -> ok.
 %% @end
 %%--------------------------------------------------------------------
-build(BuildRef, Args) ->
+build(BuildRef) ->
     ensure_build_dir(BuildRef),
     Apps = fconf:get_value(BuildRef, "project.apps"),
     NApps = reorder_apps_according_to_deps(Apps, Apps, []),
-    NArgs = sin_build_arg_parser:compile_build_args(Args),
+    NArgs = [],
     build_apps(BuildRef, NApps, NArgs).
 
 %%====================================================================

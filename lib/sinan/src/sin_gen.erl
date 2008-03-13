@@ -37,7 +37,7 @@
 -include("etask.hrl").
 
 %% API
--export([start/0, do_task/2, gen/2]).
+-export([start/0, do_task/1, gen/1]).
 
 -define(TASK, gen).
 -define(DEPS, []).
@@ -70,8 +70,8 @@ start() ->
 %%  dO the task defined in this module.
 %% @end
 %%--------------------------------------------------------------------
-do_task(BuildRef, Args) ->
-    gen(BuildRef, Args).
+do_task(BuildRef) ->
+    gen(BuildRef).
 
 
 %%--------------------------------------------------------------------
@@ -81,7 +81,7 @@ do_task(BuildRef, Args) ->
 %%  in new project generation.
 %% @end
 %%--------------------------------------------------------------------
-gen(BuildRef, _Args) ->
+gen(BuildRef) ->
     eta_event:task_start(BuildRef, ?TASK),
     {{Year, _, _}, {_, _, _}} = erlang:localtime(),
     get_user_information([{year, integer_to_list(Year)}]),

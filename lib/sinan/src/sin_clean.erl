@@ -37,7 +37,7 @@
 -include("etask.hrl").
 
 %% API
--export([start/0, do_task/2, clean/2]).
+-export([start/0, do_task/1, clean/1]).
 
 -define(TASK, clean).
 -define(DEPS, [setup]).
@@ -70,8 +70,8 @@ start() ->
 %%  dO the task defined in this module.
 %% @end
 %%--------------------------------------------------------------------
-do_task(BuildRef, Args) ->
-    clean(BuildRef, Args).
+do_task(BuildRef) ->
+    clean(BuildRef).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -80,7 +80,7 @@ do_task(BuildRef, Args) ->
 %% @spec clean() -> ok.
 %% @end
 %%--------------------------------------------------------------------
-clean(BuildRef, _) ->
+clean(BuildRef) ->
     eta_event:task_start(BuildRef, ?TASK, "cleaning build artifacts"),
     BuildDir = fconf:get_value(BuildRef, "build.root"),
     sin_utils:delete_dir(BuildDir),

@@ -41,6 +41,6 @@
 %% @end
 %%--------------------------------------------------------------------
 behaviour_info(callbacks) ->
-    [{do_event,2}];
+    [{do_event,1}];
 behaviour_info(_Other) ->
     undefined.

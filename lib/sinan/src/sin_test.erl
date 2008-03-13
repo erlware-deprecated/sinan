@@ -38,7 +38,7 @@
 -include("etask.hrl").
 
 %% API
--export([start/0, do_task/2, test/2]).
+-export([start/0, do_task/1, test/1]).
 
 -define(TASK, test).
 -define(DEPS, [build]).
@@ -72,8 +72,8 @@ start() ->
 %%  dO the task defined in this module.
 %% @end
 %%--------------------------------------------------------------------
-do_task(BuildRef, Args) ->
-    test(BuildRef, Args).
+do_task(BuildRef) ->
+    test(BuildRef).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -81,11 +81,7 @@ do_task(BuildRef, Args) ->
 %% @spec test() -> ok.
 %% @end
 %%--------------------------------------------------------------------
-test(BuildRef, "notest") ->
-    eta_event:task_start(BuildRef, ?TASK),
-    ok,
-    eta_event:task_stop(BuildRef, ?TASK);
-test(BuildRef, _) ->
+test(BuildRef) ->
     eta_event:task_start(BuildRef, ?TASK),
     case fconf:get_value(BuildRef, "eunit") of
         "disabled" ->

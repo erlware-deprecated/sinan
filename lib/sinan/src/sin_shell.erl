@@ -37,7 +37,7 @@
 -include("eunit.hrl").
 
 %% API
--export([start/0, do_task/2, shell/2, create_cmdline/2]).
+-export([start/0, do_task/1, shell/1, create_cmdline/2]).
 
 -define(TASK, shell).
 -define(DEPS, [build]).
@@ -71,8 +71,8 @@ start() ->
 %%  dO the task defined in this module.
 %% @end
 %%--------------------------------------------------------------------
-do_task(BuildRef, Args) ->
-    shell(BuildRef, Args).
+do_task(BuildRef) ->
+    shell(BuildRef).
 
 
 %%--------------------------------------------------------------------
@@ -81,7 +81,7 @@ do_task(BuildRef, Args) ->
 %% @spec shell() -> ok
 %% @end
 %%--------------------------------------------------------------------
-shell(BuildRef, _) ->
+shell(BuildRef) ->
     eta_event:task_start(BuildRef, ?TASK, "Starting a shell ..."),
     ProjectApps = fconf:get_value(BuildRef, "project.apps"),
     ProjectRepoApps = fconf:get_value(BuildRef, "project.repoapps"),

@@ -59,7 +59,6 @@
 %%--------------------------------------------------------------------
 start(_Type, _StartArgs) ->
     register_tasks(),
-    register_events(),
     case sin_sup:start_link() of
         {ok, Pid} ->
             {ok, Pid};
@@ -107,12 +106,4 @@ register_tasks() ->
     sin_release_builder:start(),
     sin_dist_builder:start().
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Register all of the build task events that are required.
-%% @spec register_events() -> ok
-%% @end
-%% @private
-%%--------------------------------------------------------------------
-register_events() ->
-    eta_meta_task:register_post_chain_handler(sinan, sin_post_build_cleanup).
+
