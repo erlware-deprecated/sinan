@@ -37,7 +37,7 @@
 -include("etask.hrl").
 
 %% API
--export([start/0, do_task/2, discover/2]).
+-export([start/0, do_task/1, discover/1]).
 
 -define(TASK, discover).
 -define(DEPS, [setup]).
@@ -71,8 +71,8 @@ start() ->
 %%  dO the task defined in this module.
 %% @end
 %%--------------------------------------------------------------------
-do_task(BuildRef, Args) ->
-    discover(BuildRef, Args).
+do_task(BuildRef) ->
+    discover(BuildRef).
 
 
 %%--------------------------------------------------------------------
@@ -81,7 +81,7 @@ do_task(BuildRef, Args) ->
 %% @spec discover() -> ok.
 %% @end
 %%--------------------------------------------------------------------
-discover(BuildRef, _) ->
+discover(BuildRef) ->
     eta_event:task_start(BuildRef, ?TASK, "Discovering project layout and structure ..."),
     ProjectDir = fconf:get_value(BuildRef, "project.dir"),
     BuildDir = fconf:get_value(BuildRef, "build_dir", "_build"),

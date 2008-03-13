@@ -53,7 +53,7 @@
 
 
 %% API
--export([run_task/3, run_task/2]).
+-export([run_task_reply/3, run_task_reply/4, run_task/2, run_task/3]).
 
 
 %%====================================================================
@@ -66,10 +66,23 @@
 %% @spec run_task(From::pid(), Chain::chain(), Args::arg_list()) -> ok
 %% @end
 %%--------------------------------------------------------------------
-run_task(From, Chain, Args) ->
+run_task_reply(From, Chain, Target) ->
     proc_lib:spawn_link(fun() ->
-                                {Target, LArgs} = get_target(Args),
-                                Res = do_tasks(Chain, Target, LArgs),
+                                Res = do_tasks(Chain, Target),
+                                gen_server:reply(From, Res)
+                        end).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%%  Start the task running process, reply to the gen_server who
+%%  made the request.
+%% @spec run_task(From::pid(), Chain::chain(), RunId) -> ok
+%% @end
+%%--------------------------------------------------------------------
+run_task_reply(From, Chain, Target, RunId) ->
+    proc_lib:spawn_link(fun() ->
+                                Res = do_tasks(Chain, Target, RunId),
                                 gen_server:reply(From, Res)
                         end).
 
@@ -80,32 +93,27 @@ run_task(From, Chain, Args) ->
 %% @spec run_task(Chain::chain(), Args::arg_list()) -> ok
 %% @end
 %%--------------------------------------------------------------------
-run_task(Chain, Args) ->
+run_task(Chain, Target) ->
     proc_lib:spawn_link(fun() ->
-                                {Target, LArgs} = get_target(Args),
-                                do_tasks(Chain, Target, LArgs)
+                                do_tasks(Chain, Target)
+                        end).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%%   Runs the selected task with no attempt at a return value
+%%
+%% @spec run_task(Chain::chain(), Args::arg_list()) -> ok
+%% @end
+%%--------------------------------------------------------------------
+run_task(Chain, Target, RunId) ->
+    proc_lib:spawn_link(fun() ->
+                                do_tasks(Chain, Target, RunId)
                         end).
 
 %%====================================================================
 %%% Internal functions
 %%====================================================================
-%%--------------------------------------------------------------------
-%%
-%% @doc
-%%  We want a bare arg as the first argument. If anything starts
-%%  with a - or is an empty list there isn't a target.
-%%
-%% @spec get_target(Args::arg_list()) -> none | {Target::string(),
-%%                                               Rest::list() }
-%% @end
-%% @private
-%%--------------------------------------------------------------------
-get_target(All = [[$- | _] | _]) ->
-    {none, All};
-get_target([Target | Rest]) ->
-    {Target, Rest};
-get_target([]) ->
-    {none, []}.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -114,13 +122,24 @@ get_target([]) ->
 %% @end
 %% @private
 %%--------------------------------------------------------------------
-do_tasks(Chain, Task, Args) ->
-    RunId = setup_run(),
+do_tasks(Chain, Task) ->
+    RunId = eta_engine:make_run_id(),
+    do_tasks(Chain, Task, RunId).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Do the task with a run id.
+%% @spec run_engine(Chain::chain(), Task::task(), Args::arg_list()) -> ok
+%% @end
+%% @private
+%%--------------------------------------------------------------------
+do_tasks(Chain, Task, RunId) ->
     eta_event:run_start(RunId),
     PreHandlers = eta_meta_task:get_pre_chain_handlers(Chain),
-    execute_handlers(RunId, PreHandlers, Chain, Args),
+    execute_handlers(RunId, PreHandlers, Chain),
     Tasks = get_tasks(Task),
-    try run_tasks(RunId, Chain, Tasks, Args) catch
+    try run_tasks(RunId, Chain, Tasks) catch
     _:problem ->
         eta_event:run_fault(RunId, "Task failed");
     _:Error ->
@@ -128,7 +147,7 @@ do_tasks(Chain, Task, Args) ->
                             {"Error : ~p, Stacktrace : \n ~p",
                              [Error, erlang:get_stacktrace()]})
     after
-        do_post_event_handlers(RunId, Chain, Args),
+        do_post_event_handlers(RunId, Chain),
         eta_event:run_stop(RunId)
     end.
 
@@ -139,9 +158,9 @@ do_tasks(Chain, Task, Args) ->
 %% @end
 %% @private
 %%--------------------------------------------------------------------
-do_post_event_handlers(RunId, Chain, Args) ->
+do_post_event_handlers(RunId, Chain) ->
     PostHandlers = eta_meta_task:get_post_chain_handlers(Chain),
-    try execute_handlers(RunId, PostHandlers, Chain, Args) catch
+    try execute_handlers(RunId, PostHandlers, Chain) catch
     _:problem ->
         eta_event:run_fault(RunId, "Task failed");
     _:Error ->
@@ -176,9 +195,9 @@ get_tasks(Task) when is_atom(Task) ->
 %% @end
 %% @private
 %%-------------------------------------------------------------------
-run_tasks(RunId, Chain, [Task | RestTasks], Args)  ->
+run_tasks(RunId, Chain, [Task | RestTasks])  ->
     eta_event:task_start(RunId, Task),
-    try execute_task_stack(RunId, Chain, Task, Args) catch
+    try execute_task_stack(RunId, Chain, Task) catch
         _:{eta_exec, Problem} ->
             eta_event:task_fault(RunId, Task, {"~p", Problem}),
             throw(problem);
@@ -197,8 +216,8 @@ run_tasks(RunId, Chain, [Task | RestTasks], Args)  ->
                                                 erlang:get_stacktrace()]}),
             throw(problem)
     end,
-    run_tasks(RunId, Chain, RestTasks, Args);
-run_tasks(_, _, [], _) ->
+    run_tasks(RunId, Chain, RestTasks);
+run_tasks(_, _, []) ->
     ok.
 
 %%--------------------------------------------------------------------
@@ -210,12 +229,12 @@ run_tasks(_, _, [], _) ->
 %% @end
 %% @private
 %%--------------------------------------------------------------------
-execute_task_stack(RunId, Chain, Task, Args) ->
+execute_task_stack(RunId, Chain, Task) ->
     PreHandlers = eta_meta_task:get_pre_task_handlers(Chain, Task),
-    execute_handlers(RunId, PreHandlers, Chain, Args),
-    Res = apply_task(RunId, Task, Args),
+    execute_handlers(RunId, PreHandlers, Chain),
+    Res = apply_task(RunId, Task),
     PostHandlers = eta_meta_task:get_post_task_handlers(Chain, Task),
-    execute_handlers(RunId, PostHandlers, Chain, Args),
+    execute_handlers(RunId, PostHandlers, Chain),
     Res.
 
 %%--------------------------------------------------------------------
@@ -225,10 +244,10 @@ execute_task_stack(RunId, Chain, Task, Args) ->
 %% @end
 %% @private
 %%--------------------------------------------------------------------
-execute_handlers(RunId, [Handler | Rest], Chain, Args) ->
-    apply_handler(RunId, Handler, Args),
-    execute_handlers(RunId, Rest, Chain, Args);
-execute_handlers(_, [], _, _) ->
+execute_handlers(RunId, [Handler | Rest], Chain) ->
+    apply_handler(RunId, Handler),
+    execute_handlers(RunId, Rest, Chain);
+execute_handlers(_, [], _) ->
     ok.
 
 %%--------------------------------------------------------------------
@@ -239,10 +258,10 @@ execute_handlers(_, [], _, _) ->
 %% @end
 %% @private
 %%--------------------------------------------------------------------
-apply_task(RunId, Task, Args) when is_function(Task) ->
-    Task(RunId, Args);
-apply_task(RunId, Task, Args) when is_atom(Task) ->
-    Task:do_task(RunId, Args).
+apply_task(RunId, Task) when is_function(Task) ->
+    Task(RunId);
+apply_task(RunId, Task) when is_atom(Task) ->
+    Task:do_task(RunId).
 
 
 %%--------------------------------------------------------------------
@@ -253,19 +272,10 @@ apply_task(RunId, Task, Args) when is_atom(Task) ->
 %% @end
 %% @private
 %%--------------------------------------------------------------------
-apply_handler(RunId, Handler, Args) when is_function(Handler) ->
-    Handler(RunId, Args);
-apply_handler(RunId, Handler, Args) when is_atom(Handler) ->
-    Handler:do_event(RunId, Args).
+apply_handler(RunId, Handler) when is_function(Handler) ->
+    Handler(RunId);
+apply_handler(RunId, Handler) when is_atom(Handler) ->
+    Handler:do_event(RunId).
 
-%%--------------------------------------------------------------------
-%% @doc
-%%   Does all of the work to setup a run. This includes (at the very
-%%   least) generating a unique id for this 'run'.
-%% @spec setup_run() -> UniqueBuildId::run_id()
-%% @end
-%% @private
-%%--------------------------------------------------------------------
-setup_run() ->
-    make_ref().
+
 

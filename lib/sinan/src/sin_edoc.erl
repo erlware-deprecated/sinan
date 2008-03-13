@@ -37,7 +37,7 @@
 -include("etask.hrl").
 
 %% API
--export([start/0, do_task/2, doc/2]).
+-export([start/0, do_task/1, doc/1]).
 
 -define(TASK, doc).
 -define(DEPS, [build]).
@@ -72,8 +72,8 @@ start() ->
 %%  dO the task defined in this module.
 %% @end
 %%--------------------------------------------------------------------
-do_task(BuildRef, Args) ->
-    doc(BuildRef, Args).
+do_task(BuildRef) ->
+    doc(BuildRef).
 
 
 %%--------------------------------------------------------------------
@@ -83,7 +83,7 @@ do_task(BuildRef, Args) ->
 %% @spec doc(BuildRef) -> ok.
 %% @end
 %%--------------------------------------------------------------------
-doc(BuildRef, _) ->
+doc(BuildRef) ->
     eta_event:task_start(BuildRef, ?TASK),
     BuildDir = fconf:get_value(BuildRef, "build.dir"),
     DocDir = filename:join([BuildDir, "docs", "edoc"]),

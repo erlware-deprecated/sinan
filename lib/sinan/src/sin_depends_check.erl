@@ -38,7 +38,7 @@
 -include("etask.hrl").
 
 %% API
--export([start/0, do_task/2, check_depends/2]).
+-export([start/0, do_task/1, check_depends/1]).
 
 -define(TASK, check_depends).
 -define(DEPS, [discover]).
@@ -73,8 +73,8 @@ start() ->
 %%  dO the task defined in this module.
 %% @end
 %%--------------------------------------------------------------------
-do_task(BuildRef, Args) ->
-    check_depends(BuildRef, Args).
+do_task(BuildRef) ->
+    check_depends(BuildRef).
 
 
 %%====================================================================
@@ -87,13 +87,13 @@ do_task(BuildRef, Args) ->
 %% @spec check_depends() -> ok.
 %% @end
 %%--------------------------------------------------------------------
-check_depends(BuildRef, Args) ->
+check_depends(BuildRef) ->
     eta_event:task_start(BuildRef, ?TASK),
     ProjectApps = gather_project_apps(BuildRef),
     fconf:store(BuildRef, "project.apps", ProjectApps),
     case needs_verify(BuildRef) of
         true ->
-            interactive_check(BuildRef, Args);
+            interactive_check(BuildRef, []);
         false ->
             load_deps(BuildRef),
             ok

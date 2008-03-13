@@ -36,7 +36,7 @@
 -include("etask.hrl").
 
 %% API
--export([start/0, do_task/2, help/2]).
+-export([start/0, do_task/1, help/1]).
 
 -define(TASK, help).
 -define(DEPS, []).
@@ -70,8 +70,8 @@ start() ->
 %%  dO the task defined in this module.
 %% @end
 %%--------------------------------------------------------------------
-do_task(BuildRef, Args) ->
-    help(BuildRef, Args).
+do_task(BuildRef) ->
+    help(BuildRef).
 
 
 %%--------------------------------------------------------------------
@@ -80,7 +80,7 @@ do_task(BuildRef, Args) ->
 %% @spec help(BuildRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
-help(BuildRef, _) ->
+help(BuildRef) ->
     eta_event:task_start(BuildRef, ?TASK, "Describing tasks ..."),
     case eta_task:get_task_defs() of
         [] ->

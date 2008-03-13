@@ -37,7 +37,7 @@
 -include("etask.hrl").
 
 %% API
--export([start/0, do_task/2, setup/2]).
+-export([start/0, do_task/1, setup/1]).
 
 -define(TASK, setup).
 -define(DEPS, []).
@@ -73,8 +73,8 @@ start() ->
 %%  dO the task defined in this module.
 %% @end
 %%--------------------------------------------------------------------
-do_task(BuildRef, Args) ->
-    setup(BuildRef, Args).
+do_task(BuildRef) ->
+    setup(BuildRef).
 
 %%-------------------------------------------------------------------
 %% @spec run(Task, Args) -> ok.
@@ -85,11 +85,10 @@ do_task(BuildRef, Args) ->
 %% @end
 %% @private
 %%-------------------------------------------------------------------
-setup(BuildRef, Args) ->
+setup(BuildRef) ->
     eta_event:task_start(BuildRef, ?TASK),
     setup_build(BuildRef),
-    Flavor = get_flavor(BuildRef, Args),
-    fconf:store(BuildRef, "build.args", Args),
+    Flavor = get_flavor(BuildRef, undefined),
     handle_build_config(Flavor, BuildRef),
     eta_event:task_stop(BuildRef, ?TASK).
 
@@ -208,7 +207,5 @@ setup_build(BuildRef) ->
     DefaultConfig =
         filename:join([code:priv_dir(sinan),
                        "default_build"]),
-    fconf:start_config(BuildRef,
-                       fun sin_parse_handle:parse_config_file/1),
     fconf:parse_config(BuildRef,
                        DefaultConfig).

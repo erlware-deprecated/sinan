@@ -39,7 +39,7 @@
 -include("etask.hrl").
 
 %% API
--export([start/0, do_task/2, dist/2]).
+-export([start/0, do_task/1, dist/1]).
 
 -define(TASK, dist).
 -define(DEPS, [release]).
@@ -74,8 +74,8 @@ start() ->
 %%  dO the task defined in this module.
 %% @end
 %%--------------------------------------------------------------------
-do_task(BuildRef, Args) ->
-    dist(BuildRef, Args).
+do_task(BuildRef) ->
+    dist(BuildRef).
 
 
 %%--------------------------------------------------------------------
@@ -84,7 +84,7 @@ do_task(BuildRef, Args) ->
 %% @spec dist() -> ok.
 %% @end
 %%--------------------------------------------------------------------
-dist(BuildRef, _) ->
+dist(BuildRef) ->
     eta_event:task_start(BuildRef, ?TASK),
     ProjectDir = fconf:get_value(BuildRef, "project.dir"),
     ProjectApps = fconf:get_value(BuildRef, "project.apps"),

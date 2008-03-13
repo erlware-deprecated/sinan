@@ -37,7 +37,7 @@
 -include("etask.hrl").
 
 %% API
--export([start/0, do_task/2, depends/2]).
+-export([start/0, do_task/1, depends/1]).
 
 -define(TASK, depends).
 -define(DEPS, [discover]).
@@ -72,8 +72,8 @@ start() ->
 %%  dO the task defined in this module.
 %% @end
 %%--------------------------------------------------------------------
-do_task(BuildRef, Args) ->
-    depends(BuildRef, Args).
+do_task(BuildRef) ->
+    depends(BuildRef).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -82,7 +82,7 @@ do_task(BuildRef, Args) ->
 %% @spec depends() -> ok.
 %% @end
 %%--------------------------------------------------------------------
-depends(BuildRef, _) ->
+depends(BuildRef) ->
     ProjectApps = gather_project_apps(BuildRef),
     fconf:store(BuildRef, "project.apps", ProjectApps),
     Repos = fconf:get_value(BuildRef, "repositories"),

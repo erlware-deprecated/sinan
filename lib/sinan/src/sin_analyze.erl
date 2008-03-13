@@ -37,7 +37,7 @@
 -include("etask.hrl").
 
 %% API
--export([start/0, do_task/2, analyze/2]).
+-export([start/0, do_task/1, analyze/1]).
 
 -define(TASK, analyze).
 -define(DEPS, [build]).
@@ -74,8 +74,8 @@ start() ->
 %%  dO the task defined in this module.
 %% @end
 %%--------------------------------------------------------------------
-do_task(BuildRef, Args) ->
-    analyze(BuildRef, Args).
+do_task(BuildRef) ->
+    analyze(BuildRef).
 
 
 %%--------------------------------------------------------------------
@@ -85,12 +85,12 @@ do_task(BuildRef, Args) ->
 %% @spec analyze() -> ok.
 %% @end
 %%--------------------------------------------------------------------
-analyze(BuildRef, Args) ->
+analyze(BuildRef) ->
     eta_event:task_start(BuildRef, ?TASK, "Starting analyzation, this may take awhile ..."),
     FlavorArgs = fconf:get_value(BuildRef, "build.args"),
     BuildDir = fconf:get_value(BuildRef, "build.dir"),
     PltPath = filename:join([BuildDir, "info", "dialyzer_plt"]),
-    case lists:keysearch("analyze-init", 1, Args ++ FlavorArgs) of
+    case lists:keysearch("analyze-init", 1,  FlavorArgs) of
         {value, {"analyze-init", true}} ->
             generate_local_plt(BuildRef, PltPath);
         _ ->
