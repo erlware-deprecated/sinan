@@ -2,7 +2,7 @@
 
 {application, etask,
  [{description, "Tasking kernel for task running."},
-  {vsn, "0.4.0"},
+  {vsn, "0.5.0"},
   {modules, [eta_event,
              eta_task,
              eta_meta_task,
@@ -13,7 +13,8 @@
              eta_engine,
              eta_app,
              eta_gen_task,
-             eta_sup]},
+             eta_sup,
+             eta_guid]},
   {registered, [eta_event, eta_task, eta_engine]},
   {applications, [kernel, stdlib, sasl]},
   {mod, {eta_app, []}}]}.
