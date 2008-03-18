@@ -111,7 +111,7 @@ handle_event({run_event, RunRef, fault, Desc}, State) ->
     print(Desc),
     {ok, State};
 handle_event({run_event, RunRef, stop}, State) ->
-    ewl_talk:say("Run complete without fault ~p", [RunRef]),
+    ewl_talk:say("Run complete ~p", [RunRef]),
     {ok, State};
 handle_event({run_event, RunRef, Event}, State) ->
     ewl_talk:say("Event ~p signaled for run ~p", [Event, RunRef]),
