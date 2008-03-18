@@ -84,7 +84,7 @@ do_task(BuildRef) ->
 gen(BuildRef) ->
     eta_event:task_start(BuildRef, ?TASK),
     {{Year, _, _}, {_, _, _}} = erlang:localtime(),
-    get_user_information([{year, integer_to_list(Year)}]),
+    get_user_information(BuildRef, [{year, integer_to_list(Year)}]),
     eta_event:task_stop(BuildRef, ?TASK).
 
 %%====================================================================
@@ -233,8 +233,8 @@ get_application_names(Env, App, Acc) ->
 %% Queries the user for the name of this project
 %% @end
 %%--------------------------------------------------------------------
-get_new_project_name(Env) ->
-    {ok, CDir} = file:get_cwd(),
+get_new_project_name(BuildRef, Env) ->
+    CDir = fconf:get_value(BuildRef, "build.start_dir"),
     io:put_chars(["Please specify name of your project \n"]),
     Name = trim(io:get_line('project name> ')),
     Dir = filename:join(CDir, Name),
@@ -253,7 +253,7 @@ get_new_project_name(Env) ->
 %% Queries the user for his name and email address
 %% @end
 %%--------------------------------------------------------------------
-get_user_information(Env) ->
+get_user_information(BuildRef, Env) ->
     io:put_chars("Please specify your name \n"),
     Name = trim(io:get_line('your name> ')),
     io:put_chars("Please specify your email address \n"),
@@ -265,7 +265,7 @@ get_user_information(Env) ->
     Env2 = [{username, Name}, {email_address, Address},
            {copyright_holder, CopyHolder},
            {repositories, Repositories} | Env],
-    get_new_project_name(Env2).
+    get_new_project_name(BuildRef, Env2).
 
 
 get_repositories() ->

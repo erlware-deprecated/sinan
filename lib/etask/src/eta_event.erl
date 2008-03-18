@@ -139,7 +139,7 @@ run_fault(RunRef, Reason) ->
 %% @end
 %%--------------------------------------------------------------------
 task_event(RunRef, Task, Event) ->
-    gen_event:notify(?SERVER, {task_event, Task, RunRef, Event}).
+    gen_event:notify(?SERVER, {task_event, RunRef, Task, Event}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -148,7 +148,7 @@ task_event(RunRef, Task, Event) ->
 %% @end
 %%--------------------------------------------------------------------
 task_event(RunRef, Task, Event, Desc) ->
-    gen_event:notify(?SERVER, {task_event, Task, RunRef, Event, Desc}).
+    gen_event:notify(?SERVER, {task_event, RunRef, Task, Event, Desc}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -157,7 +157,7 @@ task_event(RunRef, Task, Event, Desc) ->
 %% @end
 %%--------------------------------------------------------------------
 task_start(RunRef, Task) ->
-    gen_event:notify(?SERVER, {task_event, Task, RunRef, start}).
+    gen_event:notify(?SERVER, {task_event, RunRef, Task, start}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -166,7 +166,7 @@ task_start(RunRef, Task) ->
 %% @end
 %%--------------------------------------------------------------------
 task_start(RunRef, Task, Desc) ->
-    gen_event:notify(?SERVER, {task_event, Task, RunRef, start, Desc}).
+    gen_event:notify(?SERVER, {task_event, RunRef, Task, start, Desc}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -175,7 +175,7 @@ task_start(RunRef, Task, Desc) ->
 %% @end
 %%--------------------------------------------------------------------
 task_stop(RunRef, Task) ->
-    gen_event:notify(?SERVER, {task_event, Task, RunRef, stop}).
+    gen_event:notify(?SERVER, {task_event, RunRef, Task, stop}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -184,7 +184,7 @@ task_stop(RunRef, Task) ->
 %% @end
 %%--------------------------------------------------------------------
 task_stop(RunRef, Task, Desc) ->
-    gen_event:notify(?SERVER, {task_event, Task, RunRef, stop, Desc}).
+    gen_event:notify(?SERVER, {task_event, RunRef, Task, stop, Desc}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -193,7 +193,7 @@ task_stop(RunRef, Task, Desc) ->
 %% @end
 %%--------------------------------------------------------------------
 task_fault(RunRef, Task) ->
-    gen_event:notify(?SERVER, {task_event, Task, RunRef, fault}).
+    gen_event:notify(?SERVER, {task_event, RunRef, Task, fault}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -202,7 +202,7 @@ task_fault(RunRef, Task) ->
 %% @end
 %%--------------------------------------------------------------------
 task_fault(RunRef, Task, Reason) ->
-    gen_event:notify(?SERVER, {task_event, Task, RunRef, fault, Reason}).
+    gen_event:notify(?SERVER, {task_event, RunRef, Task, fault, Reason}).
 
 %%--------------------------------------------------------------------
 %% @doc
