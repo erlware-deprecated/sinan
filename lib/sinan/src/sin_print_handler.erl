@@ -116,29 +116,29 @@ handle_event({run_event, RunRef, stop}, State) ->
 handle_event({run_event, RunRef, Event}, State) ->
     ewl_talk:say("Event ~p signaled for run ~p", [Event, RunRef]),
     {ok, State};
-handle_event({task_event, Task, RunRef, start}, State) ->
+handle_event({task_event, RunRef, Task, start}, State) ->
     ewl_talk:say("[RUN:~p] Task ~p started", [RunRef, Task]),
     {ok, State};
-handle_event({task_event, Task, RunRef, start, Desc}, State) ->
+handle_event({task_event, RunRef, Task, start, Desc}, State) ->
     ewl_talk:say("[RUN:~p] Task ~p started:~s", [RunRef, Task, format(Desc)]),
     {ok, State};
-handle_event({task_event, Task, RunRef, stop}, State) ->
+handle_event({task_event, RunRef, Task, stop}, State) ->
     ewl_talk:say("[RUN:~p] Task ~p complete", [RunRef, Task]),
     {ok, State};
-handle_event({task_event, Task, RunRef, stop, Desc}, State) ->
+handle_event({task_event, RunRef, Task, stop, Desc}, State) ->
     ewl_talk:say("[RUN:~p] Task ~p complete:~s", [RunRef, Task, format(Desc)]),
     {ok, State};
-handle_event({task_event, Task, RunRef, fault}, State) ->
+handle_event({task_event, RunRef, Task, fault}, State) ->
     ewl_talk:say("[RUN:~p] Task ~p faulted", [RunRef, Task]),
     {ok, State};
-handle_event({task_event, Task, RunRef, fault, Desc}, State) ->
+handle_event({task_event, RunRef, Task, fault, Desc}, State) ->
     ewl_talk:say("[RUN:~p] Task ~p faulted:~s", [RunRef, Task, format(Desc)]),
     {ok, State};
-handle_event({task_event, Task, RunRef, Event}, State) ->
+handle_event({task_event, RunRef, Task, Event}, State) ->
     ewl_talk:say("[RUN:~p] Task ~p generated event ~p ",
                  [RunRef, Task, Event]),
     {ok, State};
-handle_event({task_event, Task, RunRef, Event, Desc}, State) ->
+handle_event({task_event, RunRef, Task, Event, Desc}, State) ->
     ewl_talk:say("[RUN:~p] ~p:~p generated event:~s", [RunRef, Task, Event,
                                                format(Desc)]),
     {ok, State};

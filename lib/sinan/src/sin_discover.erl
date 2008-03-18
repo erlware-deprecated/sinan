@@ -85,7 +85,6 @@ discover(BuildRef) ->
     eta_event:task_start(BuildRef, ?TASK, "Discovering project layout and structure ..."),
     ProjectDir = fconf:get_value(BuildRef, "project.dir"),
     BuildDir = fconf:get_value(BuildRef, "build_dir", "_build"),
-    ok = file:set_cwd(ProjectDir),
     AppDirs = look_for_app_dirs(BuildRef, BuildDir, ProjectDir),
     build_app_info(BuildRef, AppDirs, []),
     get_repo_location(BuildRef),
