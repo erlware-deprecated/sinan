@@ -34,6 +34,10 @@
 
 -behaviour(application).
 
+%% system defines
+-define(DEFAULT_PORT, 8599).
+
+
 %% Application callbacks
 -export([start/2, stop/1]).
 
@@ -56,6 +60,7 @@
 %% @end
 %%--------------------------------------------------------------------
 start(_Type, StartArgs) ->
+    start_crary(),
     case swa_sup:start_link(StartArgs) of
         {ok, Pid} ->
             {ok, Pid};
@@ -79,3 +84,36 @@ stop(_State) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+%%--------------------------------------------------------------------
+%% @doc
+%%  Starts crary with the correct port and handler information.
+%% @spec start_crary() -> ok
+%% @end
+%%--------------------------------------------------------------------
+start_crary() ->
+    Port = get_port(),
+    crary:start(Port, fun swa_crary_handler:handler/1).
+
+%%--------------------------------------------------------------------
+%% @doc
+%%   Get the port from the system. This looks in two places
+%%   for port information.
+%%
+%%   <ol>
+%%    <li>An environmental variable called <strong>SINAN_LISTEN_PORT</strong>
+%%    <li>An application evn variable called <strong>port</strong>
+%%  </ol>
+%%     If it doesn't find a port in either place it uses its default port.
+%%
+%% @spec get_port() -> integer()
+%% @end
+%%--------------------------------------------------------------------
+get_port() ->
+    case application:get_env(sinan_web_api, port) of
+        undefined ->
+            ?DEFAULT_PORT;
+        {ok, Port} when is_list(Port) ->
+            list_to_integer(Port);
+        {ok, Port} when is_integer(Port) ->
+            Port
+    end.
