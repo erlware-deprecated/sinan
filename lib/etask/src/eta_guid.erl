@@ -76,12 +76,12 @@ gen_guid_v1(MacAddress) ->
     TimeMid = lists:sublist(TimeStr1, 4, 4),
     TimeLow = lists:sublist(TimeStr1, 8, 8),
     %% multiplexed variant type (2 bits)
-    ClockSeqHiV = io:format("~2.16.0b", [(random:uniform(256) - 1)
+    ClockSeqHiV = io_lib:format("~2.16.0b", [(random:uniform(256) - 1)
                                          band 16#3f bor 16#80]),
-    ClockSeqLow = io:format("~2.16.0b", [(random:uniform(256) - 1)]),
+    ClockSeqLow = io_lib:format("~2.16.0b", [(random:uniform(256) - 1)]),
     Node = MacAddress,
-    TimeLow ++ "-" ++ TimeMid ++ "-" ++ TimeHiV ++ "-" ++ ClockSeqHiV
-        ++ ClockSeqLow ++ "-" ++ Node.
+    lists:flatten(TimeLow ++ "-" ++ TimeMid ++ "-" ++ TimeHiV ++ "-"
+                  ++ ClockSeqHiV ++ ClockSeqLow ++ "-" ++ Node).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -94,28 +94,28 @@ gen_guid_v1(MacAddress) ->
 %% @end
 %%--------------------------------------------------------------------
 gen_guid_v4() ->
-    lists:foldl(
-      fun (I, Acc) ->
-              %% return random number between 0, 255
-              B = random:uniform(256) - 1,
-              %% multiplex version number (4 bits)
-              S = if  I == 7 ->
-                          %% version 4 (random)
-                          %% The last 0 in 2.16.0 means fill with
-                          %% leading 0 if necessay
-                          B1 = B band 16#0f bor 16#40,
-                          io:format("~2.16.0b", [B1]);
-                      %% multiplexed variant type (2 bits)
-                      I == 9 ->
-                          B1 = B band 16#3f bor 16#80,
-                         io:format("~2.16.0b", [B1]);
-                      I == 4; I == 6; I == 8; I == 10 ->
-                          io:format("~2.16.0b-", [B]);
-                      true ->
-                          io:format("~2.16.0b", [B])
-                  end,
-             Acc ++ S
-     end, [], lists:seq(1, 16)).
+    lists:flatten(lists:foldl(
+                    fun (I, Acc) ->
+                            %% return random number between 0, 255
+                            B = random:uniform(256) - 1,
+                            %% multiplex version number (4 bits)
+                            S = if  I == 7 ->
+                                        %% version 4 (random)
+                                        %% The last 0 in 2.16.0 means fill with
+                                        %% leading 0 if necessay
+                                        B1 = B band 16#0f bor 16#40,
+                                        io_lib:format("~2.16.0b", [B1]);
+                                    %% multiplexed variant type (2 bits)
+                                    I == 9 ->
+                                        B1 = B band 16#3f bor 16#80,
+                                        io_lib:format("~2.16.0b", [B1]);
+                                    I == 4; I == 6; I == 8; I == 10 ->
+                                        io_lib:format("~2.16.0b-", [B]);
+                                    true ->
+                                        io_lib:format("~2.16.0b", [B])
+                                end,
+                            Acc ++ S
+                    end, [], lists:seq(1, 16))).
 
 %%====================================================================
 %% Internal functions
