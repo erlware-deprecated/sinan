@@ -279,7 +279,7 @@ do_task(Chain, StartDir, Task, Args) when is_atom(Task) ->
                        fun sin_parse_handle:parse_config_file/1),
     fconf:store(BuildRef, "build.args", Args),
     fconf:store(BuildRef, "build.start_dir", StartDir),
-    eta_engine:run(Chain, Task, Args),
+    eta_engine:run(Chain, Task, BuildRef),
     fconf:stop_config(BuildRef).
 
 %%--------------------------------------------------------------------

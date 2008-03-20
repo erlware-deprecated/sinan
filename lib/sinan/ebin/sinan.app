@@ -28,7 +28,6 @@
              sin_sup,
              sin_topo,
              sin_help,
-             sin_post_build_cleanup,
              sin_depends_check]},
   {registered, [sin_sup]},
   {versioned_dependencies, [{fconf, "0.1.2.0", gte},
@@ -38,5 +37,5 @@
   {applications, [kernel, stdlib, compiler,
                   edoc, sasl, etask, syntax_tools,
                   ibrowse, ktuo, ewrepo, fconf, ewlib, tools,
-                  dialyzer, xmerl, mnesia]},
+                  dialyzer, xmerl, mnesia, etask]},
   {mod, {sin_app, []}}]}.

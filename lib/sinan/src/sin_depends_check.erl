@@ -93,7 +93,7 @@ check_depends(BuildRef) ->
     fconf:store(BuildRef, "project.apps", ProjectApps),
     case needs_verify(BuildRef) of
         true ->
-            interactive_check(BuildRef, []);
+            interactive_check(BuildRef);
         false ->
             load_deps(BuildRef),
             ok
@@ -107,11 +107,11 @@ check_depends(BuildRef) ->
 %% @spec interactive_check(BuildRef, Args) -> ok
 %% @end
 %%--------------------------------------------------------------------
-interactive_check(BuildRef, Args) ->
+interactive_check(BuildRef) ->
 %    case ewl_talk:ask("Dependencies are out of date. "
 %                      "Should I run dependecies now", boolean) of
 %        true ->
-            sin_depends:depends(BuildRef, Args).
+            sin_depends:depends(BuildRef).
 %        false ->
 %            load_deps(BuildRef)
 %    end.
