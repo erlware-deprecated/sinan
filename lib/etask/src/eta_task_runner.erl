@@ -149,7 +149,8 @@ do_tasks(Chain, Task, RunId) ->
     after
         do_post_event_handlers(RunId, Chain),
         eta_event:run_stop(RunId)
-    end.
+    end,
+    RunId.
 
 %%--------------------------------------------------------------------
 %% @doc

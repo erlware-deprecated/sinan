@@ -119,7 +119,7 @@ get_flavor(BuildRef, undefined) ->
 %% @private
 %%-------------------------------------------------------------------
 handle_build_config(Flavor, BuildRef) ->
-    Start = fconf:get_value("build.start_dir"),
+    Start = fconf:get_value(BuildRef, "build.start_dir"),
     case find_build_config(Start) of
         no_build_config ->
             eta_event:task_fault(BuildRef, ?TASK, "No build config found!!"),
