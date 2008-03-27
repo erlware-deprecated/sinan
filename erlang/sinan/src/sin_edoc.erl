@@ -89,7 +89,9 @@ doc(BuildRef) ->
     DocDir = filename:join([BuildDir, "docs", "edoc"]),
     filelib:ensure_dir(filename:join([DocDir, "tmp"])),
     Apps = fconf:get_value(BuildRef, "project.apps"),
+    GL = capture_start(BuildRef),
     run_docs(BuildRef, Apps, [{dir, DocDir}]),
+    capture_stop(GL),
     eta_event:task_stop(BuildRef, ?TASK).
 
 
@@ -97,19 +99,61 @@ doc(BuildRef) ->
 %%% Internal functions
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @spec run_docs(AppList, Opts) -> ok.
-%%
 %% @doc
 %%  Run edoc on all the modules in all of the applications.
+%%
+%% @spec (BuildRef, AppList, Opts) -> ok.
 %% @end
 %%--------------------------------------------------------------------
 run_docs(BuildRef, [{AppName, _, _} | T], Opts) ->
     AppDir = fconf:get_value(BuildRef, {path, ["apps",
                                             atom_to_list(AppName),
                                             "basedir"]}),
+    try
     edoc:application(AppName,
                      AppDir,
-                     Opts),
+                     Opts) catch
+                               _:Error ->
+                                   Error
+                           end,
     run_docs(BuildRef, T, Opts);
 run_docs(_BuildRef, [], _Opts) ->
     ok.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Starts capturing all output from io:format, and similar. Capturing
+%% output doesn't stop output from happening. It just makes it possible
+%% to retrieve the output using capture_get/0.
+%% Starting and stopping capture doesn't affect already captured output.
+%% All output is stored as messages in the message queue until retrieved
+%%
+%% @spec (BuildRef) -> {OldGroupLeader, NewGroupLeader}
+%% @end
+%%--------------------------------------------------------------------
+capture_start(BuildRef) ->
+    OldGL = group_leader(),
+    NewGL = case sin_group_leader_sup:start_group_leader(BuildRef,
+                                                         ?TASK, io) of
+        {ok, Child} ->
+            Child;
+        {ok, Child, _ } ->
+            Child;
+        _ ->
+            eta_event:task_fault(BuildRef, ?TASK,
+                                 "Unable to start group leader.")
+            end,
+    group_leader(NewGL, self()),
+    {OldGL, NewGL}.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Stops io capture.
+%%
+%% @spec () -> ok
+%% @end
+%%--------------------------------------------------------------------
+capture_stop({OldGroupLeader, NewGroupLeader}) ->
+    sin_group_leader:shutdown(NewGroupLeader),
+    group_leader(OldGroupLeader, self()).
