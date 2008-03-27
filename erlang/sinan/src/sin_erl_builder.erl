@@ -93,11 +93,13 @@ do_task(BuildRef) ->
 %% @end
 %%--------------------------------------------------------------------
 build(BuildRef) ->
+    eta_event:task_start(BuildRef, ?TASK),
     ensure_build_dir(BuildRef),
     Apps = fconf:get_value(BuildRef, "project.apps"),
     NApps = reorder_apps_according_to_deps(Apps, Apps, []),
     NArgs = [],
-    build_apps(BuildRef, NApps, NArgs).
+    build_apps(BuildRef, NApps, NArgs),
+    eta_event:task_stop(BuildRef, ?TASK).
 
 %%====================================================================
 %%% Internal functions
