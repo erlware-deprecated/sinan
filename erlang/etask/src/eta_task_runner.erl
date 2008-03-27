@@ -197,7 +197,6 @@ get_tasks(Task) when is_atom(Task) ->
 %% @private
 %%-------------------------------------------------------------------
 run_tasks(RunId, Chain, [Task | RestTasks])  ->
-    eta_event:task_start(RunId, Task),
     try execute_task_stack(RunId, Chain, Task) catch
         _:{eta_exec, Problem} ->
             eta_event:task_fault(RunId, Task, {"~p", Problem}),
