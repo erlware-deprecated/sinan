@@ -24,62 +24,80 @@
 %%% OTHER DEALINGS IN THE SOFTWARE.
 %%%-------------------------------------------------------------------
 %%% @author Eric Merritt <cyberlync@gmail.com>
+%%% @copyright (C) 2008, Eric Merritt
 %%% @doc
-%%%  Supervisor for all of the sinan build tasks.
+%%%  Provides a simple supervisor for group_leaders.
 %%% @end
-%%% @copyright (C) 2007, Erlware
-%%% Created : 18 Nov 2007 by Eric Merritt <cyberlync@gmail.com>
+%%% Created : 25 Mar 2008 by Eric Merritt <cyberlync@gmail.com>
 %%%-------------------------------------------------------------------
--module(sin_sup).
+-module(sin_group_leader_sup).
 
 -behaviour(supervisor).
 
 %% API
--export([start_link/0]).
+-export([start_link/0, start_group_leader/3]).
 
 %% Supervisor callbacks
 -export([init/1]).
 
 -define(SERVER, ?MODULE).
 
-%%====================================================================
-%% API functions
-%%====================================================================
+%%%===================================================================
+%%% API functions
+%%%===================================================================
+
 %%--------------------------------------------------------------------
-%% @spec start_link() -> {ok,Pid} | ignore | {error,Error}.
-%%
 %% @doc
 %% Starts the supervisor
+%%
+%% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
 start_link() ->
     supervisor:start_link({local, ?SERVER}, ?MODULE, []).
 
-%%====================================================================
-%% Supervisor callbacks
-%%====================================================================
+%%%===================================================================
+%%% Supervisor callbacks
+%%%===================================================================
+
 %%--------------------------------------------------------------------
-%% @spec init(Args) -> {ok,  {SupFlags,  [ChildSpec]}} |
-%%                     ignore                          |
-%%                     {error, Reason}.
-%%
+%% @private
 %% @doc
-%%  Whenever a supervisor is started using
-%% supervisor:start_link/[2,3], this function is called by the new process
-%% to find out about restart strategy, maximum restart frequency and child
+%% Whenever a supervisor is started using supervisor:start_link/[2,3],
+%% this function is called by the new process to find out about
+%% restart strategy, maximum restart frequency and child
 %% specifications.
+%%
+%% @spec init(Args) -> {ok, {SupFlags, [ChildSpec]}} |
+%%                     ignore |
+%%                     {error, Reason}
 %% @end
 %%--------------------------------------------------------------------
 init([]) ->
-    PrintGuard = {print_guard,{eta_event_guard,start_link,
-                               [sin_print_handler, []]},
-                  permanent,2000,worker,[eta_event_guard]},
-    GroupLeaderSup = {sin_group_leader_sup, {sin_group_leader_sup,
-                                             start_link,
-                                             []},
-                      permanent,2000,supervisor,[sin_group_leader_sup]},
-    {ok,{{one_for_one,0,1}, [PrintGuard, GroupLeaderSup]}}.
+    RestartStrategy = simple_one_for_one,
+    MaxRestarts = 1000,
+    MaxSecondsBetweenRestarts = 3600,
 
-%%====================================================================
-%% Internal functions
-%%====================================================================
+    SupFlags = {RestartStrategy, MaxRestarts, MaxSecondsBetweenRestarts},
+
+    Restart = temporary,
+    Shutdown = 2000,
+    Type = worker,
+
+    Child = {sin_group_leader, {sin_group_leader, start_link, []},
+              Restart, Shutdown, Type, [sin_group_leader]},
+
+    {ok, {SupFlags, [Child]}}.
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+%%--------------------------------------------------------------------
+%% @doc
+%%  Start a io<->event gobbler for the buildref, task and atom.d
+%% @spec (BuildRef::list(), Task::atom(), Type::term()) -> ok
+%% @end
+%%--------------------------------------------------------------------
+start_group_leader(BuildRef, Task, Type) ->
+    supervisor:start_child(sin_group_leader_sup,
+                           [BuildRef, Task, Type]).
