@@ -1,0 +1,34 @@
+#!/usr/bin/env python
+
+import sys
+from libsinan import *
+
+
+def print_help():
+    print """ sinan [args] [task]
+local args (+) and server args. local args may be any of the following
+    +url  :  The url to connect to and control
+    +help :  This help message
+
+Server args are much more complex. There are always sane defaults so
+you shouldn't need them, but you may. To get information about server
+args read the sinan documentation.
+"""
+
+
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv[1:]
+    largs = args.parse(argv, "build", {'url' : 'http://localhost:4545'})
+
+
+    try:
+        if largs.special_opts['help']:
+            print_help()
+            return 2
+    except KeyError:
+        None
+
+if __name__ == "__main__":
+    sys.exit(main())
+
