@@ -1,0 +1,20 @@
+--- !ditz.rubyforge.org,2008-03-06/project 
+name: sinan
+version: 0.1.2
+components: 
+- !ditz.rubyforge.org,2008-03-06/component 
+  name: sinan
+- !ditz.rubyforge.org,2008-03-06/component 
+  name: server
+- !ditz.rubyforge.org,2008-03-06/component 
+  name: client
+releases: 
+- !ditz.rubyforge.org,2008-03-06/release 
+  name: "1.0"
+  status: :unreleased
+  release_time: 
+  log_events: 
+  - - 2008-04-11 06:04:02.395141 Z
+    - Eric Merritt <cyberlync@gmail.com>
+    - created
+    - Initial 1.0 release
