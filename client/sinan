@@ -1,8 +1,61 @@
 #!/usr/bin/env python
-
+import os
 import sys
+import urllib2
+import simplejson
 from libsinan import *
 
+CONNECTION_REFUSED = 111
+
+
+
+def jsonify_opts(largs):
+    """ The opts are already in config layout. All we need to
+    do is jsonify them """
+    try:
+        return simplejson.dumps(largs['opts'])
+    except KeyError:
+        return None
+
+def do_request(largs):
+    """ Actually make the task request to the server """
+    config = jsonify_opts(largs)
+    task = largs['task']
+    url = largs['special_opts']['url'])
+    if url[-1:] == '/':
+        url + 'do_task/' + task
+    else:
+        url + '/do_task/' + task
+    conn = urllib2.urlopen(url, config)
+
+    output.handle(task, conn)
+
+
+def start_server(largs):
+    """ Start the server. Use the 'server_command' local
+    opt if it exists, otherwise just use 'sinserv' on the path """
+    command = "sinserv"
+    try:
+        command = largs['special_opts']['server_command']
+    except KeyError:
+        pass
+    os.command(command)
+
+
+def initiate_task(largs):
+    """ Trys to open a connection. If the connection fails
+    due to a connection refused we probably just need to start
+    sinan. Look for a sinserve either in a passed in path
+    or in the default path"""
+    try:
+        do_request(largs)
+    except urllib2.URLError, e:
+        code, reason = e.reason
+        if code == CONNECTION_REFUSED:
+            start_server(largs)
+            do_request(largs)
+        else:
+            print "Unable to connect: " + reason
 
 def print_help():
     print """ sinan [args] [task]
@@ -15,19 +68,17 @@ you shouldn't need them, but you may. To get information about server
 args read the sinan documentation.
 """
 
-
 def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
     largs = args.parse(argv, "build", {'url' : 'http://localhost:4545'})
-
-
     try:
         if largs.special_opts['help']:
             print_help()
             return 2
     except KeyError:
-        None
+        pass
+    initiate_task(largs)
 
 if __name__ == "__main__":
     sys.exit(main())
