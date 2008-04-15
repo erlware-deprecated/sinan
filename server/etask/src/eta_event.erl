@@ -80,21 +80,21 @@ event_name() ->
 %% @doc
 %%  add a task fault to the system tha tis independent of
 %%  a run
-%% @spec meta_fault(Event, Desc) -> ok
+%% @spec meta_fault(EventType, Desc) -> ok
 %% @end
 %%--------------------------------------------------------------------
-meta_fault(Event, Desc) ->
-    gen_event:notify(?SERVER, {meta_event, Event, Desc}).
+meta_fault(EventType, Desc) when is_atom(EventType) ->
+    gen_event:notify(?SERVER, {meta_event, EventType, Desc}).
 
 
 %%--------------------------------------------------------------------
 %% @doc
 %%  Send an event to the event system.
-%% @spec run_event(RunRef, Event) -> ok
+%% @spec run_event(RunRef, EventType) -> ok
 %% @end
 %%--------------------------------------------------------------------
-run_event(RunRef, Event) ->
-    gen_event:notify(?SERVER, {run_event, RunRef, Event}).
+run_event(RunRef, EventType) when is_atom(EventType) ->
+    gen_event:notify(?SERVER, {run_event, RunRef, EventType}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -135,20 +135,20 @@ run_fault(RunRef, Reason) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  send a task event to the system.
-%% @spec task_event(RunRef, Task, Event) -> ok
+%% @spec task_event(RunRef, Task, EventType) -> ok
 %% @end
 %%--------------------------------------------------------------------
-task_event(RunRef, Task, Event) ->
-    gen_event:notify(?SERVER, {task_event, RunRef, Task, Event}).
+task_event(RunRef, Task, EventType) when is_atom(EventType) ->
+    gen_event:notify(?SERVER, {task_event, RunRef, Task, EventType}).
 
 %%--------------------------------------------------------------------
 %% @doc
 %%  task_event with description.
-%% @spec task_event(RunRef, Task, Event) -> ok
+%% @spec task_event(RunRef, Task, EventType) -> ok
 %% @end
 %%--------------------------------------------------------------------
-task_event(RunRef, Task, Event, Desc) ->
-    gen_event:notify(?SERVER, {task_event, RunRef, Task, Event, Desc}).
+task_event(RunRef, Task, EventType, Desc) when is_atom(EventType) ->
+    gen_event:notify(?SERVER, {task_event, RunRef, Task, EventType, Desc}).
 
 %%--------------------------------------------------------------------
 %% @doc
