@@ -84,7 +84,7 @@ event_name() ->
 %% @end
 %%--------------------------------------------------------------------
 meta_fault(EventType, Desc) when is_atom(EventType) ->
-    gen_event:notify(?SERVER, {meta_event, EventType, Desc}).
+    gen_event:notify(?SERVER, {meta_event, EventType, format_desc(Desc)}).
 
 
 %%--------------------------------------------------------------------
@@ -148,7 +148,7 @@ task_event(RunRef, Task, EventType) when is_atom(EventType) ->
 %% @end
 %%--------------------------------------------------------------------
 task_event(RunRef, Task, EventType, Desc) when is_atom(EventType) ->
-    gen_event:notify(?SERVER, {task_event, RunRef, Task, EventType, Desc}).
+    gen_event:notify(?SERVER, {task_event, RunRef, Task, EventType, format_desc(Desc)}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -166,7 +166,7 @@ task_start(RunRef, Task) ->
 %% @end
 %%--------------------------------------------------------------------
 task_start(RunRef, Task, Desc) ->
-    gen_event:notify(?SERVER, {task_event, RunRef, Task, start, Desc}).
+    gen_event:notify(?SERVER, {task_event, RunRef, Task, start, format_desc(Desc)}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -184,7 +184,7 @@ task_stop(RunRef, Task) ->
 %% @end
 %%--------------------------------------------------------------------
 task_stop(RunRef, Task, Desc) ->
-    gen_event:notify(?SERVER, {task_event, RunRef, Task, stop, Desc}).
+    gen_event:notify(?SERVER, {task_event, RunRef, Task, stop, format_desc(Desc)}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -202,7 +202,7 @@ task_fault(RunRef, Task) ->
 %% @end
 %%--------------------------------------------------------------------
 task_fault(RunRef, Task, Reason) ->
-    gen_event:notify(?SERVER, {task_event, RunRef, Task, fault, Reason}).
+    gen_event:notify(?SERVER, {task_event, RunRef, Task, fault, format_desc(Reason)}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -228,3 +228,14 @@ add_sup_handler(Handler, Args) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
+%%--------------------------------------------------------------------
+%% @doc
+%%  Format the desc if required, otherwise return it
+%% @spec format_desc(Desc) -> FormattedDesc
+%% @end
+%% @private
+%%--------------------------------------------------------------------
+format_desc({Format, Data}) ->
+    io_lib:format(Format, Data);
+format_desc(String) ->
+    String.
