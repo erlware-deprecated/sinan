@@ -29,6 +29,7 @@
 %%%  Two possible arguments may be passed in. The start dir that should
 %%%  be somewhere inside a project and a list of args for the system.
 %%%
+%%%  @type buildref() = string(). A globally unique id for the build
 %%%  @type startdir() = string(). A dir that is somewhere in a project
 %%%  @type args() = {[{TaskName, args}]}
 %%%    TaskName = string(). The name of the task the args apply too.
@@ -39,19 +40,20 @@
 -module(sinan).
 
 %% API
--export([build/1, build/2,
-         analyze/2, analyze/1,
-         doc/2, doc/1,
-         shell/1, shell/2,
-         gen/2, gen/1,
-         clean/1, clean/2,
-         help/1, help/2,
-         depends/1, depends/2,
-         test/1, test/2,
-         release/1, release/2,
-         dist/1, dist/2,
-         do_task/3,
+-export([gen_build_ref/0,
+         build/2, build/3,
+         analyze/3, analyze/2,
+         doc/3, doc/2,
+         shell/2, shell/3,
+         gen/3, gen/2,
+         clean/2, clean/3,
+         help/2, help/3,
+         depends/2, depends/3,
+         test/2, test/3,
+         release/2, release/3,
+         dist/2, dist/3,
          do_task/4,
+         do_task/5,
          start/0]).
 
 %%====================================================================
@@ -60,227 +62,239 @@
 %%--------------------------------------------------------------------
 %% @doc
 %%  Run the build task. {@link sin_erl_builder}
-%% @spec build(StartDir::startdir()) -> ok
+%% @spec build(BuildRef::buildRef(), StartDir::startdir()) -> ok
 %% @end
 %%--------------------------------------------------------------------
-build(StartDir) ->
-    build(StartDir, []).
+build(BuildRef, StartDir) ->
+    build(BuildRef, StartDir, []).
 
 %%--------------------------------------------------------------------
 %% @doc
 %%  Run the build with the specified args. {@link sin_erl_builder}
-%% @spec build(StartDir::startdir(), Args::args()) -> ok
+%% @spec build(BuildRef::buildRef(), StartDir::startdir(), Args::args()) -> ok
 %% @end
 %%--------------------------------------------------------------------
-build(StartDir, Args) ->
-    do_task(build, StartDir, Args).
+build(BuildRef, StartDir, Args) ->
+    do_task(build, BuildRef, StartDir, Args).
 
 %%--------------------------------------------------------------------
 %% @doc
 %%  Run the analyze task. {@link sin_analyze}
-%% @spec analyze(StartDir::startdir()) -> ok
+%% @spec analyze(BuildRef::buildRef(), StartDir::startdir()) -> ok
 %% @end
 %%--------------------------------------------------------------------
-analyze(StartDir) ->
-    analyze(StartDir, []).
+analyze(BuildRef, StartDir) ->
+    analyze(BuildRef, StartDir, []).
 
 %%--------------------------------------------------------------------
 %% @doc
 %%  Run the analyze task. {@link sin_analyze}
-%% @spec analyze(StartDir::startdir(), Args::args()) -> ok
+%% @spec analyze(BuildRef::buildRef(), StartDir::startdir(), Args::args()) -> ok
 %% @end
 %%--------------------------------------------------------------------
-analyze(StartDir, Args) ->
-    do_task(analyze, StartDir, Args).
+analyze(BuildRef, StartDir, Args) ->
+    do_task(analyze, BuildRef, StartDir, Args).
 
 %%--------------------------------------------------------------------
 %% @doc
 %%  run the doc task. {@link sin_edoc}
-%% @spec doc(StartDir::startdir()) -> ok
+%% @spec doc(BuildRef::buildRef(), StartDir::startdir()) -> ok
 %% @end
 %%--------------------------------------------------------------------
-doc(StartDir) ->
-    doc(StartDir, []).
+doc(BuildRef, StartDir) ->
+    doc(BuildRef, StartDir, []).
 
 %%--------------------------------------------------------------------
 %% @doc
 %%  run the doc task. {@link sin_edoc}
-%% @spec doc(StartDir::startdir(), Args::args()) -> ok
+%% @spec doc(BuildRef::buildRef(), StartDir::startdir(), Args::args()) -> ok
 %% @end
 %%--------------------------------------------------------------------
-doc(StartDir, Args) ->
-    do_task(doc, StartDir, Args).
+doc(BuildRef, StartDir, Args) ->
+    do_task(doc, BuildRef, StartDir, Args).
 
 %%--------------------------------------------------------------------
 %% @doc
 %%  run the shell task. {@link sin_shell}
-%% @spec shell(StartDir::startdir()) -> ok
+%% @spec shell(BuildRef::buildRef(), StartDir::startdir()) -> ok
 %% @end
 %%--------------------------------------------------------------------
-shell(StartDir) ->
-    shell(StartDir, []).
+shell(BuildRef, StartDir) ->
+    shell(BuildRef, StartDir, []).
 
 %%--------------------------------------------------------------------
 %% @doc
 %%  run the shell task. {@link sin_shell}
-%% @spec shell(StartDir::startdir(), Args::args()) -> ok
+%% @spec shell(BuildRef::buildRef(), StartDir::startdir(), Args::args()) -> ok
 %% @end
 %%--------------------------------------------------------------------
-shell(StartDir, Args) ->
-   do_task(shell, StartDir, Args).
+shell(BuildRef, StartDir, Args) ->
+   do_task(shell, BuildRef,  StartDir, Args).
 
 %%--------------------------------------------------------------------
 %% @doc
 %%  Run the gen task. {@link sin_gen}
-%% @spec gen(StartDir::startdir()) -> ok
+%% @spec gen(BuildRef::buildRef(), StartDir::startdir()) -> ok
 %% @end
 %%--------------------------------------------------------------------
-gen(StartDir) ->
-    gen(StartDir, []).
+gen(BuildRef, StartDir) ->
+    gen(BuildRef StartDir, []).
 
 %%--------------------------------------------------------------------
 %% @doc
 %%  Run the gen task. {@link sin_gen}
-%% @spec gen(StartDir::startdir(), Args::args()) -> ok
+%% @spec gen(BuildRef::buildRef(), StartDir::startdir(), Args::args()) -> ok
 %% @end
 %%--------------------------------------------------------------------
-gen(StartDir, Args) ->
-    do_task(singen, gen, StartDir, Args).
+gen(BuildRef, StartDir, Args) ->
+    do_task(singen, gen, BuildRef, StartDir, Args).
 
 
 %%--------------------------------------------------------------------
 %% @doc
 %%  run the clean task. {@link sin_clean}
-%% @spec clean(StartDir::startdir()) -> ok
+%% @spec clean(BuildRef::buildRef(), StartDir::startdir()) -> ok
 %% @end
 %%--------------------------------------------------------------------
-clean(StartDir) ->
-    clean(StartDir, []).
+clean(BuildRef, StartDir) ->
+    clean(BuildRef, StartDir, []).
 
 %%--------------------------------------------------------------------
 %% @doc
 %%  run the clean task. {@link sin_clean}
-%% @spec clean(StartDir::startdir(), Args::args()) -> ok
+%% @spec clean(BuildRef::buildRef(), StartDir::startdir(), Args::args()) -> ok
 %% @end
 %%--------------------------------------------------------------------
-clean(StartDir, Args) ->
-    do_task(clean, StartDir, Args).
+clean(BuildRef, StartDir, Args) ->
+    do_task(clean, BuildRef, StartDir, Args).
 
 %%--------------------------------------------------------------------
 %% @doc
 %%  run the help task. {@link sin_help}
-%% @spec help(StartDir::startdir()) -> ok
+%% @spec help(BuildRef::buildRef(), StartDir::startdir()) -> ok
 %% @end
 %%--------------------------------------------------------------------
-help(StartDir) ->
-    help(StartDir, []).
+help(BuildRef, StartDir) ->
+    help(BuildRef, StartDir, []).
 
 %%--------------------------------------------------------------------
 %% @doc
 %%  run the help task. {@link sin_help}
-%% @spec help(StartDir::startdir(), Args::args()) -> ok
+%% @spec help(BuildRef::buildRef(), StartDir::startdir(), Args::args()) -> ok
 %% @end
 %%--------------------------------------------------------------------
-help(StartDir, Args) ->
-    do_task(sinhelp, help, StartDir, Args).
+help(BuildRef, StartDir, Args) ->
+    do_task(sinhelp, help, BuildRef, StartDir, Args).
 
 %%--------------------------------------------------------------------
 %% @doc
 %%  run the depends task. {@link sin_depends}
-%% @spec depends(StartDir::startdir()) -> ok
+%% @spec depends(BuildRef::buildRef(), StartDir::startdir()) -> ok
 %% @end
 %%--------------------------------------------------------------------
-depends(StartDir) ->
-    depends(StartDir, []).
+depends(BuildRef, StartDir) ->
+    depends(BuildRef, StartDir, []).
 
 %%--------------------------------------------------------------------
 %% @doc
 %%  run the depends task. {@link sin_depends}
-%% @spec depends(StartDir::startdir(), Args::args()) -> ok
+%% @spec depends(BuildRef::buildRef(), StartDir::startdir(), Args::args()) -> ok
 %% @end
 %%--------------------------------------------------------------------
-depends(StartDir, Args) ->
-    do_task(depends, StartDir, Args).
+depends(BuildRef, StartDir, Args) ->
+    do_task(depends, BuildRef, StartDir, Args).
 
 
 %%--------------------------------------------------------------------
 %% @doc
 %%  run the test task. {@link sin_test}
-%% @spec test(StartDir::startdir()) -> ok
+%% @spec test(BuildRef::buildRef(), StartDir::startdir()) -> ok
 %% @end
 %%--------------------------------------------------------------------
-test(StartDir) ->
-    test(StartDir, []).
+test(BuildRef, StartDir) ->
+    test(BuildRef, StartDir, []).
 
 %%--------------------------------------------------------------------
 %% @doc
 %%  run the test task. {@link sin_test}
-%% @spec test(StartDir::startdir(), Args::args()) -> ok
+%% @spec test(BuildRef::buildRef(), StartDir::startdir(), Args::args()) -> ok
 %% @end
 %%--------------------------------------------------------------------
-test(StartDir, Args) ->
-    do_task(test, StartDir, Args).
+test(BuildRef, StartDir, Args) ->
+    do_task(test, BuildRef, StartDir, Args).
 
 %%--------------------------------------------------------------------
 %% @doc
 %%  run the release task. {@link sin_release_builder}
-%% @spec release(StartDir::startdir()) -> ok
+%% @spec release(BuildRef::buildRef(), StartDir::startdir()) -> ok
 %% @end
 %%--------------------------------------------------------------------
-release(StartDir) ->
-    release(StartDir, []).
+release(BuildRef, StartDir) ->
+    release(BuildRef, StartDir, []).
 
 %%--------------------------------------------------------------------
 %% @doc
 %%  run the release task. {@link sin_release_builder}
-%% @spec release(StartDir::startdir(), Args::args()) -> ok
+%% @spec release(BuildRef::buildRef(), StartDir::startdir(), Args::args()) -> ok
 %% @end
 %%--------------------------------------------------------------------
-release(StartDir, Args) ->
-    do_task(release, StartDir, Args).
+release(BuildRef, StartDir, Args) ->
+    do_task(release, BuildRef, StartDir, Args).
 
 %%--------------------------------------------------------------------
 %% @doc
 %%  run the dist task. {@link sin_dist_builder}
-%% @spec dist(StartDir::startdir()) -> ok
+%% @spec dist(BuildRef::buildRef(), StartDir::startdir()) -> ok
 %% @end
 %%--------------------------------------------------------------------
-dist(StartDir) ->
-    dist(StartDir, []).
+dist(BuildRef, StartDir) ->
+    dist(BuildRef, StartDir, []).
 
 %%--------------------------------------------------------------------
 %% @doc
 %%  run the dist task. {@link sin_dist_builder}
-%% @spec dist(StartDir::startdir(), Args::args()) -> ok
+%% @spec dist(BuildRef::buildRef(), StartDir::startdir(), Args::args()) -> ok
 %% @end
 %%--------------------------------------------------------------------
-dist(StartDir, Args) ->
-    do_task(dist, StartDir, Args).
+dist(BuildRef, StartDir, Args) ->
+    do_task(dist, BuildRef, StartDir, Args).
 
 
 %%--------------------------------------------------------------------
 %% @doc
 %%  run the specified task, with the default chain
-%% @spec do_task(Task, Args) -> ok
+%% @spec do_task(Task, BuildRef::buildRef(),
+%%   StartDir::startdir(), Args::args()) -> ok
 %% @end
 %%--------------------------------------------------------------------
-do_task(Task, StartDir, Args) when is_atom(Task) ->
-    do_task(sinan, StartDir, Task, Args).
+do_task(Task, BuildRef, StartDir, Args) when is_atom(Task) ->
+    do_task(sinan, BuildRef, StartDir, Task, Args).
 
 %%--------------------------------------------------------------------
 %% @doc
 %%  run the specified task
-%% @spec do_task(Chain, Task, Args) -> ok
+%% @spec do_task(Chain, Task, BuildRef::buildRef(),
+%%   Startdir::startdir(), Args::args()) -> ok
 %% @end
 %%--------------------------------------------------------------------
-do_task(Chain, StartDir, Task, Args) when is_atom(Task) ->
-    BuildRef = eta_engine:make_run_id(),
+do_task(Chain, Task, BuildRef, StartDir, Args) when is_atom(Task) ->
     fconf:start_config(BuildRef,
                        fun sin_parse_handle:parse_config_file/1),
     fconf:store(BuildRef, "build.args", Args),
     fconf:store(BuildRef, "build.start_dir", StartDir),
     eta_engine:run(Chain, Task, BuildRef),
     fconf:stop_config(BuildRef).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Generate a new unique build ref for a run. This allows the
+%% use to setup task handlers for the system.
+%%
+%% @spec get_build_ref() -> GeneratedBuildRef::string()
+%% @end
+%%--------------------------------------------------------------------
+gen_build_ref() ->
+    eta_engine:make_run_id().
 
 %%--------------------------------------------------------------------
 %% @doc
