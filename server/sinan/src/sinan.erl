@@ -134,15 +134,6 @@ shell(BuildRef, StartDir, Args) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Run the gen task. {@link sin_gen}
-%% @spec gen(BuildRef::buildRef(), StartDir::startdir()) -> ok
-%% @end
-%%--------------------------------------------------------------------
-gen(BuildRef, StartDir) ->
-    gen(BuildRef StartDir, []).
-
-%%--------------------------------------------------------------------
-%% @doc
-%%  Run the gen task. {@link sin_gen}
 %% @spec gen(BuildRef::buildRef(), StartDir::startdir(), Args::args()) -> ok
 %% @end
 %%--------------------------------------------------------------------
@@ -185,15 +176,6 @@ help(BuildRef, StartDir) ->
 %%--------------------------------------------------------------------
 help(BuildRef, StartDir, Args) ->
     do_task(sinhelp, help, BuildRef, StartDir, Args).
-
-%%--------------------------------------------------------------------
-%% @doc
-%%  run the depends task. {@link sin_depends}
-%% @spec depends(BuildRef::buildRef(), StartDir::startdir()) -> ok
-%% @end
-%%--------------------------------------------------------------------
-depends(BuildRef, StartDir) ->
-    depends(BuildRef, StartDir, []).
 
 %%--------------------------------------------------------------------
 %% @doc
