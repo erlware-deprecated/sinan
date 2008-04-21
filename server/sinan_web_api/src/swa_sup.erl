@@ -84,10 +84,10 @@ init([]) ->
     Shutdown = 2000,
     Type = worker,
 
-    AChild = {'AName', {'AModule', start_link, []},
-              Restart, Shutdown, Type, ['AModule']},
+    DumbServer = {swa_dumb_server, {swa_dumb_server, start_link, []},
+              Restart, Shutdown, Type, [swa_dumb_server]},
 
-    {ok, {SupFlags, [AChild]}}.
+    {ok, {SupFlags, [DumbServer]}}.
 
 %%%===================================================================
 %%% Internal functions

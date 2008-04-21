@@ -33,6 +33,7 @@
 -module(swa_crary_handler).
 
 -include("crary.hrl").
+-include("uri.hrl").
 
 %% API
 -export([handler/1]).
@@ -43,14 +44,19 @@
 
 %%--------------------------------------------------------------------
 %% @doc
-%% @spec
+%%  Handle incoming requests for action.
+%% @spec (Req) -> ok
 %% @end
 %%--------------------------------------------------------------------
-handler(#crary_req{method = "GET"} = Req) ->
+handler(#crary_req{method = "GET"}) ->
     %% Set up get API
     ok;
-handler(#crary_req{method = "POST"} = Req) ->
-    %% do computations
+handler(Req = #crary_req{method = "POST", uri = #uri{path=Path}}) ->
+    Body = crary_body:read_all(Req),
+    Args = ktj_decode:decode(Body),
+    NewPath = filename:split(Path),
+    BuildRef = sinan:gen_build_ref(),
+    handle_do_request(NewPath, Req, BuildRef, Args),
     ok;
 handler(Req) ->
     crary:not_implemented(Req).
@@ -58,3 +64,46 @@ handler(Req) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+%%--------------------------------------------------------------------
+%% @doc
+%%  Take the path and various arguments and disptach sinan in the
+%%  correct way.
+%% @spec handle_do_request(Path, Req, BuildRef, Args) -> ok
+%% @end
+%%--------------------------------------------------------------------
+handle_do_request(["do_task", "build"], Req, BuildRef, Args) ->
+    sinan:add_build_event_handler(swa_event_handler, [Req, BuildRef]),
+    sinan:build(BuildRef, Args);
+handle_do_request(["do_task", "analyze"], Req, BuildRef, Args) ->
+    sinan:add_build_event_handler(swa_event_handler, [Req, BuildRef]),
+    sinan:analyze(BuildRef, Args);
+handle_do_request(["do_task", "doc"], Req, BuildRef, Args) ->
+    sinan:add_build_event_handler(swa_event_handler, [Req, BuildRef]),
+    sinan:doc(BuildRef, Args);
+handle_do_request(["do_task", "shell"], Req, BuildRef, Args) ->
+    sinan:add_build_event_handler(swa_event_handler, [Req, BuildRef]),
+    sinan:shell(BuildRef, Args);
+handle_do_request(["do_task", "gen"], Req, BuildRef, Args) ->
+    sinan:add_build_event_handler(swa_event_handler, [Req, BuildRef]),
+    sinan:gen(BuildRef, Args);
+handle_do_request(["do_task", "clean"], Req, BuildRef, Args) ->
+    sinan:add_build_event_handler(swa_event_handler, [Req, BuildRef]),
+    sinan:clean(BuildRef, Args);
+handle_do_request(["do_task", "help"], Req, BuildRef, Args) ->
+    sinan:add_build_event_handler(swa_event_handler, [Req, BuildRef]),
+    sinan:help(BuildRef, Args);
+handle_do_request(["do_task", "depends"], Req, BuildRef, Args) ->
+    sinan:add_build_event_handler(swa_event_handler, [Req, BuildRef]),
+    sinan:depends(BuildRef, Args);
+handle_do_request(["do_task", "test"], Req, BuildRef, Args) ->
+    sinan:add_build_event_handler(swa_event_handler, [Req, BuildRef]),
+    sinan:test(BuildRef, Args);
+handle_do_request(["do_task", "release"], Req, BuildRef, Args) ->
+    sinan:add_build_event_handler(swa_event_handler, [Req, BuildRef]),
+    sinan:release(BuildRef, Args);
+handle_do_request(["do_task", "dist"], Req, BuildRef, Args) ->
+    sinan:add_build_event_handler(swa_event_handler, [Req, BuildRef]),
+    sinan:dist(BuildRef, Args);
+handle_do_request(Path, _, _, _) ->
+    throw({unknow_task, Path}).
+
