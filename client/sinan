@@ -7,6 +7,15 @@ from libsinan import *
 
 CONNECTION_REFUSED = 111
 
+def add_start_dir(config):
+    """ Add the argument required by many or most of
+    the tasks in the system. """
+    try:
+        config['build']['start_dir'] = os.getcwd()
+    except KeyError:
+        config['build'] = {'start_dir' : os.getcwd()}
+    return config
+
 
 
 def jsonify_opts(largs):
@@ -19,9 +28,9 @@ def jsonify_opts(largs):
 
 def do_request(largs):
     """ Actually make the task request to the server """
-    config = jsonify_opts(largs)
+    config = add_start_dir(jsonify_opts(largs))
     task = largs['task']
-    url = largs['special_opts']['url'])
+    url = largs['special_opts']['url']
     if url[-1:] == '/':
         url + 'do_task/' + task
     else:
@@ -34,12 +43,13 @@ def do_request(largs):
 def start_server(largs):
     """ Start the server. Use the 'server_command' local
     opt if it exists, otherwise just use 'sinserv' on the path """
-    command = "sinserv"
+    cmd = "sinserv"
     try:
-        command = largs['special_opts']['server_command']
+        cmd = largs['special_opts']['server_command']
     except KeyError:
         pass
-    os.command(command)
+    if os.system(cmd) != 0:
+        raise sinexceptions.SinanError("Unable to start " + cmd)
 
 
 def initiate_task(largs):
@@ -73,12 +83,15 @@ def main(argv=None):
         argv = sys.argv[1:]
     largs = args.parse(argv, "build", {'url' : 'http://localhost:4545'})
     try:
-        if largs.special_opts['help']:
+        if largs['special_opts']['help']:
             print_help()
             return 2
     except KeyError:
         pass
-    initiate_task(largs)
+    try:
+        initiate_task(largs)
+    except sinexceptions.SinanError, e:
+        print e.value
 
 if __name__ == "__main__":
     sys.exit(main())
