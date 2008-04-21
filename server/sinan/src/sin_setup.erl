@@ -137,7 +137,8 @@ handle_build_config(Flavor, BuildRef) ->
 %%-------------------------------------------------------------------
 process_build_config(Flavor, BuildRef, BuildConfig) ->
     Dir = filename:dirname(BuildConfig),
-    case fconf:parse_config(BuildRef, BuildConfig) of
+    Data = sin_config_parser:parse_config_file(BuildConfig),
+    case fconf:add_config(BuildRef, Data) of
         ok ->
             ok;
         {error, {Reason, Line, Char}} ->
