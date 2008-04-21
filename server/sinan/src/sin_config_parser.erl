@@ -25,12 +25,11 @@
 %%%---------------------------------------------------------------------------
 %%% @author Eric Merritt <cyberlync@gmail.com>
 %%% @doc
-%%%  Supports configuration aspects of the build system. Allows
-%%%  applications to query aspects of the data.
+%%%  Parses a config file returning data formatted in fconf compatible form.
 %%% @end
 %%% @copyright (C) 2007, Erlware
 %%%----------------------------------------------------------------------------
--module(sin_parse_handle).
+-module(sin_config_parser).
 
 -include("eunit.hrl").
 
