@@ -57,6 +57,9 @@
 %% @end
 %%--------------------------------------------------------------------
 init([CraryRequest, BuildId]) ->
+    crary:r(CraryRequest, 200,
+            [{"content-type", "application/json"},
+             {"transfer-encoding", "chunked"}]),
     {ok, #state{req=CraryRequest, buildid=BuildId}}.
 
 %%--------------------------------------------------------------------
@@ -156,25 +159,25 @@ code_change(_OldVsn, State, _Extra) ->
 %% @private
 %%--------------------------------------------------------------------
 send_event({Type, _, EventType}, Req) ->
-    Desc = {obj, [{type, Type},
-                  {event_type, EventType}]},
-    crary:write_body(Req, ktuo:encode(Desc));
+    JDesc = ktj_encode:encode({obj, [{type, Type},
+                                     {event_type, EventType}]}),
+    crary_body:write(Req, JDesc);
 send_event({Type, _, Task, EventType}, Req) when is_atom(EventType)->
-    Desc = {obj, [{task, Task},
+    JDesc = {obj, [{task, Task},
                   {type, Type},
                   {event_type, EventType}]},
-    crary:write_body(Req, ktuo:encode(Desc));
+    crary_body:write(Req, ktj_encode:encode(JDesc));
 send_event({Type, _, EventType, Desc}, Req) ->
-    Desc = {obj, [{type, Type},
+    JDesc = {obj, [{type, Type},
                   {event_type, EventType},
                   {desc, Desc}]},
-    crary:write_body(Req, ktuo:encode(Desc));
+    crary_body:write(Req, ktj_encode:encode(JDesc));
 send_event({Type, _, Task, EventType, Desc}, Req) ->
-    Desc = {obj, [{task, Task},
-                  {type, Type},
-                  {event_type, EventType},
-                  {desc, Desc}]},
-    crary:write_body(Req, ktuo:encode(Desc)).
+    JDesc = ktj_encode:encode({obj, [{task, Task},
+                                     {type, Type},
+                                     {event_type, EventType},
+                                     {desc, Desc}]}),
+    crary_body:write(Req, JDesc).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -184,4 +187,5 @@ send_event({Type, _, Task, EventType, Desc}, Req) ->
 %%--------------------------------------------------------------------
 quit(Req) ->
     crary_sock:done_writing(Req).
+
 

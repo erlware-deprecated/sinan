@@ -47,6 +47,7 @@
 %%--------------------------------------------------------------------
 start() ->
     sinan:start(),
+    application:start(uri),
     application:start(crary),
     application:start(sinan_web_api).
 

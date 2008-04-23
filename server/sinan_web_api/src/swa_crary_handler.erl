@@ -48,13 +48,11 @@
 %% @spec (Req) -> ok
 %% @end
 %%--------------------------------------------------------------------
-handler(#crary_req{method = "GET"}) ->
-    %% Set up get API
-    ok;
 handler(Req = #crary_req{method = "POST", uri = #uri{path=Path}}) ->
     Body = crary_body:read_all(Req),
-    Args = ktj_decode:decode(Body),
-    NewPath = filename:split(Path),
+    {Args, _, _} = ktj_decode:decode(Body),
+    %%remove the first element which is always '/'
+    [_ | NewPath] = filename:split(Path),
     BuildRef = sinan:gen_build_ref(),
     handle_do_request(NewPath, Req, BuildRef, Args),
     ok;
@@ -105,5 +103,5 @@ handle_do_request(["do_task", "dist"], Req, BuildRef, Args) ->
     sinan:add_build_event_handler(swa_event_handler, [Req, BuildRef]),
     sinan:dist(BuildRef, Args);
 handle_do_request(Path, _, _, _) ->
-    throw({unknow_task, Path}).
+    throw({unknown_task, Path}).
 

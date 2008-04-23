@@ -59,9 +59,9 @@
 %%                                 {error, Reason}
 %% @end
 %%--------------------------------------------------------------------
-start(_Type, StartArgs) ->
+start(_Type, _StartArgs) ->
     start_crary(),
-    case swa_sup:start_link(StartArgs) of
+    case swa_sup:start_link() of
         {ok, Pid} ->
             {ok, Pid};
         Error ->
@@ -92,7 +92,7 @@ stop(_State) ->
 %%--------------------------------------------------------------------
 start_crary() ->
     Port = get_port(),
-    crary:start(Port, fun swa_crary_handler:handler/1).
+    crary:start(Port, {fun swa_crary_handler:handler/1, []}).
 
 %%--------------------------------------------------------------------
 %% @doc
