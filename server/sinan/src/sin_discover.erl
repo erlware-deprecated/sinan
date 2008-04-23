@@ -124,11 +124,11 @@ build_app_info(BuildRef, [H|T], Acc) ->
     AppFile = filename:join([H, "ebin", string:concat(AppName, ".app")]),
     case file:consult(AppFile) of
         {ok, [{application, Name, Details}]} ->
-            Dict = process_details([{"name", Name},
-                                    {"dotapp", AppFile},
-                                    {"basedir", H} | Details], dict:new()),
+            Info = {obj, process_details([{"name", Name},
+                                          {"dotapp", AppFile},
+                                          {"basedir", H} | Details], [])},
             fconf:store(BuildRef, {path, ["apps",
-                                       AppName]}, Dict),
+                                          AppName]}, Info),
             build_app_info(BuildRef, T, [AppName | Acc]);
         {error, {_, Module, Desc}} ->
             Error = Module:format_error(Desc),
@@ -144,7 +144,6 @@ build_app_info(BuildRef, [H|T], Acc) ->
 build_app_info(BuildRef, [], Acc) ->
     fconf:store(BuildRef, "project.applist", Acc).
 
-
 %%--------------------------------------------------------------------
 %% @spec process_details(List, Acc) -> NewDetails.
 %%
@@ -154,12 +153,12 @@ build_app_info(BuildRef, [], Acc) ->
 %% @end
 %% @private
 %%--------------------------------------------------------------------
-process_details([{Key, Value} | T], Dict) when is_atom(Key) ->
-    process_details(T, dict:store(atom_to_list(Key), Value, Dict));
-process_details([{Key, Value} | T], Dict) when is_list(Key)->
-    process_details(T, dict:store(Key, Value, Dict));
-process_details([], Dict) ->
-    Dict.
+process_details([{Key, Value} | T], Acc) when is_atom(Key) ->
+    process_details(T, [{atom_to_list(Key), Value} | Acc]);
+process_details([{Key, Value} | T], Acc) when is_list(Key)->
+    process_details(T, [{Key, Value} |  Acc]);
+process_details([], Acc) ->
+    Acc.
 
 %%-------------------------------------------------------------------
 %% @spec look_for_app_dirs(Pwd, Acc) -> AppDirs

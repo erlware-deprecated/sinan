@@ -74,14 +74,14 @@ parse_config([$\n | T], NewLines, _Chars) ->
 parse_config([$\r | T], NewLines, _Chars) ->
     parse_config(T, NewLines + 1, 0);
 parse_config(All = [${ | _], NewLines, Chars) ->
-    case  ktuo_json:decode(All, NewLines, Chars) of
+    case  ktj_decode:decode(All, NewLines, Chars) of
         Error = {error, _} ->
             Error;
         {Value, _, _} ->
             Value
     end;
 parse_config(All, NewLines, Chars) ->
-   case ktuo_json:decode([${ | All] ++ [$}], NewLines, Chars) of
+   case ktj_decode:decode([${ | All] ++ [$}], NewLines, Chars) of
         Error = {error, _} ->
             Error;
         {Value, _, _} ->

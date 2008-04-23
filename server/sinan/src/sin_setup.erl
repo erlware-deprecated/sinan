@@ -208,5 +208,6 @@ setup_build(BuildRef) ->
     DefaultConfig =
         filename:join([code:priv_dir(sinan),
                        "default_build"]),
-    fconf:parse_config(BuildRef,
-                       DefaultConfig).
+    Data = sin_config_parser:parse_config_file(DefaultConfig),
+    fconf:add_config(BuildRef, Data).
+
