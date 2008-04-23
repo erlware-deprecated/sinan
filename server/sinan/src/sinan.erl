@@ -202,7 +202,7 @@ dist(BuildRef, Args) ->
 %% @end
 %%--------------------------------------------------------------------
 do_task(Task, BuildRef, Args) when is_atom(Task) ->
-    do_task(sinan, BuildRef, Task, Args).
+    do_task(sinan, Task, BuildRef, Args).
 
 %%--------------------------------------------------------------------
 %% @doc
