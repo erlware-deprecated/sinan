@@ -95,7 +95,7 @@ do_task(BuildRef) ->
 build(BuildRef) ->
     eta_event:task_start(BuildRef, ?TASK),
     ensure_build_dir(BuildRef),
-    Apps = fconf:get_value(BuildRef, "project.apps"),
+    Apps = sin_build_config:get_value(BuildRef, "project.apps"),
     NApps = reorder_apps_according_to_deps(Apps, Apps, []),
     NArgs = [],
     build_apps(BuildRef, NApps, NArgs),
@@ -191,13 +191,13 @@ in_app_list(_App, []) ->
 %% @private
 %%--------------------------------------------------------------------
 build_apps(BuildRef, Apps, Args) ->
-    AppList = fconf:get_value(BuildRef, "project.apps"),
-    Deps = fconf:get_value(BuildRef, "project.deps"),
-    ProjectDir = fconf:get_value(BuildRef, "project.dir"),
-    BuildDir = fconf:get_value(BuildRef, "build.dir"),
+    AppList = sin_build_config:get_value(BuildRef, "project.apps"),
+    Deps = sin_build_config:get_value(BuildRef, "project.deps"),
+    ProjectDir = sin_build_config:get_value(BuildRef, "project.dir"),
+    BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
     AppBDir = filename:join([BuildDir, "apps"]),
     SigDir = filename:join([BuildDir, "sigs"]),
-    Repo = fconf:get_value(BuildRef, "project.repository"),
+    Repo = sin_build_config:get_value(BuildRef, "project.repository"),
     build_apps(BuildRef, #env{project_dir=ProjectDir,
                               build_dir=BuildDir,
                               apps_build_dir=AppBDir,
@@ -236,19 +236,19 @@ build_apps(_, _BuildSupInfo, [], _Args) ->
 %% @private
 %%-------------------------------------------------------------------
 build_app(BuildRef, Env, AppName, Args) ->
-    AppVsn = fconf:get_value(BuildRef, {path, ["apps", AppName, "vsn"]}),
-    AppDir = fconf:get_value(BuildRef, {path, ["apps", AppName, "basedir"]}),
+    AppVsn = sin_build_config:get_value(BuildRef, "apps." ++ AppName ++ ".vsn"),
+    AppDir = sin_build_config:get_value(BuildRef, "apps." ++ AppName ++ ".basedir"),
     BuildTarget = lists:flatten([AppName, "-", AppVsn]),
     AppBuildDir = filename:join([Env#env.apps_build_dir, BuildTarget]),
     Target = filename:join([AppBuildDir, "ebin"]),
     SrcDir = filename:join([AppDir, "src"]),
     {EbinPaths, Includes} = setup_code_path(BuildRef, Env, AppName),
-    fconf:store(BuildRef, {path, ["apps", AppName, "code_paths"]},
+    sin_build_config:store(BuildRef, "apps." ++ AppName ++ ".code_paths",
                    [Target | EbinPaths]),
     Options = Args ++ [{outdir, Target}, strict_record_tests,
                        return_errors, return_warnings,
                        {i, filename:join([AppDir, "include"])} | Includes],
-    Ignorables = fconf:get_value(BuildRef, "ignore_dirs", []),
+    Ignorables = sin_build_config:get_value(BuildRef, "ignore_dirs", []),
     sin_utils:copy_dir(AppBuildDir, AppDir, "", Ignorables),
     code:add_patha(Target),
     Modules = gather_modules(BuildRef, AppName, SrcDir),
@@ -290,7 +290,7 @@ setup_code_path(BuildRef, Env, AppName) ->
                          "This shouldn't happen!!",
                          [AppName]);
         {_, _, {Deps, _}} ->
-            case fconf:get_value(BuildRef, "eunit") of
+            case sin_build_config:get_value(BuildRef, "eunit") of
                 "disabled" ->
                     extract_info_from_deps(BuildRef, Deps, Env#env.app_list,
                                            Env#env.repo,
@@ -371,8 +371,8 @@ get_app_from_list(_App, []) ->
 %% @private
 %%--------------------------------------------------------------------
 gather_modules(BuildRef, AppName, SrcDir) ->
-    ModuleList = fconf:get_value(BuildRef,
-                                 {path, ["apps", AppName, "modules"]}),
+    ModuleList = sin_build_config:get_value(BuildRef,
+                                 "apps." ++ AppName ++ ".modules"),
     FileList =
         filelib:fold_files(SrcDir,
                            "(.+\.erl|.+\.yrl|.+\.asn1)$",
@@ -592,7 +592,7 @@ needs_building(FileName, Ext, TargetDir, TargetExt) ->
 %% @private
 %%--------------------------------------------------------------------
 ensure_build_dir(BuildRef) ->
-    BuildDir = fconf:get_value(BuildRef, "build.dir"),
+    BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
     AppsDir = lists:flatten([BuildDir, "apps", "tmp"]),
     filelib:ensure_dir(AppsDir).
 

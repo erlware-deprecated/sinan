@@ -83,9 +83,9 @@ do_task(BuildRef) ->
 %%--------------------------------------------------------------------
 shell(BuildRef) ->
     eta_event:task_start(BuildRef, ?TASK, "Starting a shell ..."),
-    ProjectApps = fconf:get_value(BuildRef, "project.apps"),
-    ProjectRepoApps = fconf:get_value(BuildRef, "project.repoapps"),
-    Repo = fconf:get_value(BuildRef, "project.repository"),
+    ProjectApps = sin_build_config:get_value(BuildRef, "project.apps"),
+    ProjectRepoApps = sin_build_config:get_value(BuildRef, "project.repoapps"),
+    Repo = sin_build_config:get_value(BuildRef, "project.repository"),
     make_shell(BuildRef, ProjectApps, ProjectRepoApps, Repo),
     eta_event:task_stop(BuildRef, ?TASK).
 
@@ -101,7 +101,7 @@ shell(BuildRef) ->
 %% @end
 %%--------------------------------------------------------------------
 make_shell(BuildRef, ProjectApps, ProjectRepoApps, Repo) ->
-    BuildDir = fconf:get_value(BuildRef, "build.dir"),
+    BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
     AppDir = filename:join([BuildDir, "apps"]),
     Paths = gather_paths(AppDir, ProjectApps, []) ++
         gather_paths(Repo, ProjectRepoApps, []),

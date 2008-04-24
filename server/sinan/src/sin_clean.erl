@@ -82,7 +82,7 @@ do_task(BuildRef) ->
 %%--------------------------------------------------------------------
 clean(BuildRef) ->
     eta_event:task_start(BuildRef, ?TASK, "cleaning build artifacts"),
-    BuildDir = fconf:get_value(BuildRef, "build.root"),
+    BuildDir = sin_build_config:get_value(BuildRef, "build.root"),
     sin_utils:delete_dir(BuildDir),
     eta_event:task_stop(BuildRef, ?TASK).
 

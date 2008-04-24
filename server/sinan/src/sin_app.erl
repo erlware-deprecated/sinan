@@ -93,7 +93,6 @@ stop(_State) ->
 register_tasks() ->
     sin_analyze:start(),
     sin_edoc:start(),
-    sin_setup:start(),
     sin_erl_builder:start(),
     sin_shell:start(),
     sin_gen:start(),
@@ -102,7 +101,6 @@ register_tasks() ->
     sin_depends:start(),
     sin_depends_check:start(),
     sin_test:start(),
-    sin_discover:start(),
     sin_release_builder:start(),
     sin_dist_builder:start().
 

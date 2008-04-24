@@ -134,7 +134,7 @@ shell(BuildRef, Args) ->
 %% @end
 %%--------------------------------------------------------------------
 gen(BuildRef, Args) ->
-    do_task(singen, gen, BuildRef, Args).
+    do_task_bare(singen, gen, BuildRef, Args).
 
 
 %%--------------------------------------------------------------------
@@ -154,7 +154,7 @@ clean(BuildRef, Args) ->
 %% @end
 %%--------------------------------------------------------------------
 help(BuildRef, Args) ->
-    do_task(sinhelp, help, BuildRef, Args).
+    do_task_bare(sinhelp, help, BuildRef, Args).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -204,6 +204,8 @@ dist(BuildRef, Args) ->
 do_task(Task, BuildRef, Args) when is_atom(Task) ->
     do_task(sinan, Task, BuildRef, Args).
 
+
+
 %%--------------------------------------------------------------------
 %% @doc
 %%  run the specified task
@@ -212,9 +214,26 @@ do_task(Task, BuildRef, Args) when is_atom(Task) ->
 %% @end
 %%--------------------------------------------------------------------
 do_task(Chain, Task, BuildRef, Args) when is_atom(Task) ->
-    fconf:start_config(BuildRef, Args),
+    StartDir = find_start_dir(Args),
+    ProjectRoot = find_project_root(StartDir),
+    Seed = sin_build_config:get_seed(ProjectRoot),
+    sin_build_config:start_config(ProjectRoot, BuildRef, Seed, Args),
     eta_engine:run(Chain, Task, BuildRef),
-    fconf:stop_config(BuildRef).
+    sin_build_config:stop_config(BuildRef).
+
+%%--------------------------------------------------------------------
+%% @doc
+%%  run the specified task, without expecting a build config and
+%% what not.
+%% @spec (Chain, Task, BuildRef::buildRef(),
+%%   Args::args()) -> ok
+%% @end
+%%--------------------------------------------------------------------
+do_task_bare(Chain, Task, BuildRef, Args) when is_atom(Task) ->
+    StartDir = find_start_dir(Args),
+    sin_build_config:start_config(StartDir, BuildRef, Args),
+    eta_engine:run(Chain, Task, BuildRef),
+    sin_build_config:stop_config(BuildRef).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -243,7 +262,6 @@ start() ->
     application:start(ibrowse),
     application:start(eunit),
     application:start(ktuo),
-    application:start(fconf),
     application:start(ewlib),
     application:start(ewrepo),
     application:start(gs),
@@ -258,3 +276,42 @@ start() ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
+%%--------------------------------------------------------------------
+%% @doc
+%%  parse the start dir out of the args passed in.
+%% @spec (Data) -> StartDir
+%% @end
+%% @private
+%%--------------------------------------------------------------------
+find_start_dir({obj, Data}) ->
+    case lists:keysearch("build", 1, Data) of
+         {value, {obj, Data2}} ->
+            case lists:keysearch("start_dir", 1,  Data2) of
+                {value, StartDir} ->
+                    StartDir;
+                _ ->
+                    throw(unable_to_find_start_dir)
+            end;
+        _ ->
+            throw(unable_to_find_start_dir)
+    end.
+
+
+%%-------------------------------------------------------------------
+%% @spec find_build_config(Dir::string()) -> ok.
+%% @doc
+%%   find "_build.cfg" in the current directory. if not recurse
+%%   with parent directory.
+%% @end
+%% @private
+%%-------------------------------------------------------------------
+find_project_root("/") ->
+    throw(no_build_config);
+find_project_root(Start) ->
+    ConfigFile = filename:join(Start, "_build.cfg"),
+    case file:read_file_info(ConfigFile) of
+        {ok, _FileInfo} ->
+            Start;
+        {error, _Reason} ->
+            find_project_root(sin_utils:parent_dir(Start))
+    end.

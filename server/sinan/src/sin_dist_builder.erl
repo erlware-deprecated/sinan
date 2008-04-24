@@ -86,10 +86,10 @@ do_task(BuildRef) ->
 %%--------------------------------------------------------------------
 dist(BuildRef) ->
     eta_event:task_start(BuildRef, ?TASK),
-    ProjectDir = fconf:get_value(BuildRef, "project.dir"),
-    ProjectApps = fconf:get_value(BuildRef, "project.apps"),
-    ProjectRepoApps = fconf:get_value(BuildRef, "project.repoapps"),
-    Repo = fconf:get_value(BuildRef, "project.repository"),
+    ProjectDir = sin_build_config:get_value(BuildRef, "project.dir"),
+    ProjectApps = sin_build_config:get_value(BuildRef, "project.apps"),
+    ProjectRepoApps = sin_build_config:get_value(BuildRef, "project.repoapps"),
+    Repo = sin_build_config:get_value(BuildRef, "project.repository"),
     make_tar(BuildRef, ProjectDir, ProjectApps, ProjectRepoApps, Repo),
     eta_event:task_stop(BuildRef, ?TASK).
 
@@ -106,7 +106,7 @@ dist(BuildRef) ->
 %% @end
 %%--------------------------------------------------------------------
 make_tar(BuildRef, ProjectDir, ProjectApps, ProjectRepoApps, Repo) ->
-    BuildDir = fconf:get_value(BuildRef, "build.dir"),
+    BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
     TarDir = filename:join([BuildDir, "tar"]),
     filelib:ensure_dir(filename:join([TarDir, "tmp"])),
     ProjectName = get_project_name(BuildRef),
@@ -150,7 +150,7 @@ create_tar_file(BuildRef, FileName, TarContents) ->
 %% @end
 %%--------------------------------------------------------------------
 copy_additional_dirs(BuildRef, TopLevel, ProjectDir) ->
-    case fconf:get_value(BuildRef, "dist.include_dirs") of
+    case sin_build_config:get_value(BuildRef, "dist.include_dirs") of
         undefined ->
             [];
         RequiredDirs ->
@@ -188,7 +188,7 @@ gather_dirs(_, _, [], Acc) ->
 %% @end
 %%--------------------------------------------------------------------
 get_project_name(BuildRef) ->
-    Version = case fconf:get_value(BuildRef, "project.vsn") of
+    Version = case sin_build_config:get_value(BuildRef, "project.vsn") of
                   undefined ->
                       eta_event:task_fault(BuildRef, ?TASK,
                                            "No project version defined in build config"
@@ -197,7 +197,7 @@ get_project_name(BuildRef) ->
                   Vsn ->
                       Vsn
               end,
-    Name = case fconf:get_value(BuildRef, "project.name") of
+    Name = case sin_build_config:get_value(BuildRef, "project.name") of
                undefined ->
                    eta_event:task_fault(BuildRef, ?TASK,
                                         "No project name defined in build config "
@@ -217,7 +217,7 @@ get_project_name(BuildRef) ->
 %% @end
 %%--------------------------------------------------------------------
 get_release_dirs(BuildRef, TopLevel, BuildDir) ->
-    Version = case fconf:get_value(BuildRef, "project.vsn") of
+    Version = case sin_build_config:get_value(BuildRef, "project.vsn") of
                   undefined ->
                       eta_event:task_fault(BuildRef, ?TASK,
                                            "No project version defined in build config"
@@ -226,7 +226,7 @@ get_release_dirs(BuildRef, TopLevel, BuildDir) ->
                   Vsn ->
                       Vsn
               end,
-    Name = case fconf:get_value(BuildRef, "project.name") of
+    Name = case sin_build_config:get_value(BuildRef, "project.name") of
                undefined ->
                    eta_event:task_fault(BuildRef, ?TASK,
                                         "No project name defined in build config "
@@ -235,7 +235,7 @@ get_release_dirs(BuildRef, TopLevel, BuildDir) ->
                Nm ->
                    Nm
            end,
-    case fconf:get_value(BuildRef, "dist.include_release_info") of
+    case sin_build_config:get_value(BuildRef, "dist.include_release_info") of
         Value when Value == true; Value == undefined ->
             [{filename:join([BuildDir, "releases", Version,
                             lists:flatten([Name, ".boot"])]),

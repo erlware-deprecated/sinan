@@ -83,11 +83,11 @@ do_task(BuildRef) ->
 %%--------------------------------------------------------------------
 release(BuildRef) ->
     eta_event:task_start(BuildRef, ?TASK),
-    BuildDir = fconf:get_value(BuildRef, "build.dir"),
+    BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
     Name = project_name(BuildRef),
     Version = project_version(BuildRef),
     ReleaseInfo = generate_rel_file(BuildRef, BuildDir, Name, Version),
-    fconf:store(BuildRef, "project.release_info", ReleaseInfo),
+    sin_build_config:store(BuildRef, "project.release_info", ReleaseInfo),
     copy_or_generate_sys_config_file(BuildRef, BuildDir, Version),
     make_boot_script(BuildRef, ReleaseInfo),
     eta_event:task_stop(BuildRef, ?TASK).
@@ -107,7 +107,7 @@ release(BuildRef) ->
 %%--------------------------------------------------------------------
 generate_rel_file(BuildRef, BuildDir, Name, Version) ->
     Erts = get_erts_info(),
-    Deps = process_deps(BuildRef, fconf:get_value(BuildRef,
+    Deps = process_deps(BuildRef, sin_build_config:get_value(BuildRef,
                                                   "project.deps"), []),
     Release = {release, {Name, Version}, {erts, Erts},
                Deps},
@@ -126,7 +126,7 @@ generate_rel_file(BuildRef, BuildDir, Name, Version) ->
 %% @private
 %%--------------------------------------------------------------------
 project_version(BuildRef) ->
-    case fconf:get_value(BuildRef, "project.vsn") of
+    case sin_build_config:get_value(BuildRef, "project.vsn") of
         undefined ->
             eta_event:task_fault(BuildRef, ?TASK,
                                  "No project version defined in build config; "
@@ -146,7 +146,7 @@ project_version(BuildRef) ->
 %% @private
 %%--------------------------------------------------------------------
 project_name(BuildRef) ->
-    case fconf:get_value(BuildRef, "project.name") of
+    case sin_build_config:get_value(BuildRef, "project.name") of
         undefined ->
             eta_event:task_fault(BuildRef, ?TASK,
                                  "No project name defined in build config; "
@@ -166,9 +166,11 @@ project_name(BuildRef) ->
 %% @private
 %%--------------------------------------------------------------------
 process_deps(BuildRef, [{App, Vsn} | T], Acc) ->
-    case {fconf:get_value(BuildRef, {path, ["project", "release", App, "type"]}),
-          fconf:get_value(BuildRef, {path, ["project", "release", App,
-                                         "include_apps"]})} of
+    case {sin_build_config:get_value(BuildRef,
+                                     "project.release." ++ App ++ ".type"),
+          sin_build_config:get_value(BuildRef,
+                                     "project.release." ++ App ++
+                                     ".include_apps")} of
         {undefined, undefined} ->
             process_deps(BuildRef, T, [{App, Vsn} | Acc]);
         {Type, undefined} ->
@@ -257,7 +259,7 @@ make_boot_script(BuildRef, {{Location, File}, {release, {Name, _}, _, _}}) ->
 %% @end
 %%--------------------------------------------------------------------
 make_tar(BuildRef, File, Options) ->
-    BuildDir = fconf:get_value(BuildRef, "build.dir"),
+    BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
     Location = filename:join([BuildDir, "tar"]),
     filelib:ensure_dir(filename:join([Location, "tmp"])),
     systools_make:make_tar(File, [{outdir, Location} | Options]).
@@ -274,7 +276,7 @@ make_tar(BuildRef, File, Options) ->
 copy_or_generate_sys_config_file(BuildRef, BuildDir, Version) ->
     RelSysConfPath = filename:join([BuildDir, "releases",
                                     Version, "sys.config"]),
-    case fconf:get_value(BuildRef, "config_dir") of
+    case sin_build_config:get_value(BuildRef, "config_dir") of
         undefined ->
             generate_sys_config_file(RelSysConfPath);
         ConfigDir ->
@@ -319,21 +321,20 @@ generate_sys_config_file(RelSysConfPath) ->
 %% @private
 %%--------------------------------------------------------------------
 get_code_paths(BuildRef) ->
-    ProjApps = fconf:get_value(BuildRef, "project.apps"),
+    ProjApps = sin_build_config:get_value(BuildRef, "project.apps"),
     ProjPaths = lists:merge(
                   lists:map(
                     fun({App, _, _}) ->
-                            fconf:get_value(BuildRef,
-                                            {path,
-                                             ["apps", atom_to_list(App),
-                                              "code_paths"]})
+                            sin_build_config:get_value(BuildRef,
+                                            "apps." ++ atom_to_list(App) ++
+                                              ".code_paths")
                     end, ProjApps)),
-    RepoDir = fconf:get_value(BuildRef, "project.repository"),
+    RepoDir = sin_build_config:get_value(BuildRef, "project.repository"),
     RepoPaths = lists:map(
                   fun ({App, Vsn}) ->
                           Dir = lists:flatten([atom_to_list(App), "-", Vsn]),
                           filename:join([RepoDir, Dir, "ebin"])
-                  end, fconf:get_value(BuildRef, "project.repoapps")),
+                  end, sin_build_config:get_value(BuildRef, "project.repoapps")),
     lists:merge([ProjPaths, RepoPaths]).
 
 

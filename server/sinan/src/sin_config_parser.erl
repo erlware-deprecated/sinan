@@ -25,7 +25,7 @@
 %%%---------------------------------------------------------------------------
 %%% @author Eric Merritt <cyberlync@gmail.com>
 %%% @doc
-%%%  Parses a config file returning data formatted in fconf compatible form.
+%%%  Parses a config file returning data formatted in config compatible form.
 %%% @end
 %%% @copyright (C) 2007, Erlware
 %%%----------------------------------------------------------------------------

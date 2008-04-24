@@ -40,7 +40,7 @@
 -export([start/0, do_task/1, depends/1]).
 
 -define(TASK, depends).
--define(DEPS, [discover]).
+-define(DEPS, []).
 
 %%====================================================================
 %% API
@@ -84,8 +84,8 @@ do_task(BuildRef) ->
 %%--------------------------------------------------------------------
 depends(BuildRef) ->
     ProjectApps = gather_project_apps(BuildRef),
-    fconf:store(BuildRef, "project.apps", ProjectApps),
-    Repos = fconf:get_value(BuildRef, "repositories"),
+    sin_build_config:store(BuildRef, "project.apps", ProjectApps),
+    Repos = sin_build_config:get_value(BuildRef, "repositories"),
     case catch ewr_depends:
                check_project_dependencies(Repos,
                                           ProjectApps,
@@ -98,7 +98,7 @@ depends(BuildRef) ->
                  ?ETA_RAISE_DA(dependency_issue,
                                "'EXIT': ~p~n", [Reason]);
                AllDeps ->
-                 fconf:store(BuildRef, "project.deps", AllDeps),
+                 sin_build_config:store(BuildRef, "project.deps", AllDeps),
                  sin_repo_fetcher:fetch(BuildRef, ProjectApps, AllDeps),
                  save_deps(BuildRef, AllDeps),
                  update_sigs(BuildRef)
@@ -115,7 +115,7 @@ depends(BuildRef) ->
 %% @private
 %%--------------------------------------------------------------------
 get_supplimental(BuildRef) ->
-    case fconf:get_value(BuildRef, "eunit") of
+    case sin_build_config:get_value(BuildRef, "eunit") of
         "disable" ->
             [];
         _ ->
@@ -133,7 +133,7 @@ get_supplimental(BuildRef) ->
 %% @private
 %%--------------------------------------------------------------------
 save_deps(BuildRef, Deps) ->
-    BuildDir = fconf:get_value(BuildRef, "build.dir"),
+    BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
     filelib:ensure_dir(filename:join([BuildDir, "info", "tmp"])),
     Depsf = filename:join([BuildDir, "info", "deps"]),
     case file:open(Depsf, write) of
@@ -157,7 +157,7 @@ save_deps(BuildRef, Deps) ->
 %% @end
 %%--------------------------------------------------------------------
 save_repo_apps(BuildRef, BuildDir) ->
-    Apps = fconf:get_value(BuildRef, "project.repoapps"),
+    Apps = sin_build_config:get_value(BuildRef, "project.repoapps"),
     Repsf = filename:join([BuildDir, "info", "repoapps"]),
     case file:open(Repsf, write) of
         {error, _} ->
@@ -180,24 +180,25 @@ save_repo_apps(BuildRef, BuildDir) ->
 %%-------------------------------------------------------------------
 gather_project_apps(BuildRef) ->
     gather_project_apps(BuildRef,
-                        fconf:get_value(BuildRef, "project.applist"), []).
+                        sin_build_config:get_value(BuildRef, "project.applist"), []).
 
 gather_project_apps(BuildRef, [AppName | T], Acc) ->
-    Vsn = fconf:get_value(BuildRef, {path, ["apps", AppName, "vsn"]}),
-    Name = fconf:get_value(BuildRef, {path, ["apps", AppName, "name"]}),
-    OpenDeps = fconf:get_value(BuildRef, {path,
-                                       ["apps", AppName,
-                                        "applications"]}),
-    IncludedDeps = fconf:get_value(BuildRef, {path,
-                                           ["apps", AppName,
-                                            "included_applications"]}),
+    Vsn = sin_build_config:get_value(BuildRef, "apps." ++ AppName ++ ".vsn"),
+    Name = sin_build_config:get_value(BuildRef,
+                                      "apps." ++ AppName ++ ".name"),
+    OpenDeps = sin_build_config:get_value(BuildRef,
+                                       "apps." ++ AppName ++
+                                        ".applications"),
+    IncludedDeps = sin_build_config:get_value(BuildRef,
+                                           "apps." ++ AppName ++
+                                            ".included_applications"),
 
-    VersionedDeps = fconf:get_value(BuildRef, {path,
-                                          ["apps", AppName,
-                                           "versioned_dependencies"]}),
+    VersionedDeps = sin_build_config:get_value(BuildRef,
+                                          "apps." ++ AppName ++
+                                           ".versioned_dependencies"),
     NDeps = {merge(OpenDeps, IncludedDeps), VersionedDeps},
 
-    fconf:store(BuildRef, {path, ["apps", AppName, "deps"]}, NDeps),
+    sin_build_config:store(BuildRef, "apps." ++ AppName ++ ".deps", NDeps),
 
     gather_project_apps(BuildRef, T, [{Name, Vsn, NDeps} | Acc]);
 gather_project_apps(_BuildRef, [], Acc) ->
@@ -224,9 +225,9 @@ merge(OpenDeps, IncludedDeps) ->
 %% @private
 %%--------------------------------------------------------------------
 update_sigs(BuildRef) ->
-    BuildDir = fconf:get_value(BuildRef, "build.dir"),
+    BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
     update_app_sigs(BuildRef, BuildDir,
-                    fconf:get_value(BuildRef, "project.applist")).
+                    sin_build_config:get_value(BuildRef, "project.applist")).
 
 %%--------------------------------------------------------------------
 %% @spec update_app_sigs(BuildDir, AppList) -> ok
@@ -237,7 +238,7 @@ update_sigs(BuildRef) ->
 %% @private
 %%--------------------------------------------------------------------
 update_app_sigs(BuildRef, BuildDir, [H | T]) ->
-    App = fconf:get_value(BuildRef, {path, ["apps", H, "dotapp"]}),
+    App = sin_build_config:get_value(BuildRef, "apps." ++ H ++ ".dotapp"),
     sin_sig:update("dep", BuildDir, App),
     update_app_sigs(BuildRef, BuildDir, T);
 update_app_sigs(_BuildRef, _BuildDir, []) ->

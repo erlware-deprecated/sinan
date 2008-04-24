@@ -234,7 +234,7 @@ get_application_names(Env, App, Acc) ->
 %% @end
 %%--------------------------------------------------------------------
 get_new_project_name(BuildRef, Env) ->
-    CDir = fconf:get_value(BuildRef, "build.start_dir"),
+    CDir = sin_build_config:get_value(BuildRef, "build.start_dir"),
     io:put_chars(["Please specify name of your project \n"]),
     Name = trim(io:get_line('project name> ')),
     Dir = filename:join(CDir, Name),

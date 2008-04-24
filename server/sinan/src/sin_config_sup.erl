@@ -1,6 +1,5 @@
-%% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
 %%%-------------------------------------------------------------------
-%%% Copyright (c) 2007 Erlware
+%%% Copyright (c) 2006, 2007 Eric Merritt
 %%%
 %%% Permission is hereby granted, free of charge, to any
 %%% person obtaining a copy of this software and associated
@@ -22,20 +21,20 @@
 %%% WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 %%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 %%% OTHER DEALINGS IN THE SOFTWARE.
-%%%-------------------------------------------------------------------
+%%%---------------------------------------------------------------------------
 %%% @author Eric Merritt <cyberlync@gmail.com>
 %%% @doc
-%%%  Supervisor for all of the sinan build tasks.
+%%%  The config level supervisor.
 %%% @end
-%%% @copyright (C) 2007, Erlware
-%%% Created : 18 Nov 2007 by Eric Merritt <cyberlync@gmail.com>
+%%% @copyright (C) 2007, Eric Merritt
+%%% Created : 13 Mar 2007 by Eric Merritt <cyberlync@gmail.com>
 %%%-------------------------------------------------------------------
--module(sin_sup).
+-module(sin_config_sup).
 
 -behaviour(supervisor).
 
 %% API
--export([start_link/0]).
+-export([start_link/0, start_config/3, start_config/4, start_canonical/1]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -46,10 +45,10 @@
 %% API functions
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @spec start_link() -> {ok,Pid} | ignore | {error,Error}.
-%%
 %% @doc
 %% Starts the supervisor
+%%
+%% @spec start_link() -> {ok,Pid} | ignore | {error,Error}
 %% @end
 %%--------------------------------------------------------------------
 start_link() ->
@@ -59,29 +58,56 @@ start_link() ->
 %% Supervisor callbacks
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @spec init(Args) -> {ok,  {SupFlags,  [ChildSpec]}} |
-%%                     ignore                          |
-%%                     {error, Reason}.
-%%
 %% @doc
 %%  Whenever a supervisor is started using
 %% supervisor:start_link/[2,3], this function is called by the new process
 %% to find out about restart strategy, maximum restart frequency and child
 %% specifications.
+%%
+%% @spec init(Args) -> {ok,  {SupFlags,  [ChildSpec]}} |
+%%                     ignore                          |
+%%                     {error, Reason}
 %% @end
 %%--------------------------------------------------------------------
 init([]) ->
-    PrintGuard = {print_guard,{eta_event_guard,start_link,
-                               [eta_event_guard]},
-                  permanent,2000,worker,[eta_event_guard]},
-    ConfigSup = {sin_config_sup,{sin_config_sup,start_link,
-                                 [sin_config_sup]},
-                  permanent,2000,supervisor,[sin_config_sup]},
-    GroupLeaderSup = {sin_group_leader_sup, {sin_group_leader_sup,
-                                             start_link,
-                                             []},
-                      permanent,2000,supervisor,[sin_group_leader_sup]},
-    {ok,{{one_for_one,0,1}, [PrintGuard, GroupLeaderSup, ConfigSup]}}.
+    Conf = {sin_build_config, {sin_build_config, start_link,[]},
+            temporary,2000,worker,[sin_build_config]},
+    {ok,{{simple_one_for_one,0,1}, [Conf]}}.
+
+%%--------------------------------------------------------------------
+%% @doc
+%%  Start a new config with the specified config name,
+%%  a parse handler and an override.
+%%
+%% @spec start_canonical(ProjectDir) -> ok
+%% @end
+%%--------------------------------------------------------------------
+start_canonical(ProjectDir) ->
+    supervisor:start_child(?SERVER, [ProjectDir]).
+
+%%--------------------------------------------------------------------
+%% @doc
+%%  Start a new config with the specified config name,
+%%  a parse handler and an override.
+%%
+%% @spec start_config(BuildId, ProjectDir, Seed, Override) -> ok
+%% @end
+%%--------------------------------------------------------------------
+start_config(BuildId, ProjectDir, Seed, Override) ->
+    supervisor:start_child(?SERVER, [BuildId, ProjectDir, Seed,
+                                     Override]).
+
+%%--------------------------------------------------------------------
+%% @doc
+%%  Start a new config with the specified config name,
+%%  a parse handler and an override.
+%%
+%% @spec start_config(BuildId, ProjectDir,  Override) -> ok
+%% @end
+%%--------------------------------------------------------------------
+start_config(BuildId, ProjectDir,  Override) ->
+    supervisor:start_child(?SERVER, [BuildId, ProjectDir,
+                                     Override]).
 
 %%====================================================================
 %% Internal functions
