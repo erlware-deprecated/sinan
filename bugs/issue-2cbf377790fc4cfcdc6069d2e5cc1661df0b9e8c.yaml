@@ -1,0 +1,18 @@
+--- !ditz.rubyforge.org,2008-03-06/issue 
+title: Don't copy obvious build artifacts in project
+desc: Sinan shouldn't copy what are obviously build artifacts into the sinan build area. Examples of this are *.beam files. It should ignore these to the best of its ability.
+type: :bugfix
+component: server
+release: 
+reporter: masse <mats.cronqvist@gmail.com>
+status: :unstarted
+disposition: 
+creation_time: 2008-04-24 19:29:35.434032 Z
+references: []
+
+id: 2cbf377790fc4cfcdc6069d2e5cc1661df0b9e8c
+log_events: 
+- - 2008-04-24 19:30:10.709904 Z
+  - Eric Merritt <cyberlync@gmail.com>
+  - created
+  - It may be that it should ignore everything but the *.app in the ebin dir. Thowever, may have unintended results.
