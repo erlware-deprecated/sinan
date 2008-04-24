@@ -1,0 +1,22 @@
+--- !ditz.rubyforge.org,2008-03-06/issue 
+title: Development release support
+desc: Sinan should create a development OTP release so that testing is easier. It should be created using the same paths/development libraries as used in shell.
+type: :feature
+component: server
+release: "1.0"
+reporter: etnt <torbjorn.tornkvist@gmail.com>
+status: :unstarted
+disposition: 
+creation_time: 2008-04-24 19:18:13.190420 Z
+references: []
+
+id: 7a4a98c21b2914c2acb6518d08e16a8ec33f4cd4
+log_events: 
+- - 2008-04-24 19:18:23.350112 Z
+  - Eric Merritt <cyberlync@gmail.com>
+  - created
+  - ""
+- - 2008-04-24 19:27:01.672441 Z
+  - Eric Merritt <cyberlync@gmail.com>
+  - changed title
+  - ""
