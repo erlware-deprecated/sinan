@@ -32,177 +32,139 @@
 %%%--------------------------------------------------------------------------
 -module(sin_discover).
 
--behaviour(eta_gen_task).
-
 -include("etask.hrl").
 
 %% API
--export([start/0, do_task/1, discover/1]).
-
--define(TASK, discover).
--define(DEPS, [setup]).
+-export([discover/2]).
 
 %%====================================================================
 %% API
 %%====================================================================
-%%--------------------------------------------------------------------
-%% @spec start() -> ok.
-%%
-%% @doc
-%% Starts the server
-%% @end
-%%--------------------------------------------------------------------
-start() ->
-    Desc = "Discovers information about the project and "
-    "updates the project information",
-    TaskDesc = #task{name = ?TASK,
-                     task_impl = ?MODULE,
-                     deps = ?DEPS,
-                     desc = Desc,
-                     callable = true,
-                     opts = []},
-    eta_task:register_task(TaskDesc).
-
-
-%%--------------------------------------------------------------------
-%% @spec do_task(BuildRef, Args) -> ok
-%%
-%% @doc
-%%  dO the task defined in this module.
-%% @end
-%%--------------------------------------------------------------------
-do_task(BuildRef) ->
-    discover(BuildRef).
-
 
 %%--------------------------------------------------------------------
 %% @doc
 %%  Run the discover task.
-%% @spec discover() -> ok.
+%% @spec discover(ProjectDir, Config) -> ok
 %% @end
 %%--------------------------------------------------------------------
-discover(BuildRef) ->
-    eta_event:task_start(BuildRef, ?TASK, "Discovering project layout and structure ..."),
-    ProjectDir = fconf:get_value(BuildRef, "project.dir"),
-    BuildDir = fconf:get_value(BuildRef, "build_dir", "_build"),
-    AppDirs = look_for_app_dirs(BuildRef, BuildDir, ProjectDir),
-    build_app_info(BuildRef, AppDirs, []),
-    get_repo_location(BuildRef),
-    eta_event:task_stop(BuildRef, ?TASK).
+discover(ProjectDir, Config) ->
+    {ok, BuildDir} = dict:find("build_dir", Config),
+    AppDirs = look_for_app_dirs(Config, BuildDir, ProjectDir),
+    NewConfig = build_app_info(Config, AppDirs, []),
+    get_repo_location(NewConfig).
 
 
 %%====================================================================
 %%% Internal functions
 %%====================================================================
 %%-------------------------------------------------------------------
-%% @spec get_repo_location() -> ok.
 %% @doc
 %%   Find the location of the repository.
+%% @spec (Config) -> ok
 %% @end
 %% @private
 %%-------------------------------------------------------------------
-get_repo_location(BuildRef) ->
+get_repo_location(Config) ->
     Var = os:getenv("SINAN_REPO"),
-    get_repo_location(BuildRef, Var).
+    get_repo_location(Config, Var).
 
-get_repo_location(BuildRef, false) ->
+get_repo_location(Config, false) ->
     Repo = filename:join([os:getenv("HOME"), ".sinan", "repo"]),
     filelib:ensure_dir(filename:join([Repo, "tmp"])),
-    fconf:store(BuildRef, "project.repository", Repo);
-get_repo_location(BuildRef, Loc) ->
+    dict:store("project.repository", Repo, Config);
+get_repo_location(Config, Loc) ->
     filelib:ensure_dir(filename:join([Loc, "tmp"])),
-    fconf:store(BuildRef, "project.repository", Loc).
+    dict:store("project.repository", Loc, Config).
 
 %%-------------------------------------------------------------------
-%% @spec build_app_info(List::list(), Acc::list()) -> AppNames
 %% @doc
 %%   Given a list of app dirs retrieves the application names.
+%%
+%% @spec (Config::dict(), List::list(), Acc::list()) -> AppNames
 %% @end
 %%-------------------------------------------------------------------
-build_app_info(BuildRef, [H|T], Acc) ->
+build_app_info(Config, [H|T], Acc) ->
     AppName = filename:basename(H),
     AppFile = filename:join([H, "ebin", string:concat(AppName, ".app")]),
     case file:consult(AppFile) of
         {ok, [{application, Name, Details}]} ->
-            Info = {obj, process_details([{"name", Name},
-                                          {"dotapp", AppFile},
-                                          {"basedir", H} | Details], [])},
-            fconf:store(BuildRef, {path, ["apps",
-                                          AppName]}, Info),
-            build_app_info(BuildRef, T, [AppName | Acc]);
+            Config2 = process_details("apps." ++ AppName ++ ".",
+                                      [{"name", Name},
+                                       {"dotapp", AppFile},
+                                       {"basedir", H} | Details], Config),
+            build_app_info(Config2,  T, [AppName | Acc]);
         {error, {_, Module, Desc}} ->
             Error = Module:format_error(Desc),
-            eta_event:task_fault(BuildRef, ?TASK,
-                                 {"Invalid app file for ~s: ~s",
-                                  [AppName, lists:flatten(Error)]}),
-            throw(invalid_app_file);
-        {error, _} ->
-            eta_event:task_fault(BuildRef, ?TASK, {"No app file for ~s. Aborting build.",
-                                                   [AppName]}),
-            throw(no_app_file)
+            throw({invalid_app_file, AppName, Error});
+        {error, Error} ->
+            throw({no_app_file, AppName, Error})
     end;
-build_app_info(BuildRef, [], Acc) ->
-    fconf:store(BuildRef, "project.applist", Acc).
+build_app_info(Config, [], Acc) ->
+    dict:store("project.applist", Acc, Config).
 
 %%--------------------------------------------------------------------
-%% @spec process_details(List, Acc) -> NewDetails.
-%%
 %% @doc
 %%  Convert the details list to something that fits into the config
 %%  nicely.
+%%
+%% @spec (BaseKey::string(), List::list(), Config::dict()) -> NewConfig
 %% @end
 %% @private
 %%--------------------------------------------------------------------
-process_details([{Key, Value} | T], Acc) when is_atom(Key) ->
-    process_details(T, [{atom_to_list(Key), Value} | Acc]);
-process_details([{Key, Value} | T], Acc) when is_list(Key)->
-    process_details(T, [{Key, Value} |  Acc]);
-process_details([], Acc) ->
-    Acc.
+process_details(BaseName, [{Key, Value} | T], Config) when is_atom(Key) ->
+    process_details(BaseName, T, dict:store(BaseName ++ atom_to_list(Key),
+                                            Value, Config));
+process_details(BaseName, [{Key, Value} | T], Config) when is_list(Key)->
+    process_details(BaseName, T, dict:store(BaseName ++ Key, Value, Config));
+process_details(_, [], Config) ->
+    Config.
 
 %%-------------------------------------------------------------------
-%% @spec look_for_app_dirs(Pwd, Acc) -> AppDirs
 %% @doc
 %%  Roles through subdirectories of the build directory looking
 %%  for directories that have a src and an ebin subdir. When it
 %%  finds one it stops recursing and adds the directory to the list
 %%  to return.
+%%
+%% @spec (Config, BuildDir, ProjectDir) -> AppDirs
 %% @end
 %% @private
 %%-------------------------------------------------------------------
-look_for_app_dirs(BuildRef, BuildDir, ProjectDir) ->
-    Ignorables = fconf:get_value(BuildRef, "ignore_dirs", []),
-    case look_for_app_dirs(BuildRef, BuildDir, ProjectDir, "",
+look_for_app_dirs(Config, BuildDir, ProjectDir) ->
+    Ignorables = case dict:find("ignore_dirs", Config) of
+                     {ok, Value} -> Value;
+                     _ -> []
+                 end,
+    case look_for_app_dirs(Config, BuildDir, ProjectDir, "",
                            Ignorables, []) of
         [] ->
-            eta_event:task_fault(BuildRef, ?TASK,
-                                 "Unable to find any application directories."
-                                 " aborting now"),
-            throw({error, no_app_directories});
+            throw({error, no_app_directories,
+                   "Unable to find any application directories."
+                   " aborting now"});
         Else ->
             Else
     end.
 
 look_for_app_dirs(_, BuildDir, _Parent, BuildDir, _Ignore, Acc) ->
     Acc;
-look_for_app_dirs(BuildRef, BuildDir, Parent, Sub, Ignorables, Acc) ->
+look_for_app_dirs(Config, BuildDir, Parent, Sub, Ignorables, Acc) ->
     case sin_utils:is_dir_ignorable(Sub, Ignorables) of
         true ->
             Acc;
         false ->
-            process_app_dir(BuildRef, BuildDir, Parent, Sub, Ignorables, Acc)
+            process_app_dir(Config, BuildDir, Parent, Sub, Ignorables, Acc)
     end.
 
 
 %%--------------------------------------------------------------------
-%% @spec process_app_dir(BuildDir, Parent, Sub, Acc) -> ListOfDirs.
-%%
 %% @doc
 %%  Process the app dir to see if it is an application directory.
+%%
+%% @spec (Config, Parent, Sub, Acc) -> ListOfDirs
 %% @end
 %% @private
 %%--------------------------------------------------------------------
-process_app_dir(BuildRef, BuildDir, Parent, Sub, Ignorables, Acc) ->
+process_app_dir(Config, BuildDir, Parent, Sub, Ignorables, Acc) ->
     Pwd = filename:join([Parent, Sub]),
     case filelib:is_dir(Pwd) of
         true ->
@@ -218,7 +180,7 @@ process_app_dir(BuildRef, BuildDir, Parent, Sub, Ignorables, Acc) ->
                     Acc;
                 {_, _} ->
                     lists:foldl(fun(Elem, NAcc) ->
-                                        look_for_app_dirs(BuildRef,
+                                        look_for_app_dirs(Config,
                                                           BuildDir,
                                                           Pwd, Elem,
                                                           Ignorables,

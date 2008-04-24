@@ -41,7 +41,7 @@
 -export([start/0, do_task/1, check_depends/1]).
 
 -define(TASK, check_depends).
--define(DEPS, [discover]).
+-define(DEPS, []).
 
 %%====================================================================
 %% API
@@ -90,7 +90,7 @@ do_task(BuildRef) ->
 check_depends(BuildRef) ->
     eta_event:task_start(BuildRef, ?TASK),
     ProjectApps = gather_project_apps(BuildRef),
-    fconf:store(BuildRef, "project.apps", ProjectApps),
+    sin_build_config:store(BuildRef, "project.apps", ProjectApps),
     case needs_verify(BuildRef) of
         true ->
             interactive_check(BuildRef);
@@ -126,11 +126,11 @@ interactive_check(BuildRef) ->
 %% @end
 %%--------------------------------------------------------------------
 load_deps(BuildRef) ->
-    BuildDir = fconf:get_value(BuildRef, "build.dir"),
+    BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
     Depsf = filename:join([BuildDir, "info", "deps"]),
     case file:consult(Depsf) of
         {ok, [AllDeps]} ->
-            fconf:store(BuildRef, "project.deps", AllDeps);
+            sin_build_config:store(BuildRef, "project.deps", AllDeps);
         {ok, _Else} ->
             eta_event:task_fault(BuildRef, {"Dependency information exists but seems to "
                                             "be in a strange format (~s)", [Depsf]}),
@@ -154,7 +154,7 @@ load_repo_apps(BuildRef, BuildDir) ->
     Repsf = filename:join([BuildDir, "info", "repoapps"]),
     case file:consult(Repsf) of
         {ok, [Reps]} ->
-            fconf:store(BuildRef, "project.repoapps", Reps);
+            sin_build_config:store(BuildRef, "project.repoapps", Reps);
         {ok, _Else} ->
             eta_event:task_fault(BuildRef, ?TASK, {"The repo application list exists but seems to "
                                                   "be in a strange format (~s)", [Repsf]}),
@@ -176,15 +176,15 @@ load_repo_apps(BuildRef, BuildDir) ->
 %% @private
 %%--------------------------------------------------------------------
 needs_verify(BuildRef) ->
-    BuildConfig = fconf:get_value(BuildRef, "build.config"),
-    BuildDir = fconf:get_value(BuildRef, "build.dir"),
+    BuildConfig = sin_build_config:get_value(BuildRef, "build.config"),
+    BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
     case sin_sig:changed("dep", BuildDir, BuildConfig) of
         true ->
             sin_sig:update("dep", BuildDir, BuildConfig),
             true;
         false ->
             verify_app_list(BuildRef, BuildDir,
-                            fconf:get_value(BuildRef, "project.applist"))
+                            sin_build_config:get_value(BuildRef, "project.applist"))
     end.
 
 %%--------------------------------------------------------------------
@@ -196,7 +196,7 @@ needs_verify(BuildRef) ->
 %% @private
 %%--------------------------------------------------------------------
 verify_app_list(BuildRef, BuildDir, [H | T]) ->
-    App = fconf:get_value(BuildRef, {path, ["apps", H, "dotapp"]}),
+    App = sin_build_config:get_value(BuildRef, "apps." ++ H ++ ".dotapp"),
     case sin_sig:changed("dep", BuildDir, App) of
         true ->
             true;
@@ -216,24 +216,25 @@ verify_app_list(_BuildRef, _BuildDir, []) ->
 %%-------------------------------------------------------------------
 gather_project_apps(BuildRef) ->
     gather_project_apps(BuildRef,
-                        fconf:get_value(BuildRef, "project.applist"), []).
+                        sin_build_config:get_value(BuildRef, "project.applist"), []).
 
 gather_project_apps(BuildRef, [AppName | T], Acc) ->
-    Vsn = fconf:get_value(BuildRef, {path, ["apps", AppName, "vsn"]}),
-    Name = fconf:get_value(BuildRef, {path, ["apps", AppName, "name"]}),
-    OpenDeps = fconf:get_value(BuildRef, {path,
-                                       ["apps", AppName,
-                                        "applications"]}),
-    IncludedDeps = fconf:get_value(BuildRef, {path,
-                                           ["apps", AppName,
-                                            "included_applications"]}),
+    Vsn = sin_build_config:get_value(BuildRef, "apps." ++ AppName ++ ".vsn"),
+    Name = sin_build_config:get_value(BuildRef,
+                                      "apps." ++ AppName ++ ".name"),
+    OpenDeps = sin_build_config:get_value(BuildRef,
+                                       "apps." ++ AppName ++
+                                        ".applications"),
+    IncludedDeps = sin_build_config:get_value(BuildRef,
+                                           "apps." ++ AppName ++
+                                            ".included_applications"),
 
-    VersionedDeps = fconf:get_value(BuildRef, {path,
-                                          ["apps", AppName,
-                                           "versioned_dependencies"]}),
+    VersionedDeps = sin_build_config:get_value(BuildRef,
+                                          "apps." ++ AppName ++
+                                           ".versioned_dependencies"),
     NDeps = {merge(OpenDeps, IncludedDeps), VersionedDeps},
 
-    fconf:store(BuildRef, {path, ["apps", AppName, "deps"]}, NDeps),
+    sin_build_config:store(BuildRef, "apps." ++ AppName ++ ".deps", NDeps),
 
     gather_project_apps(BuildRef, T, [{Name, Vsn, NDeps} | Acc]);
 gather_project_apps(_BuildRef, [], Acc) ->

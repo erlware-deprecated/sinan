@@ -85,10 +85,10 @@ do_task(BuildRef) ->
 %%--------------------------------------------------------------------
 doc(BuildRef) ->
     eta_event:task_start(BuildRef, ?TASK),
-    BuildDir = fconf:get_value(BuildRef, "build.dir"),
+    BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
     DocDir = filename:join([BuildDir, "docs", "edoc"]),
     filelib:ensure_dir(filename:join([DocDir, "tmp"])),
-    Apps = fconf:get_value(BuildRef, "project.apps"),
+    Apps = sin_build_config:get_value(BuildRef, "project.apps"),
     GL = capture_start(BuildRef),
     run_docs(BuildRef, Apps, [{dir, DocDir}]),
     capture_stop(GL),
@@ -106,9 +106,9 @@ doc(BuildRef) ->
 %% @end
 %%--------------------------------------------------------------------
 run_docs(BuildRef, [{AppName, _, _} | T], Opts) ->
-    AppDir = fconf:get_value(BuildRef, {path, ["apps",
-                                            atom_to_list(AppName),
-                                            "basedir"]}),
+    AppDir = sin_build_config:get_value(BuildRef, "apps." ++
+                                            atom_to_list(AppName) ++
+                                            ".basedir"),
     try
     edoc:application(AppName,
                      AppDir,

@@ -36,23 +36,13 @@
 
 
 %% API
--export([changed/2, changed/3, update/2, update/3,
+-export([changed/3, update/3,
         target_changed/2]).
 
 %%====================================================================
 %% API
 %%====================================================================
 
-%%--------------------------------------------------------------------
-%% @spec changed(NS, File) -> true | false.
-%%
-%% @doc
-%%  Check to see if the file has changed.
-%% @end
-%%--------------------------------------------------------------------
-changed(NS, File) ->
-    BuildDir = fconf:get_value(sinan, "build.dir"),
-    changed(NS, BuildDir, File).
 
 %%--------------------------------------------------------------------
 %% @spec changed(NS, BuildDir, File) -> true | false.
@@ -107,17 +97,6 @@ target_changed(StartFile, TargetFile) ->
             true
     end.
 
-
-%%--------------------------------------------------------------------
-%% @spec update(File) -> ok | Error.
-%%
-%% @doc
-%%  Update the signature for the specified file.
-%% @end
-%%--------------------------------------------------------------------
-update(NS, File) ->
-    BuildDir = fconf:get_value(sinan, "build.dir"),
-    update(NS, BuildDir, File).
 
 %%--------------------------------------------------------------------
 %% @spec update(NS, BuildDir, File) -> ok.

@@ -62,7 +62,7 @@ fetch(BuildRef, ProjectApps, ProjectDeps) ->
 %% @private
 %%-------------------------------------------------------------------
 ensure_repo(BuildRef) ->
-    case fconf:get_value(BuildRef, "project.repository") of
+    case sin_build_config:get_value(BuildRef, "project.repository") of
         undefined ->
             ewl_talk:say(["I need a local repository specified in the",
                           "build config!"]),
@@ -80,7 +80,7 @@ ensure_repo(BuildRef) ->
 %% @private
 %%-------------------------------------------------------------------
 fetch_deps(BuildRef, LocalRepo, ProjectApps, ProjectDeps) ->
-    Repos = fconf:get_value(BuildRef, "repositories"),
+    Repos = sin_build_config:get_value(BuildRef, "repositories"),
     fetch_dep(BuildRef, Repos, LocalRepo, ProjectApps, ProjectDeps, []).
 
 
@@ -120,7 +120,7 @@ fetch_dep(BuildRef, RemoteRepos, LocalRepo,
             end
     end;
 fetch_dep(BuildRef, _RemoteRepos, _LocalRepo, _ProjectApps, [], Acc) ->
-    fconf:store(BuildRef, "project.repoapps", Acc),
+    sin_build_config:store(BuildRef, "project.repoapps", Acc),
     ok.
 
 %%--------------------------------------------------------------------

@@ -87,8 +87,8 @@ do_task(BuildRef) ->
 %%--------------------------------------------------------------------
 analyze(BuildRef) ->
     eta_event:task_start(BuildRef, ?TASK, "Starting analyzation, this may take awhile ..."),
-    FlavorArgs = fconf:get_value(BuildRef, "build.args"),
-    BuildDir = fconf:get_value(BuildRef, "build.dir"),
+    FlavorArgs = sin_build_config:get_value(BuildRef, "build.args"),
+    BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
     PltPath = filename:join([BuildDir, "info", "dialyzer_plt"]),
     case lists:keysearch("analyze-init", 1,  FlavorArgs) of
         {value, {"analyze-init", true}} ->
@@ -111,8 +111,8 @@ analyze(BuildRef) ->
 %% @end
 %%--------------------------------------------------------------------
 run_analyzer(BuildRef, BuildDir, PltPath) ->
-    AppList = fconf:get_value(BuildRef, "project.apps"),
-    RepoAppList = fconf:get_value(BuildRef, "project.repoapps"),
+    AppList = sin_build_config:get_value(BuildRef, "project.apps"),
+    RepoAppList = sin_build_config:get_value(BuildRef, "project.repoapps"),
     case sin_utils:file_exists(PltPath) of
         false ->
             generate_local_plt(BuildRef, PltPath);
@@ -120,7 +120,7 @@ run_analyzer(BuildRef, BuildDir, PltPath) ->
             ok
     end,
     BuildPath = filename:join([BuildDir, "apps"]),
-    Repo = fconf:get_value(BuildRef, "project.repository"),
+    Repo = sin_build_config:get_value(BuildRef, "project.repository"),
     Codepaths = get_code_paths(Repo, RepoAppList, []),
     Codepaths2 = get_code_paths(BuildPath, AppList, [Codepaths]),
     Opts = [{files_rec, Codepaths2}, {from, byte_code},
@@ -151,8 +151,8 @@ generate_local_plt(BuildRef, PltPath) ->
     eta_event:task_event(BuildRef, ?TASK, generating_plt,
                          "Generating base plt, this could take a "
                          "really long time ..."),
-    RepoAppList = fconf:get_value(BuildRef, "project.repoapps"),
-    ProjectRepo = fconf:get_value(BuildRef, "project.repository"),
+    RepoAppList = sin_build_config:get_value(BuildRef, "project.repoapps"),
+    ProjectRepo = sin_build_config:get_value(BuildRef, "project.repository"),
     Codepaths = get_code_paths(ProjectRepo, RepoAppList, []),
 
     Opts = [{files_rec, Codepaths},
