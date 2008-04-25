@@ -209,101 +209,66 @@ build_out_project(Env) ->
 
 
 %%--------------------------------------------------------------------
-%% @spec get_application_names() -> AppNames.
+%% @spec get_application_names(BuildRef, Env) -> AppNames
 %% @doc
 %%  Queries the user for a list of application names. The user
 %% can choose to skip this part.
 %% @end
 %%--------------------------------------------------------------------
-get_application_names(Env) ->
-    io:put_chars(["Please specify the names of the OTP apps",
-                  " that belong to this project. One application to a",
-                  " line. Finish with a blank line.\n"]),
-    get_application_names(Env, trim(io:get_line('app> ')), []).
-
-get_application_names(Env, [], Acc) ->
-    Env2 = [{apps, Acc} | Env],
-    build_out_project(Env2);
-get_application_names(Env, App, Acc) ->
-    get_application_names(Env, trim(io:get_line('app> ')), [App | Acc]).
+get_application_names(BuildRef, Env) ->
+    Env2 = [{apps,
+             sin_build_config:get_value(BuildRef,
+                                        "tasks.gen.apps")} | Env],
+    build_out_project(Env2).
 
 %%--------------------------------------------------------------------
-%% @spec get_new_project_name(Env) -> Env2.
+%% @spec get_new_project_name(BuildRef, Env) -> Env2
 %% @doc
 %% Queries the user for the name of this project
 %% @end
 %%--------------------------------------------------------------------
 get_new_project_name(BuildRef, Env) ->
     CDir = sin_build_config:get_value(BuildRef, "build.start_dir"),
-    io:put_chars(["Please specify name of your project \n"]),
-    Name = trim(io:get_line('project name> ')),
+    Name = sin_build_config:get_value(BuildRef,
+                                      "tasks.gen.project_info.project_name"),
     Dir = filename:join(CDir, Name),
-    io:put_chars(["Please specify version of your project \n"]),
-    Version = trim(io:get_line('project version> ')),
+    Version =
+        sin_build_config:get_value(BuildRef,
+                                   "tasks.gen.project_info.project_version"),
     Env2 = [{project_version, Version},
             {project_name, Name},
             {project_dir, Dir} | Env],
-    get_application_names(Env2).
+    get_application_names(BuildRef, Env2).
 
 
 
 %%--------------------------------------------------------------------
-%% @spec get_user_information() -> Env.
+%% @spec get_user_information(BuildRef, Env) -> Env
 %% @doc
 %% Queries the user for his name and email address
 %% @end
 %%--------------------------------------------------------------------
 get_user_information(BuildRef, Env) ->
-    io:put_chars("Please specify your name \n"),
-    Name = trim(io:get_line('your name> ')),
-    io:put_chars("Please specify your email address \n"),
-    Address = trim(io:get_line('your email> ')),
-    io:put_chars("Please specify the copyright holder \n"),
-    CopyHolder = trim(io:get_line('copyright holder> ')),
-    io:put_chars("Where is the remote code repository? \n"),
-    Repositories = get_repositories(),
+    Name = sin_build_config:get_value(BuildRef,
+                                        "tasks.gen.user_info.username"),
+    Address = sin_build_config:get_value(BuildRef,
+                                           "tasks.gen.user_info.email_address"),
+    CopyHolder =
+        sin_build_config:get_value(BuildRef,
+                                     "tasks.gen.user_info.copyright_holder"),
+    Repositories = get_repositories(BuildRef),
     Env2 = [{username, Name}, {email_address, Address},
-           {copyright_holder, CopyHolder},
-           {repositories, Repositories} | Env],
+            {copyright_holder, CopyHolder},
+            {repositories, Repositories} | Env],
     get_new_project_name(BuildRef, Env2).
 
 
-get_repositories() ->
-    io:put_chars(["Please specify the locations of the repositories. "
-                  " One repository to a line. Finish with a blank line.\n"]),
-    get_repositories(trim(io:get_line('repo> ')), []).
+get_repositories(BuildRef) ->
+    sin_build_config:get_value(BuildRef, "tasks.gen.repositories").
 
-get_repositories([], Acc) ->
-    Acc;
-get_repositories(Repo, []) ->
-    get_repositories(trim(io:get_line('repo> ')), [$\", Repo, $\"] );
-get_repositories(Repo, Acc) ->
-    get_repositories(trim(io:get_line('repo> ')), Acc ++ [$,, $\", Repo, $\"]).
 
 %%--------------------------------------------------------------------
-%% @spec trim(String::string()) -> NewString::string().
-%% @doc
-%% Helper function that removes whitespace from both sides of the
-%% string.
-%% @end
-%%--------------------------------------------------------------------
-trim(String) ->
-    lists:reverse(strip(lists:reverse(strip(String)))).
-
-%%--------------------------------------------------------------------
-%% @spec strip(String::string()) -> NewString::string().
-%% @doc
-%% Helper function that removes whitespace From the front of a string.
-%% @end
-%%--------------------------------------------------------------------
-strip([$   | Cs]) -> strip(Cs);
-strip([$\t | Cs]) -> strip(Cs);
-strip([$\r | Cs]) -> strip(Cs);
-strip([$\n | Cs]) -> strip(Cs);
-strip(Cs) -> Cs.
-
-%%--------------------------------------------------------------------
-%% @spec make_dir(DirName) -> ok.
+%% @spec make_dir(DirName) -> ok
 %% @doc
 %% Helper function that makes the specified directory and all parent
 %% directories.
@@ -315,7 +280,7 @@ make_dir(DirName) ->
     DirName.
 
 %%--------------------------------------------------------------------
-%% @spec is_made(DirName, Output) -> ok.
+%% @spec is_made(DirName, Output) -> ok
 %% @doc
 %% Helper function that makes sure a directory is made by testing
 %% the output of file:make_dir().
@@ -327,7 +292,7 @@ is_made(DirName, ok) ->
     io:put_chars([DirName, " created ok.\n"]).
 
 %%--------------------------------------------------------------------
-%% @spec get_env(Name, Env) -> Value.
+%% @spec get_env(Name, Env) -> Value
 %%
 %% @doc
 %%  Get the value from the environment.

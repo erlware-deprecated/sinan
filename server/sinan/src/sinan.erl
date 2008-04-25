@@ -217,7 +217,7 @@ do_task(Chain, Task, BuildRef, Args) when is_atom(Task) ->
     StartDir = find_start_dir(Args),
     ProjectRoot = find_project_root(StartDir),
     Seed = sin_build_config:get_seed(ProjectRoot),
-    sin_build_config:start_config(ProjectRoot, BuildRef, Seed, Args),
+    sin_build_config:start_config(BuildRef, ProjectRoot, Seed, Args),
     eta_engine:run(Chain, Task, BuildRef),
     sin_build_config:stop_config(BuildRef).
 
@@ -231,7 +231,7 @@ do_task(Chain, Task, BuildRef, Args) when is_atom(Task) ->
 %%--------------------------------------------------------------------
 do_task_bare(Chain, Task, BuildRef, Args) when is_atom(Task) ->
     StartDir = find_start_dir(Args),
-    sin_build_config:start_config(StartDir, BuildRef, Args),
+    sin_build_config:start_config(BuildRef, StartDir, Args),
     eta_engine:run(Chain, Task, BuildRef),
     sin_build_config:stop_config(BuildRef).
 
@@ -285,9 +285,9 @@ start() ->
 %%--------------------------------------------------------------------
 find_start_dir({obj, Data}) ->
     case lists:keysearch("build", 1, Data) of
-         {value, {obj, Data2}} ->
+         {value, {"build", {obj, Data2}}} ->
             case lists:keysearch("start_dir", 1,  Data2) of
-                {value, StartDir} ->
+                {value, {"start_dir", StartDir}} ->
                     StartDir;
                 _ ->
                     throw(unable_to_find_start_dir)
