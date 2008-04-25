@@ -41,7 +41,9 @@
 -export([init/1, handle_event/2, handle_call/2,
          handle_info/2, terminate/2, code_change/3]).
 
--record(state, {req, buildid}).
+-record(state, {req, buildid, last_event}).
+
+-define(TIMEOUT, 1000 * 30).
 
 %%%===================================================================
 %%% gen_event callbacks
@@ -79,17 +81,21 @@ handle_event(Event, State = #state{req = Req, buildid = BuildId}) ->
     case Event of
         {run_event, BuildId, Type} when Type == stop orelse Type == fault ->
             send_event(Event, Req),
-            exit(normal);
+            quit(Req),
+            remove_handler;
         {_, BuildId, _} ->
-            send_event(Event, Req);
+            send_event(Event, Req),
+            {ok, State#state{last_event = erlang:now()}};
         {_, BuildId, _, _} ->
-            send_event(Event, Req);
+            send_event(Event, Req),
+            {ok, State#state{last_event = erlang:now()}};
         {_, BuildId, _, _, _} ->
-            send_event(Event, Req);
+            send_event(Event, Req),
+            {ok, State#state{last_event = erlang:now()}};
         _ ->
-            ok
-    end,
-    {ok, State}.
+            {ok, State}
+    end.
+
 
 %%--------------------------------------------------------------------
 %% @private
@@ -121,6 +127,23 @@ handle_call(_Request, State) ->
 %%                         remove_handler
 %% @end
 %%--------------------------------------------------------------------
+handle_info(timeout, State = #state{req = Req, last_event = LastEvent}) ->
+    Now = erlang:now(),
+    Diff = timer:now_diff(Now, LastEvent),
+    if
+        (Diff / 1000000) > ?TIMEOUT ->
+            %% We haven't had any events in 30 seconds.
+            %% this is probably pretty bad so we are going
+            %% to shut down and tell the user bad stuff happened.
+            JDesc = ktj_encode:encode({obj, [{server_error,
+                                             "No server output for 30 seconds!!"
+                                             " Abandoning attempt!!"}]}),
+
+            crary_body:write(Req, JDesc),
+            remove_handler;
+        true ->
+            {ok, State}
+    end;
 handle_info(_Info, State) ->
     {ok, State}.
 

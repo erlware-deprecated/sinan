@@ -32,11 +32,14 @@
 %%%---------------------------------------------------------------------------
 -module(sin_print_handler).
 
+-behaviour(gen_event).
+
 %% API
 -export([start/1, stop/0]).
 
 %% gen_event callbacks
--export([init/1, handle_event/2, handle_call/2, handle_info/2, terminate/2]).
+-export([init/1, handle_event/2, handle_call/2, handle_info/2, code_change/3,
+         terminate/2]).
 
 %%====================================================================
 %% gen_event callbacks
@@ -187,6 +190,19 @@ terminate(swap, State)  ->
     {?MODULE, State};
 terminate(_Reason, _State)  ->
     ok.
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Convert process state when code is changed
+%%
+%% @spec code_change(OldVsn, State, Extra) -> {ok, NewState}
+%% @end
+%%--------------------------------------------------------------------
+code_change(_OldVsn, State, _Extra) ->
+    {ok, State}.
+
+
 %%====================================================================
 %%% Internal functions
 %%====================================================================

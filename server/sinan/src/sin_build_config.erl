@@ -149,7 +149,7 @@ store(BuildId, Path, Value) ->
 %% @end
 %%-------------------------------------------------------------------
 get_value(BuildId, Path) ->
-    Pid = sin_config_registry:git_by_build_id(BuildId),
+    Pid = sin_config_registry:get_by_build_id(BuildId),
     gen_server:call(Pid, {get, Path}).
 
 
@@ -177,7 +177,7 @@ get_value(BuildId, Key, Default) ->
 %% @end
 %%-------------------------------------------------------------------
 delete(BuildId, Key) ->
-    Pid = sin_config_registry:git_by_build_id(BuildId),
+    Pid = sin_config_registry:get_by_build_id(BuildId),
     gen_server:cast(Pid, {delete,  Key}).
 
 %%--------------------------------------------------------------------
@@ -188,7 +188,7 @@ delete(BuildId, Key) ->
 %% @end
 %%--------------------------------------------------------------------
 shutdown(BuildId) ->
-    Pid = sin_config_registry:git_by_build_id(BuildId),
+    Pid = sin_config_registry:get_by_build_id(BuildId),
     gen_server:cast(Pid, exit).
 
 
@@ -381,9 +381,15 @@ process_build_config(ProjectDir, BuildConfig) ->
 %%--------------------------------------------------------------------
 merge_config(Config, {obj, Data}, CurrentName) ->
     merge_config(Config, Data, CurrentName);
+merge_config(Config, [{Key, {obj, Data}} | Rest], "") ->
+    NewConfig = merge_config(Config, Data, Key),
+    merge_config(NewConfig, Rest, "");
 merge_config(Config, [{Key, {obj, Data}} | Rest], CurrentName) ->
     NewConfig = merge_config(Config, Data, CurrentName ++ "." ++ Key),
     merge_config(NewConfig, Rest, CurrentName);
+merge_config(Config, [{Key, Value} | Rest], "") ->
+    NewConfig = dict:store(Key, Value, Config),
+    merge_config(NewConfig, Rest, "");
 merge_config(Config, [{Key, Value} | Rest], CurrentName) ->
     NewConfig = dict:store(CurrentName ++ "." ++ Key, Value, Config),
     merge_config(NewConfig, Rest, CurrentName);
