@@ -3,42 +3,10 @@ import os
 import sys
 import urllib2
 import simplejson
-from libsinan import *
+import libsinan.args
+import libsinan.sinexceptions
 
 CONNECTION_REFUSED = 111
-
-def add_start_dir(config):
-    """ Add the argument required by many or most of
-    the tasks in the system. """
-    try:
-        config['build']['start_dir'] = os.getcwd()
-    except KeyError:
-        config['build'] = {'start_dir' : os.getcwd()}
-    return config
-
-
-
-def jsonify_opts(largs):
-    """ The opts are already in config layout. All we need to
-    do is jsonify them """
-    try:
-        return simplejson.dumps(largs['opts'])
-    except KeyError:
-        return None
-
-def do_request(largs):
-    """ Actually make the task request to the server """
-    config = add_start_dir(jsonify_opts(largs))
-    task = largs['task']
-    url = largs['special_opts']['url']
-    if url[-1:] == '/':
-        url + 'do_task/' + task
-    else:
-        url + '/do_task/' + task
-    conn = urllib2.urlopen(url, config)
-
-    output.handle(task, conn)
-
 
 def start_server(largs):
     """ Start the server. Use the 'server_command' local
@@ -49,7 +17,8 @@ def start_server(largs):
     except KeyError:
         pass
     if os.system(cmd) != 0:
-        raise sinexceptions.SinanError("Unable to start " + cmd)
+        raise libsinan.sinexceptions.SinanError("Unable to start " + cmd)
+
 
 
 def initiate_task(largs):
@@ -58,14 +27,21 @@ def initiate_task(largs):
     sinan. Look for a sinserve either in a passed in path
     or in the default path"""
     try:
-        do_request(largs)
+        task = largs['task']
+        handler = libsinan.get_handler_for_task(task)
+        handler.handle(largs)
     except urllib2.URLError, e:
-        code, reason = e.reason
-        if code == CONNECTION_REFUSED:
-            start_server(largs)
-            do_request(largs)
-        else:
-            print "Unable to connect: " + reason
+        try:
+            code, reason = e.reason
+            if code == CONNECTION_REFUSED:
+                start_server(largs)
+                do_request(largs)
+        except AttributeError:
+            pass
+
+        print "Unable to build got : "
+        print e
+
 
 def print_help():
     print """ sinan [args] [task]
@@ -81,7 +57,9 @@ args read the sinan documentation.
 def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
-    largs = args.parse(argv, "build", {'url' : 'http://localhost:4545'})
+
+    largs = libsinan.args.parse(argv, "build",
+                                {'url' : 'http://localhost:8599'})
     try:
         if largs['special_opts']['help']:
             print_help()
@@ -90,8 +68,11 @@ def main(argv=None):
         pass
     try:
         initiate_task(largs)
-    except sinexceptions.SinanError, e:
+    except libsinan.sinexceptions.SinanError, e:
         print e.value
+    except KeyboardInterrupt:
+        print "\n\nexiting at user request. Thanks!"
+
 
 if __name__ == "__main__":
     sys.exit(main())
