@@ -1,3 +1,5 @@
+import simplejson
+
 
 def handle(task, conn):
     """ Handles output from the server. For the most part this just
