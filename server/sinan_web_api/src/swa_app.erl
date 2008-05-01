@@ -92,7 +92,7 @@ stop(_State) ->
 %%--------------------------------------------------------------------
 start_crary() ->
     Port = get_port(),
-    crary:start(Port, {fun swa_crary_handler:handler/1, []}).
+    crary:start(Port, fun swa_crary_handler:handler/1).
 
 %%--------------------------------------------------------------------
 %% @doc

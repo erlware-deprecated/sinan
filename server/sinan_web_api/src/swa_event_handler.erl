@@ -62,7 +62,7 @@ init([CraryRequest, BuildId]) ->
     crary:r(CraryRequest, 200,
             [{"content-type", "application/json"},
              {"transfer-encoding", "chunked"}]),
-    {ok, #state{req=CraryRequest, buildid=BuildId}}.
+    {ok, #state{req=CraryRequest, buildid=BuildId, last_event=erlang:now()}}.
 
 %%--------------------------------------------------------------------
 %% @private

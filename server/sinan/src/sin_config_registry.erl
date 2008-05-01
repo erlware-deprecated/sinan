@@ -83,7 +83,7 @@ get_by_build_id(BuildId) ->
 %% @end
 %%--------------------------------------------------------------------
 get_canonical(File) ->
-    gen_server:call(?SERVER, {get_cononical, File}).
+    gen_server:call(?SERVER, {get_canonical, File}).
 
 %%--------------------------------------------------------------------
 %% @doc

@@ -115,7 +115,7 @@ stop_config(BuildId) ->
 get_seed(ProjectDir) when is_list(ProjectDir) ->
     case sin_config_registry:get_canonical(ProjectDir) of
         undefined ->
-            case sin_config_sup:start_child(ProjectDir) of
+            case sin_config_sup:start_canonical(ProjectDir) of
                 {error, Error} ->
                     throw({unable_to_create_canonical, Error});
                 _ ->
