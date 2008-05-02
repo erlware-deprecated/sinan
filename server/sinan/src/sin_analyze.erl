@@ -62,7 +62,7 @@ start() ->
                      deps = ?DEPS,
                      desc = Desc,
                      callable = true,
-                     opts = [{"ai", "analyze-init", false}]},
+                     opts = []},
     eta_task:register_task(TaskDesc).
 
 
@@ -86,12 +86,12 @@ do_task(BuildRef) ->
 %% @end
 %%--------------------------------------------------------------------
 analyze(BuildRef) ->
-    eta_event:task_start(BuildRef, ?TASK, "Starting analyzation, this may take awhile ..."),
-    FlavorArgs = sin_build_config:get_value(BuildRef, "build.args"),
+    eta_event:task_start(BuildRef, ?TASK,
+                         "Starting analyzation, this may take awhile ..."),
     BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
     PltPath = filename:join([BuildDir, "info", "dialyzer_plt"]),
-    case lists:keysearch("analyze-init", 1,  FlavorArgs) of
-        {value, {"analyze-init", true}} ->
+    case sin_build_config:get_value(BuildRef, "tasks.analyze.init", false) of
+        true ->
             generate_local_plt(BuildRef, PltPath);
         _ ->
             run_analyzer(BuildRef, BuildDir, PltPath)
@@ -124,18 +124,7 @@ run_analyzer(BuildRef, BuildDir, PltPath) ->
     Codepaths = get_code_paths(Repo, RepoAppList, []),
     Codepaths2 = get_code_paths(BuildPath, AppList, [Codepaths]),
     Opts = [{files_rec, Codepaths2}, {from, byte_code},
-            {init_plt, PltPath},
-            {warnings,   [no_return,
-                          no_unused,
-                          no_improper_lists,
-                          no_tuple_as_fun,
-                          no_fun_app,
-                          no_match,
-                          no_comp,
-                          no_guards,
-                          no_unsafe_beam,
-                          no_fail_call,
-                          error_handling]}],
+            {init_plt, PltPath}],
     eta_event:task_event(BuildRef, ?TASK, starting_analysis, "Starting analysis..."),
     output_info(BuildRef, dialyzer:run(Opts)),
     eta_event:task_event(BuildRef, ?TASK, analysis_complete, "analysis complete").
@@ -157,18 +146,7 @@ generate_local_plt(BuildRef, PltPath) ->
 
     Opts = [{files_rec, Codepaths},
             {from, byte_code},
-            {output_plt, PltPath},
-            {warnings,   [no_return,
-                          no_unused,
-                          no_improper_lists,
-                          no_tuple_as_fun,
-                          no_fun_app,
-                          no_match,
-                          no_comp,
-                          no_guards,
-                          no_unsafe_beam,
-                          no_fail_call,
-                         error_handling]}],
+            {output_plt, PltPath}],
     io:format("~p", [Opts]),
     output_info(BuildRef, dialyzer:run(Opts)),
     eta_event:task_event(BuildRef, ?TASK, plt_generation_complete, "Done generating plt").
