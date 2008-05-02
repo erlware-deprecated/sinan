@@ -96,20 +96,21 @@ gen(BuildRef) ->
 %%  Prints out a nice error message if everything was ok.
 %% @end
 %%--------------------------------------------------------------------
-all_done() ->
-    io:put_chars("Project was created, you should be good to go!\n").
+all_done(BuildRef) ->
+    eta_event:task_event(BuildRef, ?TASK, info,
+                         "Project was created, you should be good to go!").
 
 %%--------------------------------------------------------------------
-%% @spec build_out_build_config(Env) -> ok.
+%% @spec build_out_build_config(BuildRef, Env) -> ok.
 %% @doc
 %%  Builds the build config dir in the root of the project.
 %% @end
 %%--------------------------------------------------------------------
-build_out_build_config(Env) ->
+build_out_build_config(BuildRef, Env) ->
     ProjectDir = get_env(project_dir, Env),
     ConfName = filename:join([ProjectDir, "_build.cfg"]),
     sin_skel:build_config(Env, ConfName),
-    all_done().
+    all_done(BuildRef).
 
 
 %%--------------------------------------------------------------------
@@ -119,26 +120,26 @@ build_out_build_config(Env) ->
 %%  out the application directory structure.
 %% @end
 %%--------------------------------------------------------------------
-build_out_applications(Env) ->
+build_out_applications(BuildRef, Env) ->
     Apps = get_env(apps, Env),
-    build_out_applications(Env, Apps).
+    build_out_applications(BuildRef, Env, Apps).
 
-build_out_applications(Env, [AppName | T]) ->
+build_out_applications(BuildRef, Env, [AppName | T]) ->
     ProjDir = get_env(project_dir, Env),
     AppDir = filename:join([ProjDir, "lib", AppName]),
     case filelib:is_dir(AppDir) of
         false ->
-            make_dir(AppDir),
-            make_dir(filename:join(AppDir, "ebin")),
-            make_dir(filename:join(AppDir, "include")),
-            AppSrc = make_dir(filename:join(AppDir, "src")),
-            build_out_otp(Env, AppSrc, AppName),
-            build_out_applications(Env, T);
+            make_dir(BuildRef, AppDir),
+            make_dir(BuildRef, filename:join(AppDir, "ebin")),
+            make_dir(BuildRef, filename:join(AppDir, "include")),
+            AppSrc = make_dir(BuildRef, filename:join(AppDir, "src")),
+            build_out_otp(BuildRef, Env, AppSrc, AppName),
+            build_out_applications(BuildRef, Env, T);
        true ->
             ok
     end;
-build_out_applications(Env, []) ->
-    build_out_build_config(Env).
+build_out_applications(BuildRef, Env, []) ->
+    build_out_build_config(BuildRef, Env).
 
 %%--------------------------------------------------------------------
 %% @spec build_out_otp(UserAddress, CopyHolder, App, AppSrc) -> ok
@@ -146,14 +147,14 @@ build_out_applications(Env, []) ->
 %% Build out the top level otp parts of the application.
 %% @end
 %%--------------------------------------------------------------------
-build_out_otp(Env, AppSrc, App) ->
+build_out_otp(BuildRef, Env, AppSrc, App) ->
     FileName = filename:join(AppSrc, App ++ "_app.erl"),
     case filelib:is_file(FileName) of
         true ->
-            build_out_super(Env, AppSrc, App);
+            build_out_super(BuildRef, Env, AppSrc, App);
         false ->
             sin_skel:application(Env, FileName, App),
-            build_out_super(Env, AppSrc, App)
+            build_out_super(BuildRef, Env, AppSrc, App)
     end.
 
 
@@ -163,14 +164,14 @@ build_out_otp(Env, AppSrc, App) ->
 %% Builds out the supervisor for the app.
 %% @end
 %%--------------------------------------------------------------------
-build_out_super(Env, AppSrc, App) ->
+build_out_super(BuildRef, Env, AppSrc, App) ->
     FileName = filename:join(AppSrc, App ++ "_sup.erl"),
     case filelib:is_file(FileName) of
         true ->
             ok;
         false ->
             sin_skel:supervisor(Env, FileName, App),
-            build_out_app_src(Env, App)
+            build_out_app_src(BuildRef, Env, App)
     end.
 
 %%--------------------------------------------------------------------
@@ -179,7 +180,7 @@ build_out_super(Env, AppSrc, App) ->
 %% Builds out the app descriptor for the app.
 %% @end
 %%--------------------------------------------------------------------
-build_out_app_src(Env, App) ->
+build_out_app_src(_BuildRef, Env, App) ->
     ProjDir = get_env(project_dir, Env),
     AppEbin = filename:join([ProjDir, "lib", App, "ebin"]),
     FileName = filename:join(AppEbin, App ++ ".app"),
@@ -197,15 +198,21 @@ build_out_app_src(Env, App) ->
 %%  required for an application.
 %% @end
 %%--------------------------------------------------------------------
-build_out_skeleton(Env) ->
+build_out_skeleton(BuildRef, Env) ->
     ProjDir = get_env(project_dir, Env),
-    make_dir(filename:join(ProjDir, "doc")),
-    build_out_applications(Env).
+    make_dir(BuildRef, filename:join(ProjDir, "doc")),
+    build_out_applications(BuildRef, Env).
 
-build_out_project(Env) ->
+%%--------------------------------------------------------------------
+%% @doc
+%% Build out the project directory structure
+%% @spec (BuildRef, Env) -> ok
+%% @end
+%%--------------------------------------------------------------------
+build_out_project(BuildRef, Env) ->
     ProjDir = get_env(project_dir, Env),
-    make_dir(ProjDir),
-    build_out_skeleton(Env).
+    make_dir(BuildRef, ProjDir),
+    build_out_skeleton(BuildRef, Env).
 
 
 %%--------------------------------------------------------------------
@@ -219,7 +226,7 @@ get_application_names(BuildRef, Env) ->
     Env2 = [{apps,
              sin_build_config:get_value(BuildRef,
                                         "tasks.gen.apps")} | Env],
-    build_out_project(Env2).
+    build_out_project(BuildRef, Env2).
 
 %%--------------------------------------------------------------------
 %% @spec get_new_project_name(BuildRef, Env) -> Env2
@@ -274,9 +281,9 @@ get_repositories(BuildRef) ->
 %% directories.
 %% @end
 %%--------------------------------------------------------------------
-make_dir(DirName) ->
+make_dir(BuildRef, DirName) ->
     filelib:ensure_dir(DirName),
-    is_made(DirName, file:make_dir(DirName)),
+    is_made(BuildRef, DirName, file:make_dir(DirName)),
     DirName.
 
 %%--------------------------------------------------------------------
@@ -286,10 +293,10 @@ make_dir(DirName) ->
 %% the output of file:make_dir().
 %% @end
 %%--------------------------------------------------------------------
-is_made(DirName, {error, eexists})->
-    io:put_chars([DirName, " exists ok.\n"]);
-is_made(DirName, ok) ->
-    io:put_chars([DirName, " created ok.\n"]).
+is_made(BuildRef, DirName, {error, eexists})->
+    eta_event:task_event(BuildRef, ?TASK, info, {"~s exists ok.", [DirName]});
+is_made(BuildRef, DirName, ok) ->
+    eta_event:task_event(BuildRef, ?TASK, info, {"~s created ok.", [DirName]}).
 
 %%--------------------------------------------------------------------
 %% @spec get_env(Name, Env) -> Value

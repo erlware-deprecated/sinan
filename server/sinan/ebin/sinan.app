@@ -40,5 +40,5 @@
   {applications, [kernel, stdlib, compiler,
                   edoc, sasl, etask, syntax_tools,
                   ibrowse, ktuo, ewrepo, ewlib, tools,
-                  dialyzer, xmerl, mnesia, etask]},
+                  dialyzer, xmerl, mnesia, etask, sgte]},
   {mod, {sin_app, []}}]}.

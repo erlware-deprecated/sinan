@@ -102,9 +102,9 @@ write_template(Type, Env, FileName) ->
 %% @end
 %%--------------------------------------------------------------------
 compile_template(Type) ->
-    PrivDir = code:priv_dir(projgen),
+    PrivDir = code:priv_dir(sinan),
     TemplateFile = filename:join([PrivDir, Type]),
-    case sgte:compile({file, TemplateFile}) of
+    case sgte:compile_file(TemplateFile) of
         {error, _} ->
             exit(unable_to_compile_template_file);
         {ok, Template} ->
