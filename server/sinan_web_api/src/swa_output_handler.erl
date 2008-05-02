@@ -26,16 +26,17 @@
 %%% @author Eric Merritt <cyberlync@gmail.com>
 %%% @copyright (C) 2008, Eric Merritt
 %%% @doc
-%%% A very simple gen_server to give the central sup something to supervise.
+%%% This handles output of the eventing system. Used to write to the
+%%% socket.
 %%% @end
 %%% Created : 20 Apr 2008 by Eric Merritt <cyberlync@gmail.com>
 %%%-------------------------------------------------------------------
--module(swa_dumb_server).
+-module(swa_output_handler).
 
 -behaviour(gen_server).
 
 %% API
--export([start_link/0]).
+-export([start_link/2, send_event/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -43,7 +44,7 @@
 
 -define(SERVER, ?MODULE).
 
--record(state, {}).
+-record(state, {build_ref, req, writer}).
 
 %%%===================================================================
 %%% API
@@ -56,8 +57,17 @@
 %% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
-start_link() ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+start_link(BuildRef, Req) ->
+    gen_server:start_link(?MODULE, [BuildRef, Req], []).
+
+%%--------------------------------------------------------------------
+%% @doc
+%%  Send an event to the output_handler specified by pid
+%% @spec (Pid::pid(), Event) -> ok.
+%% @end
+%%--------------------------------------------------------------------
+send_event(Pid, Event) ->
+    gen_server:cast(Pid, {event, Event}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -74,8 +84,13 @@ start_link() ->
 %%                     {stop, Reason}
 %% @end
 %%--------------------------------------------------------------------
-init([]) ->
-    {ok, #state{}}.
+init([BuildRef, Req]) ->
+    Writer = crary_body:new_writer(Req),
+    crary:r(Writer, 200,
+            [{"content-type", "application/json"},
+             {"transfer-encoding", "chunked"}]),
+    sinan:add_build_event_handler(swa_event_handler, [BuildRef, self()]),
+    {ok, #state{build_ref = BuildRef, req = Req, writer = Writer}}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -105,8 +120,16 @@ handle_call(_Request, _From, State) ->
 %%                                  {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_cast(_Msg, State) ->
-    {noreply, State}.
+handle_cast({event, Event}, State = #state{writer = Writer}) ->
+    case Event of
+        {run_event, _, Type} when Type == stop orelse Type == fault ->
+            send_event_to_sock(Event, Writer),
+            {stop, normal, State};
+        _ ->
+            send_event_to_sock(Event, Writer),
+            {noreply, State}
+    end.
+
 
 %%--------------------------------------------------------------------
 %% @private
@@ -132,7 +155,8 @@ handle_info(_Info, State) ->
 %% @spec terminate(Reason, State) -> void()
 %% @end
 %%--------------------------------------------------------------------
-terminate(_Reason, _State) ->
+terminate(_Reason, #state{writer = Writer}) ->
+    quit(Writer),
     ok.
 
 %%--------------------------------------------------------------------
@@ -149,3 +173,40 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+%%--------------------------------------------------------------------
+%% @doc
+%%  Actually sends the event to the crary system.
+%% @spec (Event, Req) -> ok
+%% @end
+%% @private
+%%--------------------------------------------------------------------
+send_event_to_sock({Type, _, EventType}, Writer) ->
+    JDesc = ktj_encode:encode({obj, [{type, Type},
+                                     {event_type, EventType}]}),
+    crary_body:write(Writer, JDesc);
+send_event_to_sock({Type, _, Task, EventType}, Writer) when is_atom(EventType)->
+    JDesc = {obj, [{task, Task},
+                  {type, Type},
+                  {event_type, EventType}]},
+    crary_body:write(Writer, ktj_encode:encode(JDesc));
+send_event_to_sock({Type, _, EventType, Desc}, Writer) ->
+    JDesc = {obj, [{type, Type},
+                  {event_type, EventType},
+                  {desc, Desc}]},
+    crary_body:write(Writer, ktj_encode:encode(JDesc));
+send_event_to_sock({Type, _, Task, EventType, Desc}, Writer) ->
+    JDesc = ktj_encode:encode({obj, [{task, Task},
+                                     {type, Type},
+                                     {event_type, EventType},
+                                     {desc, Desc}]}),
+    crary_body:write(Writer, JDesc).
+
+%%--------------------------------------------------------------------
+%% @doc
+%%  do whatever clean up is required to quit the system.
+%% @spec (Req) -> ok
+%% @end
+%%--------------------------------------------------------------------
+quit(Writer) ->
+    crary_sock:done_writing(Writer).
+

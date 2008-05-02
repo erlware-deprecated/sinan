@@ -70,37 +70,37 @@ handler(Req) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_do_request(["do_task", "build"], Req, BuildRef, Args) ->
-    sinan:add_build_event_handler(swa_event_handler, [Req, BuildRef]),
+    swa_sup:start_handler(BuildRef, Req),
     sinan:build(BuildRef, Args);
 handle_do_request(["do_task", "analyze"], Req, BuildRef, Args) ->
-    sinan:add_build_event_handler(swa_event_handler, [Req, BuildRef]),
+    swa_sup:start_handler(BuildRef, Req),
     sinan:analyze(BuildRef, Args);
 handle_do_request(["do_task", "doc"], Req, BuildRef, Args) ->
-    sinan:add_build_event_handler(swa_event_handler, [Req, BuildRef]),
+    swa_sup:start_handler(BuildRef, Req),
     sinan:doc(BuildRef, Args);
 handle_do_request(["do_task", "shell"], Req, BuildRef, Args) ->
-    sinan:add_build_event_handler(swa_event_handler, [Req, BuildRef]),
+    swa_sup:start_handler(BuildRef, Req),
     sinan:shell(BuildRef, Args);
 handle_do_request(["do_task", "gen"], Req, BuildRef, Args) ->
-    sinan:add_build_event_handler(swa_event_handler, [Req, BuildRef]),
+    swa_sup:start_handler(BuildRef, Req),
     sinan:gen(BuildRef, Args);
 handle_do_request(["do_task", "clean"], Req, BuildRef, Args) ->
-    sinan:add_build_event_handler(swa_event_handler, [Req, BuildRef]),
+    swa_sup:start_handler(BuildRef, Req),
     sinan:clean(BuildRef, Args);
 handle_do_request(["do_task", "help"], Req, BuildRef, Args) ->
-    sinan:add_build_event_handler(swa_event_handler, [Req, BuildRef]),
+    swa_sup:start_handler(BuildRef, Req),
     sinan:help(BuildRef, Args);
 handle_do_request(["do_task", "depends"], Req, BuildRef, Args) ->
-    sinan:add_build_event_handler(swa_event_handler, [Req, BuildRef]),
+    swa_sup:start_handler(BuildRef, Req),
     sinan:depends(BuildRef, Args);
 handle_do_request(["do_task", "test"], Req, BuildRef, Args) ->
-    sinan:add_build_event_handler(swa_event_handler, [Req, BuildRef]),
+    swa_sup:start_handler(BuildRef, Req),
     sinan:test(BuildRef, Args);
 handle_do_request(["do_task", "release"], Req, BuildRef, Args) ->
-    sinan:add_build_event_handler(swa_event_handler, [Req, BuildRef]),
+    swa_sup:start_handler(BuildRef, Req),
     sinan:release(BuildRef, Args);
 handle_do_request(["do_task", "dist"], Req, BuildRef, Args) ->
-    sinan:add_build_event_handler(swa_event_handler, [Req, BuildRef]),
+    swa_sup:start_handler(BuildRef, Req),
     sinan:dist(BuildRef, Args);
 handle_do_request(Path, _, _, _) ->
     throw({unknown_task, Path}).
