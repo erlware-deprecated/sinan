@@ -35,7 +35,7 @@
 -behaviour(supervisor).
 
 %% API
--export([start_link/0]).
+-export([start_link/0, start_handler/2]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -74,20 +74,29 @@ start_link() ->
 %% @end
 %%--------------------------------------------------------------------
 init([]) ->
-    RestartStrategy = one_for_one,
+    RestartStrategy = simple_one_for_one,
     MaxRestarts = 1000,
     MaxSecondsBetweenRestarts = 3600,
 
     SupFlags = {RestartStrategy, MaxRestarts, MaxSecondsBetweenRestarts},
 
-    Restart = permanent,
+    Restart = temporary,
     Shutdown = 2000,
     Type = worker,
 
-    DumbServer = {swa_dumb_server, {swa_dumb_server, start_link, []},
-              Restart, Shutdown, Type, [swa_dumb_server]},
+    OutputServer = {swa_output_handler, {swa_output_handler, start_link, []},
+                    Restart, Shutdown, Type, [swa_output_handler]},
 
-    {ok, {SupFlags, [DumbServer]}}.
+    {ok, {SupFlags, [OutputServer]}}.
+
+%%--------------------------------------------------------------------
+%% @doc
+%%  start a new output handler for the specified build ref.
+%% @spec (BuildRef, Req) -> ok
+%% @end
+%%--------------------------------------------------------------------
+start_handler(BuildRef, Req) ->
+    supervisor:start_child(?SERVER, [BuildRef, Req]).
 
 %%%===================================================================
 %%% Internal functions

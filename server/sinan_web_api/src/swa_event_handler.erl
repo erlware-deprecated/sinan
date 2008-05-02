@@ -41,9 +41,9 @@
 -export([init/1, handle_event/2, handle_call/2,
          handle_info/2, terminate/2, code_change/3]).
 
--record(state, {req, buildid, last_event}).
+-record(state, {out_pid, buildid, last_event}).
 
--define(TIMEOUT, 1000 * 30).
+
 
 %%%===================================================================
 %%% gen_event callbacks
@@ -55,14 +55,11 @@
 %% Whenever a new event handler is added to an event manager,
 %% this function is called to initialize the event handler.
 %%
-%% @spec init(CraryRequest) -> {ok, State}
+%% @spec (BuildId) -> {ok, State}
 %% @end
 %%--------------------------------------------------------------------
-init([CraryRequest, BuildId]) ->
-    crary:r(CraryRequest, 200,
-            [{"content-type", "application/json"},
-             {"transfer-encoding", "chunked"}]),
-    {ok, #state{req=CraryRequest, buildid=BuildId, last_event=erlang:now()}}.
+init([BuildId, OutPid]) ->
+    {ok, #state{buildid=BuildId, out_pid = OutPid}}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -77,21 +74,20 @@ init([CraryRequest, BuildId]) ->
 %%                          remove_handler
 %% @end
 %%--------------------------------------------------------------------
-handle_event(Event, State = #state{req = Req, buildid = BuildId}) ->
+handle_event(Event, State = #state{out_pid = Pid, buildid = BuildId}) ->
     case Event of
         {run_event, BuildId, Type} when Type == stop orelse Type == fault ->
-            send_event(Event, Req),
-            quit(Req),
+            swa_output_handler:send_event(Pid, Event),
             remove_handler;
         {_, BuildId, _} ->
-            send_event(Event, Req),
-            {ok, State#state{last_event = erlang:now()}};
+            swa_output_handler:send_event(Pid, Event),
+            {ok, State};
         {_, BuildId, _, _} ->
-            send_event(Event, Req),
-            {ok, State#state{last_event = erlang:now()}};
+            swa_output_handler:send_event(Pid, Event),
+            {ok, State};
         {_, BuildId, _, _, _} ->
-            send_event(Event, Req),
-            {ok, State#state{last_event = erlang:now()}};
+            swa_output_handler:send_event(Pid, Event),
+            {ok, State};
         _ ->
             {ok, State}
     end.
@@ -127,23 +123,6 @@ handle_call(_Request, State) ->
 %%                         remove_handler
 %% @end
 %%--------------------------------------------------------------------
-handle_info(timeout, State = #state{req = Req, last_event = LastEvent}) ->
-    Now = erlang:now(),
-    Diff = timer:now_diff(Now, LastEvent),
-    if
-        (Diff / 1000000) > ?TIMEOUT ->
-            %% We haven't had any events in 30 seconds.
-            %% this is probably pretty bad so we are going
-            %% to shut down and tell the user bad stuff happened.
-            JDesc = ktj_encode:encode({obj, [{server_error,
-                                             "No server output for 30 seconds!!"
-                                             " Abandoning attempt!!"}]}),
-
-            crary_body:write(Req, JDesc),
-            remove_handler;
-        true ->
-            {ok, State}
-    end;
 handle_info(_Info, State) ->
     {ok, State}.
 
@@ -157,8 +136,8 @@ handle_info(_Info, State) ->
 %% @spec terminate(Reason, State) -> void()
 %% @end
 %%--------------------------------------------------------------------
-terminate(_Reason, #state{req = Req}) ->
-      quit(Req).
+terminate(_Reason, _State) ->
+      ok.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -174,41 +153,4 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-%%--------------------------------------------------------------------
-%% @doc
-%%  Actually sends the event to the crary system.
-%% @spec (Event, Req) -> ok
-%% @end
-%% @private
-%%--------------------------------------------------------------------
-send_event({Type, _, EventType}, Req) ->
-    JDesc = ktj_encode:encode({obj, [{type, Type},
-                                     {event_type, EventType}]}),
-    crary_body:write(Req, JDesc);
-send_event({Type, _, Task, EventType}, Req) when is_atom(EventType)->
-    JDesc = {obj, [{task, Task},
-                  {type, Type},
-                  {event_type, EventType}]},
-    crary_body:write(Req, ktj_encode:encode(JDesc));
-send_event({Type, _, EventType, Desc}, Req) ->
-    JDesc = {obj, [{type, Type},
-                  {event_type, EventType},
-                  {desc, Desc}]},
-    crary_body:write(Req, ktj_encode:encode(JDesc));
-send_event({Type, _, Task, EventType, Desc}, Req) ->
-    JDesc = ktj_encode:encode({obj, [{task, Task},
-                                     {type, Type},
-                                     {event_type, EventType},
-                                     {desc, Desc}]}),
-    crary_body:write(Req, JDesc).
-
-%%--------------------------------------------------------------------
-%% @doc
-%%  do whatever clean up is required to quit the system.
-%% @spec (Req) -> ok
-%% @end
-%%--------------------------------------------------------------------
-quit(Req) ->
-    crary_sock:done_writing(Req).
-
 
