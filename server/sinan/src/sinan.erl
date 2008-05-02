@@ -270,6 +270,7 @@ start() ->
     application:start(mnesia),
     application:start(dialyzer),
     application:start(etask),
+    application:start(sgte),
     application:start(sinan).
 
 
