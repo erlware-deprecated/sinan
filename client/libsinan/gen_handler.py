@@ -66,7 +66,7 @@ class GenHandler(libsinan.handler.Handler):
         print "Please specify name of your project"
         name = self.ask_user('project name')
         print "Please specify the version of your project \n"
-        version = self.ask_user('project version')
+        version = self.ask_user('project version', '0.1.0.0')
 
         return {"project_version" : version,
                 "project_name" : name}
