@@ -1,7 +1,7 @@
 import libsinan.output
+import libsinan.encoder
 import re
 import os
-import simplejson
 import urllib2
 
 class Handler:
@@ -40,7 +40,7 @@ class Handler:
         """ The opts are already in config layout. All we need to
         do is jsonify them """
         try:
-            return simplejson.dumps(largs['opts'])
+            return libsinan.encoder.dumps(largs['opts'])
         except KeyError:
             return None
 
