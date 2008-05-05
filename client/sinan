@@ -2,7 +2,6 @@
 import os
 import sys
 import urllib2
-import simplejson
 import libsinan.args
 import libsinan.sinexceptions
 
