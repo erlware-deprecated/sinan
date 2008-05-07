@@ -38,6 +38,7 @@
 
 %% API
 -export([start/0, do_task/1, analyze/1]).
+-compile(export_all).
 
 -define(TASK, analyze).
 -define(DEPS, [build]).
@@ -163,11 +164,11 @@ generate_local_plt(BuildRef, PltPath) ->
 %%--------------------------------------------------------------------
 output_info(BuildRef, {ok, Warnings}) ->
     output_warnings(BuildRef, 1, Warnings);
-output_info(BuildRef, {error, Warnings, Errors}) ->
+output_info(BuildRef, {ok, Warnings, Errors}) ->
     output_warnings(BuildRef, 1, Warnings),
     output_errors(BuildRef, 1, Errors);
-output_info(BuildRef, {error, Message}) ->
-    eta_event:task_event(BuildRef, ?TASK, analyze_error, Message).
+output_info(BuildRef, {error, Warnings}) ->
+    output_warnings(BuildRef, 1, Warnings).
 
 %%--------------------------------------------------------------------
 %% @spec output_warnings(WarningList) -> ok.
@@ -177,13 +178,9 @@ output_info(BuildRef, {error, Message}) ->
 %% @end
 %% @private
 %%--------------------------------------------------------------------
-output_warnings(BuildRef, N, [{{Module, Function, Arity}, Message} | T]) ->
+output_warnings(BuildRef, N, [All | T]) ->
     eta_event:task_event(BuildRef, ?TASK, analyze_warning,
-                         {"Warning ~w: ~s:~w ~s", [N, Module, Function, Arity, Message]}),
-    output_warnings(BuildRef, N + 1, T);
-output_warnings(BuildRef, N, [{{Module, Line}, Message} | T]) ->
-    eta_event:task_event(BuildRef, ?TASK,
-                         analyze_warning, {"Warning ~w: ~s:~w ~s", [N, Module, Line, Message]}),
+                         dialyzer:format_warning(All)),
     output_warnings(BuildRef, N + 1, T);
 output_warnings(_, _, []) ->
     ok.

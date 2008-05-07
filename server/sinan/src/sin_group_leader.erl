@@ -193,4 +193,4 @@ handle_msg(ReplyAs, Msg, From, Func,
 	_ ->
 	    From ! {io_reply,ReplyAs,ok}
     end,
-    eta_event:task_event(BuildId, Task, {Type, Msg}).
+    eta_event:task_event(BuildId, Task, Type, Msg).

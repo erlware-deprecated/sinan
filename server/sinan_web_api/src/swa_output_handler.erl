@@ -192,14 +192,21 @@ send_event_to_sock({Type, _, Task, EventType}, Writer) when is_atom(EventType)->
 send_event_to_sock({Type, _, EventType, Desc}, Writer) ->
     JDesc = {obj, [{type, Type},
                   {event_type, EventType},
-                  {desc, Desc}]},
+                  {desc, conv_desc(Desc)}]},
     crary_body:write(Writer, ktj_encode:encode(JDesc));
 send_event_to_sock({Type, _, Task, EventType, Desc}, Writer) ->
     JDesc = ktj_encode:encode({obj, [{task, Task},
                                      {type, Type},
                                      {event_type, EventType},
-                                     {desc, Desc}]}),
+                                     {desc, conv_desc(Desc)}]}),
     crary_body:write(Writer, JDesc).
+
+conv_desc({Format, Args}) ->
+    list_to_binary(io_lib:format(Format, Args));
+conv_desc(Desc) when is_list(Desc) ->
+    list_to_binary(Desc);
+conv_desc(Desc) when is_binary(Desc) ->
+    Desc.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -208,5 +215,6 @@ send_event_to_sock({Type, _, Task, EventType, Desc}, Writer) ->
 %% @end
 %%--------------------------------------------------------------------
 quit(Writer) ->
+    crary_body:done_writing(Writer),
     crary_sock:done_writing(Writer).
 
