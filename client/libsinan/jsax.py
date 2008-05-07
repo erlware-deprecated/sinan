@@ -147,6 +147,8 @@ def parse_value(stream, handler):
         parse_false(stream, handler)
     elif char == 'n':
         parse_null(stream, handler)
+    elif char == '':
+        return False
     else:
         raise libsinan.sinexceptions.ParseError, "unexpected value " + char
     return handler.value_end()

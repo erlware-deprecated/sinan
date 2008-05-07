@@ -47,7 +47,6 @@ class Handler:
     def do_request(self, largs, handle = libsinan.output.handle):
         """ Actually make the task request to the server """
         config = self.jsonify_opts(self.add_start_dir(largs))
-        print config
         task = largs['task']
         url = largs['special_opts']['url']
         if url[-1:] == '/':
