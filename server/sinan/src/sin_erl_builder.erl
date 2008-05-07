@@ -266,7 +266,7 @@ build_app(BuildRef, Env, AppName, Args) ->
 %% @spec check_for_errors(ModuleList) -> ok.
 %% @end
 %%--------------------------------------------------------------------
-check_for_errors([{sinan, errors} | _]) ->
+check_for_errors([{sinan, error} | _]) ->
     ?ETA_RAISE(build_errors);
 check_for_errors([_ | T]) ->
     check_for_errors(T);
@@ -401,6 +401,16 @@ module_name(Ext, Ext, Acc) ->
 module_name([H | T], Ext, Acc) ->
     module_name(T, Ext, [H | Acc]).
 
+
+%%--------------------------------------------------------------------
+%% @doc
+%%  Reorder the list into dependent modules
+%% @spec (BuildRef, Lst, FileList, Acc) -> NewModuleList
+%% @end
+%%--------------------------------------------------------------------
+reorder_list(BuildRef, Lst, FileList, Acc) ->
+    reorder_list(BuildRef, Lst, FileList, Acc, ok).
+
 %%--------------------------------------------------------------------
 %% @spec reorder_list(ModList, FileList, Acc) -> NewList.
 %%
@@ -410,18 +420,20 @@ module_name([H | T], Ext, Acc) ->
 %% @end
 %% @private
 %%--------------------------------------------------------------------
-reorder_list(BuildRef, [H | T], FileList, Acc) ->
+reorder_list(BuildRef, [H | T], FileList, Acc, OkFlag) ->
     case get_file_list(H, FileList) of
         not_in_list ->
             eta_event:task_fault(BuildRef, ?TASK,
                                  {"The module specified by ~w is not "
                                   "on the filesystem!! Not building.", [H]}),
-            reorder_list(BuildRef, T, FileList, Acc);
+            reorder_list(BuildRef, T, FileList, Acc, not_ok);
         Entry ->
-            reorder_list(BuildRef, T, FileList, [Entry | Acc])
+            reorder_list(BuildRef, T, FileList, [Entry | Acc], OkFlag)
     end;
-reorder_list(_, [], _FileList, Acc) ->
-    lists:reverse(Acc).
+reorder_list(_, [], _FileList, Acc, ok) ->
+    lists:reverse(Acc);
+reorder_list(_, [], _FileList, _, not_ok) ->
+    ?ETA_RAISE(build_errors).
 
 %%--------------------------------------------------------------------
 %% @spec get_file_list(ModuleName, FileList) -> Entry | not_in_list.

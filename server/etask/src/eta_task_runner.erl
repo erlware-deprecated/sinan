@@ -140,13 +140,13 @@ do_tasks(Chain, Task, RunId) ->
     execute_handlers(RunId, PreHandlers, Chain),
     Tasks = get_tasks(Task),
     try run_tasks(RunId, Chain, Tasks) catch
-    _:problem ->
-        eta_event:run_fault(RunId, "Task failed");
-    _:Error ->
-        eta_event:run_fault(RunId,
-                            {"Error : ~p, Stacktrace : \n ~p",
-                             [Error, erlang:get_stacktrace()]})
-    after
+     _:problem ->
+         eta_event:run_fault(RunId, "Task failed");
+     _:Error ->
+         eta_event:run_fault(RunId,
+                             {"Error : ~p, Stacktrace : \n ~p",
+                              [Error, erlang:get_stacktrace()]})
+      after
         do_post_event_handlers(RunId, Chain),
         eta_event:run_stop(RunId)
     end,
@@ -163,11 +163,11 @@ do_post_event_handlers(RunId, Chain) ->
     PostHandlers = eta_meta_task:get_post_chain_handlers(Chain),
     try execute_handlers(RunId, PostHandlers, Chain) catch
     _:problem ->
-        eta_event:run_fault(RunId, "Task failed");
+       eta_event:run_fault(RunId, "Task failed");
     _:Error ->
-        eta_event:run_fault(RunId,
-                            {"Error : ~p, Stacktrace : \n ~p",
-                             [Error, erlang:get_stacktrace()]})
+       eta_event:run_fault(RunId,
+                           {"Error : ~p, Stacktrace : \n ~p",
+                            [Error, erlang:get_stacktrace()]})
     end.
 
 
@@ -198,8 +198,8 @@ get_tasks(Task) when is_atom(Task) ->
 %%-------------------------------------------------------------------
 run_tasks(RunId, Chain, [Task | RestTasks])  ->
     try execute_task_stack(RunId, Chain, Task) catch
-        _:{eta_exec, Problem} ->
-            eta_event:task_fault(RunId, Task, {"~p", Problem}),
+        _:{eta_excep, Problem} ->
+            eta_event:task_fault(RunId, Task, {"~p", [Problem]}),
             throw(problem);
         _:{eta_excep, _Problem, Description} ->
             eta_event:task_fault(RunId, Task, Description),

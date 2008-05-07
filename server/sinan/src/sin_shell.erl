@@ -37,7 +37,7 @@
 -include("eunit.hrl").
 
 %% API
--export([start/0, do_task/1, shell/1, create_cmdline/2]).
+-export([start/0, do_task/1, shell/1]).
 
 -define(TASK, shell).
 -define(DEPS, [build]).
@@ -82,7 +82,7 @@ do_task(BuildRef) ->
 %% @end
 %%--------------------------------------------------------------------
 shell(BuildRef) ->
-    eta_event:task_start(BuildRef, ?TASK, "Starting a shell ..."),
+    eta_event:task_start(BuildRef, ?TASK, "Returning paths for shell ..."),
     ProjectApps = sin_build_config:get_value(BuildRef, "project.apps"),
     ProjectRepoApps = sin_build_config:get_value(BuildRef, "project.repoapps"),
     Repo = sin_build_config:get_value(BuildRef, "project.repository"),
@@ -103,57 +103,46 @@ shell(BuildRef) ->
 make_shell(BuildRef, ProjectApps, ProjectRepoApps, Repo) ->
     BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
     AppDir = filename:join([BuildDir, "apps"]),
-    Paths = gather_paths(AppDir, ProjectApps, []) ++
-        gather_paths(Repo, ProjectRepoApps, []),
-    Prefix = os:getenv("ROOTDIR"),
-    ErlBin = filename:join([Prefix, "bin", "erl"]),
-    case filelib:is_regular(ErlBin) of
-        true ->
-            ok;
-        false ->
-            eta_event:task_fault(BuildRef, ?TASK, {"erl binary missing: ~s", [ErlBin]}),
-            throw({error, missing_erl_binary})
-    end,
-    Cmdline = lists:flatten(["xterm -e ", ErlBin, " -sname sinan_shell ",
-                             create_cmdline(Paths, [])]),
-    os:cmd(Cmdline).
+    send_paths(BuildRef, AppDir, ProjectApps),
+    send_paths(BuildRef, Repo, ProjectRepoApps).
 
 
 %%--------------------------------------------------------------------
-%% @spec create_cmdline(List, Str) -> CommandLineString.
+%% @spec send_paths(AppDir, DirList, Acc) -> Paths.
 %%
 %% @doc
-%%  Takes the individual files and creates a command line for them.
+%%  Send events for all the paths in the list.
 %% @end
 %%--------------------------------------------------------------------
-create_cmdline([H | T], Str) ->
-    Cmd = lists:flatten([" -pa \"", H, "\""]),
-    create_cmdline(T, [Cmd, Str]);
-create_cmdline([], Str) ->
-    lists:flatten(lists:reverse(Str)).
+send_paths(BuildRef, RepoDir, [{AppName, Vsn, _} | T]) ->
+    send_path(BuildRef, RepoDir, AppName, Vsn),
+    send_paths(BuildRef, RepoDir, T);
+send_paths(BuildRef, RepoDir, [{AppName, Vsn} | T]) ->
+    send_path(BuildRef, RepoDir, AppName, Vsn),
+    send_paths(BuildRef, RepoDir, T);
+send_paths(_, _, []) ->
+    ok.
 
 %%--------------------------------------------------------------------
-%% @spec gather_paths(AppDir, DirList, Acc) -> Paths.
-%%
 %% @doc
-%%  Gather up the applications and return a list of paths
-%%  pairs.
+%%  Send out the requisite events for a specific piece of the
+%%  application.
+%% @spec (BuildRef, RepoDir, AppName, Vsn) -> ok
 %% @end
 %%--------------------------------------------------------------------
-gather_paths(RepoDir, [{AppName, Vsn, _} | T], Acc) ->
-    gather_paths(RepoDir, [{AppName, Vsn} | T], Acc);
-gather_paths(RepoDir, [{AppName, Vsn} | T], Acc) ->
-    DirName = lists:flatten([atom_to_list(AppName), "-", Vsn]),
-    Name = filename:join([RepoDir, DirName, "ebin"]),
-    gather_paths(RepoDir, T, [Name | Acc]);
-gather_paths(_, [], Acc) ->
-    Acc.
-
+send_path(BuildRef, RepoDir, AppName, Vsn) ->
+    NAppName = case is_atom(AppName) of
+                   true ->
+                       atom_to_list(AppName);
+                   false ->
+                       AppName
+               end,
+    eta_event:task_event(BuildRef, ?TASK, app_name, NAppName),
+    DirName = lists:flatten([NAppName, "-", Vsn]),
+    Path = filename:join([RepoDir, DirName, "ebin"]),
+    eta_event:task_event(BuildRef, ?TASK, app_path, Path).
 
 %%====================================================================
 %% Tests
 %%====================================================================
-create_cmdline_test() ->
-    "" = create_cmdline([], ""),
-    " -pa \"/my/test/path\"" = create_cmdline(["/my/test/path"], ""),
-    " -pa \"/p1\" -pa \"/p2\"" = create_cmdline(["/p1", "/p2"], "").
+
