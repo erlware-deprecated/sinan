@@ -23,3 +23,4 @@ def get_handler_for_task(task):
 
 
 import libsinan.gen_handler
+import libsinan.shell_handler
