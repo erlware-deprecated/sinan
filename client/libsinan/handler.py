@@ -2,7 +2,7 @@ import libsinan.output
 import libsinan.encoder
 import re
 import os
-import urllib2
+import httplib
 
 class Handler:
     DEFAULT_VALIDATOR = re.compile('\w+')
@@ -49,14 +49,13 @@ class Handler:
         config = self.jsonify_opts(self.add_start_dir(largs))
         task = largs['task']
         url = largs['special_opts']['url']
-        if url[-1:] == '/':
-            url += 'do_task/' + task
-        else:
-            url += '/do_task/' + task
+        query = '/do_task/' + task
 
-        conn = urllib2.urlopen(url, config)
-
-        handle(task, conn)
+        conn = httplib.HTTPConnection(url)
+        headers = {"Content-type": "application/json"}
+        conn.request("POST", query, config, headers)
+        response = conn.getresponse()
+        handle(task, response)
 
     def handle(self, largs):
         self.do_request(largs)

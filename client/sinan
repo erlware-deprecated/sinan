@@ -7,10 +7,31 @@ import libsinan.sinexceptions
 
 CONNECTION_REFUSED = 111
 
+def _mkdir(newdir):
+    """works the way a good mkdir should :)
+        - already exists, silently complete
+        - regular file in the way, raise an exception
+        - parent directory(ies) does not exist, make them as well
+    """
+    if os.path.isdir(newdir):
+        pass
+    elif os.path.isfile(newdir):
+        raise OSError("a file with the same name as the desired " \
+                      "dir, '%s', already exists." % newdir)
+    else:
+        head, tail = os.path.split(newdir)
+        if head and not os.path.isdir(head):
+            _mkdir(head)
+        if tail:
+            os.mkdir(newdir)
+
+
 def start_server(largs):
     """ Start the server. Use the 'server_command' local
     opt if it exists, otherwise just use 'sinserv' on the path """
-    cmd = "sinserv"
+    log_dir = os.getenv("HOME") + "/.sinan/logs"
+    _mkdir(log_dir)
+    cmd = "sinserv > " + log_dir + "/out.log"
     try:
         cmd = largs['special_opts']['server_command']
     except KeyError:

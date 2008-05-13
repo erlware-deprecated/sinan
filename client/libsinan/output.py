@@ -1,3 +1,4 @@
+import sys
 import libsinan.jsax
 
 class SimpleTaskHandler(object):
@@ -70,8 +71,11 @@ class SimpleTaskHandler(object):
         """ We only get one object per right now so
         lets print it out when we get it """
 
-        if self.type == "task_event" and self.desc and self.event_type == "io":
-            print self.desc,
+        if (self.type == "task_event" and self.desc and
+            (self.event_type == "io"
+             or self.event_type == "wip")):
+            sys.stdout.write(self.desc)
+            sys.stdout.flush()
         elif self.type == "task_event" and self.desc:
             addition = ""
             if self.event_type == "fault":
