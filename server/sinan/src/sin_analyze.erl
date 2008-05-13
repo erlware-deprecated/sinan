@@ -42,7 +42,8 @@
 
 -define(TASK, analyze).
 -define(DEPS, [build]).
-
+-define(MINUTES_PER_APP, 10).
+-define(WIP_TIME, 5000).
 
 %%====================================================================
 %% API
@@ -138,19 +139,42 @@ run_analyzer(BuildRef, BuildDir, PltPath) ->
 %% @end
 %%--------------------------------------------------------------------
 generate_local_plt(BuildRef, PltPath) ->
-    eta_event:task_event(BuildRef, ?TASK, generating_plt,
-                         "Generating base plt, this could take a "
-                         "really long time ..."),
     RepoAppList = sin_build_config:get_value(BuildRef, "project.repoapps"),
     ProjectRepo = sin_build_config:get_value(BuildRef, "project.repository"),
     Codepaths = get_code_paths(ProjectRepo, RepoAppList, []),
+    Minutes = integer_to_list(length(Codepaths) * ?MINUTES_PER_APP),
+    eta_event:task_event(BuildRef, ?TASK, generating_plt,
+                         "Generating base plt, this could take as "
+                         "long as " ++ Minutes ++ " minutes"),
+    {ok, Pid} = sin_wip:start_link(BuildRef, ?TASK, ".", 5000),
+    try gen_plt(BuildRef, PltPath, Codepaths) after
+        sin_wip:quit(Pid)
+    end.
 
+%%--------------------------------------------------------------------
+%% @doc
+%%  generate a plt file for use by the project. Plt should be
+%% generated over all dependencies
+%% @spec (BuildRef, PltPath, Codepaths) -> ok
+%% @end
+%%--------------------------------------------------------------------
+gen_plt(BuildRef, PltPath, Codepaths) ->
     Opts = [{files_rec, Codepaths},
             {from, byte_code},
             {output_plt, PltPath}],
     io:format("~p", [Opts]),
-    output_info(BuildRef, dialyzer:run(Opts)),
-    eta_event:task_event(BuildRef, ?TASK, plt_generation_complete, "Done generating plt").
+    Output = dialyzer:run(Opts),
+    output_info(BuildRef, Output),
+    case Output of
+        {error, _, _} ->
+            ?ETA_RAISE_D(plt_generation_fault,
+                         "Unable to generate plt due to errors printed "
+                         "previously.");
+        _ ->
+            ok
+    end,
+    eta_event:task_event(BuildRef, ?TASK, plt_generation_complete,
+                         "Done generating plt").
 
 
 
@@ -158,17 +182,15 @@ generate_local_plt(BuildRef, PltPath) ->
 %% @spec output_info(Result) -> ok.
 %%
 %% @doc
-%%  Print out teh informational output from dialyzer.
+%%  Print out the informational output from dialyzer.
 %% @end
 %% @private
 %%--------------------------------------------------------------------
 output_info(BuildRef, {ok, Warnings}) ->
     output_warnings(BuildRef, 1, Warnings);
-output_info(BuildRef, {ok, Warnings, Errors}) ->
+output_info(BuildRef, {error, Warnings, Errors}) ->
     output_warnings(BuildRef, 1, Warnings),
-    output_errors(BuildRef, 1, Errors);
-output_info(BuildRef, {error, Warnings}) ->
-    output_warnings(BuildRef, 1, Warnings).
+    output_errors(BuildRef, 1, Errors).
 
 %%--------------------------------------------------------------------
 %% @spec output_warnings(WarningList) -> ok.
