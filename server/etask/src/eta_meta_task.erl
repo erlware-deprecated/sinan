@@ -46,7 +46,7 @@
 %%%  Tasks aren't a explicitly part of any chain but a chain name
 %%%  is specified when a task is run.
 %%%
-%%% @type handler_list = [handler()].
+%%% @type handler_list() = [handler()].
 %%%  A list of handlers.
 %%%
 %%% @type task() = atom().
@@ -98,7 +98,7 @@
 %% API
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @spec start_link() -> {ok,Pid} | ignore | {error,Error}
+%% @spec (Tid) -> {ok,Pid} | ignore | {error,Error}
 %%
 %% @doc
 %% Starts the server
@@ -111,7 +111,7 @@ start_link(Tid) ->
 %% @doc
 %%  Regester a handler that should happen before a task chain is
 %%  started.
-%% @spec register_pre_chain_handler(Chain::chain(), Handler::handler()) -> ok
+%% @spec (Chain::chain(), Handler::handler()) -> ok
 %% @end
 %%--------------------------------------------------------------------
 register_pre_chain_handler(Chain, Handler)
@@ -122,7 +122,7 @@ register_pre_chain_handler(Chain, Handler)
 %% @doc
 %%  Remove a pre chain handler. This only removes the exact handler
 %%  specified and not the handlers themselves.
-%% @spec remove_pre_chain_handler(Chain::chain(), Handler::handler()) -> ok
+%% @spec (Chain::chain(), Handler::handler()) -> ok
 %% @end
 %%--------------------------------------------------------------------
 remove_pre_chain_handler(Chain, Handler)
@@ -131,7 +131,7 @@ remove_pre_chain_handler(Chain, Handler)
 %%--------------------------------------------------------------------
 %% @doc
 %%  Get the list of all the pre chain handlers for a chain.
-%% @spec get_pre_chain_handlers(Chain::chain()) -> Handlers::handler_list()
+%% @spec (Chain::chain()) -> Handlers::handler_list()
 %% @end
 %%--------------------------------------------------------------------
 get_pre_chain_handlers(Chain) ->
@@ -141,7 +141,7 @@ get_pre_chain_handlers(Chain) ->
 %% @doc
 %%  clear all the pre chain handlers for the specific chain speficied
 %%
-%% @spec clear_pre_chain_handlers(Chain::chain()) -> ok
+%% @spec (Chain::chain()) -> ok
 %% @end
 %%--------------------------------------------------------------------
 clear_pre_chain_handlers(Chain) ->
@@ -152,7 +152,7 @@ clear_pre_chain_handlers(Chain) ->
 %% @doc
 %%  Register a post chain handler. Register a handler to execute
 %%  after the execution of a task chain.
-%% @spec register_post_chain_handler(Chain::chain(), Handler::handler()) -> ok
+%% @spec (Chain::chain(), Handler::handler()) -> ok
 %% @end
 %%--------------------------------------------------------------------
 register_post_chain_handler(Chain, Handler)
@@ -162,7 +162,7 @@ register_post_chain_handler(Chain, Handler)
 %%--------------------------------------------------------------------
 %% @doc
 %%  Remove a post chain handler from the system.
-%% @spec remove_post_chain_handler(Chain::chain(), Handler::handler()) -> ok
+%% @spec (Chain::chain(), Handler::handler()) -> ok
 %% @end
 %%--------------------------------------------------------------------
 remove_post_chain_handler(Chain, Handler)
@@ -173,7 +173,7 @@ remove_post_chain_handler(Chain, Handler)
 %% @doc
 %%  Get a list of all post chain handlers.
 %%
-%% @spec get_post_chain_handlers(Chain::chain()) -> Handlers::handler_list()
+%% @spec (Chain::chain()) -> Handlers::handler_list()
 %% @end
 %%--------------------------------------------------------------------
 get_post_chain_handlers(Chain) ->
@@ -183,7 +183,7 @@ get_post_chain_handlers(Chain) ->
 %% @doc
 %%  Removes all of post chain handlers.
 %%
-%% @spec clear_post_chain_handlers(Chain::chain()) -> ok
+%% @spec (Chain::chain()) -> ok
 %% @end
 %%--------------------------------------------------------------------
 clear_post_chain_handlers(Chain) ->
@@ -194,7 +194,7 @@ clear_post_chain_handlers(Chain) ->
 %% @doc
 %%  Register a new handler on the task named 'Task' in the specified
 %%  chain.
-%% @spec register_pre_task_handler(Chain::chain(), Task::task(), Handler::handler()) -> ok
+%% @spec (Chain::chain(), Task::task(), Handler::handler()) -> ok
 %% @end
 %%--------------------------------------------------------------------
 register_pre_task_handler(Chain, Task, Handler)
@@ -204,7 +204,7 @@ register_pre_task_handler(Chain, Task, Handler)
 %%--------------------------------------------------------------------
 %% @doc
 %%   Remove a specific pre task handler from the system.
-%% @spec remove_pre_task_handler(Chain::chain(), Task::task(), Handler::handler()) -> ok
+%% @spec (Chain::chain(), Task::task(), Handler::handler()) -> ok
 %% @end
 %%--------------------------------------------------------------------
 remove_pre_task_handler(Chain, Task, Handler)
@@ -214,7 +214,7 @@ remove_pre_task_handler(Chain, Task, Handler)
 %%--------------------------------------------------------------------
 %% @doc
 %%  Get all of the pre task handlers for the specified task.
-%% @spec get_pre_task_handlers(Chain::chain(), Task::task()) -> Handlers::handler_list()
+%% @spec (Chain::chain(), Task::task()) -> Handlers::handler_list()
 %% @end
 %%--------------------------------------------------------------------
 get_pre_task_handlers(Chain, Task) ->
@@ -223,7 +223,7 @@ get_pre_task_handlers(Chain, Task) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Clear all pre handlers from the specified train
-%% @spec clear_pre_task_handlers(Chain, Task) -> ok
+%% @spec (Chain, Task) -> ok
 %% @end
 %%--------------------------------------------------------------------
 clear_pre_task_handlers(Chain, Task) ->
@@ -233,7 +233,7 @@ clear_pre_task_handlers(Chain, Task) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Register a new post task handler for the specified chain
-%% @spec register_post_task_handler(Chain::chain(), Task::task(), Handler::handler()) -> ok
+%% @spec (Chain::chain(), Task::task(), Handler::handler()) -> ok
 %% @end
 %%--------------------------------------------------------------------
 register_post_task_handler(Chain, Task, Handler)
@@ -243,7 +243,7 @@ register_post_task_handler(Chain, Task, Handler)
 %%--------------------------------------------------------------------
 %% @doc
 %%  remove a specific post task handler from the specified chain.
-%% @spec remove_post_task_handler(Chain::chain(), Task::task(), Handler::handler()) -> ok
+%% @spec (Chain::chain(), Task::task(), Handler::handler()) -> ok
 %% @end
 %%--------------------------------------------------------------------
 remove_post_task_handler(Chain, Task, Handler)
@@ -253,7 +253,7 @@ remove_post_task_handler(Chain, Task, Handler)
 %%--------------------------------------------------------------------
 %% @doc
 %%  Get all of the post handlers for the specified chain.
-%% @spec get_post_task_handlers(Chain, Task) -> Handlers:handler_list()
+%% @spec (Chain, Task) -> Handlers::handler_list()
 %% @end
 %%--------------------------------------------------------------------
 get_post_task_handlers(Chain, Task) ->
@@ -262,7 +262,7 @@ get_post_task_handlers(Chain, Task) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Clear all of the tasks from the post task handler.
-%% @spec clear_post_task_handlers(Chain, Task) -> ok
+%% @spec (Chain, Task) -> ok
 %% @end
 %%--------------------------------------------------------------------
 clear_post_task_handlers(Chain, Task) ->
@@ -272,7 +272,7 @@ clear_post_task_handlers(Chain, Task) ->
 %% @doc
 %%  Stop the server. This should really only be used in very specific
 %%  information.
-%% @spec stop() -> ok
+%% @spec () -> ok
 %% @end
 %%--------------------------------------------------------------------
 stop() ->
@@ -283,7 +283,7 @@ stop() ->
 %%====================================================================
 
 %%--------------------------------------------------------------------
-%% @spec init(Args) -> {ok, State} |
+%% @spec (Args) -> {ok, State} |
 %%                     {ok, State, Timeout} |
 %%                     ignore               |
 %%                     {stop, Reason}
@@ -296,7 +296,7 @@ init([Tid]) ->
     {ok, #state{tid=Tid}}.
 
 %%--------------------------------------------------------------------
-%% @spec handle_call(Request, From, State) -> {reply, Reply, State} |
+%% @spec (Request, From, State) -> {reply, Reply, State} |
 %%                                      {reply, Reply, State, Timeout} |
 %%                                      {noreply, State} |
 %%                                      {noreply, State, Timeout} |
@@ -313,7 +313,7 @@ handle_call({{get, Type}, Chain, TaskName, ?GET_MAGIC_NAME}, _From, State = #sta
 
 
 %%--------------------------------------------------------------------
-%% @spec handle_cast(Msg, State) -> {noreply, State} |
+%% @spec (Msg, State) -> {noreply, State} |
 %%                                      {noreply, State, Timeout} |
 %%                                      {stop, Reason, State}
 %%
@@ -334,7 +334,7 @@ handle_cast(stop, _) ->
     exit(normal).
 
 %%--------------------------------------------------------------------
-%% @spec handle_info(Info, State) -> {noreply, State} |
+%% @spec (Info, State) -> {noreply, State} |
 %%                                       {noreply, State, Timeout} |
 %%                                       {stop, Reason, State}
 %%
@@ -346,7 +346,7 @@ handle_info(_Info, State) ->
     {noreply, State}.
 
 %%--------------------------------------------------------------------
-%% @spec terminate(Reason, State) -> void()
+%% @spec (Reason, State) -> void()
 %%
 %% @doc
 %% This function is called by a gen_server when it is about to
@@ -359,7 +359,7 @@ terminate(_Reason, _State) ->
     ok.
 
 %%--------------------------------------------------------------------
-%% @spec code_change(OldVsn, State, Extra) -> {ok, NewState}
+%% @spec (OldVsn, State, Extra) -> {ok, NewState}
 %%
 %% @doc
 %% Convert process state when code is changed
@@ -377,7 +377,8 @@ code_change(_OldVsn, State, _Extra) ->
 %%  have the same key structure. Its only a matter of the values changing.
 %%  this abstracts that fact.
 %%
-%% @spec cast_handler_action(Action, Type, Chain, TaskName, Handler) -> ok
+%% @spec (Action, Type, Chain, TaskName, Handler) -> ok
+%% @private
 %% @end
 %%--------------------------------------------------------------------
 cast_handler_action(Action, Type, Chain, TaskName, Handler) ->
@@ -387,7 +388,8 @@ cast_handler_action(Action, Type, Chain, TaskName, Handler) ->
 %% @doc
 %%  call the server and return whatever is returned.
 %%
-%% @spec call_handler_action(Action, Type, Chain, TaskName, Handler) -> ok
+%% @spec (Action, Type, Chain, TaskName, Handler) -> ok
+%% @private
 %% @end
 %%--------------------------------------------------------------------
 call_handler_action(Action, Type, Chain, TaskName, Handler) ->
@@ -397,8 +399,9 @@ call_handler_action(Action, Type, Chain, TaskName, Handler) ->
 %% @doc
 %%  Get the list of handlers for this type/task.
 %%
-%% @spec get_handlers(Tid, Type::atom(), Chain::atom(), TaskName::atom()) ->
+%% @spec (Tid, Type::atom(), Chain::atom(), TaskName::atom()) ->
 %%  Handlers::list()
+%% @private
 %% @end
 %%--------------------------------------------------------------------
 get_handlers(Tid, Type, Chain, TaskName) ->
@@ -408,7 +411,8 @@ get_handlers(Tid, Type, Chain, TaskName) ->
 %% @doc
 %%  Register this handler with the system.
 %%
-%% @spec register_handler(Tid, Type::atom(), Chain::atom(), TaskName::atom(), Handler::term()) -> true
+%% @spec (Tid, Type::atom(), Chain::atom(), TaskName::atom(), Handler::term()) -> true
+%% @private
 %% @end
 %%--------------------------------------------------------------------
 register_handler(Tid, Type, Chain, TaskName, Handler) ->
@@ -418,7 +422,8 @@ register_handler(Tid, Type, Chain, TaskName, Handler) ->
 %% @doc
 %%  Remove a specific handler from the system.
 %%
-%% @spec remove_handler(Tid, Type, Chain, TaskName, Handler) -> true
+%% @spec (Tid, Type, Chain, TaskName, Handler) -> true
+%% @private
 %% @end
 %%--------------------------------------------------------------------
 remove_handler(Tid, Type, Chain, TaskName, Handler) ->
@@ -428,7 +433,8 @@ remove_handler(Tid, Type, Chain, TaskName, Handler) ->
 %% @doc
 %%  Clear all handlers for a specific task from the system.
 %%
-%% @spec clear_handlers(Tid, Type, Chain, TaskName) -> true
+%% @spec (Tid, Type, Chain, TaskName) -> true
+%% @private
 %% @end
 %%--------------------------------------------------------------------
 clear_handlers(Tid, Type, Chain, TaskName) ->
@@ -437,9 +443,10 @@ clear_handlers(Tid, Type, Chain, TaskName) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%
-%% @spec reformat_list(Values::ValueList, Acc::Acc) ->
+%% @spec (Values::ValueList, Acc::Acc) -> List::list()
 %%   List = [{term(), handler()}]
 %%   Acc = [handler()]
+%% @private
 %% @end
 %%--------------------------------------------------------------------
 reformat_list([{_, Value} | Tail], Acc) ->
@@ -454,7 +461,8 @@ reformat_list([], Acc) ->
 %% @doc
 %%  Checks the ability to register individual tasks.
 %%
-%% @spec register_chain_test() -> bool()
+%% @spec () -> bool()
+%% @private
 %% @end
 %%--------------------------------------------------------------------
 register_chain_test() ->
@@ -499,8 +507,3 @@ clear_chain_test() ->
     stop(),
     ets:delete(Tid),
     [] = Res.
-
-
-
-
-

@@ -61,7 +61,7 @@
 %%--------------------------------------------------------------------
 %% @doc
 %%  Starts the gen_event with the eta_event name.
-%% @spec start_link() -> ok
+%% @spec () -> ok
 %% @end
 %%--------------------------------------------------------------------
 start_link() ->
@@ -70,7 +70,7 @@ start_link() ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Get the event name from the system.
-%% @spec event_name() -> EventName.
+%% @spec () -> EventName
 %% @end
 %%--------------------------------------------------------------------
 event_name() ->
@@ -80,7 +80,7 @@ event_name() ->
 %% @doc
 %%  add a task fault to the system tha tis independent of
 %%  a run
-%% @spec meta_fault(EventType, Desc) -> ok
+%% @spec (EventType, Desc) -> ok
 %% @end
 %%--------------------------------------------------------------------
 meta_fault(EventType, Desc) when is_atom(EventType) ->
@@ -90,7 +90,7 @@ meta_fault(EventType, Desc) when is_atom(EventType) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Send an event to the event system.
-%% @spec run_event(RunRef, EventType) -> ok
+%% @spec (RunRef, EventType) -> ok
 %% @end
 %%--------------------------------------------------------------------
 run_event(RunRef, EventType) when is_atom(EventType) ->
@@ -99,7 +99,7 @@ run_event(RunRef, EventType) when is_atom(EventType) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Indicate that a run has started
-%% @spec run_start(RunRef) -> ok
+%% @spec (RunRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
 run_start(RunRef) ->
@@ -108,7 +108,7 @@ run_start(RunRef) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Indicate that a run has stoped
-%% @spec run_stop(RunRef) -> ok
+%% @spec (RunRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
 run_stop(RunRef) ->
@@ -117,7 +117,7 @@ run_stop(RunRef) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Indicate that a run has stopped due to a fault
-%% @spec run_fault(RunRef) -> ok
+%% @spec (RunRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
 run_fault(RunRef) ->
@@ -126,7 +126,7 @@ run_fault(RunRef) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Indicate that a run has stopped due to a fault
-%% @spec run_start(RunRef, Reason) -> ok
+%% @spec (RunRef, Reason) -> ok
 %% @end
 %%--------------------------------------------------------------------
 run_fault(RunRef, Reason) ->
@@ -135,7 +135,7 @@ run_fault(RunRef, Reason) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  send a task event to the system.
-%% @spec task_event(RunRef, Task, EventType) -> ok
+%% @spec (RunRef, Task, EventType) -> ok
 %% @end
 %%--------------------------------------------------------------------
 task_event(RunRef, Task, EventType) when is_atom(EventType) ->
@@ -144,7 +144,7 @@ task_event(RunRef, Task, EventType) when is_atom(EventType) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  task_event with description.
-%% @spec task_event(RunRef, Task, EventType) -> ok
+%% @spec (RunRef, Task, EventType, Desc) -> ok
 %% @end
 %%--------------------------------------------------------------------
 task_event(RunRef, Task, EventType, Desc) when is_atom(EventType) ->
@@ -153,7 +153,7 @@ task_event(RunRef, Task, EventType, Desc) when is_atom(EventType) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  indicate that a task has started
-%% @spec task_start(RunRef, Task) -> ok
+%% @spec (RunRef, Task) -> ok
 %% @end
 %%--------------------------------------------------------------------
 task_start(RunRef, Task) ->
@@ -162,7 +162,7 @@ task_start(RunRef, Task) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  indicate that a task has started
-%% @spec task_start(RunRef, Task, Desc) -> ok
+%% @spec (RunRef, Task, Desc) -> ok
 %% @end
 %%--------------------------------------------------------------------
 task_start(RunRef, Task, Desc) ->
@@ -171,7 +171,7 @@ task_start(RunRef, Task, Desc) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  indicate that a task has stopped
-%% @spec task_stop(RunRef, Task) -> ok
+%% @spec (RunRef, Task) -> ok
 %% @end
 %%--------------------------------------------------------------------
 task_stop(RunRef, Task) ->
@@ -180,7 +180,7 @@ task_stop(RunRef, Task) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  indicate that a task has stopped
-%% @spec task_stop(RunRef, Task, Desc) -> ok
+%% @spec (RunRef, Task, Desc) -> ok
 %% @end
 %%--------------------------------------------------------------------
 task_stop(RunRef, Task, Desc) ->
@@ -189,7 +189,7 @@ task_stop(RunRef, Task, Desc) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  indicate that a task has stopped due to a fault
-%% @spec task_fault(RunRef, Task) -> ok
+%% @spec (RunRef, Task) -> ok
 %% @end
 %%--------------------------------------------------------------------
 task_fault(RunRef, Task) ->
@@ -198,7 +198,7 @@ task_fault(RunRef, Task) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  indicate that a task has stopped due to a fault
-%% @spec task_fault(RunRef, Task, Reason) -> ok
+%% @spec (RunRef, Task, Reason) -> ok
 %% @end
 %%--------------------------------------------------------------------
 task_fault(RunRef, Task, Reason) ->
@@ -206,9 +206,8 @@ task_fault(RunRef, Task, Reason) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% @spec add_handler(Handler, Args) -> ok
-%%
 %% Add a handler for this event system.
+%% @spec (Handler, Args) -> ok
 %% @end
 %%--------------------------------------------------------------------
 add_handler(Handler, Args) ->
@@ -216,9 +215,8 @@ add_handler(Handler, Args) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% @spec add_sup_handler(Handler, Args) -> ok
-%%
 %% Add a handler for this event system.
+%% @spec (Handler, Args) -> ok
 %% @end
 %%--------------------------------------------------------------------
 add_sup_handler(Handler, Args) ->
@@ -231,7 +229,7 @@ add_sup_handler(Handler, Args) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Format the desc if required, otherwise return it
-%% @spec format_desc(Desc) -> FormattedDesc
+%% @spec (Desc) -> FormattedDesc
 %% @end
 %% @private
 %%--------------------------------------------------------------------

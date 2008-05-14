@@ -39,7 +39,7 @@
 %%--------------------------------------------------------------------
 %% @doc
 %%  Define the do task.
-%% @spec behaviour_info(InfoTarget) -> Info.
+%% @spec (InfoTarget) -> Info
 %% @end
 %%--------------------------------------------------------------------
 behaviour_info(callbacks) ->

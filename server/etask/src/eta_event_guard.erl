@@ -46,7 +46,7 @@
 %% API
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @spec start_link() -> {ok,Pid} | ignore | {error,Error}.
+%% @spec (HandlerModule, Options) -> {ok,Pid} | ignore | {error,Error}
 %%
 %% @doc
 %% Starts the server
@@ -61,10 +61,10 @@ start_link(HandlerModule, Options) ->
 %%====================================================================
 
 %%--------------------------------------------------------------------
-%% @spec init(Args) -> {ok, State} |
+%% @spec (Args) -> {ok, State} |
 %%                     {ok, State, Timeout} |
 %%                     ignore               |
-%%                     {stop, Reason}.
+%%                     {stop, Reason}
 %%
 %% @doc
 %% Initiates the server
@@ -82,12 +82,12 @@ init([HandlerModule, Options]) ->
     end.
 
 %%--------------------------------------------------------------------
-%% @spec handle_call(Request, From, State) -> {reply, Reply, State} |
+%% @spec (Request, From, State) -> {reply, Reply, State} |
 %%                                      {reply, Reply, State, Timeout} |
 %%                                      {noreply, State} |
 %%                                      {noreply, State, Timeout} |
 %%                                      {stop, Reason, Reply, State} |
-%%                                      {stop, Reason, State}.
+%%                                      {stop, Reason, State}
 %%
 %% @doc
 %% Handling call messages
@@ -98,9 +98,9 @@ handle_call(_Request, _From, State) ->
     {reply, Reply, State}.
 
 %%--------------------------------------------------------------------
-%% @spec handle_cast(Msg, State) -> {noreply, State} |
+%% @spec (Msg, State) -> {noreply, State} |
 %%                                      {noreply, State, Timeout} |
-%%                                      {stop, Reason, State}.
+%%                                      {stop, Reason, State}
 %%
 %% @doc
 %% Handling cast messages
@@ -110,9 +110,9 @@ handle_cast(_Msg, State) ->
     {noreply, State}.
 
 %%--------------------------------------------------------------------
-%% @spec handle_info(Info, State) -> {noreply, State} |
+%% @spec (Info, State) -> {noreply, State} |
 %%                                       {noreply, State, Timeout} |
-%%                                       {stop, Reason, State}.
+%%                                       {stop, Reason, State}
 %%
 %% @doc
 %% Handling all non call/cast messages
@@ -131,7 +131,7 @@ handle_info(Other, HandlerModule) ->
 
 
 %%--------------------------------------------------------------------
-%% @spec terminate(Reason, State) -> void().
+%% @spec (Reason, State) -> void()
 %%
 %% @doc
 %% This function is called by a gen_server when it is about to
@@ -144,7 +144,7 @@ terminate(_Reason, _State) ->
     ok.
 
 %%--------------------------------------------------------------------
-%% @spec code_change(OldVsn, State, Extra) -> {ok, NewState}.
+%% @spec (OldVsn, State, Extra) -> {ok, NewState}
 %%
 %% @doc
 %% Convert process state when code is changed
@@ -160,6 +160,7 @@ code_change(_OldVsn, State, _Extra) ->
 %% @doc
 %%  Generate the name for this service.
 %% @spec gen_service_name(ModuleName) -> NewModuleName
+%% @private
 %% @end
 %%--------------------------------------------------------------------
 gen_service_name(ModuleName) ->

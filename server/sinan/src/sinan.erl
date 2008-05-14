@@ -81,7 +81,7 @@
 %%   {task_event, RunRef, Task, stop, Desc} :: A task stop with desc
 %%   {task_event, RunRef, Task, fault} :: A task fault (equiv to stop)
 %%   {task_event, RunRef, Task, fault, Reason} :: A task fault with reason
-%%  ```
+%%  '''
 %%
 %% @spec add_build_event_handler(Handler, Args) -> ok
 %% @end
@@ -240,7 +240,7 @@ do_task_bare(Chain, Task, BuildRef, Args) when is_atom(Task) ->
 %% Generate a new unique build ref for a run. This allows the
 %% use to setup task handlers for the system.
 %%
-%% @spec get_build_ref() -> GeneratedBuildRef::string()
+%% @spec () -> GeneratedBuildRef::string()
 %% @end
 %%--------------------------------------------------------------------
 gen_build_ref() ->
@@ -299,10 +299,10 @@ find_start_dir({obj, Data}) ->
 
 
 %%-------------------------------------------------------------------
-%% @spec find_build_config(Dir::string()) -> ok.
 %% @doc
 %%   find "_build.cfg" in the current directory. if not recurse
 %%   with parent directory.
+%% @spec (Dir::string()) -> ok
 %% @end
 %% @private
 %%-------------------------------------------------------------------

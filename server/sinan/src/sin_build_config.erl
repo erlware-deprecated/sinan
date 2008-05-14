@@ -63,7 +63,7 @@
 %% @doc
 %% Starts the server
 %%
-%% @spec start_link(Name, Override) -> {ok,Pid} | ignore | {error,Error}
+%% @spec start_link(ProjectDir) -> {ok,Pid} | ignore | {error,Error}
 %% @end
 %%--------------------------------------------------------------------
 start_link(ProjectDir) ->

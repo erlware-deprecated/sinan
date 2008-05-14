@@ -46,7 +46,7 @@
 %% API functions
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @spec start_link() -> {ok,Pid} | ignore | {error,Error}.
+%% @spec () -> {ok,Pid} | ignore | {error,Error}
 %%
 %% @doc
 %% Starts the supervisor
@@ -59,9 +59,9 @@ start_link() ->
 %% Supervisor callbacks
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @spec init(Args) -> {ok,  {SupFlags,  [ChildSpec]}} |
-%%                     ignore                          |
-%%                     {error, Reason}.
+%% @spec (Args) -> {ok,  {SupFlags,  [ChildSpec]}} |
+%%                 ignore                          |
+%%                 {error, Reason}
 %%
 %% @doc
 %%  Whenever a supervisor is started using

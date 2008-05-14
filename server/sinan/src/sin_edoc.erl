@@ -47,10 +47,9 @@
 %% API
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @spec start() -> ok.
-%%
 %% @doc
 %% Starts the server
+%% @spec () -> ok
 %% @end
 %%--------------------------------------------------------------------
 start() ->
@@ -66,10 +65,9 @@ start() ->
 
 
 %%--------------------------------------------------------------------
-%% @spec do_task(BuildRef, Args) -> ok
-%%
 %% @doc
-%%  dO the task defined in this module.
+%%  Do the task defined in this module.
+%% @spec (BuildRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
 do_task(BuildRef) ->
@@ -80,7 +78,7 @@ do_task(BuildRef) ->
 %% @doc
 %%  Run the docs.
 %%
-%% @spec doc(BuildRef) -> ok.
+%% @spec (BuildRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
 doc(BuildRef) ->
@@ -102,7 +100,7 @@ doc(BuildRef) ->
 %% @doc
 %%  Run edoc on all the modules in all of the applications.
 %%
-%% @spec (BuildRef, AppList, Opts) -> ok.
+%% @spec (BuildRef, AppList, Opts) -> ok
 %% @end
 %%--------------------------------------------------------------------
 run_docs(BuildRef, [{AppName, _, _} | T], Opts) ->
@@ -151,7 +149,7 @@ capture_start(BuildRef) ->
 %% @doc
 %% Stops io capture.
 %%
-%% @spec () -> ok
+%% @spec (Info) -> ok
 %% @end
 %%--------------------------------------------------------------------
 capture_stop({OldGroupLeader, NewGroupLeader}) ->

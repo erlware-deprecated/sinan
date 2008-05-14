@@ -45,10 +45,9 @@
 %% gen_event callbacks
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @spec start_link() -> {ok,Pid} | {error,Error}.
-%%
 %% @doc
 %% Creates an event manager.
+%% @spec (Options) -> {ok,Pid} | {error,Error}
 %% @end
 %%--------------------------------------------------------------------
 start(Options) ->
@@ -71,7 +70,7 @@ start(Options) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Stop this handler.
-%% @spec stop() -> ok
+%% @spec () -> ok
 %% @end
 %%--------------------------------------------------------------------
 stop() ->
@@ -82,16 +81,16 @@ stop() ->
 %% @doc
 %% init/1 is called when a event is being installed to an event manager
 %% using gen_event:add_[sup_]handler/3 function
-%% @spec init(Args) -> {ok, State}.
+%% @spec (Args) -> {ok, State}
 %% @end
 %%--------------------------------------------------------------------
 init(_) ->
     {ok, []}.
 
 %%--------------------------------------------------------------------
-%% @spec  handle_event(Event, State) -> {ok, State} |
+%% @spec  (Event, State) -> {ok, State} |
 %%                               {swap_handler, Args1, State1, Mod2, Args2} |
-%%                               remove_handler.
+%%                               remove_handler
 %%
 %% @doc
 %% Whenever an event manager receives an event sent using
@@ -149,10 +148,10 @@ handle_event(_, State)->
     {ok, State}.
 
 %%--------------------------------------------------------------------
-%% @spec handle_call(Request, State) -> {ok, Reply, State} |
+%% @spec (Request, State) -> {ok, Reply, State} |
 %%                                {swap_handler, Reply, Args1, State1,
 %%                                  Mod2, Args2} |
-%%                                {remove_handler, Reply}.
+%%                                {remove_handler, Reply}
 %%
 %% @doc
 %% Whenever an event manager receives a request sent using
@@ -164,9 +163,9 @@ handle_call(_Query, State) ->
     {ok, {error, bad_query}, State}.
 
 %%--------------------------------------------------------------------
-%% @spec handle_info(Info, State) -> {ok, State} |
+%% @spec (Info, State) -> {ok, State} |
 %%                             {swap_handler, Args1, State1, Mod2, Args2} |
-%%                              remove_handler.
+%%                              remove_handler
 %%
 %% @doc
 %% This function is called for each installed event handler when
@@ -178,7 +177,7 @@ handle_info(_, State) ->
     {ok, State}.
 
 %%--------------------------------------------------------------------
-%% @spec terminate(Reason, State) -> void().
+%% @spec (Reason, State) -> void()
 %%
 %% @doc
 %% Whenever an event handler is deleted from an event manager,
@@ -196,7 +195,7 @@ terminate(_Reason, _State)  ->
 %% @doc
 %% Convert process state when code is changed
 %%
-%% @spec code_change(OldVsn, State, Extra) -> {ok, NewState}
+%% @spec (OldVsn, State, Extra) -> {ok, NewState}
 %% @end
 %%--------------------------------------------------------------------
 code_change(_OldVsn, State, _Extra) ->

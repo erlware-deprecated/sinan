@@ -59,10 +59,9 @@
 %% API
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @spec start() -> ok.
-%%
 %% @doc
 %% Starts the server
+%% @spec () -> ok
 %% @end
 %%--------------------------------------------------------------------
 start() ->
@@ -76,10 +75,9 @@ start() ->
     eta_task:register_task(TaskDesc).
 
 %%--------------------------------------------------------------------
-%% @spec do_task(BuildRef, Args) -> ok
-%%
 %% @doc
-%%  dO the task defined in this module.
+%%  Do the task defined in this module.
+%% @spec do_task(BuildRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
 do_task(BuildRef) ->
@@ -89,7 +87,7 @@ do_task(BuildRef) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  run the build task.
-%% @spec build() -> ok.
+%% @spec (BuildRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
 build(BuildRef) ->
@@ -105,11 +103,10 @@ build(BuildRef) ->
 %%% Internal functions
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @spec reorder_apps_according_to_deps(ListOfApps, AllApps, Acc) ->
-%%  OrderedBuildList.
 %% @doc
 %%  Given a list of apps and dependencies creates an ordered build
 %%  list for the apps.
+%% @spec (ListOfApps, AllApps, Acc) -> OrderedBuildList
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -123,7 +120,7 @@ reorder_apps_according_to_deps([{App, _, {Deps, _}} | T], AllApps, Acc) ->
                                            Else ++ Acc)
     end;
 reorder_apps_according_to_deps([], _AllApps, Acc) ->
-    case sin_topo:sort(Acc) of
+    case eta_topo:sort(Acc) of
         {ok, DepList} ->
             DepList;
         {cycle, CycleList} ->
@@ -134,11 +131,10 @@ reorder_apps_according_to_deps([], _AllApps, Acc) ->
     end.
 
 %%--------------------------------------------------------------------
-%% @spec map_deps(App, Deps, AllApps, Acc) -> NAcc.
-%%
 %% @doc
 %%  Map the lists of dependencies for 'App' into a pairs for the
 %%  topo sort.
+%% @spec (App, Deps, AllApps, Acc) -> NAcc
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -153,11 +149,10 @@ map_deps(_App, [], _AllApps, Acc) ->
     Acc.
 
 %%--------------------------------------------------------------------
-%% @spec to_list(Atom) -> List.
-%%
 %% @doc
 %%  Change an atom to a list of the argument is an atom, otherwise
 %%  just return the arg.
+%% @spec (Atom) -> List
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -167,10 +162,9 @@ to_list(Atom) when is_list(Atom) ->
     Atom.
 
 %%--------------------------------------------------------------------
-%% @spec in_app_list(App, AppList) -> true | false.
-%%
 %% @doc
 %%  Check to see if the specified value is in the app list.
+%% @spec (App, AppList) -> true | false
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -183,10 +177,9 @@ in_app_list(_App, []) ->
 
 
 %%--------------------------------------------------------------------
-%% @spec build_apps(Apps) -> ok.
-%%
 %% @doc
 %%  Build the apps in the list.
+%% @spec (BuildRef, Apps, Args) -> ok
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -211,10 +204,9 @@ build_apps(BuildRef, Apps, Args) ->
 
 
 %%--------------------------------------------------------------------
-%% @spec build_apps(AppList) -> ok.
-%%
 %% @doc
 %%  build the apps as they come up in the list.
+%% @spec (BuildRef, BuildSupInfo, AppList, Args) -> ok
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -229,9 +221,9 @@ build_apps(_, _BuildSupInfo, [], _Args) ->
     ok.
 
 %%-------------------------------------------------------------------
-%% @spec build_app(Env, AppName) -> ok.
 %% @doc
 %%  Build an individual otp application.
+%% @spec (BuildRef, Env, AppName, Args) -> ok
 %% @end
 %% @private
 %%-------------------------------------------------------------------
@@ -263,7 +255,7 @@ build_app(BuildRef, Env, AppName, Args) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Check the module list for errors throw an exceptions.
-%% @spec check_for_errors(ModuleList) -> ok.
+%% @spec (ModuleList) -> ok
 %% @end
 %%--------------------------------------------------------------------
 check_for_errors([{sinan, error} | _]) ->
@@ -274,10 +266,9 @@ check_for_errors([]) ->
     ok.
 
 %%--------------------------------------------------------------------
-%% @spec setup_code_path(Env, AppName) -> {Paths, Includes}.
-%%
 %% @doc
 %%  Gather code paths and includes from the dependency list.
+%% @spec (BuildRef, Env, AppName) -> {Paths, Includes}
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -305,11 +296,10 @@ setup_code_path(BuildRef, Env, AppName) ->
     end.
 
 %%--------------------------------------------------------------------
-%% @spec extract_info_from_deps(Deps, AppList, Repo,
-%%                       AppBDir, Acc, IAcc) -> {Paths, Includes}.
-%%
 %% @doc
 %%  Gather path and include information from the dep list.
+%% @spec (BuildRef, AppList, AppList, Repo,
+%%                       AppBDir, Deps, Acc, IAcc) -> {Paths, Includes}
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -331,10 +321,9 @@ extract_info_from_deps(_, [], _AppList, _Repo, _AppBDir, _Deps, Acc, IAcc) ->
     {Acc, IAcc}.
 
 %%--------------------------------------------------------------------
-%% @spec get_vsn(AppName, DepList) -> Vsn.
-%%
 %% @doc
 %%  Get the version for the app.
+%% @spec (AppName, DepList) -> Vsn
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -348,10 +337,9 @@ get_vsn(App, []) ->
                  "happen!",
                  [App]).
 %%--------------------------------------------------------------------
-%% @spec get_app_from_list(App, AppList) -> Entry | not_in_list.
-%%
 %% @doc
 %%  Get the app from the app list.
+%% @spec (App, AppList) -> Entry | not_in_list
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -363,10 +351,9 @@ get_app_from_list(_App, []) ->
     not_in_list.
 
 %%--------------------------------------------------------------------
-%% @spec gather_modules(AppName, SrcDir) -> ModuleList.
-%%
 %% @doc
 %%  Gather the list of modules that currently may need to be built.
+%% @spec (BuildRef, AppName, SrcDir) -> ModuleList
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -389,10 +376,9 @@ gather_modules(BuildRef, AppName, SrcDir) ->
                  []).
 
 %%--------------------------------------------------------------------
-%% @spec module_name(Ext, Ext, Acc) -> ModuleName.
-%%
 %% @doc
 %%  Extract the module name from the file name.
+%% @spec (Ext, Ext, Acc) -> ModuleName
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -412,11 +398,10 @@ reorder_list(BuildRef, Lst, FileList, Acc) ->
     reorder_list(BuildRef, Lst, FileList, Acc, ok).
 
 %%--------------------------------------------------------------------
-%% @spec reorder_list(ModList, FileList, Acc) -> NewList.
-%%
 %% @doc
 %%  Reorder the list according to whats in the *.app. This will
 %% allow intra application compile time dependencies.
+%% @spec (BuildRef, ModList, FileList, Acc, OkFlag) -> NewList
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -436,10 +421,9 @@ reorder_list(_, [], _FileList, _, not_ok) ->
     ?ETA_RAISE(build_errors).
 
 %%--------------------------------------------------------------------
-%% @spec get_file_list(ModuleName, FileList) -> Entry | not_in_list.
-%%
 %% @doc
 %%  Get the entry specified by name from the list in module list.
+%% @spec (ModuleName, FileList) -> Entry | not_in_list
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -451,11 +435,10 @@ get_file_list(_Name, []) ->
     not_in_list.
 
 %%--------------------------------------------------------------------
-%% @spec filter_file_list(FileList, ModuleList, Acc) -> NewFileList.
-%%
 %% @doc
 %%  Filter the list of files keeping those that are in the
 %%  module list.
+%% @spec (BuildRef, FileList, ModuleList, Acc) -> NewFileList
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -474,9 +457,9 @@ filter_file_list(_, [], _ModuleList, Acc) ->
     Acc.
 
 %%-------------------------------------------------------------------
-%% @spec build_file(BuildDir, SrcDir, File, Ext, Options) -> ok.
 %% @doc
 %%    Build the file specfied by its arguments
+%% @spec (BuildDir, SrcDir, File, Ext, Options, Target) -> ok
 %% @end
 %% @private
 %%-------------------------------------------------------------------
@@ -485,9 +468,9 @@ build_file(BuildRef, SrcDir, File, Ext, Options, Target) ->
     build_file(BuildRef, FileName, Ext, Options, Target).
 
 %%-------------------------------------------------------------------
-%% @spec
 %% @doc
 %%   Do the actual compilation on the file.
+%% @spec (BuildRef, File, Ext, Options, Target) -> ErrInfo
 %% @end
 %% @private
 %%-------------------------------------------------------------------
@@ -557,7 +540,7 @@ build_file(BuildRef, File, _, _Options, _Target) ->
 %% @doc
 %%  Strip options for the yecc. Otherwise we get a bad arg error.
 %%
-%% @spec strip_options(Opts, Acc) -> Acc2
+%% @spec (Opts, Acc) -> Acc2
 %% @end
 %%--------------------------------------------------------------------
 strip_options([Opt = {parserfile, _} | T], Acc) ->
@@ -583,8 +566,8 @@ strip_options([], Acc) ->
 %% @doc
 %%   Check to see if the file needs building. If it does run the
 %%   passed in build fin. If thats successful then update the sig.
-%% @spec try_building(FileName, Ext, TargetDir, TargetExt, BuildFun)
-%%   -> true | false.
+%% @spec (FileName, Ext, TargetDir, TargetExt)
+%%   -> true | false
 %% @end
 %%--------------------------------------------------------------------
 needs_building(FileName, Ext, TargetDir, TargetExt) ->
@@ -596,10 +579,10 @@ needs_building(FileName, Ext, TargetDir, TargetExt) ->
 
 
 %%--------------------------------------------------------------------
-%% @spec ensure_build_dir() -> ok.
 %%
 %% @doc
 %%  Ensure that the build dir exists and is ready to accept files.
+%% @spec (BuildRef) -> ok
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -611,7 +594,7 @@ ensure_build_dir(BuildRef) ->
 
 
 %%-------------------------------------------------------------------
-%% @spec gather_fail_info(ListOfProblems, Acc, Type) -> Acc2.
+%% @spec (ListOfProblems, Acc, Type) -> Acc2
 %% @doc
 %%   Gather up all the errors and warnings for output.
 %% @end
@@ -624,10 +607,10 @@ gather_fail_info([], Acc, _Type) ->
     lists:reverse(Acc).
 
 %%-------------------------------------------------------------------
-%% @spec gather_fail_info(File, ListOfProblems, Acc) -> Acc2.
 %% @doc
 %%  Actual get the failer detail information and add it to the
 %%  accumulator.
+%% @spec (File, ListOfProblems, Acc, WoE) -> Acc2
 %% @end
 %% @private
 %%-------------------------------------------------------------------

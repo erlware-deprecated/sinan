@@ -46,10 +46,9 @@
 %% API
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @spec start() -> ok.
-%%
 %% @doc
 %% Starts the server
+%% @spec () -> ok
 %% @end
 %%--------------------------------------------------------------------
 start() ->
@@ -66,10 +65,9 @@ start() ->
 
 
 %%--------------------------------------------------------------------
-%% @spec do_task(BuildRef, Args) -> ok
-%%
 %% @doc
-%%  dO the task defined in this module.
+%%  Do the task defined in this module.
+%% @spec (BuildRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
 do_task(BuildRef) ->
@@ -79,7 +77,7 @@ do_task(BuildRef) ->
 %% @doc
 %%  Run the depends task.
 %%
-%% @spec depends() -> ok.
+%% @spec (BuildRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
 depends(BuildRef) ->
@@ -111,6 +109,7 @@ depends(BuildRef) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Add the latest version of eunit to the dependency list.
+%% @spec (BuildRef) -> SupplimentalInformation
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -125,10 +124,9 @@ get_supplimental(BuildRef) ->
 
 
 %%--------------------------------------------------------------------
-%% @spec save_deps(Deps) -> ok
-%%
 %% @doc
 %%  Saves the list of dependencies for later use.
+%% @spec (BuildRef, Deps) -> ok
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -150,10 +148,9 @@ save_deps(BuildRef, Deps) ->
     save_repo_apps(BuildRef, BuildDir).
 
 %%--------------------------------------------------------------------
-%% @spec save_repo_apps(BuildDir) -> ok.
-%%
 %% @doc
 %%  Saves the list of repo apps to info.
+%% @spec (BuildRef, BuildDir) -> ok
 %% @end
 %%--------------------------------------------------------------------
 save_repo_apps(BuildRef, BuildDir) ->
@@ -171,10 +168,10 @@ save_repo_apps(BuildRef, BuildDir) ->
     end.
 
 %%-------------------------------------------------------------------
-%% @spec gather_project_apps() -> ListOfAppVsn
 %% @doc
 %%   Roll through the list of project apps and gather the app
 %%   name and version number.
+%% @spec (BuildRef) -> ListOfAppVsn
 %% @end
 %% @private
 %%-------------------------------------------------------------------
@@ -208,7 +205,7 @@ gather_project_apps(_BuildRef, [], Acc) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%   Merge the two types of deps removing duplicates.
-%% @spec merge(OpenDeps, IncludedDeps) -> MergedList.
+%% @spec (OpenDeps, IncludedDeps) -> MergedList
 %% @end
 %%--------------------------------------------------------------------
 merge(OpenDeps, undefined) ->
@@ -217,10 +214,9 @@ merge(OpenDeps, IncludedDeps) ->
     lists:umerge(lists:sort(OpenDeps), lists:sort(IncludedDeps)).
 
 %%--------------------------------------------------------------------
-%% @spec update_sigs() -> ok
-%%
 %% @doc
 %%  Update the sigs for all of the 'verifiable' apps.
+%% @spec (BuildRef) -> ok
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -230,10 +226,9 @@ update_sigs(BuildRef) ->
                     sin_build_config:get_value(BuildRef, "project.applist")).
 
 %%--------------------------------------------------------------------
-%% @spec update_app_sigs(BuildDir, AppList) -> ok
-%%
 %% @doc
 %%  Update the signatures for each of the *.app files in the AppList.
+%% @spec (BuildRef, BuildDir, AppList) -> ok
 %% @end
 %% @private
 %%--------------------------------------------------------------------

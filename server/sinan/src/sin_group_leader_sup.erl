@@ -94,7 +94,7 @@ init([]) ->
 %%%===================================================================
 %%--------------------------------------------------------------------
 %% @doc
-%%  Start a io<->event gobbler for the buildref, task and atom.d
+%%  Start a io&lt;-&gt;event gobbler for the buildref, task and atom.d
 %% @spec (BuildRef::list(), Task::atom(), Type::term()) -> ok
 %% @end
 %%--------------------------------------------------------------------

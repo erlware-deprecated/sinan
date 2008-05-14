@@ -46,7 +46,7 @@
 %% API
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @spec start() -> ok
+%% @spec () -> ok
 %%
 %% @doc
 %% Starts the server
@@ -64,10 +64,9 @@ start() ->
 
 
 %%--------------------------------------------------------------------
-%% @spec do_task(BuildRef, Args) -> ok
-%%
 %% @doc
-%%  dO the task defined in this module.
+%%  Do the task defined in this module.
+%% @spec (BuildRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
 do_task(BuildRef) ->
@@ -75,10 +74,10 @@ do_task(BuildRef) ->
 
 
 %%--------------------------------------------------------------------
-%% @spec gen() -> ok.
 %% @doc
 %%  Kicks off the generation process. Handles the individual steps
 %%  in new project generation.
+%% @spec (BuildRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
 gen(BuildRef) ->
@@ -91,9 +90,9 @@ gen(BuildRef) ->
 %% Internal functions
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @spec all_done() -> ok.
 %% @doc
 %%  Prints out a nice error message if everything was ok.
+%% @spec (BuildRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
 all_done(BuildRef) ->
@@ -101,9 +100,9 @@ all_done(BuildRef) ->
                          "Project was created, you should be good to go!").
 
 %%--------------------------------------------------------------------
-%% @spec build_out_build_config(BuildRef, Env) -> ok.
 %% @doc
 %%  Builds the build config dir in the root of the project.
+%% @spec (BuildRef, Env) -> ok
 %% @end
 %%--------------------------------------------------------------------
 build_out_build_config(BuildRef, Env) ->
@@ -114,10 +113,10 @@ build_out_build_config(BuildRef, Env) ->
 
 
 %%--------------------------------------------------------------------
-%% @spec build_out_applications(ProjDir, Apps) -> ok.
 %% @doc
 %%  Given the project directory and a list of application names, builds
 %%  out the application directory structure.
+%% @spec (ProjDir, Apps) -> ok
 %% @end
 %%--------------------------------------------------------------------
 build_out_applications(BuildRef, Env) ->
@@ -142,9 +141,9 @@ build_out_applications(BuildRef, Env, []) ->
     build_out_build_config(BuildRef, Env).
 
 %%--------------------------------------------------------------------
-%% @spec build_out_otp(UserAddress, CopyHolder, App, AppSrc) -> ok
 %% @doc
 %% Build out the top level otp parts of the application.
+%% @spec (BuildRef, Env, AppSrc, App) -> ok
 %% @end
 %%--------------------------------------------------------------------
 build_out_otp(BuildRef, Env, AppSrc, App) ->
@@ -159,9 +158,9 @@ build_out_otp(BuildRef, Env, AppSrc, App) ->
 
 
 %%--------------------------------------------------------------------
-%% @spec build_out_super(UserAddress, CopyHolder, App, AppSrc) -> ok.
 %% @doc
 %% Builds out the supervisor for the app.
+%% @spec (BuildRef, Env, AppSrc, App) -> ok
 %% @end
 %%--------------------------------------------------------------------
 build_out_super(BuildRef, Env, AppSrc, App) ->
@@ -175,9 +174,9 @@ build_out_super(BuildRef, Env, AppSrc, App) ->
     end.
 
 %%--------------------------------------------------------------------
-%% @spec build_out_app_src(App, AppSrc) -> ok.
 %% @doc
 %% Builds out the app descriptor for the app.
+%% @spec (BuildRef, Env, App) -> ok
 %% @end
 %%--------------------------------------------------------------------
 build_out_app_src(_BuildRef, Env, App) ->
@@ -192,10 +191,10 @@ build_out_app_src(_BuildRef, Env, App) ->
     end.
 
 %%--------------------------------------------------------------------
-%% @spec build_out_skeleton(ProjDir, Apps) -> ok.
 %% @doc
 %%  Given the project directory builds out the various directories
 %%  required for an application.
+%% @spec (BuildRef, Env) -> ok
 %% @end
 %%--------------------------------------------------------------------
 build_out_skeleton(BuildRef, Env) ->
@@ -216,10 +215,10 @@ build_out_project(BuildRef, Env) ->
 
 
 %%--------------------------------------------------------------------
-%% @spec get_application_names(BuildRef, Env) -> AppNames
 %% @doc
 %%  Queries the user for a list of application names. The user
 %% can choose to skip this part.
+%% @spec (BuildRef, Env) -> AppNames
 %% @end
 %%--------------------------------------------------------------------
 get_application_names(BuildRef, Env) ->
@@ -229,9 +228,9 @@ get_application_names(BuildRef, Env) ->
     build_out_project(BuildRef, Env2).
 
 %%--------------------------------------------------------------------
-%% @spec get_new_project_name(BuildRef, Env) -> Env2
 %% @doc
 %% Queries the user for the name of this project
+%% @spec (BuildRef, Env) -> Env2
 %% @end
 %%--------------------------------------------------------------------
 get_new_project_name(BuildRef, Env) ->
@@ -250,9 +249,9 @@ get_new_project_name(BuildRef, Env) ->
 
 
 %%--------------------------------------------------------------------
-%% @spec get_user_information(BuildRef, Env) -> Env
 %% @doc
 %% Queries the user for his name and email address
+%% @spec (BuildRef, Env) -> Env
 %% @end
 %%--------------------------------------------------------------------
 get_user_information(BuildRef, Env) ->
@@ -275,10 +274,10 @@ get_repositories(BuildRef) ->
 
 
 %%--------------------------------------------------------------------
-%% @spec make_dir(DirName) -> ok
 %% @doc
 %% Helper function that makes the specified directory and all parent
 %% directories.
+%% @spec (BuildRef, DirName) -> ok
 %% @end
 %%--------------------------------------------------------------------
 make_dir(BuildRef, DirName) ->
@@ -287,10 +286,10 @@ make_dir(BuildRef, DirName) ->
     DirName.
 
 %%--------------------------------------------------------------------
-%% @spec is_made(DirName, Output) -> ok
 %% @doc
 %% Helper function that makes sure a directory is made by testing
 %% the output of file:make_dir().
+%% @spec (BuildRef, DirName, Output) -> ok
 %% @end
 %%--------------------------------------------------------------------
 is_made(BuildRef, DirName, {error, eexists})->
@@ -299,10 +298,9 @@ is_made(BuildRef, DirName, ok) ->
     eta_event:task_event(BuildRef, ?TASK, info, {"~s created ok.", [DirName]}).
 
 %%--------------------------------------------------------------------
-%% @spec get_env(Name, Env) -> Value
-%%
 %% @doc
 %%  Get the value from the environment.
+%% @spec get_env(Name, Env) -> Value
 %% @end
 %%--------------------------------------------------------------------
 get_env(Name, Env) ->
