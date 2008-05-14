@@ -79,7 +79,7 @@ def main(argv=None):
         argv = sys.argv[1:]
 
     largs = libsinan.args.parse(argv, "build",
-                                {'url' : 'http://localhost:8599'})
+                                {'url' : 'localhost:8599'})
     try:
         if largs['special_opts']['help']:
             print_help()

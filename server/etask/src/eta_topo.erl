@@ -1,11 +1,11 @@
 %%%-------------------------------------------------------------------
 %%% @author Joe Armstrong
-%%  @auther Eric Merritt
+%%  @author Eric Merritt
 %%% @doc
 %%%  This is a pretty simple topological sort for erlang. It
 %%%  was originally written for ermake by Joe Armstrong back in '98.
 %%%  --
-%%%  -type([{X, X}]) -> {ok, [{X,Y}]} | {cycle, [{X,Y}]}
+%%%  -type([{X, X}]) -&gt; {ok, [{X,Y}]} | {cycle, [{X,Y}]}
 %%%  topological_sort:pairs(L)
 %%%
 %%%  A partial order on the set S is a set of pairs {Xi,Xj} such that
@@ -13,7 +13,7 @@
 %%%
 %%%  A topological sort of a partial order is a sequence of elements
 %%%  [X1, X2, X3 ...] such that if whenever {Xi, Xj} is in the partial
-%%%  order i < j
+%%%  order i &lt; j
 %%% @end
 %%%-------------------------------------------------------------------
 -module(eta_topo).
@@ -26,10 +26,9 @@
 %% API
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @spec sort(Pairs) -> {ok, L1} | {cycle, Pairs}.
-%%
 %% @doc
 %%  Do a topological sort on the list of pairs.
+%% @spec (Pairs) -> {ok, L1} | {cycle, Pairs}
 %% @end
 %%--------------------------------------------------------------------
 sort(Pairs) ->
@@ -39,10 +38,9 @@ sort(Pairs) ->
 %% Internal Functions
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @spec iterate(L1, L2, All) -> {ok, L3}.
-%%
 %% @doc
 %%  Iterate over the system.
+%% @spec (L1, L2, All) -> {ok, L3}
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -64,10 +62,9 @@ rhs(L) ->
     lists:map(fun({_,Y}) -> Y end, L).
 
 %%--------------------------------------------------------------------
-%% @spec subtract(L1, L2) -> L3.
-%%
 %% @doc
 %%  all the elements in L1 which are not in L2
+%% @spec (L1, L2) -> L3
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -77,10 +74,9 @@ subtract(L1, L2) ->
                  end, L1).
 
 %%--------------------------------------------------------------------
-%% @spec remove_duplicates(List1) -> List2.
-%%
 %% @doc
 %%  remove dups from the list.
+%% @spec (List1) -> List2
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -95,13 +91,12 @@ remove_duplicates([]) ->
     [].
 
 %%-------------------------------------------------------------------
-%% @spec remove_pairs(L1, L2) -> L3.
-%%
 %% @doc
 %%   removes all pairs from L2 where the first element
 %%   of each pair is a member of L1
 %%
 %%   L2' L1 = [X] L2 = [{X,Y}].
+%% @spec (L1, L2) -> L3
 %% @end
 %% @private
 %%-------------------------------------------------------------------

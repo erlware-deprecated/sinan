@@ -48,10 +48,9 @@
 %% API
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @spec start() -> ok.
-%%
 %% @doc
 %% Starts the server
+%% @spec () -> ok
 %% @end
 %%--------------------------------------------------------------------
 start() ->
@@ -66,10 +65,9 @@ start() ->
 
 
 %%--------------------------------------------------------------------
-%% @spec do_task(BuildRef, Args) -> ok
-%%
 %% @doc
 %%  dO the task defined in this module.
+%% @spec (BuildRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
 do_task(BuildRef) ->
@@ -78,7 +76,7 @@ do_task(BuildRef) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Run the application tests.
-%% @spec test() -> ok.
+%% @spec test(BuildRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
 test(BuildRef) ->
@@ -103,11 +101,10 @@ test(BuildRef) ->
 %%====================================================================
 %%% Internal functions
 %%====================================================================
-
 %%--------------------------------------------------------------------
-%% @spec test_apps(AppList) -> ok.
 %% @doc
 %%   Run tests for all the applications specified.
+%% @spec (BuildRef, AppList) -> ok
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -128,11 +125,10 @@ test_apps(_, []) ->
     ok.
 
 %%--------------------------------------------------------------------
-%% @spec prepare_for_tests(AppName, Modules) -> ok.
-%%
 %% @doc
 %%  Prepare for running the tests. This mostly means seting up the
 %%  coverage tools.
+%% @spec (BuildRef, AppName, Modules) -> ok
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -151,11 +147,10 @@ prepare_for_tests(BuildRef, AppName, Modules) ->
 
 
 %%--------------------------------------------------------------------
-%% @spec output_coverage_index(DocDir, AppName, CoverageFiles) ->
-%%   ok.
 %% @doc
 %%  Output coverage information to make accessing the files a
 %%  bit easier.
+%% @spec (DocDir, AppName, CoverageFiles) -> ok
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -197,10 +192,9 @@ output_coverage_index(DocDir, AppName, CoverageFiles=[{Name, _Module} | _T]) ->
 
 
 %%--------------------------------------------------------------------
-%% @spec make_index(FileList, Acc) -> DeepListOfLinks.
-%%
 %% @doc
 %%  Render the list of modules into a deep list of links.
+%% @spec (FileList, Acc) -> DeepListOfLinks
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -213,10 +207,9 @@ make_index([], Acc) ->
 
 
 %%--------------------------------------------------------------------
-%% @spec setup_code_coverage(Modules) -> ok.
-%%
 %% @doc
 %%  Instrument all of the modules for code coverage checks.
+%% @spec (BuildRef, Modules) -> ok
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -232,10 +225,9 @@ setup_code_coverage(_, []) ->
     ok.
 
 %%--------------------------------------------------------------------
-%% @spec output_code_coverage(DocDir, Modules, Acc) -> ListOModules.
-%%
 %% @doc
 %%  Take the analysis from test running and output it to an html file.
+%% @spec (BuildRef, DocDir, Modules, Acc) -> ListOModules
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -254,9 +246,9 @@ output_code_coverage(BuildRef, DocDir, [Module | T], Acc) ->
 output_code_coverage(_, _DocDir, [], Acc) ->
     Acc.
 %%--------------------------------------------------------------------
-%% @spec run_module_tests(Modules) -> ok.
 %% @doc
 %%   Run tests for each module that has a test/0 function
+%% @spec (Modules) -> ok
 %% @end
 %% @private
 %%--------------------------------------------------------------------

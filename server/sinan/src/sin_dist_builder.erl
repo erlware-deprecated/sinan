@@ -68,10 +68,9 @@ start() ->
     eta_task:register_task(TaskDesc).
 
 %%--------------------------------------------------------------------
-%% @spec do_task(BuildRef, Args) -> ok
-%%
 %% @doc
-%%  dO the task defined in this module.
+%%  Do the task defined in this module.
+%% @spec (BuildRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
 do_task(BuildRef) ->
@@ -81,7 +80,7 @@ do_task(BuildRef) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Run the dist task.
-%% @spec dist() -> ok.
+%% @spec (BuildRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
 dist(BuildRef) ->
@@ -99,10 +98,9 @@ dist(BuildRef) ->
 %%====================================================================
 
 %%--------------------------------------------------------------------
-%% @spec make_tar(ProjectDir, ProjectApps, ProjectRepoApps, Repo) -> ok.
-%%
 %% @doc
 %%  Go through and actually build up the tar file.
+%% @spec make_tar(BuildRef, ProjectDir, ProjectApps, ProjectRepoApps, Repo) -> ok
 %% @end
 %%--------------------------------------------------------------------
 make_tar(BuildRef, ProjectDir, ProjectApps, ProjectRepoApps, Repo) ->
@@ -121,10 +119,9 @@ make_tar(BuildRef, ProjectDir, ProjectApps, ProjectRepoApps, Repo) ->
                                   List3).
 
 %%--------------------------------------------------------------------
-%% @spec create_tar_file(FileName, TarContents) -> ok.
-%%
 %% @doc
 %%  Actually create the tar file and write in all of the contents.
+%% @spec (BuildRef, FileName, TarContents) -> ok
 %% @end
 %%--------------------------------------------------------------------
 create_tar_file(BuildRef, FileName, TarContents) ->
@@ -143,10 +140,9 @@ create_tar_file(BuildRef, FileName, TarContents) ->
     end.
 
 %%--------------------------------------------------------------------
-%% @spec copy_additional_dirs(TopLevel, ProjectDir) -> ok.
-%%
 %% @doc
 %%  Create addition file links for the system.
+%% @spec (BuildRef, TopLevel, ProjectDir) -> ok
 %% @end
 %%--------------------------------------------------------------------
 copy_additional_dirs(BuildRef, TopLevel, ProjectDir) ->
@@ -162,11 +158,10 @@ copy_additional_dirs(BuildRef, TopLevel, ProjectDir) ->
     end.
 
 %%--------------------------------------------------------------------
-%% @spec gather_local_dirs(LibDir, AppDir, DirList, Acc) -> TarablePairs.
-%%
 %% @doc
 %%  Gather up theapplications and return a list of {DirName, InTarName}
 %%  pairs.
+%% @spec (LibDir, AppDir, DirList, Acc) -> TarablePairs
 %% @end
 %%--------------------------------------------------------------------
 gather_dirs(LibDir, RepoDir, [{AppName, Vsn, _} | T], Acc) ->
@@ -181,10 +176,9 @@ gather_dirs(_, _, [], Acc) ->
 
 
 %%--------------------------------------------------------------------
-%% @spec get_project_name() -> ProjectName.
-%%
 %% @doc
 %%  Get the project name from the config.
+%% @spec (BuildRef) -> ProjectName
 %% @end
 %%--------------------------------------------------------------------
 get_project_name(BuildRef) ->
@@ -213,7 +207,7 @@ get_project_name(BuildRef) ->
 %% @doc
 %%  Get the release information for the system.
 %%
-%% @spec get_release_dirs(BuildDir) -> ok.
+%% @spec (BuildDir, TopLevel, BuildDir) -> ok
 %% @end
 %%--------------------------------------------------------------------
 get_release_dirs(BuildRef, TopLevel, BuildDir) ->

@@ -47,10 +47,9 @@
 %% API
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @spec start() -> ok.
-%%
 %% @doc
 %% Starts the server
+%% @spec start() -> ok
 %% @end
 %%--------------------------------------------------------------------
 start() ->
@@ -67,10 +66,9 @@ start() ->
 
 
 %%--------------------------------------------------------------------
-%% @spec do_task(BuildRef, Args) -> ok
-%%
 %% @doc
 %%  dO the task defined in this module.
+%% @spec (BuildRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
 do_task(BuildRef) ->
@@ -84,7 +82,7 @@ do_task(BuildRef) ->
 %% @doc
 %%  Run the check_depends task.
 %%
-%% @spec check_depends() -> ok.
+%% @spec (BuildRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
 check_depends(BuildRef) ->
@@ -104,25 +102,29 @@ check_depends(BuildRef) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Do an interactive check to ask if dependency information should be checked.
-%% @spec interactive_check(BuildRef, Args) -> ok
+%% @spec (BuildRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
 interactive_check(BuildRef) ->
-%    case ewl_talk:ask("Dependencies are out of date. "
-%                      "Should I run dependecies now", boolean) of
-%        true ->
-            sin_depends:depends(BuildRef).
-%        false ->
-%            load_deps(BuildRef)
-%    end.
+    case sin_build_config:get_value(BuildRef, "task.depends.no_remote") of
+        "True" ->
+            load_deps(BuildRef);
+        "true" ->
+            load_deps(BuildRef);
+        "t" ->
+            load_deps(BuildRef);
+        "T" ->
+            load_deps(BuildRef);
+        _ ->
+            sin_depends:depends(BuildRef)
+    end.
 
 
 %%--------------------------------------------------------------------
-%% @spec load_deps() -> ok
-%%
 %% @doc
 %%  Load dependency information from the file system and store it
 %%  where needed.
+%% @spec (BuildRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
 load_deps(BuildRef) ->
@@ -144,10 +146,9 @@ load_deps(BuildRef) ->
     load_repo_apps(BuildRef, BuildDir).
 
 %%--------------------------------------------------------------------
-%% @spec load_repo_apps(BuildDir) -> ok.
-%%
 %% @doc
 %%  Load the repo apps info from the file system.
+%% @spec (BuildRef, BuildDir) -> ok
 %% @end
 %%--------------------------------------------------------------------
 load_repo_apps(BuildRef, BuildDir) ->
@@ -168,10 +169,9 @@ load_repo_apps(BuildRef, BuildDir) ->
 
 
 %%--------------------------------------------------------------------
-%% @spec needs_verify() -> true | false
-%%
 %% @doc
 %%  Check to see if we need to do a dependency verification.
+%% @spec (BuildRef) -> true | false
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -188,10 +188,9 @@ needs_verify(BuildRef) ->
     end.
 
 %%--------------------------------------------------------------------
-%% @spec verify_app_list(BuildDir, AppList) -> true | false
-%%
 %% @doc
 %%   Verify that the *.app files are unchanged.
+%% @spec (BuildRef, BuildDir, AppList) -> true | false
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -207,10 +206,10 @@ verify_app_list(_BuildRef, _BuildDir, []) ->
     false.
 
 %%-------------------------------------------------------------------
-%% @spec gather_project_apps() -> ListOfAppVsn
 %% @doc
 %%   Roll through the list of project apps and gather the app
 %%   name and version number.
+%% @spec (BuildRef) -> ListOfAppVsn
 %% @end
 %% @private
 %%-------------------------------------------------------------------
@@ -244,7 +243,7 @@ gather_project_apps(_BuildRef, [], Acc) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%   Merge the two types of deps removing duplicates.
-%% @spec merge(OpenDeps, IncludedDeps) -> MergedList.
+%% @spec (OpenDeps, IncludedDeps) -> MergedList
 %% @end
 %%--------------------------------------------------------------------
 merge(OpenDeps, undefined) ->

@@ -66,10 +66,9 @@ start() ->
 
 
 %%--------------------------------------------------------------------
-%% @spec do_task(BuildRef, Args) -> ok
-%%
 %% @doc
-%%  dO the task defined in this module.
+%%  Do the task defined in this module.
+%% @spec (BuildRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
 do_task(BuildRef) ->
@@ -78,7 +77,7 @@ do_task(BuildRef) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Run the release tasks.
-%% @spec release(BuildRef) -> ok.
+%% @spec (BuildRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
 release(BuildRef) ->
@@ -98,10 +97,9 @@ release(BuildRef) ->
 %% Internal functions
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @spec generate_rel_file(BuildRef, BuildDir, Name, Version) ->
-%% Release.
 %% @doc
 %%  Generate release information from info available in the project.
+%% @spec (BuildRef, BuildDir, Name, Version) -> Release
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -117,11 +115,10 @@ generate_rel_file(BuildRef, BuildDir, Name, Version) ->
 
 
 %%--------------------------------------------------------------------
-%% @spec project_version() -> Version.
-%%
 %% @doc
 %%  return project version or throw(no_project_version)
 %% area.
+%% @spec (BuildRef) -> Version
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -137,11 +134,10 @@ project_version(BuildRef) ->
     end.
 
 %%--------------------------------------------------------------------
-%% @spec project_name() -> Name.
-%%
 %% @doc
 %%  return project name or throw(no_project_version)
 %% area.
+%% @spec (BuildRef) -> Name
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -157,11 +153,10 @@ project_name(BuildRef) ->
     end.
 
 %%--------------------------------------------------------------------
-%% @spec process_deps(Deps, Acc) -> AppList.
-%%
 %% @doc
 %%  Process the dependencies into a format useful for the rel depends
 %% area.
+%% @spec (BuildRef, Deps, Acc) -> AppList
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -188,10 +183,9 @@ process_deps(_BuildRef, [], Acc) ->
 
 
 %%--------------------------------------------------------------------
-%% @spec process_inc_list(IncList, Acc) -> NewList.
-%%
 %% @doc
 %%  Process the optional include list into a list of atoms.
+%% @spec (IncList, Acc) -> NewList
 %% @end
 %%--------------------------------------------------------------------
 process_inc_list([H | T], Acc) ->
@@ -200,11 +194,10 @@ process_inc_list([], Acc) ->
     Acc.
 
 %%--------------------------------------------------------------------
-%% @spec save_release(BuildDir, Name, Version, RelInfo) -> Location.
-%%
 %% @doc
 %%  Save the release terms to a releases file for later use by
 %%  the system.
+%% @spec (BuildDir, BuildDir, Name, Version, RelInfo) -> Location
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -227,10 +220,9 @@ save_release(BuildRef, BuildDir, Name, Version, RelInfo) ->
     {Location, Relbase}.
 
 %%--------------------------------------------------------------------
-%% @spec get_erts_info() -> ErtsVersion.
-%%
 %% @doc
 %%  Get the system erts version.
+%% @spec () -> ErtsVersion
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -238,9 +230,9 @@ get_erts_info() ->
     erlang:system_info(version).
 
 %%-------------------------------------------------------------------
-%% @spec make_boot_script(TargetFile) -> ok.
 %% @doc
 %%  Gather up the path information and make the boot/script files.
+%% @spec (BuildRef, TargetFile) -> ok
 %% @end
 %% @private
 %%-------------------------------------------------------------------
@@ -252,10 +244,9 @@ make_boot_script(BuildRef, {{Location, File}, {release, {Name, _}, _, _}}) ->
 
 
 %%--------------------------------------------------------------------
-%% @spec make_tar(File, Options) -> ok.
-%%
 %% @doc
 %%  Make a tar file from the release.
+%% @spec (BuildRef, File, Options) -> ok
 %% @end
 %%--------------------------------------------------------------------
 make_tar(BuildRef, File, Options) ->
@@ -267,10 +258,9 @@ make_tar(BuildRef, File, Options) ->
 
 
 %%--------------------------------------------------------------------
-%% @spec copy_or_generate_sys_conifg_file(BuildDir, Version) -> ok.
-%%
 %% @doc
 %%  copy config/sys.config or generate one to releases/VSN/sys.config
+%% @spec (BuildRef, BuildDir, Version) -> ok
 %% @end
 %%--------------------------------------------------------------------
 copy_or_generate_sys_config_file(BuildRef, BuildDir, Version) ->
@@ -290,10 +280,9 @@ copy_or_generate_sys_config_file(BuildRef, BuildDir, Version) ->
     end.
 
 %%--------------------------------------------------------------------
-%% @spec copy_or_generate_sys_conifg_file(RelSysConfPath) -> ok.
-%%
 %% @doc
 %%  write a generic sys.config to the path RelSysConfPath
+%% @spec (RelSysConfPath) -> ok
 %% @end
 %%--------------------------------------------------------------------
 generate_sys_config_file(RelSysConfPath) ->
@@ -313,10 +302,9 @@ generate_sys_config_file(RelSysConfPath) ->
 
 
 %%--------------------------------------------------------------------
-%% @spec get_code_paths() -> Paths.
-%%
 %% @doc
 %%  Generates the correct set of code paths for the system.
+%% @spec (BuildRef) -> Paths
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -336,6 +324,3 @@ get_code_paths(BuildRef) ->
                           filename:join([RepoDir, Dir, "ebin"])
                   end, sin_build_config:get_value(BuildRef, "project.repoapps")),
     lists:merge([ProjPaths, RepoPaths]).
-
-
-

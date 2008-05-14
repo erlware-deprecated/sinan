@@ -44,7 +44,7 @@
 %%--------------------------------------------------------------------
 %% @doc
 %%  Compile build args into terms the compiler understands.
-%% @spec compile_build_args(String) -> CompileOpts
+%% @spec (String) -> CompileOpts
 %% @end
 %%--------------------------------------------------------------------
 compile_build_args([]) ->
@@ -58,7 +58,7 @@ compile_build_args(ArgString) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%
-%% @spec compile_build_args(String, Acc) -> ok.
+%% @spec (String, Acc) -> ok
 %% @end
 %%--------------------------------------------------------------------
 compile_build_args([$+ | T], Acc) ->
@@ -95,7 +95,7 @@ compile_build_args([], Acc) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  eat space until you get a non space character.
-%% @spec eat_space(Stream, Acc, Handler) -> Opts.
+%% @spec (Stream, Acc, Handler) -> Opts
 %% @end
 %%--------------------------------------------------------------------
 eat_space([$\ | T], Acc, Handler) ->
@@ -115,7 +115,7 @@ eat_space(Stream, Acc, Handler) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Parse out the define.
-%% @spec parse_define(String, LAcc, Acc) -> ParseOpts
+%% @spec (String, LAcc, Acc) -> ParseOpts
 %% @end
 %%--------------------------------------------------------------------
 parse_define([$\ | T], LAcc, Acc) ->
@@ -145,7 +145,7 @@ parse_define([], LAcc, Acc) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Parse an include directive out.
-%% @spec parse_define_value(String, LAcc, Acc) -> ParsedOpts.
+%% @spec (String, Acc) -> ParsedOpts
 %% @end
 %%--------------------------------------------------------------------
 parse_define_value([$\" | T], _LAcc) ->
@@ -172,7 +172,7 @@ parse_define_value([], LAcc) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Parse an include directive out.
-%% @spec parse_include(String, LAcc, Acc) -> ParsedOpts.
+%% @spec (String, LAcc, Acc) -> ParsedOpts
 %% @end
 %%--------------------------------------------------------------------
 parse_include([$\" | T], _LAcc, Acc) ->
@@ -199,7 +199,7 @@ parse_include([], LAcc, Acc) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Parse a strait term.
-%% @spec parse_term(ParseString, LAcc, Acc) -> ParsedOpts
+%% @spec (ParseString, LAcc, Acc) -> ParsedOpts
 %% @end
 %%--------------------------------------------------------------------
 parse_term([$\ | T], LAcc, Acc) ->

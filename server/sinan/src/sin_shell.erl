@@ -46,10 +46,9 @@
 %% API
 %%====================================================================
 %%%--------------------------------------------------------------------
-%% @spec start() -> ok
-%%
 %% @doc
 %% Starts the server
+%% @spec start() -> ok
 %% @end
 %%--------------------------------------------------------------------
 start() ->
@@ -65,10 +64,9 @@ start() ->
     eta_task:register_task(TaskDesc).
 
 %%--------------------------------------------------------------------
-%% @spec do_task(BuildRef, Args) -> ok
-%%
 %% @doc
-%%  dO the task defined in this module.
+%%  Do the task defined in this module.
+%% @spec (BuildRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
 do_task(BuildRef) ->
@@ -78,7 +76,7 @@ do_task(BuildRef) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Run the shell command.
-%% @spec shell() -> ok
+%% @spec (BuildRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
 shell(BuildRef) ->
@@ -94,10 +92,9 @@ shell(BuildRef) ->
 %%% Internal functions
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @spec make_shell(ProjectDir, ProjectApps, ProjectRepoApps, Repo) -> ok.
-%%
 %% @doc
 %%  Go through and actually start the shell.
+%% @spec (BuildRef, ProjectApps, ProjectRepoApps, Repo) -> ok
 %% @end
 %%--------------------------------------------------------------------
 make_shell(BuildRef, ProjectApps, ProjectRepoApps, Repo) ->
@@ -108,10 +105,9 @@ make_shell(BuildRef, ProjectApps, ProjectRepoApps, Repo) ->
 
 
 %%--------------------------------------------------------------------
-%% @spec send_paths(AppDir, DirList, Acc) -> Paths.
-%%
 %% @doc
 %%  Send events for all the paths in the list.
+%% @spec (BuildRef, AppDir, DirList) -> Paths
 %% @end
 %%--------------------------------------------------------------------
 send_paths(BuildRef, RepoDir, [{AppName, Vsn, _} | T]) ->

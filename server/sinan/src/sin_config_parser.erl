@@ -40,13 +40,11 @@
 %%====================================================================
 
 %%--------------------------------------------------------------------
-%% @spec parse_config_file(BuildFile) -> ParsedConfig.
-%%
 %% @doc
 %%  Read in the correct config file. Root specifies server root and
 %%  env specifies the runtime environment.
+%% @spec (BuildFile) -> ParsedConfig
 %% @end
-%% @private
 %%--------------------------------------------------------------------
 parse_config_file(BuildFile) ->
     case file:read_file(BuildFile) of
@@ -58,10 +56,9 @@ parse_config_file(BuildFile) ->
 
 
 %%--------------------------------------------------------------------
-%% @spec parse_config(Stream) -> ParsedConfig.
-%%
 %% @doc
 %%  Parse the config  file into a usable format.
+%% @spec parse_config(Stream, Newlines, Chars) -> ParsedConfig
 %% @end
 %% @private
 %%--------------------------------------------------------------------

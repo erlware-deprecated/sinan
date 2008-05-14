@@ -137,8 +137,10 @@ unregister_task(TaskName) when is_atom(TaskName) ->
 %% @doc
 %%  Generates the list of tasks that TaskName depends on in the order that they should be executed.
 %%
+%% Task name is The list of dependent tasks in the proper order
+%%
 %% @spec gen_task_chain(TaskName::task_name()) -> Result::TaskChain
-%%    TaskChain = [TaskName]. The list of dependent tasks in the proper order
+%%    TaskChain = [TaskName]
 %% @end
 %%--------------------------------------------------------------------
 gen_task_chain(TaskName) when is_atom(TaskName) ->
@@ -221,9 +223,9 @@ handle_call(all_task_defs, _From, State = #state{tid=Tid}) ->
     {reply, strip_to_defs(List1, []), State}.
 
 %%--------------------------------------------------------------------
-%% @spec handle_cast(Msg, State) -> {noreply, State} |
+%% @spec (Msg, State) -> {noreply, State} |
 %%                                      {noreply, State, Timeout} |
-%%                                      {stop, Reason, State}.
+%%                                      {stop, Reason, State}
 %%
 %% @doc
 %% Handling cast messages
@@ -281,7 +283,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Strip out the key from the key/value pairs. Return just the values.
-%% @spec strip_to_defs(Tasks::[{task_name(), record(task)}], Acc::[record(task)]) -> Records::[record(task)].
+%% @spec (Tasks::[{task_name(), record(task)}], Acc::[record(task)]) -> Records::[record(task)]
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -348,7 +350,7 @@ gather_depends(Tid, TaskName, [H|T], Acc) ->
 %% @doc
 %%  Reorder the tasks according to thier dependency set.
 %%
-%% @spec reorder_tasks(OTaskList::Tasks) -> TaskList::Tasks.
+%% @spec reorder_tasks(OTaskList::Tasks) -> TaskList::Tasks
 %%   Tasks = [{Task::task_name(), TaskDep::task_name()}]
 %% @end
 %% @private
@@ -370,8 +372,8 @@ reorder_tasks(OTaskList) ->
 %%  Given a list of tasks names that may include the dummy task 'NONE' resolve the implementations
 %%  coresponding to said names.
 %% @spec resolve_tasks(TaskName::Tasks, Tid::tid(), Acc::list()) -> TaskImpls::TaskImplList
-%%   Tasks = [{Task::task_name(), TaskDep::task_name()}].
-%%   TaskImplList = [task_name()].
+%%   Tasks = [{Task::task_name(), TaskDep::task_name()}]
+%%   TaskImplList = [task_name()]
 %% @end
 %% @private
 %%--------------------------------------------------------------------

@@ -50,7 +50,7 @@
 %% @doc
 %%  Check to see if a file exists.
 %%
-%% @spec file_exists(FileName) -> true | false.
+%% @spec (FileName) -> true | false
 %% @end
 %%-------------------------------------------------------------------
 file_exists(FileName) ->
@@ -64,10 +64,10 @@ file_exists(FileName) ->
     end.
 
 %%-------------------------------------------------------------------
-%% @spec copy_dir(BTop, BuilderDir, TargetDir, Subdirs) -> ok.
 %% @doc
 %%  Copies the specified directory down to the build
 %%  dir on a file by file basis. It only copies if the file has .
+%% @spec (BuilderDir, TargetDir, Subdirs) -> ok
 %% @end
 %%-------------------------------------------------------------------
 copy_dir(BuildDir, TargetDir, Sub) ->
@@ -100,19 +100,19 @@ copy_dir(BuildDir, TargetDir, SubDir, Ignorables) ->
 
 
 %%-------------------------------------------------------------------
-%% @spec parent_dir(Filename) -> DirName | top.
 %% @doc
 %%  Given a directory returns the name of the parent directory.
+%% @spec (Filename) -> DirName | top
 %% @end
 %%-------------------------------------------------------------------
 parent_dir(Filename) ->
     parent_dir(filename:split(Filename), []).
 
 %%-------------------------------------------------------------------
-%% @spec parent_dir(List::list()) -> DirName | top.
 %% @doc
 %%  Given list of directories, splits the list and returns all
 %% dirs but the last as a path.
+%% @spec (List::list(), Acc::list()) -> DirName | top
 %% @end
 %%-------------------------------------------------------------------
 parent_dir([_H], []) ->
@@ -125,10 +125,9 @@ parent_dir([H | T], Acc) ->
     parent_dir(T, [ H | Acc]).
 
 %%--------------------------------------------------------------------
-%% @spec remove_code_path(Paths) -> ok.
-%%
 %% @doc
 %%  Remove the set code paths from the system.
+%% @spec (Paths) -> ok
 %% @end
 %%--------------------------------------------------------------------
 remove_code_paths([Path | T]) ->
@@ -138,11 +137,10 @@ remove_code_paths([]) ->
     ok.
 
 %%--------------------------------------------------------------------
-%% @spec is_dir_ignorable(Directory, ListOfIgnores) -> true | false.
-%%
 %% @doc
 %%  Return wether the directory is in the list of ignorables. If it
 %%  is then return true, otherwise return false.
+%% @spec (Directory, ListOfIgnores) -> true | false
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -162,10 +160,10 @@ is_dir_ignorable(_Sub, []) ->
 %% Internal functions
 %%====================================================================
 %%-------------------------------------------------------------------
-%% @spec copy_file( Target, IFile, File) -> ok.
 %% @doc
 %%  Copies the file specified by file to the target specified by
 %%  ifile.
+%% @spec (Target, IFile, File) -> ok
 %% @end
 %% @private
 %%-------------------------------------------------------------------
@@ -189,10 +187,9 @@ copy_file(Target, IFile, File) ->
 
 
 %%--------------------------------------------------------------------
-%% @spec delete_dir(Dir) -> ok.
-%%
 %% @doc
 %%  Delete the directory and all of its sub directories.
+%% @spec (Dir) -> ok
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -220,10 +217,9 @@ delete_dir(Dir) ->
 
 
 %%--------------------------------------------------------------------
-%% @spec is_symlink(Name) -> true | false.
-%%
 %% @doc
 %%  Check to see if the file is a symlink.
+%% @spec (Name) -> true | false
 %% @end
 %%--------------------------------------------------------------------
 is_symlink(Name) ->
@@ -235,11 +231,10 @@ is_symlink(Name) ->
     end.
 
 %%--------------------------------------------------------------------
-%% @spec ignore_dir(Directory, PossibleIgnorePrefix) -> true | false.
-%%
 %% @doc
 %%  Check the directory against teh possible ignores to see if the
 %%  prefix matches.
+%% @spec (Directory, PossibleIgnorePrefix) -> true | false
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -251,10 +246,9 @@ ignore_dir(_Sub, _Ignorable) ->
     false.
 
 %%--------------------------------------------------------------------
-%% @spec are_dirs_ignorable([H | T], Igs) -> ok.
-%%
 %% @doc
 %%  If any dirs in the list are ignorable ignore it
+%% @spec ([H | T], Igs) -> ok
 %% @end
 %%--------------------------------------------------------------------
 are_dirs_ignorable([H | T], Igs) ->

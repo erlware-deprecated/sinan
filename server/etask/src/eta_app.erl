@@ -41,9 +41,9 @@
 %% Application callbacks
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @spec start(Type, StartArgs) -> {ok, Pid} |
+%% @spec (Type, StartArgs) -> {ok, Pid} |
 %%                                     {ok, Pid, State} |
-%%                                     {error, Reason}.
+%%                                     {error, Reason}
 %%
 %% @doc
 %% This function is called whenever an application
@@ -62,12 +62,12 @@ start(_Type, _StartArgs) ->
     end.
 
 %%--------------------------------------------------------------------
-%% @spec stop(State) -> void().
-%%
 %% @doc
 %% This function is called whenever an application
 %% has stopped. It is intended to be the opposite of Module:start/2 and
 %% should do any necessary cleaning up. The return value is ignored.
+%%
+%% @spec stop(State) -> void()
 %% @end
 %%--------------------------------------------------------------------
 stop(_State) ->

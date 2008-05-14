@@ -30,7 +30,6 @@
 	     sin_analyze,
              sin_app,
              sin_sup,
-             sin_topo,
              sin_help,
              sin_depends_check]},
   {registered, [sin_sup]},

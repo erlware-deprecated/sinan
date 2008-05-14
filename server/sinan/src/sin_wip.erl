@@ -30,7 +30,7 @@
 %% @doc
 %% Starts the server
 %%
-%% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
+%% @spec (BuildRef, Task, Msg, Timeout) -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
 start_link(BuildRef, Task,  Msg, Timeout) ->

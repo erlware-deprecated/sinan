@@ -45,12 +45,12 @@
 
 
 %%--------------------------------------------------------------------
-%% @spec changed(NS, BuildDir, File) -> true | false.
-%%
 %% @doc
 %%  Check to see if the file has been changed. The build dir should
 %%  be the fully qualified path to the projects top level build
 %%  directory.
+%%
+%% @spec (NS, BuildDir, File) -> true | false
 %% @end
 %%--------------------------------------------------------------------
 changed(NS, BuildDir, File) ->
@@ -82,7 +82,7 @@ changed(NS, BuildDir, File) ->
 %% @doc
 %%  Check to see if the file has changed in comparison to another
 %%  file.
-%% @spec target_changed(StartFile, TargetFile) -> true | false.
+%% @spec (StartFile, TargetFile) -> true | false
 %% @end
 %%--------------------------------------------------------------------
 target_changed(StartFile, TargetFile) ->
@@ -99,11 +99,10 @@ target_changed(StartFile, TargetFile) ->
 
 
 %%--------------------------------------------------------------------
-%% @spec update(NS, BuildDir, File) -> ok.
-%%
 %% @doc
 %%  Update the signature for file. Build dir should be the build
 %% fully qualified build directory of the system.
+%% @spec (NS, BuildDir, File) -> ok
 %% @end
 %%--------------------------------------------------------------------
 update(NS, BuildDir, File) ->
@@ -123,11 +122,10 @@ update(NS, BuildDir, File) ->
 %%====================================================================
 
 %%--------------------------------------------------------------------
-%% @spec make_filename(Name, Acc) ->
-%%
 %% @doc
 %%  convert the directory/filename into something that can be
 %%  a verified filename.
+%% @spec make_filename(Name, Acc) -> Filename::string()
 %% @end
 %% @private
 %%--------------------------------------------------------------------

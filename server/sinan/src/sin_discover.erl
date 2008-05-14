@@ -28,7 +28,6 @@
 %%%  The module handles building the
 %%% @end
 %%% @copyright (C) 2007, Erlware
-%%% @copyright 2006 by Eric Merritt <cyberlync@gmail.com>
 %%%--------------------------------------------------------------------------
 -module(sin_discover).
 
@@ -160,7 +159,7 @@ look_for_app_dirs(Config, BuildDir, Parent, Sub, Ignorables, Acc) ->
 %% @doc
 %%  Process the app dir to see if it is an application directory.
 %%
-%% @spec (Config, Parent, Sub, Acc) -> ListOfDirs
+%% @spec (Config, BuildDir, Parent, Sub, Ignorables, Acc) -> ListOfDirs
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -192,11 +191,11 @@ process_app_dir(Config, BuildDir, Parent, Sub, Ignorables, Acc) ->
     end.
 
 %%-------------------------------------------------------------------
-%% @spec process_dirs(File, State) -> {both, _} | State
 %% @doc
 %%  Given a directory checks of the name is src or ebin, compares
 %%  against its state and returns an indicator if the parent is a
 %%  app dir.
+%% @spec (File, State, Type) -> {both, Other} | State
 %% @end
 %% @private
 %%-------------------------------------------------------------------

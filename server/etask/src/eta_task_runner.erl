@@ -63,7 +63,7 @@
 %% @doc
 %%  Start the task running process, reply to the gen_server who
 %%  made the request.
-%% @spec run_task(From::pid(), Chain::chain(), Args::arg_list()) -> ok
+%% @spec (From::pid(), Chain::chain(), Target::task()) -> ok
 %% @end
 %%--------------------------------------------------------------------
 run_task_reply(From, Chain, Target) ->
@@ -77,7 +77,7 @@ run_task_reply(From, Chain, Target) ->
 %% @doc
 %%  Start the task running process, reply to the gen_server who
 %%  made the request.
-%% @spec run_task(From::pid(), Chain::chain(), RunId) -> ok
+%% @spec (From::pid(), Chain::chain(), Target::task(), RunId::run_id()) -> ok
 %% @end
 %%--------------------------------------------------------------------
 run_task_reply(From, Chain, Target, RunId) ->
@@ -90,7 +90,7 @@ run_task_reply(From, Chain, Target, RunId) ->
 %% @doc
 %%   Runs the selected task with no attempt at a return value
 %%
-%% @spec run_task(Chain::chain(), Args::arg_list()) -> ok
+%% @spec (Chain::chain(), Target::task()) -> ok
 %% @end
 %%--------------------------------------------------------------------
 run_task(Chain, Target) ->
@@ -103,7 +103,7 @@ run_task(Chain, Target) ->
 %% @doc
 %%   Runs the selected task with no attempt at a return value
 %%
-%% @spec run_task(Chain::chain(), Args::arg_list()) -> ok
+%% @spec (Chain::chain(), Target::task(), RunId::run_id()) -> ok
 %% @end
 %%--------------------------------------------------------------------
 run_task(Chain, Target, RunId) ->
@@ -118,7 +118,7 @@ run_task(Chain, Target, RunId) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  run the task chain and event handlers, gathering any exceptions.
-%% @spec run_engine(Chain::chain(), Task::task(), Args::arg_list()) -> ok
+%% @spec (Chain::chain(), Task::task()) -> ok
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -130,7 +130,7 @@ do_tasks(Chain, Task) ->
 %%--------------------------------------------------------------------
 %% @doc
 %% Do the task with a run id.
-%% @spec run_engine(Chain::chain(), Task::task(), Args::arg_list()) -> ok
+%% @spec (Chain::chain(), Task::task(), RunId::run_id()) -> ok
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -155,7 +155,7 @@ do_tasks(Chain, Task, RunId) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%   Run the post event handlers for the task chain.
-%% @spec do_post_event_handlers(RunId::run_id(), Chain::chain(), Args::arg_list()) -> ok
+%% @spec do_post_event_handlers(RunId::run_id(), Chain::chain()) -> ok
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -174,7 +174,7 @@ do_post_event_handlers(RunId, Chain) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Get the tasks that we need to run from the task server.
-%% @spec get_tasks(Task::task()) -> Tasks::task_list().
+%% @spec get_tasks(Task::task()) -> Tasks::task_list()
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -192,7 +192,7 @@ get_tasks(Task) when is_atom(Task) ->
 %% @doc
 %%  executes the task at the head of the task list. It also
 %%  executes any pre and post handlers required.
-%% @spec run_handlers(RunId::run_id(), Chain::chain(), Tasks::task_list(), Args::arg_list()) -> ok
+%% @spec (RunId::run_id(), Chain::chain(), Tasks::task_list()) -> ok
 %% @end
 %% @private
 %%-------------------------------------------------------------------
@@ -225,7 +225,7 @@ run_tasks(_, _, []) ->
 %%  Executes the full task stack. This includes pre and post handlers.
 %%  This does not catch exceptions. The stack execution fails
 %%  and no more tasks are run if a failure occures.
-%% @spec execute_task_stack(RunId::run_id(), Chain::chain(), Task::task(), Args::arg_list()) -> ok
+%% @spec (RunId::run_id(), Chain::chain(), Task::task()) -> ok
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -240,7 +240,7 @@ execute_task_stack(RunId, Chain, Task) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Executes the set of handlers with RunId, Chain and Arg information.
-%% @spec execute_handlers(RunId::run_id(), Handlers::handler_list(), Chain::chain(), Args::arg_list()) -> ok
+%% @spec (RunId::run_id(), Handlers::handler_list(), Chain::chain()) -> ok
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -254,7 +254,7 @@ execute_handlers(_, [], _) ->
 %% @doc
 %%  Apply the task. If its a fun, call the fun. If its an atom call
 %%  its do_task function.
-%% @spec apply_task(RunId::run_id(), Task::task(), Args::arg_list()) -> Result::term()
+%% @spec (RunId::run_id(), Task::task()) -> Result::term()
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -268,7 +268,7 @@ apply_task(RunId, Task) when is_atom(Task) ->
 %% @doc
 %%  Apply the task. If its a fun, call the fun. If its an atom call
 %%  its do_task function.
-%% @spec apply_handler(RunId::run_id(), Handler::handler(), Args::arg_list()) -> Result::term()
+%% @spec (RunId::run_id(), Handler::handler()) -> Result::term()
 %% @end
 %% @private
 %%--------------------------------------------------------------------
