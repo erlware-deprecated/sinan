@@ -161,10 +161,11 @@ project_name(BuildRef) ->
 %% @private
 %%--------------------------------------------------------------------
 process_deps(BuildRef, [{App, Vsn} | T], Acc) ->
+    NewApp = stringify(App),
     case {sin_build_config:get_value(BuildRef,
-                                     "project.release." ++ App ++ ".type"),
+                                     "project.release." ++ NewApp ++ ".type"),
           sin_build_config:get_value(BuildRef,
-                                     "project.release." ++ App ++
+                                     "project.release." ++ NewApp ++
                                      ".include_apps")} of
         {undefined, undefined} ->
             process_deps(BuildRef, T, [{App, Vsn} | Acc]);
@@ -324,3 +325,14 @@ get_code_paths(BuildRef) ->
                           filename:join([RepoDir, Dir, "ebin"])
                   end, sin_build_config:get_value(BuildRef, "project.repoapps")),
     lists:merge([ProjPaths, RepoPaths]).
+
+%%--------------------------------------------------------------------
+%% @doc
+%%  Convert the value to a string if it is an atom
+%% @spec (Value) -> NewValue
+%% @end
+%%--------------------------------------------------------------------
+stringify(Value) when is_list(Value) ->
+    Value;
+stringify(Value) when is_atom(Value) ->
+    atom_to_list(Value).

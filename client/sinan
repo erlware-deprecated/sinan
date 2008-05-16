@@ -1,43 +1,32 @@
 #!/usr/bin/env python
 import os
 import sys
-import urllib2
+import httplib
 import libsinan.args
 import libsinan.sinexceptions
+import socket
+import time
 
 CONNECTION_REFUSED = 111
-
-def _mkdir(newdir):
-    """works the way a good mkdir should :)
-        - already exists, silently complete
-        - regular file in the way, raise an exception
-        - parent directory(ies) does not exist, make them as well
-    """
-    if os.path.isdir(newdir):
-        pass
-    elif os.path.isfile(newdir):
-        raise OSError("a file with the same name as the desired " \
-                      "dir, '%s', already exists." % newdir)
-    else:
-        head, tail = os.path.split(newdir)
-        if head and not os.path.isdir(head):
-            _mkdir(head)
-        if tail:
-            os.mkdir(newdir)
-
 
 def start_server(largs):
     """ Start the server. Use the 'server_command' local
     opt if it exists, otherwise just use 'sinserv' on the path """
-    log_dir = os.getenv("HOME") + "/.sinan/logs"
-    _mkdir(log_dir)
-    cmd = "sinserv > " + log_dir + "/out.log"
+    cmd = "sinserv"
+    prefix = ""
     try:
         cmd = largs['special_opts']['server_command']
     except KeyError:
         pass
-    if os.system(cmd) != 0:
+    try:
+        prefix = largs['special_opts']['prefix']
+        prefix += "/bin/"
+    except KeyError:
+        pass
+    if os.system(prefix + cmd) != 0:
         raise libsinan.sinexceptions.SinanError("Unable to start " + cmd)
+    print "starting server, waiting for 2 seconds to let it start up"
+    time.sleep(2)
 
 
 
@@ -46,21 +35,18 @@ def initiate_task(largs):
     due to a connection refused we probably just need to start
     sinan. Look for a sinserve either in a passed in path
     or in the default path"""
+    task = largs['task']
+    handler = libsinan.get_handler_for_task(task)
     try:
-        task = largs['task']
-        handler = libsinan.get_handler_for_task(task)
         handler.handle(largs)
-    except urllib2.URLError, e:
-        try:
-            code, reason = e.reason
-            if code == CONNECTION_REFUSED:
-                start_server(largs)
-                do_request(largs)
-        except AttributeError:
-            pass
-
-        print "Unable to build got : "
-        print e
+    except (socket.error), e:
+        code, reason = e
+        if code == CONNECTION_REFUSED:
+            start_server(largs)
+            handler.handle(largs)
+        else:
+            print "Unable to build got : "
+            print e
 
 
 def print_help():

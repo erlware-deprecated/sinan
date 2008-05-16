@@ -100,8 +100,8 @@ start_crary() ->
 %%   for port information.
 %%
 %%   <ol>
-%%    <li>An environmental variable called <strong>SINAN_LISTEN_PORT</strong>
-%%    <li>An application evn variable called <strong>port</strong>
+%%    <li>An environmental variable called <strong>SINAN_LISTEN_PORT</strong></li>
+%%    <li>An application evn variable called <strong>port</strong></li>
 %%  </ol>
 %%     If it doesn't find a port in either place it uses its default port.
 %%

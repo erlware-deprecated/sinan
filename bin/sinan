@@ -13,4 +13,4 @@ PREFIX=$(cd $(dirname $(dirname $PROG)); pwd)
 
 REL_DIR=$PREFIX/release_packages/$REL_NAME-$REL_VSN
 
-$RELDIR/client/sinan
+/usr/bin/env python $REL_DIR/client/sinan +prefix $PREFIX $@

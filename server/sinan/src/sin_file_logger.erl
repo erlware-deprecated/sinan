@@ -105,7 +105,7 @@ handle_call(_Query, _State) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Clean up on terminate. This means closing the open file descriptor
-%% @spec terminate(_, {Fd, _File, _Type}) -> ok
+%% @spec (Ignorable, {Fd, _File, _Type}) -> ok
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -259,7 +259,7 @@ format_rep(_) ->
 %%--------------------------------------------------------------------
 %% @doc
 %% This function was taken from the stdlib error_logger_file_h.erl
-%% @spec add_node(X, Pid) -> X.
+%% @spec (X, Pid) -> X
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -273,7 +273,7 @@ add_node(X, _) ->
 %%--------------------------------------------------------------------
 %% @doc
 %% This function was taken from the stdlib error_logger_file_h.erl
-%% @spec string_p(Term) -> true | false
+%% @spec (Term) -> true | false
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -285,7 +285,7 @@ string_p(Term) ->
 %%--------------------------------------------------------------------
 %% @doc
 %% This function was taken from the stdlib error_logger_file_h.erl
-%% @spec string_p1(X) -> true | false
+%% @spec (X) -> true | false
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -309,7 +309,7 @@ string_p1(_) ->  false.
 %%--------------------------------------------------------------------
 %% @doc
 %% This function was taken from the stdlib error_logger_file_h.erl
-%% @spec write_time(Time) -> void()
+%% @spec (Time) -> void()
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -319,7 +319,7 @@ write_time(Time) -> write_time(Time, "ERROR REPORT").
 %%--------------------------------------------------------------------
 %% @doc
 %% This function was taken from the stdlib error_logger_file_h.erl
-%% @spec write_time(Time, Type) -> void()
+%% @spec (Time, Type) -> void()
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -332,7 +332,7 @@ write_time({{Y,Mo,D},{H,Mi,S}}, Type) ->
 %%--------------------------------------------------------------------
 %% @doc
 %% This function was taken from the stdlib error_logger_file_h.erl
-%% @spec t(X) -> X1
+%% @spec (X) -> X1
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -343,7 +343,7 @@ t(_) ->
 %%--------------------------------------------------------------------
 %% @doc
 %% This function was taken from the stdlib error_logger_file_h.erl
-%% @spec t1(X) -> X1
+%% @spec (X) -> X1
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -353,7 +353,7 @@ t1(X)   -> X.
 %%--------------------------------------------------------------------
 %% @doc
 %% This function was taken from the stdlib error_logger_file_h.erl
-%% @spec month(MonthNum::integer()) -> MonthName::string()
+%% @spec (MonthNum::integer()) -> MonthName::string()
 %% @end
 %% @private
 %%--------------------------------------------------------------------

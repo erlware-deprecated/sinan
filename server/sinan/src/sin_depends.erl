@@ -90,6 +90,8 @@ depends(BuildRef) ->
                                           get_supplimental(BuildRef)) of
                {dependency_resolution_error, Reason} ->
                  ?ETA_RAISE_D(dependency_issue, Reason);
+               dependency_resolution_error ->
+                 ?ETA_RAISE(dependency_issue);
                {error, Reason} ->
                  ?ETA_RAISE_D(dependency_issue, Reason);
                {'EXIT', Reason} ->
@@ -97,7 +99,7 @@ depends(BuildRef) ->
                                "'EXIT': ~p~n", [Reason]);
                AllDeps ->
                  sin_build_config:store(BuildRef, "project.deps", AllDeps),
-                 sin_repo_fetcher:fetch(BuildRef, ProjectApps, AllDeps),
+                 sin_repo_fetcher:fetch(?TASK, BuildRef, ProjectApps, AllDeps),
                  save_deps(BuildRef, AllDeps),
                  update_sigs(BuildRef)
 

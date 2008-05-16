@@ -41,18 +41,18 @@
 %% API
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @spec application(DirName, UserMail, CopyHolder, AppName) -> ok.
 %% @doc
 %%  Writes out the application file
+%% @spec application(Env, FileName, AppName) -> ok
 %% @end
 %%--------------------------------------------------------------------
 application(Env, FileName, AppName) ->
     write_template("application", [{app_name, AppName} | Env], FileName).
 
 %%--------------------------------------------------------------------
-%% @spec supervisor(Env, FileName, AppName) -> ok.
 %% @doc
 %%    Writes out a generic supervisor to the filename provided.
+%% @spec supervisor(Env, FileName, AppName) -> ok
 %% @end
 %%--------------------------------------------------------------------
 supervisor(Env, FileName, AppName) ->
@@ -60,19 +60,19 @@ supervisor(Env, FileName, AppName) ->
 
 
 %%--------------------------------------------------------------------
-%% @spec app_info(Env, FileName, AppName) -> ok.
 %% @doc
 %%    Writes out a generic application to the filename provided.
+%% @spec app_info(Env, FileName, AppName) -> ok
 %% @end
 %%--------------------------------------------------------------------
 app_info(Env, FileName, AppName) ->
     write_template("dotapp", [{app_name, AppName} | Env], FileName).
 
 %%--------------------------------------------------------------------
-%% @spec build_config(Env, FileName) -> ok.
 %% @doc
 %%  Writes the build_config to the specified library with
 %%  the specified repo.
+%% @spec build_config(Env, FileName) -> ok
 %% @end
 %%--------------------------------------------------------------------
 build_config(Env, FileName) ->
@@ -83,10 +83,9 @@ build_config(Env, FileName) ->
 %% API
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @spec write_template(Type, Env, FileName) -> ok.
-%%
 %% @doc
 %%  Write the template with the Env data to FileName.
+%% @spec write_template(Type, Env, FileName) -> ok
 %% @end
 %%--------------------------------------------------------------------
 write_template(Type, Env, FileName) ->
@@ -95,10 +94,9 @@ write_template(Type, Env, FileName) ->
     file:write_file(FileName, list_to_binary(Out)).
 
 %%--------------------------------------------------------------------
-%% @spec compile_template(Type) -> Template.
-%%
 %% @doc
 %%  Compile a template for the specified type.
+%% @spec compile_template(Type) -> Template
 %% @end
 %%--------------------------------------------------------------------
 compile_template(Type) ->

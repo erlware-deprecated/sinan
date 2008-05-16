@@ -1,5 +1,18 @@
 #!/bin/sh
 
+LOGDIR=~/.sinan/logs
+CONFIGDIR=~/.sinan/config
+mkdir -p $LOGDIR
+mkdir -p $CONFIGDIR
+CONFIGFILE=$CONFIGDIR/sinserv.config
+
+if [ ! -f $CONFIGFILE ]; then
+
+echo " [{kernel, [{error_logger, {file, \"$LOGDIR/kernel.log\"}}]}, \
+{sasl,[{sasl_error_logger, {file, \"$LOGDIR/sasl.log\"}}]}]." > $CONFIGFILE
+
+
+fi
 
 #### Fill in values for these variables ####
 REL_NAME=sinan
@@ -20,4 +33,4 @@ export LD_LIBRARY_PATH=$PREFIX/erts/$ERTS_VSN/lib
 
 REL_DIR=$PREFIX/release_packages/$REL_NAME-$REL_VSN/release
 
-$BINDIR/erlexec -config $REL_DIR/sys.config -boot $REL_DIR/$REL_NAME $INVOCATION_SUFFIX
+$BINDIR/erlexec -detached -config $CONFIGFILE -boot $REL_DIR/$REL_NAME $INVOCATION_SUFFIX

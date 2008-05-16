@@ -26,7 +26,7 @@
 %%% @author Eric Merritt <ericmerritt@erlware.org>
 %%% @copyright (C) 2008, Eric Merritt
 %%% @doc
-%%%  Adds the handler interface from crary <-> sinan
+%%%  Adds the handler interface from crary &lt;-&gt; sinan
 %%% @end
 %%% Created : 14 Mar 2008 by Eric Merritt <ericmerritt@erlware.org>
 %%%-------------------------------------------------------------------
@@ -66,7 +66,7 @@ handler(Req) ->
 %% @doc
 %%  Take the path and various arguments and disptach sinan in the
 %%  correct way.
-%% @spec handle_do_request(Path, Req, BuildRef, Args) -> ok
+%% @spec (Path, Req, BuildRef, Args) -> ok
 %% @end
 %%--------------------------------------------------------------------
 handle_do_request(["do_task", "build"], Req, BuildRef, Args) ->
