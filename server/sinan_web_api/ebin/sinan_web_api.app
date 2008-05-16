@@ -9,8 +9,8 @@
              swa_sup,
              swa_event_handler,
              swa_crary_handler]},
-  {registered, [sin_sup]},
-  {versioned_dependencies, [{crary, "0.1.1", gte},
+  {registered, [swa_sup]},
+  {versioned_dependencies, [{crary, "0.2.2", gte},
                             {sinan, "0.10.0.0", gte}]},
   {applications, [kernel, stdlib, sinan, crary, uri]},
   {mod, {swa_app, []}}]}.

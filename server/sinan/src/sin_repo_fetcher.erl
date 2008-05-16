@@ -33,39 +33,40 @@
 -module(sin_repo_fetcher).
 
 %% API
--export([fetch/3]).
+-export([fetch/4]).
 
 %%====================================================================
 %% API
 %%====================================================================
 
 %%-------------------------------------------------------------------
-%% @spec fetch() -> ok.
 %% @doc
 %%  Given the metadata about the project goes through and pulls
 %%  down the required libraries from the specified repo.
+%% @spec (Task, BuildRef, ProjectApps, ProjectDeps) -> ok
 %% @end
 %%-------------------------------------------------------------------
-fetch(BuildRef, ProjectApps, ProjectDeps) ->
-    Repo = ensure_repo(BuildRef),
-    fetch_deps(BuildRef, Repo, ProjectApps, ProjectDeps).
+fetch(Task, BuildRef, ProjectApps, ProjectDeps) ->
+    Repo = ensure_repo(Task, BuildRef),
+    fetch_deps(Task, BuildRef, Repo, ProjectApps, ProjectDeps).
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
 
 %%-------------------------------------------------------------------
-%% @spec ensure_repo(Env) -> ok.
 %% @doc
 %%  Make sure a repo location is specified.
+%% @spec (Task, BuildRef) -> ok
 %% @end
 %% @private
 %%-------------------------------------------------------------------
-ensure_repo(BuildRef) ->
+ensure_repo(Task, BuildRef) ->
     case sin_build_config:get_value(BuildRef, "project.repository") of
         undefined ->
-            ewl_talk:say(["I need a local repository specified in the",
-                          "build config!"]),
+            eta_event:task_fault(BuildRef, Task,
+                                 "I need a local repository specified in the "
+                                 "build config!"),
             throw(no_local_repo_specified);
         Repo ->
             filelib:ensure_dir(filename:join([Repo, "tmp"])),
@@ -73,61 +74,64 @@ ensure_repo(BuildRef) ->
     end.
 
 %%-------------------------------------------------------------------
-%% @spec fetch_deps(Repo, ProjectApp, ProjectDeps)
 %% @doc
 %%  Fetch down and individual required app from the http repository.
+%% @spec (Task, BuildRef, LocalRepo, ProjectApp, ProjectDeps) -> void()
 %% @end
 %% @private
 %%-------------------------------------------------------------------
-fetch_deps(BuildRef, LocalRepo, ProjectApps, ProjectDeps) ->
+fetch_deps(Task, BuildRef, LocalRepo, ProjectApps, ProjectDeps) ->
     Repos = sin_build_config:get_value(BuildRef, "repositories"),
-    fetch_dep(BuildRef, Repos, LocalRepo, ProjectApps, ProjectDeps, []).
+    fetch_dep(Task, BuildRef, Repos, LocalRepo, ProjectApps, ProjectDeps, []).
 
 
 
 %%--------------------------------------------------------------------
-%% @spec fetch_dep(RemoteRepos, LocalRepo, ProjectApps, ProjectDeps, Acc) ->
-%%   RepoDeps.
 %% @doc
 %%  Fetch the individual deps from the system, returning a list of apps
 %%  that are non-project but required.
+%% @spec (BuildRef, RemoteRepos, LocalRepo, ProjectApps, ProjectDeps, Acc) ->
+%%   RepoDeps
 %% @end
 %% @private
 %%--------------------------------------------------------------------
-fetch_dep(BuildRef, RemoteRepos, LocalRepo,
+fetch_dep(Task, BuildRef, RemoteRepos, LocalRepo,
           ProjectApps, [App = {AppName, Vsn} | T], Acc) ->
     case is_project_app(AppName, ProjectApps) of
         true ->
-            fetch_dep(BuildRef, RemoteRepos, LocalRepo, ProjectApps, T, Acc);
+            fetch_dep(Task, BuildRef, RemoteRepos,
+                      LocalRepo, ProjectApps, T, Acc);
         false ->
-            ewl_talk:say("Pulling ~w-~s from repository if non-local",
-                         [AppName, Vsn]),
+            eta_event:task_event(BuildRef, Task, info,
+                                 {"Pulling ~w-~s from repository if non-local",
+                                  [AppName, Vsn]}),
             case ewr_fetch:fetch_binary_package(RemoteRepos, AppName,
                                                 Vsn, LocalRepo) of
                 {error, {_Type, Reason}} ->
-                    ewl_talk:say("Unable to fetch ~w version (~w) from repo "
-                                 " due to ~s",
-                                 [AppName, Vsn, Reason]),
+                    eta_event:task_event(BuildRef, Task, info,
+                                         {"Unable to fetch ~w version (~w) "
+                                          "from repo due to ~s",
+                                          [AppName, Vsn, Reason]}),
                     throw(unable_to_fetch_from_repo);
                 {error, Reason} ->
-                    ewl_talk:say("Unable to fetch ~w version (~w) from repo "
-                                 " due to ~s",
-                                 [AppName, Vsn, Reason]),
+                   eta_event:task_event(BuildRef, Task, info,
+                                        {"Unable to fetch ~w version (~w) "
+                                         "from repo due to ~s",
+                                         [AppName, Vsn, Reason]}),
                     throw(unable_to_fetch_from_repo);
                 _ ->
-                    fetch_dep(BuildRef, RemoteRepos,
+                    fetch_dep(Task, BuildRef, RemoteRepos,
                               LocalRepo, ProjectApps, T, [App | Acc])
             end
     end;
-fetch_dep(BuildRef, _RemoteRepos, _LocalRepo, _ProjectApps, [], Acc) ->
+fetch_dep(_Task, BuildRef, _RemoteRepos, _LocalRepo, _ProjectApps, [], Acc) ->
     sin_build_config:store(BuildRef, "project.repoapps", Acc),
     ok.
 
 %%--------------------------------------------------------------------
-%% @spec is_project_app(AppName, AppList) -> true | false.
-%%
 %% @doc
 %%  check to see if AppName is a project app.
+%% @spec (AppName, AppList) -> true | false
 %% @end
 %% @private
 %%--------------------------------------------------------------------

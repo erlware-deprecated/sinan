@@ -64,10 +64,9 @@ start() ->
 
 
 %%--------------------------------------------------------------------
-%% @spec do_task(BuildRef, Args) -> ok
-%%
 %% @doc
-%%  dO the task defined in this module.
+%%  do the task defined in this module.
+%% @spec (BuildRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
 do_task(BuildRef) ->
@@ -77,16 +76,20 @@ do_task(BuildRef) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Run the help command.
-%% @spec help(BuildRef) -> ok
+%% @spec (BuildRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
 help(BuildRef) ->
     eta_event:task_start(BuildRef, ?TASK, "Describing tasks ..."),
     case eta_task:get_task_defs() of
         [] ->
-            ewl_talk:say("No tasks to describe.");
+            eta_event:task_event(BuildRef, ?TASK, info,
+                                 "No tasks to describe.");
         Tasks ->
-            lists:map(fun process_task_entry/1, Tasks)
+            Fun = fun(Val) ->
+                          process_task_entry(BuildRef, Val)
+                  end,
+            lists:map(Fun, Tasks)
     end,
     eta_event:task_stop(BuildRef, ?TASK).
 
@@ -98,20 +101,20 @@ help(BuildRef) ->
 %% @doc
 %%  Prints out the task description.
 %%
-%% @spec process_task_entry({Key, Value}) -> ok.
+%% @spec (BuildRef, {Key, Value}) -> ok
 %% @end
 %%--------------------------------------------------------------------
-process_task_entry({Key, #task{desc=Desc, deps=Deps}}) ->
-    ewl_talk:say("~s", [Key]),
-    ewl_talk:say("   ~s", [Desc]),
-    ewl_talk:say(" depends on: ~s", [print_dependencies(Deps, "")]),
-    ewl_talk:say("~n").
+process_task_entry(BuildRef, {Key, #task{desc=Desc, deps=Deps}}) ->
+    eta_event:task_event(BuildRef, ?TASK, info,
+                        {"~s~n   ~s~n depends on: ~s~n~n",
+                         [Key, Desc,
+                          print_dependencies(Deps, "")]}).
 
 
 %%--------------------------------------------------------------------
 %% @doc
 %%  Print the dependency list.
-%% @spec print_dependencies(DepList, Acc) -> ok
+%% @spec (DepList, Acc) -> ok
 %% @end
 %%--------------------------------------------------------------------
 print_dependencies([H | T], "") ->

@@ -49,10 +49,9 @@
 %% API
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @spec start() -> ok.
-%%
 %% @doc
 %% Starts the server
+%% @spec () -> ok
 %% @end
 %%--------------------------------------------------------------------
 start() ->
@@ -70,10 +69,9 @@ start() ->
 
 
 %%--------------------------------------------------------------------
-%% @spec do_task(BuildRef, Args) -> ok
-%%
 %% @doc
 %%  dO the task defined in this module.
+%% @spec do_task(BuildRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
 do_task(BuildRef) ->
@@ -84,7 +82,7 @@ do_task(BuildRef) ->
 %% @doc
 %%   Run the analyze task.
 %%
-%% @spec analyze() -> ok.
+%% @spec analyze(BuildRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
 analyze(BuildRef) ->
@@ -105,11 +103,10 @@ analyze(BuildRef) ->
 %%% Internal functions
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @spec run_analyze(BuildDir, PltPath) -> ok.
-%%
 %% @doc
 %%  Analyze the current project repos and print error and warning
 %%  messages.
+%% @spec (BuildRef, BuildDir, PltPath) -> ok
 %% @end
 %%--------------------------------------------------------------------
 run_analyzer(BuildRef, BuildDir, PltPath) ->
@@ -132,10 +129,10 @@ run_analyzer(BuildRef, BuildDir, PltPath) ->
     eta_event:task_event(BuildRef, ?TASK, analysis_complete, "analysis complete").
 
 %%--------------------------------------------------------------------
-%% @spec generate_local_plt(PltPath) -> ok.
-%%
 %% @doc
 %%  Generate a base plt to make use of.
+%%
+%% @spec (BuildRef, PltPath) -> ok
 %% @end
 %%--------------------------------------------------------------------
 generate_local_plt(BuildRef, PltPath) ->
@@ -179,10 +176,9 @@ gen_plt(BuildRef, PltPath, Codepaths) ->
 
 
 %%--------------------------------------------------------------------
-%% @spec output_info(Result) -> ok.
-%%
 %% @doc
 %%  Print out the informational output from dialyzer.
+%% @spec output_info(BuildRef, Result) -> ok
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -193,10 +189,9 @@ output_info(BuildRef, {error, Warnings, Errors}) ->
     output_errors(BuildRef, 1, Errors).
 
 %%--------------------------------------------------------------------
-%% @spec output_warnings(WarningList) -> ok.
-%%
 %% @doc
 %%  Print out dialyzer warnings.
+%% @spec output_warnings(BuildRef, Count, WarningList) -> ok
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -208,10 +203,9 @@ output_warnings(_, _, []) ->
     ok.
 
 %%--------------------------------------------------------------------
-%% @spec output_errors(ErrorList) -> ok.
-%%
 %% @doc
 %%  Print out errors from dialyzer.
+%% @spec output_errors(BuildRef, Count, ErrorList) -> ok
 %% @end
 %% @private
 %%--------------------------------------------------------------------
@@ -223,11 +217,10 @@ output_errors(_, _, []) ->
 
 
 %%--------------------------------------------------------------------
-%% @spec get_code_paths(BuildDir, Apps, Acc) -> EbinPaths.
-%%
 %% @doc
 %%  Generate the code paths for the apps we will check with
 %%  dialyzer.
+%% @spec get_code_paths(BuildDir, Apps, Acc) -> EbinPaths
 %% @end
 %% @private
 %%--------------------------------------------------------------------

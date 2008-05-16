@@ -10,6 +10,7 @@
              sin_config_sup,
              sin_build_config,
              sin_repo_fetcher,
+             sin_wip,
              sin_utils,
              sin_clean,
              sin_depends,

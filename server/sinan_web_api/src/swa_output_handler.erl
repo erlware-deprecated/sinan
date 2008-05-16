@@ -54,7 +54,7 @@
 %% @doc
 %% Starts the server
 %%
-%% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
+%% @spec (BuildRef, Req) -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
 start_link(BuildRef, Req) ->
@@ -63,7 +63,7 @@ start_link(BuildRef, Req) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Send an event to the output_handler specified by pid
-%% @spec (Pid::pid(), Event) -> ok.
+%% @spec (Pid::pid(), Event) -> ok
 %% @end
 %%--------------------------------------------------------------------
 send_event(Pid, Event) ->
@@ -78,7 +78,7 @@ send_event(Pid, Event) ->
 %% @doc
 %% Initiates the server
 %%
-%% @spec init(Args) -> {ok, State} |
+%% @spec (Args) -> {ok, State} |
 %%                     {ok, State, Timeout} |
 %%                     ignore |
 %%                     {stop, Reason}
@@ -97,7 +97,7 @@ init([BuildRef, Req]) ->
 %% @doc
 %% Handling call messages
 %%
-%% @spec handle_call(Request, From, State) ->
+%% @spec (Request, From, State) ->
 %%                                   {reply, Reply, State} |
 %%                                   {reply, Reply, State, Timeout} |
 %%                                   {noreply, State} |
@@ -115,7 +115,7 @@ handle_call(_Request, _From, State) ->
 %% @doc
 %% Handling cast messages
 %%
-%% @spec handle_cast(Msg, State) -> {noreply, State} |
+%% @spec (Msg, State) -> {noreply, State} |
 %%                                  {noreply, State, Timeout} |
 %%                                  {stop, Reason, State}
 %% @end
@@ -136,7 +136,7 @@ handle_cast({event, Event}, State = #state{writer = Writer}) ->
 %% @doc
 %% Handling all non call/cast messages
 %%
-%% @spec handle_info(Info, State) -> {noreply, State} |
+%% @spec (Info, State) -> {noreply, State} |
 %%                                   {noreply, State, Timeout} |
 %%                                   {stop, Reason, State}
 %% @end
@@ -152,7 +152,7 @@ handle_info(_Info, State) ->
 %% necessary cleaning up. When it returns, the gen_server terminates
 %% with Reason. The return value is ignored.
 %%
-%% @spec terminate(Reason, State) -> void()
+%% @spec (Reason, State) -> void()
 %% @end
 %%--------------------------------------------------------------------
 terminate(_Reason, #state{writer = Writer}) ->
@@ -164,7 +164,7 @@ terminate(_Reason, #state{writer = Writer}) ->
 %% @doc
 %% Convert process state when code is changed
 %%
-%% @spec code_change(OldVsn, State, Extra) -> {ok, NewState}
+%% @spec (OldVsn, State, Extra) -> {ok, NewState}
 %% @end
 %%--------------------------------------------------------------------
 code_change(_OldVsn, State, _Extra) ->
