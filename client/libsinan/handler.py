@@ -27,9 +27,12 @@ class Handler:
         """ Add the argument required by many or most of
         the tasks in the system. """
         try:
-            config['opts']['build']['start_dir'] = os.getcwd()
+            config['opts']['build']['start_dir']
         except KeyError:
-            config['opts']['build'] = {'start_dir' : os.getcwd()}
+            try:
+                config['opts']['build']['start_dir'] = os.getcwd()
+            except KeyError:
+                config['opts']['build'] = {'start_dir' : os.getcwd()}
         return config
 
     def handles(self):

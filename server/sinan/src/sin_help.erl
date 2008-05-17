@@ -104,7 +104,7 @@ help(BuildRef) ->
 %% @spec (BuildRef, {Key, Value}) -> ok
 %% @end
 %%--------------------------------------------------------------------
-process_task_entry(BuildRef, {Key, #task{desc=Desc, deps=Deps}}) ->
+process_task_entry(BuildRef, #task{name=Key, desc=Desc, deps=Deps}) ->
     eta_event:task_event(BuildRef, ?TASK, info,
                         {"~s~n   ~s~n depends on: ~s~n~n",
                          [Key, Desc,

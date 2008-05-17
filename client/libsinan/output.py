@@ -85,7 +85,7 @@ class SimpleTaskHandler(object):
         elif self.type == "task_event":
             print "[" + self.task + "]", self.event_type
         elif self.type == "run_event" and self.desc:
-            print "1", self.desc
+            print self.desc
         elif self.type == "run_event" and self.event_type == "start":
             print "starting run"
         elif self.type == "run_event" and self.event_type == "stop":
@@ -107,5 +107,10 @@ def handle(task, conn):
     """ Handles output from the server. For the most part this just
     parses the default types of event layout and prints it to standard out
     in special cases it may do something else """
-    libsinan.jsax.parse(conn, SimpleTaskHandler())
-
+    if conn.status == 200:
+        try:
+            libsinan.jsax.parse(conn, SimpleTaskHandler())
+        except ValueError, msg:
+            print "Got an error back from sinan. Check the logs at ~/.sinan/log/kerner.log"
+    else:
+        print conn.read()

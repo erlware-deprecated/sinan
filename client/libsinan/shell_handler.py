@@ -34,13 +34,27 @@ class ShellHandler(libsinan.handler.Handler):
             args.append("-pa")
             args.append(path)
 
+        prefix = ""
+        try:
+            prefix = largs['special_opts']['prefix']
+            if not prefix[-1] == "/":
+                prefix += "/"
+        except KeyError:
+            pass
+
         print "starting shell ..."
-        os.execvp("erl", args)
+        os.execvp(prefix + "erl", args)
 
 def handle(task, conn):
     """ Handles output from the server. For the most part this just
     parses the default types of event layout and prints it to standard out
     in special cases it may do something else """
-    libsinan.jsax.parse(conn, libsinan.shell_handler.ShellTaskHandler())
+    if conn.status == 200:
+        try:
+            libsinan.jsax.parse(conn, libsinan.shell_handler.ShellTaskHandler())
+        except ValueError, msg:
+            print "Got an error back from sinan. Check the logs at ~/.sinan/log/kerner.log"
+    else:
+        print conn.read()
 
 libsinan.add_task_handler(ShellHandler())

@@ -125,6 +125,9 @@ handle_cast({event, Event}, State = #state{writer = Writer}) ->
         {run_event, _, Type} when Type == stop orelse Type == fault ->
             send_event_to_sock(Event, Writer),
             {stop, normal, State};
+        {run_event, _, Type, _} when Type == stop orelse Type == fault ->
+            send_event_to_sock(Event, Writer),
+            {stop, normal, State};
         _ ->
             send_event_to_sock(Event, Writer),
             {noreply, State}
