@@ -68,7 +68,7 @@ def parse_value(argv, key, opt, args, index):
     if VALUE_CHECKER.match(arg):
         opt[key] = arg
     else:
-        opt[key] = simplejson.load(arg)
+        opt[key] = arg
 
     parse_possible_key(argv, args, index + 1)
 
@@ -81,7 +81,7 @@ def parse_possible_key(argv, args, index):
     if arg.startswith("--"):
         parse_key(argv, arg[2:], 0, args['opts'], args, index)
     elif arg.startswith("-"):
-        parse_key(argv, arg[1:], 0, args['opts'], index)
+        parse_key(argv, arg[1:], 0, args['opts'], args, index)
     elif arg.startswith("+"):
         parse_special_key(argv, arg[1:], args, index)
     else:
