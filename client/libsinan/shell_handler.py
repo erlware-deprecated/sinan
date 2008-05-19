@@ -29,7 +29,7 @@ class ShellHandler(libsinan.handler.Handler):
 
     def handle(self, largs):
         self.do_request(largs, handle)
-        args = []
+        args = ["erl"]
         for path in shell_paths:
             args.append("-pa")
             args.append(path)
@@ -37,13 +37,13 @@ class ShellHandler(libsinan.handler.Handler):
         prefix = ""
         try:
             prefix = largs['special_opts']['prefix']
-            if not prefix[-1] == "/":
-                prefix += "/"
+            if not prefix[-1] == '/':
+                prefix += '/'
         except KeyError:
             pass
 
         print "starting shell ..."
-        os.execvp(prefix + "erl", args)
+        os.execvp(prefix + "bin/erl", args)
 
 def handle(task, conn):
     """ Handles output from the server. For the most part this just
@@ -53,7 +53,7 @@ def handle(task, conn):
         try:
             libsinan.jsax.parse(conn, libsinan.shell_handler.ShellTaskHandler())
         except ValueError, msg:
-            print "Got an error back from sinan. Check the logs at ~/.sinan/log/kerner.log"
+            print "Got an error back from sinan. Check the logs at ~/.sinan/log/kernel.log"
     else:
         print conn.read()
 

@@ -89,11 +89,14 @@ test(BuildRef) ->
                                  "value of the build config from 'disabled' to "
                                  "'enabled' or remove it.");
         _ ->
+            GL = sin_group_leader:capture_start(BuildRef, ?TASK),
             Apps = lists:map(fun({App, _Vsn, _Deps}) ->
                                      atom_to_list(App)
                              end, sin_build_config:get_value(BuildRef,
                                                   "project.apps")),
-            test_apps(BuildRef, Apps)
+            test_apps(BuildRef, Apps),
+            sin_group_leader:capture_stop(GL)
+
     end,
     eta_event:task_stop(BuildRef, ?TASK).
 

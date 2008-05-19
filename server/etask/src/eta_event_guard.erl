@@ -123,7 +123,7 @@ handle_info({gen_event_EXIT, HandlerModule, Reason}, HandlerModule) ->
     %% gen_event:add_sup_handler/3 or gen_event:swap_sup_handler/3 functions
     io:format("~w: detected handler ~p shutdown:~n~p~n",
               [?MODULE, HandlerModule, Reason]),
-    {stop, {handler_died, HandlerModule, Reason}};
+    {stop, {handler_died, HandlerModule, Reason}, HandlerModule};
 handle_info(Other, HandlerModule) ->
     %% This process should not receive other messages
     io:format("~w: received unknown message:~n~p~n", [?MODULE, Other]),
