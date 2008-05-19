@@ -36,7 +36,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/3, shutdown/1]).
+-export([start_link/3, shutdown/1, capture_start/2, capture_stop/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -71,6 +71,44 @@ start_link(BuildId, Task, Type) ->
 %%--------------------------------------------------------------------
 shutdown(Pid) ->
     gen_server:cast(Pid, shutdown).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Starts capturing all output from io:format, and similar. Capturing
+%% output doesn't stop output from happening. It just makes it possible
+%% to retrieve the output using capture_get/0.
+%% Starting and stopping capture doesn't affect already captured output.
+%% All output is stored as messages in the message queue until retrieved
+%%
+%% @spec (BuildRef, Task) -> {OldGroupLeader, NewGroupLeader}
+%% @end
+%%--------------------------------------------------------------------
+capture_start(BuildRef, Task) ->
+    OldGL = group_leader(),
+    NewGL = case sin_group_leader_sup:start_group_leader(BuildRef,
+                                                         Task, io) of
+        {ok, Child} ->
+            Child;
+        {ok, Child, _ } ->
+            Child;
+        _ ->
+            eta_event:task_fault(BuildRef, Task,
+                                 "Unable to start group leader.")
+            end,
+    group_leader(NewGL, self()),
+    {OldGL, NewGL}.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Stops io capture.
+%%
+%% @spec (Info) -> ok
+%% @end
+%%--------------------------------------------------------------------
+capture_stop({OldGroupLeader, NewGroupLeader}) ->
+    sin_group_leader:shutdown(NewGroupLeader),
+    group_leader(OldGroupLeader, self()).
+
 
 %%%===================================================================
 %%% gen_server callbacks

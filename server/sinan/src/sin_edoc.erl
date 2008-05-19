@@ -87,9 +87,9 @@ doc(BuildRef) ->
     DocDir = filename:join([BuildDir, "docs", "edoc"]),
     filelib:ensure_dir(filename:join([DocDir, "tmp"])),
     Apps = sin_build_config:get_value(BuildRef, "project.apps"),
-    GL = capture_start(BuildRef),
+    GL = sin_group_leader:capture_start(BuildRef, ?TASK),
     run_docs(BuildRef, Apps, [{dir, DocDir}]),
-    capture_stop(GL),
+    sin_group_leader:capture_stop(GL),
     eta_event:task_stop(BuildRef, ?TASK).
 
 
@@ -119,39 +119,3 @@ run_docs(_BuildRef, [], _Opts) ->
     ok.
 
 
-%%--------------------------------------------------------------------
-%% @doc
-%% Starts capturing all output from io:format, and similar. Capturing
-%% output doesn't stop output from happening. It just makes it possible
-%% to retrieve the output using capture_get/0.
-%% Starting and stopping capture doesn't affect already captured output.
-%% All output is stored as messages in the message queue until retrieved
-%%
-%% @spec (BuildRef) -> {OldGroupLeader, NewGroupLeader}
-%% @end
-%%--------------------------------------------------------------------
-capture_start(BuildRef) ->
-    OldGL = group_leader(),
-    NewGL = case sin_group_leader_sup:start_group_leader(BuildRef,
-                                                         ?TASK, io) of
-        {ok, Child} ->
-            Child;
-        {ok, Child, _ } ->
-            Child;
-        _ ->
-            eta_event:task_fault(BuildRef, ?TASK,
-                                 "Unable to start group leader.")
-            end,
-    group_leader(NewGL, self()),
-    {OldGL, NewGL}.
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Stops io capture.
-%%
-%% @spec (Info) -> ok
-%% @end
-%%--------------------------------------------------------------------
-capture_stop({OldGroupLeader, NewGroupLeader}) ->
-    sin_group_leader:shutdown(NewGroupLeader),
-    group_leader(OldGroupLeader, self()).

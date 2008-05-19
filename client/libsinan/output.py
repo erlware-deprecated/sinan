@@ -111,6 +111,6 @@ def handle(task, conn):
         try:
             libsinan.jsax.parse(conn, SimpleTaskHandler())
         except ValueError, msg:
-            print "Got an error back from sinan. Check the logs at ~/.sinan/log/kerner.log"
+            print "Got an error back from sinan. Check the logs at ~/.sinan/log/kernel.log"
     else:
         print conn.read()

@@ -185,8 +185,6 @@ handle_info(_, State) ->
 %% do any necessary cleaning up.
 %% @end
 %%--------------------------------------------------------------------
-terminate(swap, State)  ->
-    {?MODULE, State};
 terminate(_Reason, _State)  ->
     ok.
 
