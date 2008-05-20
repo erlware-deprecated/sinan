@@ -234,7 +234,8 @@ init([BuildId, ProjectDir, Config, Override]) ->
                           "_build"),
     BuildDir = filename:join([ProjectDir, BuildRoot, Flavor]),
     NewConfig1 = in_store("build.dir", NewConfig, BuildDir),
-    {ok, #state{config = NewConfig1, build_id = BuildId,
+    NewConfig2 = in_store("build.root", NewConfig1, BuildRoot),
+    {ok, #state{config = NewConfig2, build_id = BuildId,
                 project_dir = ProjectDir, canonical = false},
      ?RECHECK}.
 
