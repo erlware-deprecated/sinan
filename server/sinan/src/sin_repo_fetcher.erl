@@ -90,7 +90,7 @@ fetch_deps(Task, BuildRef, LocalRepo, ProjectApps, ProjectDeps) ->
 %% @doc
 %%  Fetch the individual deps from the system, returning a list of apps
 %%  that are non-project but required.
-%% @spec (Task, BuildRef, RemoteRepos, LocalRepo, ProjectApps, ProjectDeps, Acc) ->
+%% @spec (BuildRef, RemoteRepos, LocalRepo, ProjectApps, ProjectDeps, Acc) ->
 %%   RepoDeps
 %% @end
 %% @private
