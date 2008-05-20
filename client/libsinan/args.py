@@ -13,7 +13,7 @@ def parse_task(argv, arg, args, index):
     Otherwise error out"""
     try:
         args['task']
-        raise ParseError("Only expected one task arg, got " + self.task +
+        raise ParseError("Only expected one task arg, got " + args['task'] +
                          " and " + arg)
     except KeyError:
         args['task'] = arg
