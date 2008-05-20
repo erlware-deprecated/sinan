@@ -507,10 +507,12 @@ build_file(BuildRef, File, ".erl", Options, Target) ->
            ok
    end;
 build_file(BuildRef, File, ".yrl", Options, Target) ->
-    case needs_building(File, ".yrl", Target, ".erl") of
+    case needs_building(File, ".yrl", Target, ".beam") of
         true ->
             ErlFile = filename:basename(File, ".yrl"),
-            ErlName = filename:join([Target,
+	    AppDir = filename:dirname(Target),
+	    ErlTarget = filename:join([AppDir,"src"]),
+            ErlName = filename:join([ErlTarget,
                                      lists:flatten([ErlFile, ".erl"])]),
             eta_event:task_event(BuildRef, ?TASK, file_build,
                                  {"Building ~s", [File]}),
