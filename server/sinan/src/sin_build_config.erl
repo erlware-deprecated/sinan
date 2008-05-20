@@ -235,9 +235,30 @@ init([BuildId, ProjectDir, Config, Override]) ->
     BuildDir = filename:join([ProjectDir, BuildRoot, Flavor]),
     NewConfig1 = in_store("build.dir", NewConfig, BuildDir),
     NewConfig2 = in_store("build.root", NewConfig1, BuildRoot),
-    {ok, #state{config = NewConfig2, build_id = BuildId,
+    {ok, #state{config = apply_flavors(NewConfig2, Flavor), build_id = BuildId,
                 project_dir = ProjectDir, canonical = false},
      ?RECHECK}.
+
+%%--------------------------------------------------------------------
+%% @doc
+%%  Apply flavor changes to the config file.
+%% @spec (Config, Flavor) -> NewConfig
+%% @end
+%%--------------------------------------------------------------------
+apply_flavors(Config, Flavor) ->
+    FilterFun = fun([$f, $l, $a, $v, $o, $r, $s, $. | Rest], Value, NConfig) ->
+                        case lists:prefix(Flavor, Rest) of
+                            true ->
+                                NewKey = "tasks." ++ lists:nth(length(Flavor) + 1, Rest),
+                                dict:store(NewKey, Value, NConfig);
+                            _ ->
+                                NConfig
+                        end;
+                   (_, _, NConfig) ->
+                        NConfig
+                end,
+    dict:fold(FilterFun, Config, Config).
+
 
 %%--------------------------------------------------------------------
 %% @doc
