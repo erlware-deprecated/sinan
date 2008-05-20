@@ -84,8 +84,8 @@ class SimpleTaskHandler(object):
             print "[" + self.task + addition + "]", self.desc
         elif self.type == "task_event":
             print "[" + self.task + "]", self.event_type
-        elif self.type == "run_event" and self.desc:
-            print self.desc
+        elif self.type == "run_event" and self.event_type == "stop" and self.desc:
+            print "stoping, " + self.desc
         elif self.type == "run_event" and self.event_type == "start":
             print "starting run"
         elif self.type == "run_event" and self.event_type == "stop":

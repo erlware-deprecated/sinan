@@ -102,6 +102,13 @@ handle_do_request(["do_task", "release"], Req, BuildRef, Args) ->
 handle_do_request(["do_task", "dist"], Req, BuildRef, Args) ->
     swa_sup:start_handler(BuildRef, Req),
     sinan:dist(BuildRef, Args);
-handle_do_request(Path, _, _, _) ->
-    throw({unknown_task, Path}).
-
+handle_do_request(["do_task", Task], Req, _, _) ->
+    Writer = crary_body:new_writer(Req),
+    JDesc = {obj, [{type, run_event},
+                  {event_type, stop},
+                  {desc, list_to_binary("I don't know how to do " ++ Task)}]},
+    Content = ktj_encode:encode(JDesc),
+    crary:r(Writer, ok, [{"content-type", "application/json"},
+                         {<<"content-length">>, integer_to_list(iolist_size(Content))}]),
+    crary_sock:write(Writer, Content),
+    crary_sock:done_writing(Writer).
