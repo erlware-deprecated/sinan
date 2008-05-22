@@ -26,8 +26,30 @@ def start_server(largs):
     if os.system(prefix + cmd) != 0:
         raise libsinan.sinexceptions.SinanError("Unable to start " + cmd)
     print "starting server, waiting for 2 seconds to let it start up"
-    time.sleep(2)
 
+def try_reconnect(largs, handler, retry_count=5, retry_interval=2):
+    count = 0
+    while 1:
+        try:
+            handler.handle(largs)
+            break
+        except (socket.error), e:
+            code, reason = e
+            if code == CONNECTION_REFUSED:
+                if count == 0:
+                    start_server(largs)
+                if count < retry_count:
+                    count += 1
+                    time.sleep(retry_interval)
+                    continue
+                else:
+                    print ("Unable to connect to server after "
+                    + str(retry_count) +
+                    " tries. It seems that the server is probably hung.")
+                    break
+            else:
+                print "Unable to build got : "
+                print e
 
 
 def initiate_task(largs):
@@ -37,16 +59,8 @@ def initiate_task(largs):
     or in the default path"""
     task = largs['task']
     handler = libsinan.get_handler_for_task(task)
-    try:
-        handler.handle(largs)
-    except (socket.error), e:
-        code, reason = e
-        if code == CONNECTION_REFUSED:
-            start_server(largs)
-            handler.handle(largs)
-        else:
-            print "Unable to build got : "
-            print e
+    try_reconnect(largs, handler)
+
 
 
 def print_help():
