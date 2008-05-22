@@ -270,8 +270,18 @@ get_user_information(BuildRef, Env) ->
 
 
 get_repositories(BuildRef) ->
-    sin_build_config:get_value(BuildRef, "tasks.gen.repositories").
+    quote_repositories(sin_build_config:get_value(BuildRef,
+                                                  "tasks.gen.repositories"),
+                      []).
 
+
+
+quote_repositories([Rep = [$" | _] | Rest], Acc) ->
+    quote_repositories(Rest, [Rep | Acc]);
+quote_repositories([], Acc) ->
+    lists:reverse(Acc);
+quote_repositories([Rep | Rest], Acc) ->
+    quote_repositories(Rest, ["\"" ++ Rep ++ "\"" | Acc]).
 
 %%--------------------------------------------------------------------
 %% @doc
