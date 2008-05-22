@@ -95,7 +95,9 @@ build(BuildRef) ->
     ensure_build_dir(BuildRef),
     Apps = sin_build_config:get_value(BuildRef, "project.apps"),
     NApps = reorder_apps_according_to_deps(Apps, Apps, []),
-    NArgs = [],
+    RawArgs = sin_build_config:get_value(BuildRef,
+                                         "tasks.build.compile_args", ""),
+    NArgs = sin_build_arg_parser:compile_build_args(RawArgs),
     build_apps(BuildRef, NApps, NArgs),
     eta_event:task_stop(BuildRef, ?TASK).
 

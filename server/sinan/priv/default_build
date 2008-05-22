@@ -10,11 +10,15 @@ default_flavor: development,
 flavors : {
 
    development : {
-      build : "+debug_info -W1"
+      build : {
+            compile_args : "+debug_info -W1"
+     }
    },
 
    release : {
-      build : "-DNOTEST=1 -W1"
+      build : {
+           compile_args : "-DNOTEST=1 -W1"
+      }
    }
 
 
