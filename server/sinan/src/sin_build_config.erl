@@ -230,9 +230,10 @@ init([BuildId, ProjectDir, Config, Override]) ->
     sin_config_registry:register_config(BuildId, self()),
     NewConfig = merge_config(Config, Override, ""),
     Flavor = in_get_value(NewConfig, "build.flavor", "development"),
-    BuildRoot = in_get_value(NewConfig, "build_dir",
-                          "_build"),
-    BuildDir = filename:join([ProjectDir, BuildRoot, Flavor]),
+    BuildRoot = filename:join([ProjectDir, in_get_value(NewConfig, "build_dir",
+                          "_build")]),
+
+    BuildDir = filename:join([BuildRoot, Flavor]),
     NewConfig1 = in_store("build.dir", NewConfig, BuildDir),
     NewConfig2 = in_store("build.root", NewConfig1, BuildRoot),
     {ok, #state{config = apply_flavors(NewConfig2, Flavor), build_id = BuildId,
