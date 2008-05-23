@@ -7,6 +7,7 @@ class SimpleTaskHandler(object):
         self.type = None
         self.desc = None
         self.task = None
+        self.fault = None
 
     def set_event_type(self, value):
         self.event_type = value
@@ -80,6 +81,7 @@ class SimpleTaskHandler(object):
             addition = ""
             if self.event_type == "fault":
                 addition = " fault!!"
+                self.fault = True
 
             print "[" + self.task + addition + "]", self.desc
         elif self.type == "task_event":
@@ -91,6 +93,7 @@ class SimpleTaskHandler(object):
         elif self.type == "run_event" and self.event_type == "stop":
             print "run complete"
         elif self.type == "run_event" and self.event_type == "fault":
+            self.fault = True
             print "run complete with faults"
 
         self.event_type = None
@@ -109,8 +112,13 @@ def handle(task, conn):
     in special cases it may do something else """
     if conn.status == 200:
         try:
+            handler = SimpleTaskHandler()
             libsinan.jsax.parse(conn, SimpleTaskHandler())
+            if handler.fault:
+                return 1
+            return 0
         except ValueError, msg:
             print "Got an error back from sinan. Check the logs at ~/.sinan/log/kernel.log"
     else:
         print conn.read()
+        return 1

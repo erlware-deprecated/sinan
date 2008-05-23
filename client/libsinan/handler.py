@@ -58,7 +58,7 @@ class Handler:
         headers = {"Content-type": "application/json"}
         conn.request("POST", query, config, headers)
         response = conn.getresponse()
-        handle(task, response)
+        return handle(task, response)
 
     def handle(self, largs):
-        self.do_request(largs)
+        return self.do_request(largs)
