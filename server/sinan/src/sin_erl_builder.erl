@@ -231,9 +231,12 @@ build_apps(_, _BuildSupInfo, [], _Args) ->
 %%-------------------------------------------------------------------
 build_app(BuildRef, Env, AppName, Args) ->
     AppVsn = sin_build_config:get_value(BuildRef, "apps." ++ AppName ++ ".vsn"),
-    AppDir = sin_build_config:get_value(BuildRef, "apps." ++ AppName ++ ".basedir"),
+    AppDir = sin_build_config:get_value(BuildRef, "apps." ++ AppName
+                                        ++ ".basedir"),
     BuildTarget = lists:flatten([AppName, "-", AppVsn]),
     AppBuildDir = filename:join([Env#env.apps_build_dir, BuildTarget]),
+    sin_build_config:store(BuildRef, "apps." ++ AppName ++ ".builddir",
+                           AppBuildDir),
     Target = filename:join([AppBuildDir, "ebin"]),
     SrcDir = filename:join([AppDir, "src"]),
     {EbinPaths, Includes} = setup_code_path(BuildRef, Env, AppName),
