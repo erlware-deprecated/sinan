@@ -276,6 +276,7 @@ start() ->
     application:start(dialyzer),
     application:start(etask),
     application:start(sgte),
+    application:start(parsetools),
     application:start(sinan).
 
 
