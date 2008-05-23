@@ -83,12 +83,9 @@ do_task(BuildRef) ->
 %%--------------------------------------------------------------------
 doc(BuildRef) ->
     eta_event:task_start(BuildRef, ?TASK),
-    BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
-    DocDir = filename:join([BuildDir, "docs", "edoc"]),
-    filelib:ensure_dir(filename:join([DocDir, "tmp"])),
     Apps = sin_build_config:get_value(BuildRef, "project.apps"),
     GL = sin_group_leader:capture_start(BuildRef, ?TASK),
-    run_docs(BuildRef, Apps, [{dir, DocDir}]),
+    run_docs(BuildRef, Apps),
     sin_group_leader:capture_stop(GL),
     eta_event:task_stop(BuildRef, ?TASK).
 
@@ -100,22 +97,29 @@ doc(BuildRef) ->
 %% @doc
 %%  Run edoc on all the modules in all of the applications.
 %%
-%% @spec (BuildRef, AppList, Opts) -> ok
+%% @spec (BuildRef, AppList) -> ok
 %% @end
 %%--------------------------------------------------------------------
-run_docs(BuildRef, [{AppName, _, _} | T], Opts) ->
+run_docs(BuildRef, [{AppName, _, _} | T]) ->
+    LAppName = atom_to_list(AppName),
     AppDir = sin_build_config:get_value(BuildRef, "apps." ++
-                                            atom_to_list(AppName) ++
-                                            ".basedir"),
+                                        LAppName ++
+                                        ".basedir"),
+    AppBuildDir = sin_build_config:get_value(BuildRef, "apps." ++
+                                             LAppName ++
+                                             ".basedir"),
+    DocDir = filename:join([AppBuildDir, "docs", "edoc"]),
+    filelib:ensure_dir(filename:join([DocDir, "tmp"])),
+
     try
     edoc:application(AppName,
                      AppDir,
-                     Opts) catch
+                     [{dir, DocDir}]) catch
                                _:Error ->
                                    Error
                            end,
-    run_docs(BuildRef, T, Opts);
-run_docs(_BuildRef, [], _Opts) ->
+    run_docs(BuildRef, T);
+run_docs(_BuildRef, []) ->
     ok.
 
 
