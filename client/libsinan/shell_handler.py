@@ -52,9 +52,10 @@ def handle(task, conn):
     if conn.status == 200:
         try:
             libsinan.jsax.parse(conn, libsinan.shell_handler.ShellTaskHandler())
+            return 0
         except ValueError, msg:
             print "Got an error back from sinan. Check the logs at ~/.sinan/log/kernel.log"
     else:
         print conn.read()
-
+        return 1
 libsinan.add_task_handler(ShellHandler())
