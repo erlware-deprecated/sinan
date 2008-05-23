@@ -228,7 +228,8 @@ init([BuildId, ProjectDir, Override]) ->
      ?RECHECK};
 init([BuildId, ProjectDir, Config, Override]) ->
     sin_config_registry:register_config(BuildId, self()),
-    Flavor = get_build_flavor(Config, Override),
+    OverrideDict = merge_config(dict:new(), Override, ""),
+    Flavor = get_build_flavor(Config, OverrideDict),
     NewConfig = merge_config(apply_flavors(Config, Flavor), Override, ""),
     BuildRoot = filename:join([ProjectDir, in_get_value(NewConfig, "build_dir",
                                                         "_build")]),
