@@ -228,17 +228,31 @@ init([BuildId, ProjectDir, Override]) ->
      ?RECHECK};
 init([BuildId, ProjectDir, Config, Override]) ->
     sin_config_registry:register_config(BuildId, self()),
-    NewConfig = merge_config(Config, Override, ""),
-    Flavor = in_get_value(NewConfig, "build.flavor", "development"),
+    Flavor = get_build_flavor(Config, Override),
+    NewConfig = merge_config(apply_flavors(Config, Flavor), Override, ""),
     BuildRoot = filename:join([ProjectDir, in_get_value(NewConfig, "build_dir",
-                          "_build")]),
+                                                        "_build")]),
 
     BuildDir = filename:join([BuildRoot, Flavor]),
     NewConfig1 = in_store("build.dir", NewConfig, BuildDir),
     NewConfig2 = in_store("build.root", NewConfig1, BuildRoot),
-    {ok, #state{config = apply_flavors(NewConfig2, Flavor), build_id = BuildId,
+    {ok, #state{config = NewConfig2, build_id = BuildId,
                 project_dir = ProjectDir, canonical = false},
      ?RECHECK}.
+
+%%--------------------------------------------------------------------
+%% @doc
+%%  Return the flavor for the current build attempt
+%% @spec get_build_flavor(Config, Override) -> Flavor
+%% @end
+%%--------------------------------------------------------------------
+get_build_flavor(Config, Override) ->
+   case in_get_value(Override, "build.flavor", undefined) of
+       undefined ->
+           in_get_value(Config, "build.flavor", "development");
+       Value ->
+           Value
+   end.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -250,7 +264,8 @@ apply_flavors(Config, Flavor) ->
     FilterFun = fun([$f, $l, $a, $v, $o, $r, $s, $. | Rest], Value, NConfig) ->
                         case lists:prefix(Flavor, Rest) of
                             true ->
-                                NewKey = "tasks." ++ lists:nth(length(Flavor) + 1, Rest),
+                                NewKey = "tasks." ++
+                                    lists:nthtail(length(Flavor) + 1, Rest),
                                 dict:store(NewKey, Value, NConfig);
                             _ ->
                                 NConfig
