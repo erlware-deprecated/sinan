@@ -94,6 +94,8 @@ class SimpleTaskHandler(object):
             print "run complete"
         elif self.type == "run_event" and self.event_type == "fault":
             self.fault = True
+            if self.desc:
+                print self.desc
             print "run complete with faults"
 
         self.event_type = None
