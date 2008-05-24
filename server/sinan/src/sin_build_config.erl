@@ -118,6 +118,8 @@ get_seed(ProjectDir) when is_list(ProjectDir) ->
             case sin_config_sup:start_canonical(ProjectDir) of
                 {error, Error} ->
                     throw({unable_to_create_canonical, Error});
+                {error, _, Desc} ->
+                    throw({unable_to_create_canonical, Desc});
                 _ ->
                     get_seed(ProjectDir)
             end;
@@ -207,13 +209,17 @@ shutdown(BuildId) ->
 %% @end
 %%--------------------------------------------------------------------
 init([ProjectDir]) ->
-    sin_config_registry:register_canonical(ProjectDir, self()),
-    Config = process_build_config(ProjectDir,
-                                  filename:join([ProjectDir, "_build.cfg"])),
-    {ok, #state{config = Config, project_dir = ProjectDir, canonical = true},
-     ?RECHECK};
+    try process_build_config(ProjectDir,
+                             filename:join([ProjectDir, "_build.cfg"])) of
+        Config ->
+            sin_config_registry:register_canonical(ProjectDir, self()),
+            {ok, #state{config = Config, project_dir = ProjectDir,
+                        canonical = true}, ?RECHECK}
+    catch
+        Error ->
+            {stop, Error}
+    end;
 init([BuildId, ProjectDir, Override]) ->
-    sin_config_registry:register_config(BuildId, self()),
     BuildConfig = filename:join([ProjectDir, "_build.cfg"]),
     Config =
         case sin_utils:file_exists(filename:join([ProjectDir, "_build.cfg"])) of
@@ -223,11 +229,11 @@ init([BuildId, ProjectDir, Override]) ->
                 dict:new()
         end,
     NewConfig = merge_config(Config, Override, ""),
+    sin_config_registry:register_config(BuildId, self()),
     {ok, #state{config = NewConfig, build_id = BuildId,
                 project_dir = ProjectDir, canonical = false},
      ?RECHECK};
 init([BuildId, ProjectDir, Config, Override]) ->
-    sin_config_registry:register_config(BuildId, self()),
     OverrideDict = merge_config(dict:new(), Override, ""),
     Flavor = get_build_flavor(Config, OverrideDict),
     NewConfig = merge_config(apply_flavors(Config, Flavor), Override, ""),
@@ -237,6 +243,7 @@ init([BuildId, ProjectDir, Config, Override]) ->
     BuildDir = filename:join([BuildRoot, Flavor]),
     NewConfig1 = in_store("build.dir", NewConfig, BuildDir),
     NewConfig2 = in_store("build.root", NewConfig1, BuildRoot),
+    sin_config_registry:register_config(BuildId, self()),
     {ok, #state{config = NewConfig2, build_id = BuildId,
                 project_dir = ProjectDir, canonical = false},
      ?RECHECK}.
