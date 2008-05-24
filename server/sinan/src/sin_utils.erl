@@ -180,7 +180,9 @@ copy_file(Target, IFile, File) ->
             ewl_talk:say("File ~s exists but is inaccessable.", [File]),
             throw(file_inaccessable);
         true ->
-            file:copy(File, NFile);
+            {ok, FileInfo} = file:read_file_info(File),
+            file:copy(File, NFile),
+            file:write_file_info(NFile, FileInfo);
         _ ->
             ok
     end.
