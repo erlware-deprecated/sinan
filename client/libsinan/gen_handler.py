@@ -76,15 +76,15 @@ class GenHandler(libsinan.handler.Handler):
         """ Query the user for information about the user and
         the project he wishes to create before passing that
         information to the user """
-        largs['opts']['tasks'] = {"gen" :
-                                  {"user_info" : self.gather_user_info(),
-                                   "repositories" : self.get_repositories(),
-                                   "project_info" :
-                                   self.get_new_project_info(),
-                                   "apps" : self.get_application_names()}}
-
-
-
+        try:
+            largs['opts']['tasks']['gen']
+        except KeyError:
+            shell_info = {"user_info" : self.gather_user_info(),
+                          "repositories" : self.get_repositories(),
+                          "project_info" :
+                          self.get_new_project_info(),
+                          "apps" : self.get_application_names()}
+            largs['opts']['tasks']['gen'] = shell_info
         self.do_request(largs)
 
 
