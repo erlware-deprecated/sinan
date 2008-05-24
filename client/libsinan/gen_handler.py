@@ -47,13 +47,13 @@ class GenHandler(libsinan.handler.Handler):
         print ("Please specify the names of the OTP apps" +
         " that belong to this project. ")
         value = self.ask_user('app')
-        values = [value]
+        values = value.split()
 
-        more = self.ask_user('would you like to enter another y/n', 'n').upper()
+        more = self.ask_user('would you like to enter more y/n', 'n').upper()
         if more == 'Y' or more == 'YES':
             while 1:
                 value = self.ask_user('app')
-                values.append(value)
+                values = values + value.split()
                 more = self.ask_user('would you like to enter another y/n',
                                      'n').upper()
                 if more == 'N' or more == 'NO':
@@ -79,11 +79,14 @@ class GenHandler(libsinan.handler.Handler):
         try:
             largs['opts']['tasks']['gen']
         except KeyError:
-            shell_info = {"user_info" : self.gather_user_info(),
-                          "repositories" : self.get_repositories(),
-                          "project_info" :
-                          self.get_new_project_info(),
-                          "apps" : self.get_application_names()}
+            if not largs['opts'].has_key('tasks'):
+                largs['opts']['tasks'] = {}
+
+            shell_info =  {"user_info" : self.gather_user_info(),
+                           "repositories" : self.get_repositories(),
+                           "project_info" :
+                           self.get_new_project_info(),
+                           "apps" : self.get_application_names()}
             largs['opts']['tasks']['gen'] = shell_info
         self.do_request(largs)
 
