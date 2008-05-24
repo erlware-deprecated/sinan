@@ -371,10 +371,7 @@ gather_modules(BuildRef, AppName, SrcDir) ->
                    false,
                    fun(File, Acc) ->
                            Ext = filename:extension(File),
-                           [{File,
-                             list_to_atom(module_name(filename:basename(File),
-                                                      Ext, [])),
-                             Ext} | Acc]
+                           [{File, module_name(File), Ext} | Acc]
                    end, []),
     reorder_list(BuildRef, ModuleList,
                  filter_file_list(BuildRef, FileList, ModuleList, []),
@@ -383,15 +380,12 @@ gather_modules(BuildRef, AppName, SrcDir) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Extract the module name from the file name.
-%% @spec (Ext, Ext, Acc) -> ModuleName
+%% @spec (File) -> ModuleName
 %% @end
 %% @private
 %%--------------------------------------------------------------------
-module_name(Ext, Ext, Acc) ->
-    lists:reverse(Acc);
-module_name([H | T], Ext, Acc) ->
-    module_name(T, Ext, [H | Acc]).
-
+module_name(File) ->
+    list_to_atom(filename:rootname(filename:basename(File))).
 
 %%--------------------------------------------------------------------
 %% @doc
