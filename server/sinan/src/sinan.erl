@@ -215,15 +215,18 @@ do_task(Task, BuildRef, Args) when is_atom(Task) ->
 %%--------------------------------------------------------------------
 do_task(Chain, Task, BuildRef, Args) when is_atom(Task) ->
     StartDir = find_start_dir(Args),
-    try find_project_root(StartDir) of
-        ProjectRoot ->
-            Seed = sin_build_config:get_seed(ProjectRoot),
-            sin_build_config:start_config(BuildRef, ProjectRoot, Seed, Args),
-            eta_engine:run(Chain, Task, BuildRef),
-            sin_build_config:stop_config(BuildRef)
+    try
+        ProjectRoot = find_project_root(StartDir),
+        Seed = sin_build_config:get_seed(ProjectRoot),
+        sin_build_config:start_config(BuildRef, ProjectRoot, Seed, Args),
+        eta_engine:run(Chain, Task, BuildRef),
+        sin_build_config:stop_config(BuildRef)
     catch
         no_build_config ->
-            eta_event:run_fault(BuildRef, "No build config found.")
+            eta_event:run_fault(BuildRef, "No build config found.");
+        {unable_to_create_canonical, {_, _,Desc}}  ->
+            eta_event:run_fault(BuildRef,
+                                {"Error discovering project layout: ~s", [Desc]})
     end.
 
 %%--------------------------------------------------------------------

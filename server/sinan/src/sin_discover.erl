@@ -94,9 +94,13 @@ build_app_info(Config, [H|T], Acc) ->
             build_app_info(Config2,  T, [AppName | Acc]);
         {error, {_, Module, Desc}} ->
             Error = Module:format_error(Desc),
-            throw({invalid_app_file, AppName, Error});
+            throw({error, {invalid_app_file, Error},
+                   io_lib:format("*.app file is invaled for ~s at ~s",
+                    [AppName, AppFile])});
         {error, Error} ->
-            throw({no_app_file, AppName, Error})
+            throw({error, {no_app_file, Error},
+                   io_lib:format("No *.app file found for ~s at ~s",
+                                 [AppName, AppFile])})
     end;
 build_app_info(Config, [], Acc) ->
     dict:store("project.applist", Acc, Config).
