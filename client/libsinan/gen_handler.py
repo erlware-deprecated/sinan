@@ -8,18 +8,26 @@ class GenHandler(libsinan.handler.Handler):
         return task == "gen"
 
     def valid_repo(self, repo):
-        return not repo.strip() == ""
+        return not repo.strip() == "" and len(repo.split())==1
 
     def get_repositories(self):
         print "Please specify the locations of the repositories. "
-        value = self.ask_user('repository', self.DEFAULT_REPO)
-        values = [value]
+        while 1:
+            value = self.ask_user('repository', self.DEFAULT_REPO)
+            if self.valid_repo(value):
+                values = [value]
+                break
+            print "Error: repository locations may NOT contain spaces"
 
         more = self.ask_user('would you like to enter another y/n', 'n').upper()
         if more == 'Y' or more == 'YES':
             while 1:
-                value = self.ask_user('repository')
-                values.append(value)
+                while 1:
+                    value = self.ask_user('repository')
+                    if self.valid_repo(value):
+                        values.append(value)
+                        break
+                    print "Error: repository locations may NOT contain spaces"
                 more = self.ask_user('would you like to enter another y/n',
                                      'n').upper()
                 if more == 'N' or more == 'NO':
@@ -64,7 +72,11 @@ class GenHandler(libsinan.handler.Handler):
 
     def get_new_project_info(self):
         print "Please specify name of your project"
-        name = self.ask_user('project name')
+        while 1:
+            name = self.ask_user('project name')
+            if len(name.split())==1:
+                break
+            print "Error: project name may NOT contain spaces"
         print "Please specify the version of your project \n"
         version = self.ask_user('project version', '0.1.0.0')
 
