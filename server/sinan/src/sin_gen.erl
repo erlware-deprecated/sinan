@@ -129,6 +129,7 @@ build_out_applications(BuildRef, Env, [AppName | T]) ->
     case filelib:is_dir(AppDir) of
         false ->
             make_dir(BuildRef, AppDir),
+            AppDoc = make_dir(BuildRef, filename:join(AppDir, "doc")),
             make_dir(BuildRef, filename:join(AppDir, "ebin")),
             make_dir(BuildRef, filename:join(AppDir, "include")),
             AppSrc = make_dir(BuildRef, filename:join(AppDir, "src")),
@@ -179,7 +180,7 @@ build_out_super(BuildRef, Env, AppSrc, App) ->
 %% @spec (BuildRef, Env, App) -> ok
 %% @end
 %%--------------------------------------------------------------------
-build_out_app_src(_BuildRef, Env, App) ->
+build_out_app_src(BuildRef, Env, App) ->
     ProjDir = get_env(project_dir, Env),
     AppEbin = filename:join([ProjDir, "lib", App, "ebin"]),
     FileName = filename:join(AppEbin, App ++ ".app"),
@@ -187,9 +188,27 @@ build_out_app_src(_BuildRef, Env, App) ->
         true ->
             ok;
         false ->
-            sin_skel:app_info(Env, FileName, App)
+            sin_skel:app_info(Env, FileName, App),
+	    build_out_app_doc(BuildRef, Env, App)
     end.
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Builds out the overview.edoc for the app.
+%% @spec (BuildRef, Env, App) -> ok
+%% @end
+%%--------------------------------------------------------------------
+build_out_app_doc(_BuildRef, Env, App) ->
+    ProjDir = get_env(project_dir, Env),
+    AppEbin = filename:join([ProjDir, "lib", App, "doc"]),
+    FileName = filename:join(AppEbin, "overview.edoc"),
+    case filelib:is_file(FileName) of
+        true ->
+            ok;
+        false ->
+            sin_skel:edoc_overview(Env, FileName, App)
+    end.
+    
 %%--------------------------------------------------------------------
 %% @doc
 %%  Given the project directory builds out the various directories

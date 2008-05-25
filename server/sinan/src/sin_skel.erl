@@ -33,7 +33,8 @@
 
 %%% API
 -export([application/3, supervisor/3,
-         app_info/3, build_config/2]).
+         app_info/3, edoc_overview/3,
+	 build_config/2]).
 
 %-include("eunit.hrl").
 
@@ -67,6 +68,15 @@ supervisor(Env, FileName, AppName) ->
 %%--------------------------------------------------------------------
 app_info(Env, FileName, AppName) ->
     write_template("dotapp", [{app_name, AppName} | Env], FileName).
+
+%%--------------------------------------------------------------------
+%% @doc
+%%    Writes out a overview.edoc to the filename provided.
+%% @spec app_info(Env, FileName, AppName) -> ok
+%% @end
+%%--------------------------------------------------------------------
+edoc_overview(Env, FileName, AppName) ->
+    write_template("overview", [{app_name, AppName} | Env], FileName).
 
 %%--------------------------------------------------------------------
 %% @doc
