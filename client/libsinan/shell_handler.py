@@ -54,7 +54,7 @@ def handle(task, conn):
             libsinan.jsax.parse(conn, libsinan.shell_handler.ShellTaskHandler())
             return 0
         except ValueError, msg:
-            print "Got an error back from sinan. Check the logs at ~/.sinan/log/kernel.log"
+            print "Got an error back from sinan. Check the logs at ~/.sinan/logs/kernel.log"
     else:
         print conn.read()
         return 1
