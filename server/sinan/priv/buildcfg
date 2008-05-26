@@ -3,7 +3,7 @@ project : {
    vsn  : "$project_version$"
 },
 
-repositories : [$repositories$],
+repositories : [$join:{, } repositories$],
 
 build_dir : _build,
 
