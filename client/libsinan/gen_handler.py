@@ -2,7 +2,7 @@ import libsinan.handler
 import re
 
 class GenHandler(libsinan.handler.Handler):
-    DEFAULT_REPO = "http://repo.erlware.org/writable"
+    DEFAULT_REPO = "http://repo.erlware.org/pub"
 
     def handles(self, task):
         return task == "gen"
