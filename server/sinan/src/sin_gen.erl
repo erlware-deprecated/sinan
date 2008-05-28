@@ -129,7 +129,7 @@ build_out_applications(BuildRef, Env, [AppName | T]) ->
     case filelib:is_dir(AppDir) of
         false ->
             make_dir(BuildRef, AppDir),
-            AppDoc = make_dir(BuildRef, filename:join(AppDir, "doc")),
+            make_dir(BuildRef, filename:join(AppDir, "doc")),
             make_dir(BuildRef, filename:join(AppDir, "ebin")),
             make_dir(BuildRef, filename:join(AppDir, "include")),
             AppSrc = make_dir(BuildRef, filename:join(AppDir, "src")),
@@ -208,7 +208,7 @@ build_out_app_doc(_BuildRef, Env, App) ->
         false ->
             sin_skel:edoc_overview(Env, FileName, App)
     end.
-    
+
 %%--------------------------------------------------------------------
 %% @doc
 %%  Given the project directory builds out the various directories
