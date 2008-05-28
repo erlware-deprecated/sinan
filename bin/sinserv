@@ -4,19 +4,12 @@ LOGDIR=~/.sinan/logs
 CONFIGDIR=~/.sinan/config
 mkdir -p $LOGDIR
 mkdir -p $CONFIGDIR
-CONFIGFILE=$CONFIGDIR/sinserv.config
-
-if [ ! -f $CONFIGFILE ]; then
-
-echo " [{kernel, [{error_logger, {file, \"$LOGDIR/kernel.log\"}}]}, \
-{sasl,[{sasl_error_logger, {file, \"$LOGDIR/sasl.log\"}}]}]." > $CONFIGFILE
 
 
-fi
 
 #### Fill in values for these variables ####
 REL_NAME=sinan
-REL_VSN=0.10.0.7
+REL_VSN=0.10.0.8
 ERTS_VSN=5.6.2
 INVOCATION_SUFFIX=""
 ###########################################
@@ -24,6 +17,18 @@ INVOCATION_SUFFIX=""
 PROG=$0
 test -h $0 && PROG=$(readlink $0)
 PREFIX=$(cd $(dirname $(dirname $PROG)); pwd)
+
+CONFIGFILE=$CONFIGDIR/sinserv-$REL_VSN.config
+if [ ! -f $CONFIGFILE ]; then
+
+echo " [{kernel, [{error_logger, {file, \"$LOGDIR/kernel.log\"}}]}, \
+{sasl,[{sasl_error_logger, {file, \"$LOGDIR/sasl.log\"}}]},
+{sinan, [{prefix, \"$PREFIX\"}]}]." > $CONFIGFILE
+
+
+fi
+
+
 
 export ROOTDIR=$PREFIX/application_packages/$ERTS_VSN
 export BINDIR=$PREFIX/erts_packages/erts-$ERTS_VSN/bin
