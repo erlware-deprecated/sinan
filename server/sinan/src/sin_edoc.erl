@@ -108,7 +108,7 @@ run_docs(BuildRef, [{AppName, _, _} | T]) ->
     AppBuildDir = sin_build_config:get_value(BuildRef, "apps." ++
                                              LAppName ++
                                              ".builddir"),
-    DocDir = filename:join([AppBuildDir, "docs", "edoc"]),
+    DocDir = filename:join([AppBuildDir, "docs"]),
     filelib:ensure_dir(filename:join([DocDir, "tmp"])),
 
     try
