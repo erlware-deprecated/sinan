@@ -4,7 +4,7 @@ import re
 class GenHandler(libsinan.handler.Handler):
     DEFAULT_REPO = "http://repo.erlware.org/pub"
     PROJECT_VALIDATOR = re.compile(r'^[a-z][a-zA-Z0-9_]*$')
-    APPS_VALIDATOR = re.compile(r'^\s*([a-z][a-zA-Z0-9_]*)\s*$|^(\s*([a-z][a-zA-Z0-9_]*)(\s+([a-z][a-zA-Z0-9_]*))*\s*)$')
+    APPS_VALIDATOR = re.compile(r'^\s*([a-z][a-zA-Z0-9_@]*)\s*$|^(\s*([a-z][a-zA-Z0-9_@]*)(\s+([a-z][a-zA-Z0-9_@]*))*\s*)$')
 
     def handles(self, task):
         return task == "gen"
