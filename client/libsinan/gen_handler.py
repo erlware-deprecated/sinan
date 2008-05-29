@@ -3,6 +3,8 @@ import re
 
 class GenHandler(libsinan.handler.Handler):
     DEFAULT_REPO = "http://repo.erlware.org/pub"
+    PROJECT_VALIDATOR = re.compile(r'^[a-z][a-zA-Z0-9_]*$')
+    APPS_VALIDATOR = re.compile(r'^\s*([a-z][a-zA-Z0-9_]*)\s*$|^(\s*([a-z][a-zA-Z0-9_]*)(\s+([a-z][a-zA-Z0-9_]*))*\s*)$')
 
     def handles(self, task):
         return task == "gen"
@@ -54,13 +56,13 @@ class GenHandler(libsinan.handler.Handler):
     def get_application_names(self):
         print ("Please specify the names of the OTP apps" +
         " that belong to this project. ")
-        value = self.ask_user('app')
+        value = self.ask_user('apps', None, self.APPS_VALIDATOR)
         values = value.split()
 
         more = self.ask_user('would you like to enter more y/n', 'n').upper()
         if more == 'Y' or more == 'YES':
             while 1:
-                value = self.ask_user('app')
+                value = self.ask_user('apps', None, self.APPS_VALIDATOR)
                 values = values + value.split()
                 more = self.ask_user('would you like to enter another y/n',
                                      'n').upper()
@@ -73,7 +75,7 @@ class GenHandler(libsinan.handler.Handler):
     def get_new_project_info(self):
         print "Please specify name of your project"
         while 1:
-            name = self.ask_user('project name')
+            name = self.ask_user('project name', None, self.PROJECT_VALIDATOR)
             if len(name.split())==1:
                 break
             print "Error: project name may NOT contain spaces"
