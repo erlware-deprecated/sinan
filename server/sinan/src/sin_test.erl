@@ -112,6 +112,7 @@ test(BuildRef) ->
 %% @private
 %%--------------------------------------------------------------------
 test_apps(BuildRef, [AppName | T]) ->
+    io:format("Testing ~s~n", [AppName]),
     Modules = sin_build_config:get_value(BuildRef,
                               "apps." ++ AppName ++ ".modules"),
     case Modules == undefined orelse length(Modules) =< 0 of
@@ -259,6 +260,7 @@ output_code_coverage(_, _DocDir, [], Acc) ->
 %% @private
 %%--------------------------------------------------------------------
 run_module_tests([Module | T]) ->
+    io:format("~p:",[Module]),
     eunit:test(Module),
     run_module_tests(T);
 run_module_tests([]) ->
