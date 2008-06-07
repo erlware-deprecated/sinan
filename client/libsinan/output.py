@@ -48,15 +48,15 @@ class SimpleTaskHandler(object):
         return True
 
     def true(self):
-        self.next(Value)
+        self.next(True)
         return True
 
     def false(self):
-        self.next(Value)
+        self.next(False)
         return True
 
     def null(self):
-        self.next(Value)
+        self.next(None)
         return True
 
     def array_begin(self):
