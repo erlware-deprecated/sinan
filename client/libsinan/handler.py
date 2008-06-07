@@ -50,7 +50,7 @@ class Handler:
         """ Actually make the task request to the server """
         config = self.jsonify_opts(self.add_start_dir(largs))
         task = largs['task']
-        url = largs['special_opts']['url']
+        url = largs['client_opts']['url']
         query = '/do_task/' + task
 
         conn = httplib.HTTPConnection(url)

@@ -10,16 +10,16 @@ import time
 CONNECTION_REFUSED = 111
 
 def start_server(largs):
-    """ Start the server. Use the 'server_command' local
+    """ Start the server. Use the 'server_command' client
     opt if it exists, otherwise just use 'sinserv' on the path """
     cmd = "sinserv"
     prefix = ""
     try:
-        cmd = largs['special_opts']['server_command']
+        cmd = largs['client_opts']['server_command']
     except KeyError:
         pass
     try:
-        prefix = largs['special_opts']['prefix']
+        prefix = largs['client_opts']['prefix']
         prefix += "/bin/"
     except KeyError:
         pass
@@ -86,7 +86,7 @@ def main(argv=None):
     largs = libsinan.args.parse(argv, "build",
                                 {'url' : 'localhost:8599'})
     try:
-        if largs['special_opts']['help']:
+        if largs['client_opts']['help']:
             print_help()
             return 2
     except KeyError:

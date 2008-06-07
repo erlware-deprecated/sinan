@@ -30,11 +30,11 @@ def parse_special_value(argv, key, args, index):
     if (len(argv) <= index or
         argv[index].startswith("+") or
         argv[index].startswith("-")):
-        args['special_opts'][key] = True
+        args['client_opts'][key] = True
         parse_possible_key(argv, args, index)
     else:
         arg = argv[index]
-        args['special_opts'][key] = arg
+        args['client_opts'][key] = arg
         parse_possible_key(argv, args, index + 1)
 
 
@@ -89,8 +89,8 @@ def parse_possible_key(argv, args, index):
 
 
 
-def parse(argv, default_task, special_opts = {}, default_opts = {}):
-    """ Init the parsed args and return an arg object representing them
+def parse(argv, default_task, client_opts = {}, default_opts = {}):
+    """Parse the argv vector and return an arg dict representing the arguments.
 
     >>> parse(['--zu:za:zee', 'ahah'], 'ha')['opts']
     {'zu': {'za': {'zee': 'ahah'}}}
@@ -98,10 +98,10 @@ def parse(argv, default_task, special_opts = {}, default_opts = {}):
     >>> parse(['--zu:za:zee', 'ahah', '--zu:za:zook', 'muhahah'], 'ha')['opts']
     {'zu': {'za': {'zook': 'muhahah', 'zee': 'ahah'}}}
 
-    >>> parse(['--zu:za:zee', 'ahah', '--zu:za:zook', 'muhahah', '+port', '3322'], 'ha')['special_opts']
+    >>> parse(['--zu:za:zee', 'ahah', '--zu:za:zook', 'muhahah', '+port', '3322'], 'ha')['client_opts']
     {'port': '3322'}
 
-    >>> parse(['--zu:za:zee', 'ahah', '--zu:za:zook', 'muhahah', '+help', '+port', '3322'], 'ha')['special_opts']
+    >>> parse(['--zu:za:zee', 'ahah', '--zu:za:zook', 'muhahah', '+help', '+port', '3322'], 'ha')['client_opts']
     {'port': '3322', 'help': True}
 
     >>> parse(['hobo', '--zu:za:zee', 'ahah', '--zu:za:zook', 'muhahah', '+help', '+port', '3322'], 'ha')['task']
@@ -110,7 +110,7 @@ def parse(argv, default_task, special_opts = {}, default_opts = {}):
     >>> parse(['--zu:za:zee', 'ahah', '--zu:za:zook', 'muhahah', '+help', '+port', '3322'], 'ha')['task']
     'ha'
     """
-    args = {'special_opts': special_opts,
+    args = {'client_opts': client_opts,
             'opts': default_opts,
             'default_task': default_task}
     parse_possible_key(argv, args, 0)
