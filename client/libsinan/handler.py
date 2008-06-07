@@ -35,9 +35,8 @@ class Handler:
                 config['opts']['build'] = {'start_dir' : os.getcwd()}
         return config
 
-    def handles(self):
-        return true
-
+    def handles(self, task):
+        return True
 
     def jsonify_opts(self, largs):
         """ The opts are already in config layout. All we need to
