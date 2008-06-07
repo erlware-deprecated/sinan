@@ -1,5 +1,4 @@
 import os
-import re
 import libsinan.handler
 import libsinan.output
 
