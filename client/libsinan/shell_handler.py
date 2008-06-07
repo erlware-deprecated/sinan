@@ -35,7 +35,7 @@ class ShellHandler(libsinan.handler.Handler):
 
         prefix = ""
         try:
-            prefix = largs['special_opts']['prefix']
+            prefix = largs['client_opts']['prefix']
             if not prefix[-1] == '/':
                 prefix += '/'
         except KeyError:
