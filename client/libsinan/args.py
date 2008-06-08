@@ -79,9 +79,9 @@ def parse_possible_key(argv, args, index):
 
     arg = argv[index]
     if arg.startswith("--"):
-        parse_key(argv, arg[2:], 0, args['opts'], args, index)
+        parse_key(argv, arg[2:], 0, args['server_opts'], args, index)
     elif arg.startswith("-"):
-        parse_key(argv, arg[1:], 0, args['opts'], args, index)
+        parse_key(argv, arg[1:], 0, args['server_opts'], args, index)
     elif arg.startswith("+"):
         parse_special_key(argv, arg[1:], args, index)
     else:
@@ -89,13 +89,13 @@ def parse_possible_key(argv, args, index):
 
 
 
-def parse(argv, default_task, client_opts = {}, default_opts = {}):
+def parse(argv, default_task, client_opts = {}, server_opts = {}):
     """Parse the argv vector and return an arg dict representing the arguments.
 
-    >>> parse(['--zu:za:zee', 'ahah'], 'ha')['opts']
+    >>> parse(['--zu:za:zee', 'ahah'], 'ha')['server_opts']
     {'zu': {'za': {'zee': 'ahah'}}}
 
-    >>> parse(['--zu:za:zee', 'ahah', '--zu:za:zook', 'muhahah'], 'ha')['opts']
+    >>> parse(['--zu:za:zee', 'ahah', '--zu:za:zook', 'muhahah'], 'ha')['server_opts']
     {'zu': {'za': {'zook': 'muhahah', 'zee': 'ahah'}}}
 
     >>> parse(['--zu:za:zee', 'ahah', '--zu:za:zook', 'muhahah', '+port', '3322'], 'ha')['client_opts']
@@ -111,7 +111,7 @@ def parse(argv, default_task, client_opts = {}, default_opts = {}):
     'ha'
     """
     args = {'client_opts': client_opts,
-            'opts': default_opts,
+            'server_opts': server_opts,
             'default_task': default_task}
     parse_possible_key(argv, args, 0)
 
