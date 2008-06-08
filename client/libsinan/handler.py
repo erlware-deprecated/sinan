@@ -27,12 +27,12 @@ class Handler:
         """ Add the argument required by many or most of
         the tasks in the system. """
         try:
-            config['opts']['build']['start_dir']
+            config['server_opts']['build']['start_dir']
         except KeyError:
             try:
-                config['opts']['build']['start_dir'] = os.getcwd()
+                config['server_opts']['build']['start_dir'] = os.getcwd()
             except KeyError:
-                config['opts']['build'] = {'start_dir' : os.getcwd()}
+                config['server_opts']['build'] = {'start_dir' : os.getcwd()}
         return config
 
     def handles(self, task):
@@ -42,7 +42,7 @@ class Handler:
         """ The opts are already in config layout. All we need to
         do is jsonify them """
         try:
-            return libsinan.encoder.dumps(largs['opts'])
+            return libsinan.encoder.dumps(largs['server_opts'])
         except KeyError:
             return None
 
