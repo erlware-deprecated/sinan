@@ -90,17 +90,17 @@ class GenHandler(libsinan.handler.Handler):
         the project he wishes to create before passing that
         information to the user """
         try:
-            largs['opts']['tasks']['gen']
+            largs['server_opts']['tasks']['gen']
         except KeyError:
-            if not largs['opts'].has_key('tasks'):
-                largs['opts']['tasks'] = {}
+            if not largs['server_opts'].has_key('tasks'):
+                largs['server_opts']['tasks'] = {}
 
             shell_info =  {"user_info" : self.gather_user_info(),
                            "repositories" : self.get_repositories(),
                            "project_info" :
                            self.get_new_project_info(),
                            "apps" : self.get_application_names()}
-            largs['opts']['tasks']['gen'] = shell_info
+            largs['server_opts']['tasks']['gen'] = shell_info
         self.do_request(largs)
 
 
