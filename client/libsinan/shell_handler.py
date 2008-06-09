@@ -1,12 +1,14 @@
 import os
-import libsinan.handler
-import libsinan.output
+
+import libsinan
+
+from libsinan import handler, output, jsax
 
 shell_paths = []
 shell_apps = []
 
 
-class ShellTaskHandler (libsinan.output.SimpleTaskHandler):
+class ShellTaskHandler(output.SimpleTaskHandler):
     def object_end(self):
         """ We only get one object per right now so
         lets print it out when we get it """
@@ -18,11 +20,11 @@ class ShellTaskHandler (libsinan.output.SimpleTaskHandler):
                 shell_paths.append(self.desc)
             return True
         else:
-            return libsinan.output.SimpleTaskHandler.object_end(self)
+            return output.SimpleTaskHandler.object_end(self)
 
 
 
-class ShellHandler(libsinan.handler.Handler):
+class ShellHandler(handler.Handler):
     def handles(self, task):
         return task == "shell"
 
@@ -34,12 +36,11 @@ class ShellHandler(libsinan.handler.Handler):
             args.append(path)
 
         prefix = ""
-        try:
+
+        if 'prefix' in largs['client_opts']:
             prefix = largs['client_opts']['prefix']
             if not prefix[-1] == '/':
                 prefix += '/'
-        except KeyError:
-            pass
 
         print "starting shell ..."
         os.execvp(prefix + "bin/erl", args)
@@ -49,8 +50,9 @@ def handle(task, conn):
     parses the default types of event layout and prints it to standard out
     in special cases it may do something else """
     if conn.status == 200:
+        from libsinan import shell_handler
         try:
-            libsinan.jsax.parse(conn, libsinan.shell_handler.ShellTaskHandler())
+            jsax.parse(conn, shell_handler.ShellTaskHandler())
             return 0
         except ValueError, msg:
             print "Got an error back from sinan. Check the logs at ~/.sinan/logs/kernel.log"
