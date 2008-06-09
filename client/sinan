@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 import os
 import sys
-import httplib
-import libsinan.args
-import libsinan.sinexceptions
 import socket
 import time
+
+import libsinan.args
+from libsinan import sinexceptions
 
 CONNECTION_REFUSED = 111
 
@@ -24,7 +24,7 @@ def start_server(largs):
     except KeyError:
         pass
     if os.system(prefix + cmd) != 0:
-        raise libsinan.sinexceptions.SinanError("Unable to start " + cmd)
+        raise sinexceptions.SinanError("Unable to start " + cmd)
 
 def try_reconnect(largs, handler, retry_count=10, retry_interval=1):
     count = 0
@@ -93,7 +93,7 @@ def main(argv=None):
         pass
     try:
         return initiate_task(largs)
-    except libsinan.sinexceptions.SinanError, e:
+    except sinexceptions.SinanError, e:
         print e.value
     except KeyboardInterrupt:
         print "\n\nexiting at user request. Thanks!"
