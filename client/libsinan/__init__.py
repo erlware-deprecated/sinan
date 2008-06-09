@@ -20,7 +20,3 @@ def get_handler_for_task(task):
             return handler
 
     return libsinan.handler.Handler()
-
-
-import libsinan.gen_handler
-import libsinan.shell_handler

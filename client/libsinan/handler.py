@@ -1,12 +1,13 @@
-import libsinan.output
-import libsinan.encoder
 import re
 import os
 import httplib
 
-class Handler:
-    DEFAULT_VALIDATOR = re.compile('\w+')
+from libsinan import encoder, output
 
+
+class Handler:
+
+    DEFAULT_VALIDATOR = re.compile('\w+')
 
     def ask_user(self, prompt, default = None, regexp = DEFAULT_VALIDATOR):
         if default:
@@ -42,11 +43,11 @@ class Handler:
         """ The opts are already in config layout. All we need to
         do is jsonify them """
         try:
-            return libsinan.encoder.dumps(largs['server_opts'])
+            return encoder.dumps(largs['server_opts'])
         except KeyError:
             return None
 
-    def do_request(self, largs, handle = libsinan.output.handle):
+    def do_request(self, largs, handle = output.handle):
         """ Actually make the task request to the server """
         config = self.jsonify_opts(self.add_start_dir(largs))
         task = largs['task']
