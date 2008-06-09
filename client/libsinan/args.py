@@ -1,124 +1,67 @@
-import re
-from sinexceptions import SinanError
-
-VALUE_CHECKER = re.compile("\w+")
-
-class ParseError(SinanError):
-    def __init__(self, value):
-        self.value = value
+import optparse
 
 
-def parse_task(argv, arg, args, index):
-    """ Just set the task if it doesn't already exist.
-    Otherwise error out"""
-    try:
-        args['task']
-        raise ParseError("Only expected one task arg, got " + args['task'] +
-                         " and " + arg)
-    except KeyError:
-        args['task'] = arg
-        parse_possible_key(argv, args, index + 1)
+def parse_key_value(key, value, args):
+    if ':' not in key:
+        args[key] = value
+        return
 
-
-def parse_special_key(argv, arg, args, index):
-    """ Parse special local keys, these are keys
-    for the client not the server """
-    parse_special_value(argv, arg, args, index + 1)
-
-
-def parse_special_value(argv, key, args, index):
-    if (len(argv) <= index or
-        argv[index].startswith("+") or
-        argv[index].startswith("-")):
-        args['client_opts'][key] = True
-        parse_possible_key(argv, args, index)
-    else:
-        arg = argv[index]
-        args['client_opts'][key] = arg
-        parse_possible_key(argv, args, index + 1)
-
-
-def parse_key(argv, arg, start, current_opt, args, index):
-    pos = arg.find(":", start)
-
-    if pos == -1:
-        parse_value(argv, arg[start:], current_opt, args, index + 1)
-    else:
-        key = arg[start:pos]
-        obj = {}
-        try:
-            obj = current_opt[key]
-        except KeyError:
-            current_opt[key] = obj
-
-        parse_key(argv, arg, pos + 1, obj, args, index)
-
-
-def parse_value(argv, key, opt, args, index):
-    """Parse the value. Really just make sure it doesn't look
-    like a key. if it does error out"""
-    if len(argv) <= index:
-        raise ParseError("Expected a value for " + key)
-
-    arg = argv[index]
-
-    if arg.startswith("-"):
-        raise ParseError("Expecting value, got arg")
-
-    if VALUE_CHECKER.match(arg):
-        opt[key] = arg
-    else:
-        opt[key] = arg
-
-    parse_possible_key(argv, args, index + 1)
-
-
-def parse_possible_key(argv, args, index):
-    if len(argv) <= index:
-        return args
-
-    arg = argv[index]
-    if arg.startswith("--"):
-        parse_key(argv, arg[2:], 0, args['server_opts'], args, index)
-    elif arg.startswith("-"):
-        parse_key(argv, arg[1:], 0, args['server_opts'], args, index)
-    elif arg.startswith("+"):
-        parse_special_key(argv, arg[1:], args, index)
-    else:
-        parse_task(argv, arg, args, index)
-
+    key, rest = key.split(':', 1)
+    args = args.setdefault(key, {})
+    parse_key_value(rest, value, args)
 
 
 def parse(argv, default_task, client_opts = {}, server_opts = {}):
     """Parse the argv vector and return an arg dict representing the arguments.
 
-    >>> parse(['--zu:za:zee', 'ahah'], 'ha')['server_opts']
+    >>> parse(['build', 'zu:za:zee', 'ahah'], 'ha')['server_opts']
     {'zu': {'za': {'zee': 'ahah'}}}
 
-    >>> parse(['--zu:za:zee', 'ahah', '--zu:za:zook', 'muhahah'], 'ha')['server_opts']
+    >>> parse(['clean', 'zu:za:zee', 'ahah', 'zu:za:zook', 'muhahah'], 'ha')['server_opts']
     {'zu': {'za': {'zook': 'muhahah', 'zee': 'ahah'}}}
 
-    >>> parse(['--zu:za:zee', 'ahah', '--zu:za:zook', 'muhahah', '+port', '3322'], 'ha')['client_opts']
-    {'port': '3322'}
+    >>> parse(['build', 'zu:za:zee', 'ahah', 'zu:za:zook', 'muhahah', '--url', 'myurl'], 'ha')['client_opts']
+    {'url': 'myurl'}
 
-    >>> parse(['--zu:za:zee', 'ahah', '--zu:za:zook', 'muhahah', '+help', '+port', '3322'], 'ha')['client_opts']
-    {'port': '3322', 'help': True}
-
-    >>> parse(['hobo', '--zu:za:zee', 'ahah', '--zu:za:zook', 'muhahah', '+help', '+port', '3322'], 'ha')['task']
-    'hobo'
-
-    >>> parse(['--zu:za:zee', 'ahah', '--zu:za:zook', 'muhahah', '+help', '+port', '3322'], 'ha')['task']
+    >>> parse(['--url', 'myurl'], 'ha')['task']
     'ha'
     """
-    args = {'client_opts': client_opts,
-            'server_opts': server_opts,
-            'default_task': default_task}
-    parse_possible_key(argv, args, 0)
+    args = {'client_opts': client_opts.copy(),
+            'server_opts': server_opts.copy(),
+            'default_task': default_task,
+            'task': default_task}
 
-    try:
-        args['task']
-    except KeyError:
-        args['task'] = default_task
+    usage = """usage: %prog [options] [task [server-variable server-value ...]]
+
+Server arguments (pairs of variable and values) are complex. There are
+always sane defaults so you shouldn't need them, but you may. To get
+information about server arguments read the sinan documentation.
+"""
+
+    parser = optparse.OptionParser(usage)
+
+    help = "the directory containing the directory containing the 'erl' binary"
+    parser.add_option("-p", "--prefix", type="str", help=help)
+
+    parser.add_option("-u", "--url", type="str",
+                      help="the url for the sinan server")
+
+    options, posargs = parser.parse_args(argv)
+
+    for opt in ('prefix', 'url'):
+        if getattr(options, opt, None):
+            args['client_opts'][opt] = getattr(options, opt)
+
+    if posargs:
+        args['task'] = posargs.pop(0)
+
+    while posargs:
+        if len(posargs) < 2:
+            parser.error('Missing value for %s' % posargs[0])
+
+        key, value, posargs = posargs[0], posargs[1], posargs[2:]
+
+        parse_key_value(key, value, args['server_opts'])
 
     return args
 
