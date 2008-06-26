@@ -113,10 +113,38 @@ make_tar(BuildRef, ProjectDir, ProjectApps, ProjectRepoApps, Repo) ->
     List1 = gather_dirs(LibDir, Repo, ProjectRepoApps, []),
     List2 = gather_dirs(LibDir, AppDir, ProjectApps, List1),
     List3 = List2 ++ copy_additional_dirs(BuildRef, ProjectName, ProjectDir) ++
-        get_release_dirs(BuildRef, ProjectName, BuildDir),
+        get_release_dirs(BuildRef, ProjectName, BuildDir) ++
+        add_defaults(ProjectDir, ProjectName),
     create_tar_file(BuildRef, filename:join([TarDir,
-                                   lists:flatten([ProjectName, ".tar.gz"])]),
-                                  List3).
+                                             lists:flatten([ProjectName, ".tar.gz"])]),
+                    List3).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%%  Add default directories/files to list of things to include in the dist.
+%% @spec (ProjectDir) -> list of default directories to include
+%% @end
+%%--------------------------------------------------------------------
+add_defaults(ProjectDir, TopLevel) ->
+    Control = "control",
+    Bin = "bin",
+    Config = "config",
+    lists:foldl(fun(Ele, Acc) ->
+                        File = filename:join([ProjectDir, Ele]),
+                        case sin_utils:file_exists(File) of
+                            true ->
+                                [{File, filename:join([TopLevel, Ele])} | Acc ];
+                            false ->
+                                Acc
+                        end
+                end,
+                [],
+                [Control, Bin, Config]).
+
+
+
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -136,6 +164,7 @@ create_tar_file(BuildRef, FileName, TarContents) ->
                                   erl_tar:add(Tar, Name, NewName,
                                               [dereference])
                           end, TarContents),
+
             erl_tar:close(Tar)
     end.
 
@@ -159,7 +188,7 @@ copy_additional_dirs(BuildRef, TopLevel, ProjectDir) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%%  Gather up theapplications and return a list of {DirName, InTarName}
+%%  Gather up the applications and return a list of {DirName, InTarName}
 %%  pairs.
 %% @spec (LibDir, AppDir, DirList, Acc) -> TarablePairs
 %% @end
