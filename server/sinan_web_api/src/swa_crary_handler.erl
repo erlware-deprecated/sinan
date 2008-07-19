@@ -36,7 +36,7 @@
 -include("uri.hrl").
 
 %% API
--export([handler/1]).
+-export([handler/2]).
 
 %%%===================================================================
 %%% API
@@ -48,7 +48,7 @@
 %% @spec (Req) -> ok
 %% @end
 %%--------------------------------------------------------------------
-handler(Req = #crary_req{method = "POST", uri = #uri{path=Path}}) ->
+handler(Req = #crary_req{method = "POST"}, Path) ->
     Body = crary_body:read_all(Req),
     {Args, _, _} = ktj_decode:decode(Body),
     %%remove the first element which is always '/'
@@ -56,7 +56,7 @@ handler(Req = #crary_req{method = "POST", uri = #uri{path=Path}}) ->
     BuildRef = sinan:gen_build_ref(),
     handle_do_request(NewPath, Req, BuildRef, Args),
     ok;
-handler(Req) ->
+handler(Req, _) ->
     crary:not_implemented(Req).
 
 %%%===================================================================

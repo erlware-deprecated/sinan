@@ -149,7 +149,7 @@ map_deps(App, Deps, AllApps) ->
  				     Acc
  			     end
  		     end, [], Deps).
-			     
+
 %%--------------------------------------------------------------------
 %% @doc
 %%  Change an atom to a list of the argument is an atom, otherwise
@@ -402,7 +402,7 @@ reorder_list(BuildRef, ModList, FileList) ->
 	{_, not_ok} ->
 	    ?ETA_RAISE(build_errors)
     end.
-			
+
 %%--------------------------------------------------------------------
 %% @doc
 %%  Get the entry specified by name from the list in module list.
@@ -410,7 +410,7 @@ reorder_list(BuildRef, ModList, FileList) ->
 %% @end
 %% @private
 %%--------------------------------------------------------------------
-get_file_list(ModuleName, FileList) -> 
+get_file_list(ModuleName, FileList) ->
     case lists:keysearch(ModuleName, 2, FileList) of
 	{value, Entry} ->
 	    Entry;
@@ -440,7 +440,7 @@ filter_file_list(BuildRef, FileList, ModuleList) ->
 		      Acc
 	      end
       end, [], FileList).
-			
+
 %%-------------------------------------------------------------------
 %% @doc
 %%    Build the file specfied by its arguments
@@ -527,7 +527,7 @@ build_file(BuildRef, File, _, _Options, _Target) ->
 %% @doc
 %%  Strip options for the yecc. Otherwise we get a bad arg error.
 %%
-%% @spec (Opts, Acc) -> Acc2
+%% @spec (Opts) -> Res
 %% @end
 %%--------------------------------------------------------------------
 strip_options(Opts) ->

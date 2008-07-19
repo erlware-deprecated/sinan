@@ -72,7 +72,7 @@ app_info(Env, FileName, AppName) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%    Writes out a overview.edoc to the filename provided.
-%% @spec app_info(Env, FileName, AppName) -> ok
+%% @spec (Env, FileName, AppName) -> ok
 %% @end
 %%--------------------------------------------------------------------
 edoc_overview(Env, FileName, AppName) ->

@@ -40,7 +40,8 @@
          delete_dir/1,
          remove_code_paths/1,
          is_dir_ignorable/2,
-         file_exists/1]).
+         file_exists/1,
+         find_project_root/1]).
 
 
 %%====================================================================
@@ -262,3 +263,22 @@ are_dirs_ignorable([H | T], Igs) ->
     end;
 are_dirs_ignorable([], _Igs) ->
     false.
+
+%%-------------------------------------------------------------------
+%% @doc
+%%   find "_build.cfg" in the current directory. if not recurse
+%%   with parent directory.
+%% @spec (Dir::string()) -> ok
+%% @end
+%% @private
+%%-------------------------------------------------------------------
+find_project_root("/") ->
+    throw(no_build_config);
+find_project_root(Start) ->
+    ConfigFile = filename:join(Start, "_build.cfg"),
+    case file:read_file_info(ConfigFile) of
+        {ok, _FileInfo} ->
+            Start;
+        {error, _Reason} ->
+            find_project_root(sin_utils:parent_dir(Start))
+    end.
