@@ -113,7 +113,7 @@ make_tar(BuildRef, ProjectDir, ProjectApps, ProjectRepoApps, Repo) ->
     List1 = gather_dirs(LibDir, Repo, ProjectRepoApps, []),
     List2 = gather_dirs(LibDir, AppDir, ProjectApps, List1),
     List3 = List2 ++ copy_additional_dirs(BuildRef, ProjectName, ProjectDir) ++
-        get_release_dirs(BuildRef, ProjectName, BuildDir) ++
+        get_release_dirs(BuildRef, ProjectName, BuildDir, ProjectDir) ++
         add_defaults(ProjectDir, ProjectName),
     create_tar_file(BuildRef, filename:join([TarDir,
                                              lists:flatten([ProjectName, ".tar.gz"])]),
@@ -123,13 +123,12 @@ make_tar(BuildRef, ProjectDir, ProjectApps, ProjectRepoApps, Repo) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Add default directories/files to list of things to include in the dist.
-%% @spec (ProjectDir) -> list of default directories to include
+%% @spec (ProjectDir, TopLevel) -> Defaultlist
 %% @end
 %%--------------------------------------------------------------------
 add_defaults(ProjectDir, TopLevel) ->
     Control = "control",
     Bin = "bin",
-    Config = "config",
     lists:foldl(fun(Ele, Acc) ->
                         File = filename:join([ProjectDir, Ele]),
                         case sin_utils:file_exists(File) of
@@ -140,10 +139,7 @@ add_defaults(ProjectDir, TopLevel) ->
                         end
                 end,
                 [],
-                [Control, Bin, Config]).
-
-
-
+                [Control, Bin]).
 
 
 %%--------------------------------------------------------------------
@@ -236,10 +232,10 @@ get_project_name(BuildRef) ->
 %% @doc
 %%  Get the release information for the system.
 %%
-%% @spec (BuildDir, TopLevel, BuildDir) -> ok
+%% @spec (BuildDir, TopLevel, BuildDir, ProjectDir) -> ok
 %% @end
 %%--------------------------------------------------------------------
-get_release_dirs(BuildRef, TopLevel, BuildDir) ->
+get_release_dirs(BuildRef, TopLevel, BuildDir, ProjectDir) ->
     Version = case sin_build_config:get_value(BuildRef, "project.vsn") of
                   undefined ->
                       eta_event:task_fault(BuildRef, ?TASK,
@@ -258,22 +254,62 @@ get_release_dirs(BuildRef, TopLevel, BuildDir) ->
                Nm ->
                    Nm
            end,
-    case sin_build_config:get_value(BuildRef, "dist.include_release_info") of
-        Value when Value == true; Value == undefined ->
-            [{filename:join([BuildDir, "releases", Version,
-                            lists:flatten([Name, ".boot"])]),
-              filename:join([TopLevel, "releases", Version,
-                             lists:flatten([Name, ".boot"])])},
-             {filename:join([BuildDir, "releases", Version,
-                             lists:flatten([Name, ".script"])]),
-              filename:join([TopLevel, "releases", Version,
-                             lists:flatten([Name, ".script"])])},
-             {filename:join([BuildDir, "releases", Version,
-                             lists:flatten([Name, ".rel"])]),
-              filename:join([TopLevel, "releases", Version,
-                             lists:flatten([Name, ".rel"])])}];
+    SourceReleases = filename:join([BuildDir, "releases", Version]),
+    TargetReleases = filename:join([TopLevel, "releases", Version]),
+    Result =
+        case sin_build_config:get_value(BuildRef, "dist.include_release_info") of
+            Value when Value == true; Value == undefined ->
+                [{filename:join([SourceReleases,
+                                 lists:flatten([Name, ".boot"])]),
+                  filename:join([TargetReleases,
+                                 lists:flatten([Name, ".boot"])])},
+                 {filename:join([SourceReleases,
+                                 lists:flatten([Name, ".script"])]),
+                  filename:join([TargetReleases,
+                                 lists:flatten([Name, ".script"])])},
+                 {filename:join([SourceReleases,
+                                 lists:flatten([Name, ".rel"])]),
+                  filename:join([TargetReleases,
+                                 lists:flatten([Name, ".rel"])])}];
+            _ ->
+                []
+        end,
+    Result ++ get_config_info(ProjectDir, TargetReleases).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%%   Copy information in config into the releases directory
+%% @spec (ProjectDir, TargetReleases) -> ListResult
+%% @end
+%%--------------------------------------------------------------------
+get_config_info(ProjectDir, TargetReleases) ->
+    Target = filename:join([ProjectDir, "config"]),
+    case sin_utils:file_exists(Target) of
+        true ->
+            {ok, Files} = file:list_dir(Target),
+            lists:foldl(fun(File, Acc) ->
+                                gather_config_info(Target, TargetReleases, File, Acc)
+                        end,
+                        [],
+                        Files);
         _ ->
             []
     end.
 
 
+%%--------------------------------------------------------------------
+%% @doc
+%%  If its not a directory return it in the correct format
+%% @spec (Source, TargetReleases, File, Acc) -> ListResult
+%% @end
+%%--------------------------------------------------------------------
+gather_config_info(Source, TargetReleases, File, Acc) ->
+    ActualName = filename:join([Source, File]),
+    case filelib:is_dir(ActualName) of
+        true ->
+            Acc;
+        false ->
+            [{ActualName,
+              filename:join(TargetReleases, File)} | Acc]
+    end.

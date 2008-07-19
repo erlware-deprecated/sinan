@@ -92,7 +92,7 @@ stop(_State) ->
 %%--------------------------------------------------------------------
 start_crary() ->
     Port = get_port(),
-    crary:start(Port, fun swa_crary_handler:handler/1).
+    crary:start({{127,0,0,1}, Port}, fun swa_crary_handler:handler/2).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -117,3 +117,4 @@ get_port() ->
         {ok, Port} when is_integer(Port) ->
             Port
     end.
+

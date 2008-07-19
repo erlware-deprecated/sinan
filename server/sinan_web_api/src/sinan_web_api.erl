@@ -49,6 +49,7 @@
 start() ->
     sinan:start(),
     application:start(uri),
+    application:start(gtime),
     application:start(crary),
     application:start(sinan_web_api).
 

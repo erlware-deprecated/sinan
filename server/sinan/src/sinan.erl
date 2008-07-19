@@ -216,7 +216,7 @@ do_task(Task, BuildRef, Args) when is_atom(Task) ->
 do_task(Chain, Task, BuildRef, Args) when is_atom(Task) ->
     StartDir = find_start_dir(Args),
     try
-        ProjectRoot = find_project_root(StartDir),
+        ProjectRoot = sin_utils:find_project_root(StartDir),
         Seed = sin_build_config:get_seed(ProjectRoot),
         sin_build_config:start_config(BuildRef, ProjectRoot, Seed, Args),
         eta_engine:run(Chain, Task, BuildRef),
@@ -307,21 +307,3 @@ find_start_dir({obj, Data}) ->
     end.
 
 
-%%-------------------------------------------------------------------
-%% @doc
-%%   find "_build.cfg" in the current directory. if not recurse
-%%   with parent directory.
-%% @spec (Dir::string()) -> ok
-%% @end
-%% @private
-%%-------------------------------------------------------------------
-find_project_root("/") ->
-    throw(no_build_config);
-find_project_root(Start) ->
-    ConfigFile = filename:join(Start, "_build.cfg"),
-    case file:read_file_info(ConfigFile) of
-        {ok, _FileInfo} ->
-            Start;
-        {error, _Reason} ->
-            find_project_root(sin_utils:parent_dir(Start))
-    end.
