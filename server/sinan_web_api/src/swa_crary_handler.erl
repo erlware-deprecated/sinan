@@ -45,7 +45,7 @@
 %%--------------------------------------------------------------------
 %% @doc
 %%  Handle incoming requests for action.
-%% @spec (Req) -> ok
+%% @spec (Req, Path) -> ok
 %% @end
 %%--------------------------------------------------------------------
 handler(Req = #crary_req{method = "POST"}, Path) ->
