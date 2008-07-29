@@ -67,30 +67,13 @@ def initiate_task(largs):
     return try_reconnect(largs, handler)
 
 
-
-def print_help():
-    print """ sinan [args] [task]
-local args (+) and server args. local args may be any of the following
-    +url  :  The url to connect to and control
-    +help :  This help message
-
-Server args are much more complex. There are always sane defaults so
-you shouldn't need them, but you may. To get information about server
-args read the sinan documentation.
-"""
-
 def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
 
     largs = libsinan.args.parse(argv, "build",
                                 {'url' : 'localhost:8599'})
-    try:
-        if largs['client_opts']['help']:
-            print_help()
-            return 2
-    except KeyError:
-        pass
+
     try:
         return initiate_task(largs)
     except sinexceptions.SinanError, e:
@@ -101,4 +84,3 @@ def main(argv=None):
 
 if __name__ == "__main__":
     sys.exit(main())
-
