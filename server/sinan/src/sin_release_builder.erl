@@ -239,9 +239,21 @@ get_erts_info() ->
 %%-------------------------------------------------------------------
 make_boot_script(BuildRef, {{Location, File}, {release, {Name, _}, _, _}}) ->
     Options = [{path, [Location | get_code_paths(BuildRef)]},
-               no_module_tests],
-    systools_make:make_script(Name, File, [{outdir, Location} | Options]),
-    make_tar(BuildRef, File, Options).
+               no_module_tests, silent],
+    case systools_make:make_script(Name, File, [{outdir, Location} | Options]) of
+        ok ->
+            make_tar(BuildRef, File, Options);
+        error ->
+            ?ETA_RAISE(release_script_generation_error);
+        {ok,Module,Warnings} ->
+            ?ETA_RAISE_DA(release_script_generation_error,
+                          "~s~n", [Module:format_warning(Warnings)]);
+        {error,Module,Error} ->
+            ?ETA_RAISE_DA(release_script_generation_error,
+                          "~s~n", [Module:formate_error(Error)])
+    end.
+
+
 
 
 %%--------------------------------------------------------------------
