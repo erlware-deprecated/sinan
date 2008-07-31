@@ -38,7 +38,7 @@
                             {ewrepo, "0.2.3", gte},
                             {ktuo, "0.4.0.0", gte}]},
   {applications, [kernel, stdlib, compiler,
-                  edoc, sasl, etask, syntax_tools,
+                  edoc, sasl, syntax_tools,
                   ibrowse, ktuo, ewrepo, ewlib, tools,
                   dialyzer, xmerl, mnesia, etask, sgte,
 		  parsetools]},
