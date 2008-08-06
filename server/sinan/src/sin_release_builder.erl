@@ -245,6 +245,8 @@ make_boot_script(BuildRef, {{Location, File}, {release, {Name, _}, _, _}}) ->
             make_tar(BuildRef, File, Options);
         error ->
             ?ETA_RAISE(release_script_generation_error);
+        {ok, _, []} ->
+            make_tar(BuildRef, File, Options);
         {ok,Module,Warnings} ->
             ?ETA_RAISE_DA(release_script_generation_error,
                           "~s~n", [Module:format_warning(Warnings)]);
