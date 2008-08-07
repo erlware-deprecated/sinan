@@ -73,7 +73,6 @@ def main(argv=None):
 
     largs = libsinan.args.parse(argv, "build",
                                 {'url' : 'localhost:8599'})
-
     try:
         return initiate_task(largs)
     except sinexceptions.SinanError, e:
