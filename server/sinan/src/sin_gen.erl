@@ -300,7 +300,10 @@ quote_repositories([Rep = [$" | _] | Rest], Acc) ->
 quote_repositories([], Acc) ->
     lists:reverse(Acc);
 quote_repositories([Rep | Rest], Acc) ->
-    quote_repositories(Rest, ["\"" ++ Rep ++ "\"" | Acc]).
+    quote_repositories(Rest, ["\"" ++ Rep ++ "\"" | Acc]);
+quote_repositories(undefined, _) ->
+    [].
+
 
 %%--------------------------------------------------------------------
 %% @doc
