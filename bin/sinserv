@@ -9,7 +9,7 @@ mkdir -p $CONFIGDIR
 
 #### Fill in values for these variables ####
 REL_NAME=sinan
-REL_VSN=0.10.1.5
+REL_VSN=0.11.0.0
 ERTS_VSN=5.6.3
 INVOCATION_SUFFIX=""
 ###########################################
@@ -30,11 +30,11 @@ fi
 
 
 
-export ROOTDIR=$PREFIX/application_packages/$ERTS_VSN
-export BINDIR=$PREFIX/erts_packages/erts-$ERTS_VSN/bin
+export ROOTDIR=$PREFIX/packages/$ERTS_VSN
+export BINDIR=$PREFIX/packages/$ERTS_VSN/erts-$ERTS_VSN/bin
 export EMU=beam
 export PROGNAME=erl
-export LD_LIBRARY_PATH=$PREFIX/erts/$ERTS_VSN/lib
+export LD_LIBRARY_PATH=$PREFIX/packages/$ERTS_VSN/erts-$ERTS_VSN/lib
 
 REL_DIR=$PREFIX/release_packages/$REL_NAME-$REL_VSN/release
 
