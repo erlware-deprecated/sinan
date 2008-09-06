@@ -252,7 +252,7 @@ make_boot_script(BuildRef, {{Location, File}, {release, {Name, _}, _, _}}) ->
                           "~s~n", [Module:format_warning(Warnings)]);
         {error,Module,Error} ->
             ?ETA_RAISE_DA(release_script_generation_error,
-                          "~s~n", [Module:formate_error(Error)])
+                          "~s~n", [Module:format_error(Error)])
     end.
 
 
