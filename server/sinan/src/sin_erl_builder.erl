@@ -229,6 +229,8 @@ build_app(BuildRef, Env, AppName, Args) ->
     Options = Args ++ [{outdir, Target}, strict_record_tests,
                        return_errors, return_warnings,
                        {i, filename:join([AppDir, "include"])} | Includes],
+    eta_event:task_event(BuildRef, ?TASK, compile_options,
+                       {"Compile Options: ~p", [Options]}),
     Ignorables = sin_build_config:get_value(BuildRef, "ignore_dirs", []),
     sin_utils:copy_dir(AppBuildDir, AppDir, "", Ignorables),
     code:add_patha(Target),
