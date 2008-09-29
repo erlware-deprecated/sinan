@@ -98,6 +98,7 @@ register_tasks() ->
     sin_gen:start(),
     sin_clean:start(),
     sin_help:start(),
+    sin_version:start(),
     sin_depends:start(),
     sin_depends_check:start(),
     sin_test:start(),

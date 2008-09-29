@@ -90,6 +90,9 @@ handle_do_request(["do_task", "clean"], Req, BuildRef, Args) ->
 handle_do_request(["do_task", "help"], Req, BuildRef, Args) ->
     swa_sup:start_handler(BuildRef, Req),
     sinan:help(BuildRef, Args);
+handle_do_request(["do_task", "version"], Req, BuildRef, Args) ->
+    swa_sup:start_handler(BuildRef, Req),
+    sinan:version(BuildRef, Args);
 handle_do_request(["do_task", "depends"], Req, BuildRef, Args) ->
     swa_sup:start_handler(BuildRef, Req),
     sinan:depends(BuildRef, Args);

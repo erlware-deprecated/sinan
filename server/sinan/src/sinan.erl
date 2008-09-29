@@ -48,6 +48,7 @@
          gen/2,
          clean/2,
          help/2,
+         version/2,
          depends/2,
          test/2,
          release/2,
@@ -155,6 +156,15 @@ clean(BuildRef, Args) ->
 %%--------------------------------------------------------------------
 help(BuildRef, Args) ->
     do_task_bare(sinhelp, help, BuildRef, Args).
+
+%%--------------------------------------------------------------------
+%% @doc
+%%  run the version task. {@link sin_version}
+%% @spec version(BuildRef::buildRef(), Args::args()) -> ok
+%% @end
+%%--------------------------------------------------------------------
+version(BuildRef, Args) ->
+    do_task_bare(sinversion, version, BuildRef, Args).
 
 %%--------------------------------------------------------------------
 %% @doc
