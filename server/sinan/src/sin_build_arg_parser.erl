@@ -67,6 +67,9 @@ compile_build_args([$\ | T], Acc) ->
     compile_build_args(T, Acc);
 compile_build_args([$\r | T], Acc) ->
     compile_build_args(T, Acc);
+
+compile_build_args([$\f | T], Acc) ->
+    compile_build_args(T,  Acc);
 compile_build_args([$\n | T], Acc) ->
     compile_build_args(T,  Acc);
 compile_build_args([$\t | T], Acc) ->
@@ -100,6 +103,8 @@ eat_space([$\ | T], Acc, Handler) ->
     eat_space(T, Acc, Handler);
 eat_space([$\r | T], Acc, Handler) ->
     eat_space(T, Acc, Handler);
+eat_space([$\f | T], Acc, Handler) ->
+    eat_space(T, Acc, Handler);
 eat_space([$\n | T], Acc, Handler) ->
     eat_space(T, Acc, Handler);
 eat_space([$\t | T], Acc, Handler) ->
@@ -118,6 +123,8 @@ parse_define([$\ | T], LAcc, Acc) ->
     compile_build_args(T, [{d, list_to_atom(lists:reverse(LAcc))} | Acc]);
 parse_define([$\r | T], LAcc, Acc) ->
     compile_build_args(T, [{d, list_to_atom(lists:reverse(LAcc))} | Acc]);
+parse_define([$\f | T], LAcc, Acc) ->
+    compile_build_args(T, [{d,list_to_atom(lists:reverse(LAcc))} | Acc]);
 parse_define([$\n | T], LAcc, Acc) ->
     compile_build_args(T, [{d, list_to_atom(lists:reverse(LAcc))} | Acc]);
 parse_define([$\t | T], LAcc, Acc) ->
@@ -149,6 +156,8 @@ parse_define_value([$\ | T], LAcc) ->
     {lists:reverse(LAcc), T};
 parse_define_value([$\r | T], LAcc) ->
     {lists:reverse(LAcc), T};
+parse_define_value([$\f | T], LAcc) ->
+    {lists:reverse(LAcc), T};
 parse_define_value([$\n | T], LAcc) ->
     {lists:reverse(LAcc), T};
 parse_define_value([$\t | T], LAcc) ->
@@ -174,6 +183,8 @@ parse_include([$\ | T], LAcc, Acc) ->
     compile_build_args(T, [{i, lists:reverse(LAcc)} | Acc]);
 parse_include([$\r | T], LAcc, Acc) ->
     compile_build_args(T, [{i, lists:reverse(LAcc)} | Acc]);
+parse_include([$\f | T], LAcc, Acc) ->
+    compile_build_args(T, [{i, lists:reverse(LAcc)} | Acc]);
 parse_include([$\n | T], LAcc, Acc) ->
     compile_build_args(T, [{i, lists:reverse(LAcc)} | Acc]);
 parse_include([$\t | T], LAcc, Acc) ->
@@ -195,6 +206,8 @@ parse_include([], LAcc, Acc) ->
 parse_term([$\ | T], LAcc, Acc) ->
     compile_build_args(T, [list_to_atom(lists:reverse(LAcc)) | Acc]);
 parse_term([$\r | T], LAcc, Acc) ->
+    compile_build_args(T, [list_to_atom(lists:reverse(LAcc)) | Acc]);
+parse_term([$\f | T], LAcc, Acc) ->
     compile_build_args(T, [list_to_atom(lists:reverse(LAcc)) | Acc]);
 parse_term([$\n | T], LAcc, Acc) ->
     compile_build_args(T, [list_to_atom(lists:reverse(LAcc)) | Acc]);
