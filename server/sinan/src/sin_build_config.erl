@@ -220,14 +220,7 @@ init([ProjectDir]) ->
             {stop, Error}
     end;
 init([BuildId, ProjectDir, Override]) ->
-    BuildConfig = filename:join([ProjectDir, "_build.cfg"]),
-    Config =
-        case sin_utils:file_exists(filename:join([ProjectDir, "_build.cfg"])) of
-            true ->
-                process_build_config(ProjectDir, BuildConfig);
-            false ->
-                dict:new()
-        end,
+    Config = get_config(ProjectDir),
     NewConfig = merge_config(Config, Override, ""),
     sin_config_registry:register_config(BuildId, self()),
     {ok, #state{config = NewConfig, build_id = BuildId,
@@ -236,10 +229,11 @@ init([BuildId, ProjectDir, Override]) ->
 init([BuildId, ProjectDir, Config, Override]) ->
     OverrideDict = merge_config(dict:new(), Override, ""),
     Flavor = get_build_flavor(Config, OverrideDict),
-    NewConfig = merge_config(apply_flavors(Config, Flavor), Override, ""),
+    NewConfig0 = merge_config(apply_flavors(Config, Flavor), Override, ""),
+    BuildConfigDict = get_config(ProjectDir),
+    NewConfig = merge_config(NewConfig0, dict:to_list(BuildConfigDict), ""),
     BuildRoot = filename:join([ProjectDir, in_get_value(NewConfig, "build_dir",
                                                         "_build")]),
-
     BuildDir = filename:join([BuildRoot, Flavor]),
     NewConfig1 = in_store("build.dir", NewConfig, BuildDir),
     NewConfig2 = in_store("build.root", NewConfig1, BuildRoot),
@@ -261,6 +255,21 @@ get_build_flavor(Config, Override) ->
        Value ->
            Value
    end.
+
+%%--------------------------------------------------------------------
+%% @doc
+%%  Return the build configuration based on the project _build.cfg file
+%% @spec get_config(ProjectDir) -> dict()
+%% @end
+%%--------------------------------------------------------------------
+get_config(ProjectDir) ->
+    BuildConfig = filename:join([ProjectDir, "_build.cfg"]),
+    case sin_utils:file_exists(filename:join([ProjectDir, "_build.cfg"])) of
+        true ->
+            process_build_config(ProjectDir, BuildConfig);
+        false ->
+            dict:new()
+    end.
 
 %%--------------------------------------------------------------------
 %% @doc
