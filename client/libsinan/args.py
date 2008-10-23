@@ -41,10 +41,9 @@ information about server arguments read the sinan documentation.
     parser = optparse.OptionParser(usage)
 
     help = "the directory containing the directory containing the 'erl' binary"
-    parser.add_option("-p", "--prefix", type="str", help=help)
+    parser.add_option("-p", "--prefix", help=help)
 
-    parser.add_option("-u", "--url", type="str",
-                      help="the url for the sinan server")
+    parser.add_option("-u", "--url", help="the url for the sinan server")
 
     options, posargs = parser.parse_args(argv)
 
