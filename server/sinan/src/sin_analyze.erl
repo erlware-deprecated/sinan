@@ -158,6 +158,7 @@ generate_local_plt(BuildRef, PltPath) ->
 gen_plt(BuildRef, PltPath, Codepaths) ->
     Opts = [{files_rec, Codepaths},
             {from, byte_code},
+            {analysis_type, plt_build},
             {output_plt, PltPath}],
     io:format("~p", [Opts]),
     Output = dialyzer:run(Opts),
