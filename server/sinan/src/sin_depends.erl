@@ -90,9 +90,7 @@ depends(BuildRef) ->
     AllDeps = check_project_dependencies(Prefix,
 					 ErtsVersion,
 					 ProjectApps,
-					 get_supplimental(BuildRef,
-							  Prefix,
-							  ErtsVersion)),
+					 []),
     sin_build_config:store(BuildRef, "project.deps", AllDeps),
     sin_build_config:store(BuildRef, "project.repoapps", AllDeps),
     save_deps(BuildRef, AllDeps),
@@ -175,26 +173,6 @@ already_resolved(_, []) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%%  Add the latest version of eunit to the dependency list.
-%% @spec (BuildRef) -> SupplimentalInformation
-%% @end
-%% @private
-%%--------------------------------------------------------------------
-get_supplimental(BuildRef, Prefix, ErtsVersion) ->
-    case sin_build_config:get_value(BuildRef, "eunit") of
-        "disable" ->
-            [];
-        _ ->
-	    resolve_project_dependencies(Prefix,
-					 ErtsVersion,
-					 [eunit], [])
-
-    end.
-
-
-
-%%--------------------------------------------------------------------
-%% @doc
 %%  Saves the list of dependencies for later use.
 %% @spec (BuildRef, Deps) -> ok
 %% @end
@@ -261,7 +239,14 @@ gather_project_apps(BuildRef, AppBDir, [AppName | T], Acc) ->
                                            "apps." ++ AppName ++
                                             ".included_applications"),
 
-    NDeps = merge(OpenDeps, IncludedDeps),
+    Eunit = case sin_build_config:get_value(BuildRef, "eunit") of
+		"disable" ->
+		    [];
+		_ ->
+		    [eunit]
+
+	    end,
+    NDeps = merge(OpenDeps ++ Eunit, IncludedDeps),
 
     BuildTarget = lists:flatten([atom_to_list(Name), "-", Vsn]),
     AppPath = filename:join([AppBDir, BuildTarget]),
