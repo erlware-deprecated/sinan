@@ -23,7 +23,7 @@ if [ ! -f $CONFIGFILE ]; then
 
 echo " [{kernel, [{error_logger, {file, \"$LOGDIR/kernel.log\"}}]}, \
 {sasl,[{sasl_error_logger, {file, \"$LOGDIR/sasl.log\"}}]},
-{sinan, [{prefix, \"$PREFIX\"}, {erts_version, \"$ERTS_=VSN\"}]}]." > $CONFIGFILE
+{sinan, [{prefix, \"$PREFIX\"}, {erts_version, \"$ERTS_VSN\"}]}]." > $CONFIGFILE
 
 
 fi
