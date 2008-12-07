@@ -47,11 +47,10 @@
                apps_build_dir,
                sig_dir,
                app_list,
-               deps,
-               repo}).
+               deps}).
 
 -define(TASK, build).
--define(DEPS, [check_depends]).
+-define(DEPS, [depends]).
 
 
 
@@ -114,7 +113,7 @@ build(BuildRef) ->
 %%--------------------------------------------------------------------
 reorder_apps_according_to_deps(AllApps) ->
     ReOrdered = lists:foldr(
-		  fun ({App, _, {Deps, _}}, Acc) ->
+		  fun ({App, _, Deps, _}, Acc) ->
 			  case map_deps(App, Deps, AllApps) of
 			      [] ->
 				  [{'NONE', to_list(App)} | Acc];
@@ -177,14 +176,12 @@ build_apps(BuildRef, Apps, Args) ->
     BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
     AppBDir = filename:join([BuildDir, "apps"]),
     SigDir = filename:join([BuildDir, "sigs"]),
-    Repo = sin_build_config:get_value(BuildRef, "project.repository"),
     build_apps(BuildRef, #env{project_dir=ProjectDir,
                               build_dir=BuildDir,
                               apps_build_dir=AppBDir,
                               sig_dir=SigDir,
                               app_list=AppList,
-                              deps=Deps,
-                              repo=Repo},
+                              deps=Deps},
                Apps, Args).
 
 
@@ -272,20 +269,9 @@ setup_code_path(BuildRef, Env, AppName) ->
                          "App ~s is not in the list of project apps. "
                          "This shouldn't happen!!",
                          [AppName]);
-        {_, _, {Deps, _}} ->
-            case sin_build_config:get_value(BuildRef, "eunit") of
-                "disabled" ->
-                    extract_info_from_deps(BuildRef, Deps, Env#env.app_list,
-                                           Env#env.repo,
-                                           Env#env.apps_build_dir,
-                                           Env#env.deps, [], []);
-                _ ->
-                    extract_info_from_deps(BuildRef, [eunit | Deps],
-                                           Env#env.app_list, Env#env.repo,
-                                           Env#env.apps_build_dir,
-                                           Env#env.deps, [], [])
-                end
-    end.
+        {_, _, Deps, _} ->
+	    extract_info_from_deps(BuildRef, Deps, Env#env.deps, [], [], [])
+	end.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -295,41 +281,30 @@ setup_code_path(BuildRef, Env, AppName) ->
 %% @end
 %% @private
 %%--------------------------------------------------------------------
-extract_info_from_deps(BuildRef, [App | T], AppList, Repo,
-                       AppBDir, Deps, Acc, IAcc) ->
-    BuildTarget = lists:flatten([atom_to_list(App), "-", get_vsn(App, Deps)]),
-    case lists:keymember(App, 1, AppList) of
-        true ->
-            Ebin = filename:join([AppBDir, BuildTarget, "ebin"]),
-            Include = {i, filename:join([AppBDir, BuildTarget, "include"])};
-        false ->
-            Ebin = filename:join([Repo, BuildTarget, "ebin"]),
-            Include = {i, filename:join([Repo, BuildTarget, "include"])}
-    end,
-    code:add_patha(Ebin),
-    extract_info_from_deps(BuildRef, T, AppList, Repo, AppBDir, Deps, [Ebin | Acc],
-                           [Include | IAcc]);
-extract_info_from_deps(_, [], _AppList, _Repo, _AppBDir, _Deps, Acc, IAcc) ->
-    {Acc, IAcc}.
-
-%%--------------------------------------------------------------------
-%% @doc
-%%  Get the version for the app.
-%% @spec (AppName, DepList) -> Vsn
-%% @end
-%% @private
-%%--------------------------------------------------------------------
-
-get_vsn(App, DepList) ->
-    case lists:keysearch(App, 1, DepList) of
-	{value,{App, Vsn}} ->
-	    Vsn;
+extract_info_from_deps(BuildRef, [AppName | T], AppList, Marked, Acc, IAcc) ->
+    case lists:member(AppName, Marked) of
 	false ->
-	    ?ETA_RAISE_DA(miss_app,
-			  "Unable to get the version for ~w. This "
-			  "shouldn't happen!",
-			  [App])
-    end.
+	    case get_app_from_list(AppName, AppList) of
+		not_in_list ->
+		    ?ETA_RAISE_DA(app_name_not_in_list,
+				  "App ~s is not in the list of project apps. "
+				  "This shouldn't happen!!",
+				  [AppName]);
+		{_, _, Deps, Path} ->
+		    Ebin = filename:join([Path, "ebin"]),
+		    Include = {i, filename:join([Path, "include"])},
+		    code:add_patha(Ebin),
+		    extract_info_from_deps(BuildRef, T, AppList ++ Deps,
+					   Marked,
+					   [Ebin | Acc],
+					   [Include | IAcc])
+	    end;
+	true ->
+	    extract_info_from_deps(BuildRef, T, AppList, Marked, Acc,
+				   IAcc)
+    end;
+extract_info_from_deps(_, [], _, _, Acc, IAcc) ->
+    {Acc, IAcc}.
 
 %%--------------------------------------------------------------------
 %% @doc

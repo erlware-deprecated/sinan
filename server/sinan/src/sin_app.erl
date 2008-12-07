@@ -100,7 +100,6 @@ register_tasks() ->
     sin_help:start(),
     sin_version:start(),
     sin_depends:start(),
-    sin_depends_check:start(),
     sin_test:start(),
     sin_release_builder:start(),
     sin_dist_builder:start().

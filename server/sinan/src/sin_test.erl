@@ -90,7 +90,7 @@ test(BuildRef) ->
                                  "'enabled' or remove it.");
         _ ->
             GL = sin_group_leader:capture_start(BuildRef, ?TASK),
-            Apps = lists:map(fun({App, _Vsn, _Deps}) ->
+            Apps = lists:map(fun({App, _Vsn, _Deps, _}) ->
                                      atom_to_list(App)
                              end, sin_build_config:get_value(BuildRef,
                                                   "project.apps")),
