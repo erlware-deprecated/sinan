@@ -160,7 +160,7 @@ project_name(BuildRef) ->
 %% @end
 %% @private
 %%--------------------------------------------------------------------
-process_deps(BuildRef, [{App, Vsn} | T], Acc) ->
+process_deps(BuildRef, [{App, Vsn, _, _} | T], Acc) ->
     NewApp = stringify(App),
     case {sin_build_config:get_value(BuildRef,
                                      "project.release." ++ NewApp ++ ".type"),
@@ -327,16 +327,14 @@ get_code_paths(BuildRef) ->
     ProjApps = sin_build_config:get_value(BuildRef, "project.apps"),
     ProjPaths = lists:merge(
                   lists:map(
-                    fun({App, _, _}) ->
+                    fun({App, _, _, _}) ->
                             sin_build_config:get_value(BuildRef,
                                             "apps." ++ atom_to_list(App) ++
                                               ".code_paths")
                     end, ProjApps)),
-    RepoDir = sin_build_config:get_value(BuildRef, "project.repository"),
     RepoPaths = lists:map(
-                  fun ({App, Vsn}) ->
-                          Dir = lists:flatten([atom_to_list(App), "-", Vsn]),
-                          filename:join([RepoDir, Dir, "ebin"])
+                  fun ({App, Vsn, _, Path}) ->
+                          filename:join([Path, "ebin"])
                   end, sin_build_config:get_value(BuildRef, "project.repoapps")),
     lists:merge([ProjPaths, RepoPaths]).
 

@@ -14,4 +14,4 @@ erl -pa /usr/local/erlware/application_packages/5.6.3/lib/sgte-0.7.1/ebin \
  ../uri/_build/development/apps/uri-0.1.0/ebin -pa \
  ../erlware/_build/development/apps/gas-5.1.0/ebin -pa\
  /usr/local/erlware/application_packages/5.6.3/lib/gtime-0.9.4/ebin\
-  -run sinan_web_api start
+

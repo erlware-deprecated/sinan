@@ -189,13 +189,10 @@ copy_additional_dirs(BuildRef, TopLevel, ProjectDir) ->
 %% @spec (LibDir, AppDir, DirList, Acc) -> TarablePairs
 %% @end
 %%--------------------------------------------------------------------
-gather_dirs(LibDir, RepoDir, [{AppName, Vsn, _} | T], Acc) ->
-    gather_dirs(LibDir, RepoDir, [{AppName, Vsn} | T], Acc);
-gather_dirs(LibDir, RepoDir, [{AppName, Vsn} | T], Acc) ->
+gather_dirs(LibDir, RepoDir, [{AppName, Vsn, _, Path} | T], Acc) ->
     DirName = lists:flatten([atom_to_list(AppName), "-", Vsn]),
-    Name = filename:join([RepoDir, DirName]),
     NewName = filename:join([LibDir, DirName]),
-    gather_dirs(LibDir, RepoDir, T, [{Name, NewName} | Acc]);
+    gather_dirs(LibDir, RepoDir, T, [{Path, NewName} | Acc]);
 gather_dirs(_, _, [], Acc) ->
     Acc.
 

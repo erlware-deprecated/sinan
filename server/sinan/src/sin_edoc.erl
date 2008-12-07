@@ -100,20 +100,13 @@ doc(BuildRef) ->
 %% @spec (BuildRef, AppList) -> ok
 %% @end
 %%--------------------------------------------------------------------
-run_docs(BuildRef, [{AppName, _, _} | T]) ->
-    LAppName = atom_to_list(AppName),
-    AppDir = sin_build_config:get_value(BuildRef, "apps." ++
-                                        LAppName ++
-                                        ".basedir"),
-    AppBuildDir = sin_build_config:get_value(BuildRef, "apps." ++
-                                             LAppName ++
-                                             ".builddir"),
-    DocDir = filename:join([AppBuildDir, "docs"]),
+run_docs(BuildRef, [{AppName, _, _, Path} | T]) ->
+    DocDir = filename:join([Path, "docs"]),
     filelib:ensure_dir(filename:join([DocDir, "tmp"])),
 
     try
     edoc:application(AppName,
-                     AppDir,
+                     Path,
                      [{dir, DocDir}]) catch
                                _:Error ->
                                    Error

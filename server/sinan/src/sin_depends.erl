@@ -81,33 +81,98 @@ do_task(BuildRef) ->
 %% @end
 %%--------------------------------------------------------------------
 depends(BuildRef) ->
-    ProjectApps = gather_project_apps(BuildRef),
+    BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
+    AppBDir = filename:join([BuildDir, "apps"]),
+    ProjectApps = gather_project_apps(BuildRef, AppBDir),
     sin_build_config:store(BuildRef, "project.apps", ProjectApps),
-    Repos = sin_build_config:get_value(BuildRef, "repositories"),
-    case catch ewr_depends:
-               check_project_dependencies(Repos,
-                                          ProjectApps,
-                                          get_supplimental(BuildRef)) of
-               {dependency_resolution_error, Reason} ->
-                 ?ETA_RAISE_D(dependency_issue, Reason);
-               dependency_resolution_error ->
-                 ?ETA_RAISE(dependency_issue);
-               {error, Reason} ->
-                 ?ETA_RAISE_D(dependency_issue, Reason);
-               {'EXIT', Reason} ->
-                 ?ETA_RAISE_DA(dependency_issue,
-                               "'EXIT': ~p~n", [Reason]);
-               AllDeps ->
-                 sin_build_config:store(BuildRef, "project.deps", AllDeps),
-                 sin_repo_fetcher:fetch(?TASK, BuildRef, ProjectApps, AllDeps),
-                 save_deps(BuildRef, AllDeps),
-                 update_sigs(BuildRef)
-
-         end.
+    Prefix = get_application_env(prefix),
+    ErtsVersion = get_application_env(erts_version),
+    AllDeps = check_project_dependencies(Prefix,
+					 ErtsVersion,
+					 ProjectApps,
+					 get_supplimental(BuildRef,
+							  Prefix,
+							  ErtsVersion)),
+    sin_build_config:store(BuildRef, "project.deps", AllDeps),
+    sin_build_config:store(BuildRef, "project.repoapps", AllDeps),
+    save_deps(BuildRef, AllDeps),
+    update_sigs(BuildRef).
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
+%%--------------------------------------------------------------------
+%% @doc
+%%  Get an enviroment variable, throw error if unavailable.
+%% @spec (Key) -> Value
+%% @end
+%%--------------------------------------------------------------------
+get_application_env(Key) ->
+    case application:get_env(sinan, Key) of
+	{ok, Value} ->
+	    Value;
+	_ ->
+	     ?ETA_RAISE_DA(variables_not_set,
+			   "Key ~w not set, must be set as application"
+			   " environment variable ", [Key])
+    end.
+
+%%--------------------------------------------------------------------
+%% @doc
+%%  Parse the app description into a format consumable by the
+%%  deps engine.
+%% @spec preformat_version_data(AppInfo, Acc) -> {Deps, Pkg, Vsns}
+%% @end
+%%--------------------------------------------------------------------
+check_project_dependencies(Prefix,
+			   ErtsVersion,
+			   [{_, _, Deps, _} | ProjectApps], Acc) ->
+    Acc2 = resolve_project_dependencies(Prefix, ErtsVersion, Deps,
+				       Acc),
+    check_project_dependencies(Prefix,
+			       ErtsVersion,
+			       ProjectApps,
+			       Acc2);
+check_project_dependencies(_,
+			   _,
+			   [],
+			   Acc) ->
+    Acc.
+
+resolve_project_dependencies(Prefix,
+			      ErtsVersion,
+			      [Dep | Deps], Acc) ->
+     case already_resolved(Dep, Acc) of
+	 false ->
+	     [Version | _] = sin_resolver:package_versions(Prefix,
+							   ErtsVersion,
+							   Dep),
+	     NDeps = sin_resolver:package_dependencies(Prefix,
+						       ErtsVersion,
+						       Dep,
+						       Version),
+	     Location = sin_resolver:find_package_location(Prefix,
+							   ErtsVersion,
+							   Dep,
+							   Version),
+	     resolve_project_dependencies(Prefix, ErtsVersion, Deps ++ NDeps,
+					  [{Dep, Version, NDeps, Location} |
+					   Acc]);
+	 true ->
+	     resolve_project_dependencies(Prefix, ErtsVersion, Deps,
+					 Acc)
+    end;
+resolve_project_dependencies(_, _, [], Acc) ->
+    Acc.
+
+
+already_resolved(Dep, [{Dep, _, _, _} | _]) ->
+    true;
+already_resolved(Dep, [_ | Rest]) ->
+    already_resolved(Dep,  Rest);
+already_resolved(_, []) ->
+    false.
+
 %%--------------------------------------------------------------------
 %% @doc
 %%  Add the latest version of eunit to the dependency list.
@@ -115,12 +180,15 @@ depends(BuildRef) ->
 %% @end
 %% @private
 %%--------------------------------------------------------------------
-get_supplimental(BuildRef) ->
+get_supplimental(BuildRef, Prefix, ErtsVersion) ->
     case sin_build_config:get_value(BuildRef, "eunit") of
         "disable" ->
             [];
         _ ->
-            [{eunit, []}]
+	    resolve_project_dependencies(Prefix,
+					 ErtsVersion,
+					 [eunit], [])
+
     end.
 
 
@@ -177,11 +245,12 @@ save_repo_apps(BuildRef, BuildDir) ->
 %% @end
 %% @private
 %%-------------------------------------------------------------------
-gather_project_apps(BuildRef) ->
+gather_project_apps(BuildRef, AppBDir) ->
     gather_project_apps(BuildRef,
+			AppBDir,
                         sin_build_config:get_value(BuildRef, "project.applist"), []).
 
-gather_project_apps(BuildRef, [AppName | T], Acc) ->
+gather_project_apps(BuildRef, AppBDir, [AppName | T], Acc) ->
     Vsn = sin_build_config:get_value(BuildRef, "apps." ++ AppName ++ ".vsn"),
     Name = sin_build_config:get_value(BuildRef,
                                       "apps." ++ AppName ++ ".name"),
@@ -192,15 +261,16 @@ gather_project_apps(BuildRef, [AppName | T], Acc) ->
                                            "apps." ++ AppName ++
                                             ".included_applications"),
 
-    VersionedDeps = sin_build_config:get_value(BuildRef,
-                                          "apps." ++ AppName ++
-                                           ".versioned_dependencies"),
-    NDeps = {merge(OpenDeps, IncludedDeps), VersionedDeps},
+    NDeps = merge(OpenDeps, IncludedDeps),
+
+    BuildTarget = lists:flatten([atom_to_list(Name), "-", Vsn]),
+    AppPath = filename:join([AppBDir, BuildTarget]),
 
     sin_build_config:store(BuildRef, "apps." ++ AppName ++ ".deps", NDeps),
 
-    gather_project_apps(BuildRef, T, [{Name, Vsn, NDeps} | Acc]);
-gather_project_apps(_BuildRef, [], Acc) ->
+    gather_project_apps(BuildRef, AppBDir, T,
+			[{Name, Vsn, NDeps, AppPath} | Acc]);
+gather_project_apps(_, _, [], Acc) ->
     Acc.
 
 
