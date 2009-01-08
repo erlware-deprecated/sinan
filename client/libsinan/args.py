@@ -11,6 +11,11 @@ def parse_key_value(key, value, args):
     parse_key_value(rest, value, args)
 
 
+def erl_args_callback(option, opt_str, value, parser):
+    parser.values.erl_args = list(parser.rargs)
+    del parser.rargs[:]
+
+
 def parse(argv, default_task, client_opts = {}, server_opts = {}):
     """Parse the argv vector and return an arg dict representing the arguments.
 
@@ -40,6 +45,10 @@ information about server arguments read the sinan documentation.
 
     parser = optparse.OptionParser(usage)
 
+    help = "all arguments after this option will be passed to erl"
+    parser.add_option("-e", "--erl-args", help=help, action="callback",
+                      callback=erl_args_callback, default=[])
+
     help = "the directory containing the directory containing the 'erl' binary"
     parser.add_option("-p", "--prefix", help=help)
 
@@ -47,7 +56,7 @@ information about server arguments read the sinan documentation.
 
     options, posargs = parser.parse_args(argv)
 
-    for opt in ('prefix', 'url'):
+    for opt in ('prefix', 'url', 'erl_args'):
         if getattr(options, opt, None):
             args['client_opts'][opt] = getattr(options, opt)
 
