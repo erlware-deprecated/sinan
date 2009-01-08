@@ -37,7 +37,7 @@ class Handler:
         return config
 
     def handles(self, task):
-        return true
+        return True
 
     def jsonify_opts(self, largs):
         """ The opts are already in config layout. All we need to
