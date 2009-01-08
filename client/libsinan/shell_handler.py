@@ -42,6 +42,8 @@ class ShellHandler(handler.Handler):
             if not prefix[-1] == '/':
                 prefix += '/'
 
+        args.extend(largs['client_opts'].get('erl_args', []))
+
         print "starting shell ..."
         os.execvp(prefix + "bin/erl", args)
 
