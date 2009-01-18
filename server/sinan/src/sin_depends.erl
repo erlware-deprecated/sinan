@@ -142,9 +142,17 @@ resolve_project_dependencies(Prefix,
 			      [Dep | Deps], Acc) ->
      case already_resolved(Dep, Acc) of
 	 false ->
-	     [Version | _] = sin_resolver:package_versions(Prefix,
-							   ErtsVersion,
-							   Dep),
+	     Version =
+		 case sin_resolver:package_versions(Prefix,
+						    ErtsVersion,
+						    Dep) of
+		     [] ->
+			 ?ETA_RAISE_DA(unable_to_find_dependency,
+				       "Couldn't find dependency ~s.",
+				       [Dep]);
+		     [Version1 | _] ->
+			 Version1
+		 end,		 
 	     NDeps = sin_resolver:package_dependencies(Prefix,
 						       ErtsVersion,
 						       Dep,
