@@ -41,5 +41,5 @@
                   edoc, sasl, syntax_tools,
                   ibrowse, ktuo, ewrepo, ewlib, tools,
                   dialyzer, xmerl, mnesia, etask, sgte,
-		  parsetools]},
+		  parsetools, asn1]},
   {mod, {sin_app, []}}]}.

@@ -219,13 +219,17 @@ build_app(BuildRef, Env, AppName, Args) ->
     sin_build_config:store(BuildRef, "apps." ++ AppName ++ ".builddir",
                            AppBuildDir),
     Target = filename:join([AppBuildDir, "ebin"]),
+    TargetSrcDir = filename:join([AppBuildDir, "src"]),
     SrcDir = filename:join([AppDir, "src"]),
     {EbinPaths, Includes} = setup_code_path(BuildRef, Env, AppName),
     sin_build_config:store(BuildRef, "apps." ++ AppName ++ ".code_paths",
                    [Target | EbinPaths]),
     Options = Args ++ [{outdir, Target}, strict_record_tests,
                        return_errors, return_warnings,
-                       {i, filename:join([AppDir, "include"])} | Includes],
+                       {i, filename:join([AppDir, "include"])},
+                       % Search directory with .hrl files
+                       % generated from .asn1 files.
+                       {i, TargetSrcDir} | Includes],
     eta_event:task_event(BuildRef, ?TASK, compile_args,
 			 {"Compile args:~n~p", [Options]}),
     Ignorables = sin_build_config:get_value(BuildRef, "ignore_dirs", []),
@@ -333,7 +337,7 @@ gather_modules(BuildRef, AppName, SrcDir) ->
                                  "apps." ++ AppName ++ ".modules"),
     FileList =
         filelib:fold_files(SrcDir,
-                           "(.+\.erl|.+\.yrl|.+\.asn1)$",
+                           "(.+\.erl|.+\.yrl|.+\.asn1|.+\.asn)$",
                    false,
                    fun(File, Acc) ->
                            Ext = filename:extension(File),
@@ -494,11 +498,45 @@ build_file(BuildRef, File, ".yrl", Options, Target) ->
         false ->
             ok
     end;
+build_file(BuildRef, File, Ext=".asn1", Options, Target) ->
+    build_asn1(BuildRef, File, Ext, Options, Target);
+build_file(BuildRef, File, Ext=".asn", Options, Target) ->
+    build_asn1(BuildRef, File, Ext, Options, Target);
 build_file(BuildRef, File, _, _Options, _Target) ->
     eta_event:task_event(BuildRef, ?TASK, file_error,
                          {"Got file ~s with an extention I do not know how to build. "
                           "Ignoring!",
                           [File]}).
+
+%%-------------------------------------------------------------------
+%% @doc
+%%   Do the actual compilation on the .asn1/.asn file.
+%% @spec (BuildRef, File, Ext, Options, Target) -> ErrInfo
+%% @end
+%% @private
+%%-------------------------------------------------------------------
+build_asn1(BuildRef, File, Ext, Options, Target) ->
+    case needs_building(File, Ext, Target, ".beam") of
+        true ->
+            ErlFile = filename:basename(File, Ext),
+            AppDir = filename:dirname(Target),
+            ErlTarget = filename:join([AppDir,"src"]),
+            ErlName = filename:join([ErlTarget,
+                                     lists:flatten([ErlFile, ".erl"])]),
+            eta_event:task_event(BuildRef, ?TASK, file_build,
+                                 {"Building ~s", [File]}),
+            case asn1ct:compile(File, [{outdir, ErlTarget}, noobj] ++
+                                       strip_options(Options)) of
+                ok ->
+                    build_file(BuildRef, ErlName, ".erl", Options, Target);
+                {error, Errors} ->
+                    eta_event:task_event(BuildRef, ?TASK, file_error,
+                                         [gather_fail_info(Errors, "error")]),
+                    error
+            end;
+        false ->
+            ok
+    end.
 
 %%--------------------------------------------------------------------
 %% @doc
