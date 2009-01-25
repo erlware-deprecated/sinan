@@ -8,27 +8,19 @@ import commands
 import support
 from optparse import OptionParser
 
-def compile_app(app):
-    ebin = "_build/development/apps/%s-%s/ebin" % (app[0], app[1])
-    compile_command = ("erlc +debug_info %s %s -o %s/ ./server/%s/src/*.erl" %
+def get_ebin(app):
+   return "_build/development/apps/%s-%s/ebin" % (app[0], app[1])
+
+def run_app():
+    local_pa = '-pa'.join([get_ebin(app) for app in support.LOCAL_APPS])
+    run = ("%s %s %s -run sinan_web_api start " %
                        (' '.join(map(support.generate_local_path,
                                      support.LOCAL_APPS)),
                         ' '.join(map(support.generate_erlware_path,
                                      support.ERLWARE_APPS)),
-                        ebin,
-                        app[0]))
+                        local_pa))
 
-    print compile_command
-    (status, out) = commands.getstatusoutput(compile_command)
-
-    if 0 != status:
-        raise BuildError(out)
-
-    print out
-
-def compile_apps():
-    for app in support.LOCAL_APPS:
-        compile_app(app)
+    return run
 
 def main():
     parser = OptionParser()
@@ -42,7 +34,17 @@ def main():
 
     support.ERLWARE_PATH = options.erlware
 
-    compile_apps()
+    run = run_app()
+
+    args = filter(lambda a: a != "", ["erl"] + run.split(" "))
+
+    print "erl ", args
+
+    os.execvp("erl", args)
+
+    if 0 != status:
+        raise BuildError(out)
+
 
 if __name__ == "__main__":
     main()
