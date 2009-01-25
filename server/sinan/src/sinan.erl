@@ -290,6 +290,7 @@ start() ->
     application:start(etask),
     application:start(sgte),
     application:start(parsetools),
+    application:start(asn1),
     application:start(sinan).
 
 
