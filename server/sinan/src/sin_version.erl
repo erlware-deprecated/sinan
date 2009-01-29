@@ -80,11 +80,31 @@ do_task(BuildRef) ->
 %% @end
 %%--------------------------------------------------------------------
 version(BuildRef) ->
-    {ok, Vsn} = application:get_key(sinan, vsn),
-    eta_event:task_event(BuildRef, ?TASK, info, Vsn),
+    case get_version() of
+	unknown_version ->
+	    eta_event:task_event(BuildRef, ?TASK, info, "unknown");
+	Version ->
+	    eta_event:task_event(BuildRef, ?TASK, info, Version)
+    end,
     eta_event:task_stop(BuildRef, ?TASK).
 
 
 %%====================================================================
 %%% Internal functions
 %%====================================================================
+%%--------------------------------------------------------------------
+%% @doc
+%%  Gets the current version of the sinan release.
+%% @spec () -> Vsn | unkown_version
+%% @end
+%%--------------------------------------------------------------------
+get_version() ->
+    Info = release_handler:which_releases(),
+    get_version(Info).
+
+get_version([{"sinan", Vsn, _, _} | _]) ->
+    Vsn;
+get_version([_ | T]) ->
+    get_version(T);
+get_version([]) ->
+    unknown_version.
