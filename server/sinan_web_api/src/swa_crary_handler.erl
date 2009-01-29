@@ -105,13 +105,31 @@ handle_do_request(["do_task", "release"], Req, BuildRef, Args) ->
 handle_do_request(["do_task", "dist"], Req, BuildRef, Args) ->
     swa_sup:start_handler(BuildRef, Req),
     sinan:dist(BuildRef, Args);
+handle_do_request(["do_task", "shutdown"], Req, _, _) ->
+    case application:get_env(sinan, may_shutdown) of
+	false ->
+	    write_out(Req, "Not allowed to respond to shutdown requests!");
+	_ ->
+	    write_out(Req, "Shutting down now!"),
+	    init:stop()
+    end;
 handle_do_request(["do_task", Task], Req, _, _) ->
+    write_out(Req, "I don't know how to do " ++ Task).
+
+%%--------------------------------------------------------------------
+%% @doc
+%%  Write out an arbitrary message to the client
+%% @spec (Req, Message) -> ok
+%% @end
+%%--------------------------------------------------------------------
+write_out(Req, Message) ->
     Writer = crary_body:new_writer(Req),
     JDesc = {obj, [{type, run_event},
                   {event_type, stop},
-                  {desc, list_to_binary("I don't know how to do " ++ Task)}]},
+                  {desc, list_to_binary(Message)}]},
     Content = ktj_encode:encode(JDesc),
     crary:r(Writer, ok, [{"content-type", "application/json"},
-                         {<<"content-length">>, integer_to_list(iolist_size(Content))}]),
+                         {<<"content-length">>,
+			  integer_to_list(iolist_size(Content))}]),
     crary_sock:write(Writer, Content),
     crary_sock:done_writing(Writer).
