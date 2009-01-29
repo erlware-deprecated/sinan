@@ -21,9 +21,6 @@ def compile_app(app):
     print compile_command
     (status, out) = commands.getstatusoutput(compile_command)
 
-    if 0 != status:
-        raise BuildError(out)
-
     print out
 
 def compile_apps():
