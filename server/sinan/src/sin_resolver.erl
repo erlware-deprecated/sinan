@@ -205,7 +205,7 @@ add_to_acc([Name | Rest], [], Acc) ->
     NewAcc = [Name | Acc],
     add_to_acc(Rest, NewAcc, NewAcc);
 add_to_acc([], [], Acc) ->
-    lists:reverse(Acc).
+    Acc.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -230,7 +230,8 @@ get_package_versions(Package, Prefix, [ErtsVersion | ErtsVersions], Acc) ->
     get_package_versions(Package, Prefix, ErtsVersions,
 			 add_to_acc(Versions, Acc, Acc));
 get_package_versions(_, _, [], Acc) ->
-    Acc.
+    lists:sort(fun(A, B) -> ewr_util:is_version_greater(A, B) end,
+	       Acc).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -341,4 +342,6 @@ gather_version_info_test() ->
     ?assertMatch([Version], gather_version_info(Prefix, Version)).
 
 get_package_versions_test() ->
-    ?assertMatch(["10.0.1"], get_package_versions(sinan, "/usr/local/erlware", ["5.6.3"], [])).
+    ?assertMatch(["10.0.1"], get_package_versions(sinan,
+						  "/usr/local/erlware",
+						  ["5.6.3"], [])).
