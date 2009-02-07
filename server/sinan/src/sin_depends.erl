@@ -131,11 +131,11 @@ check_project_dependencies(Prefix,
 
 check_project_dependencies(Prefix,
                            ErtsVersion,
-                           [{_Name, _Vsn, Deps, _} | ProjectApps],
+                           [App = {_Name, _Vsn, Deps, _} | ProjectApps],
                            AllProjectApps, Acc) ->
     Acc2 = resolve_project_dependencies(Prefix, ErtsVersion, Deps,
                                         AllProjectApps,
-				       Acc),
+                                        [App | Acc]),
     check_project_dependencies(Prefix,
 			       ErtsVersion,
 			       ProjectApps,
