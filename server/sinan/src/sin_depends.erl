@@ -91,8 +91,9 @@ depends(BuildRef) ->
 					 ErtsVersion,
 					 ProjectApps,
 					 []),
+    RepoApps = get_repo_apps(ProjectApps, AllDeps),
     sin_build_config:store(BuildRef, "project.deps", AllDeps),
-    sin_build_config:store(BuildRef, "project.repoapps", AllDeps),
+    sin_build_config:store(BuildRef, "project.repoapps", RepoApps),
     save_deps(BuildRef, AllDeps),
     update_sigs(BuildRef).
 
@@ -178,6 +179,26 @@ already_resolved(Dep, [_ | Rest]) ->
     already_resolved(Dep,  Rest);
 already_resolved(_, []) ->
     false.
+
+%%--------------------------------------------------------------------
+%% @doc
+%%  Get list of dependencies excluding project apps.
+%% @spec (ProjectApps, AllDeps) -> RepoApps
+%% @end
+%%--------------------------------------------------------------------
+get_repo_apps(ProjectApps, AllDeps) ->
+    get_repo_apps(ProjectApps, AllDeps, []).
+
+get_repo_apps(ProjectApps, [Dep | Deps], Acc) ->
+    case is_project_app(Dep, ProjectApps) of
+        true ->  get_repo_apps(ProjectApps, Deps, Acc);
+        false -> get_repo_apps(ProjectApps, Deps, [Dep | Acc])
+    end;
+get_repo_apps(_ProjectApps, [], Acc) ->
+    Acc.
+
+is_project_app({Name, _Deps, _Version, _Location}, ProjectApps) ->
+    lists:keymember(Name, 1, ProjectApps).
 
 %%--------------------------------------------------------------------
 %% @doc
