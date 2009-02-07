@@ -251,7 +251,7 @@ get_package_dependencies(Package, Version, Prefix,
 	    handle_parse_output(Term);
 	{error, _} ->
 	    get_package_dependencies(Package, Version, Prefix,
-				     [ErtsVersion | ErtsVersions])
+				     ErtsVersions)
     end;
 get_package_dependencies(_, _, _, []) ->
     throw({error, "Unable to find dependencies for package"}).
