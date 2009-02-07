@@ -125,24 +125,55 @@ get_application_env(Key) ->
 %%--------------------------------------------------------------------
 check_project_dependencies(Prefix,
 			   ErtsVersion,
-			   [{_, _, Deps, _} | ProjectApps], Acc) ->
+			   ProjectApps, Acc) ->
+    check_project_dependencies(Prefix, ErtsVersion, ProjectApps,
+				ProjectApps, Acc).
+
+check_project_dependencies(Prefix,
+                           ErtsVersion,
+                           [{_Name, _Vsn, Deps, _} | ProjectApps],
+                           AllProjectApps, Acc) ->
     Acc2 = resolve_project_dependencies(Prefix, ErtsVersion, Deps,
+                                        AllProjectApps,
 				       Acc),
     check_project_dependencies(Prefix,
 			       ErtsVersion,
 			       ProjectApps,
+			       AllProjectApps,
 			       Acc2);
 check_project_dependencies(_,
 			   _,
 			   [],
+			    _,
 			   Acc) ->
     Acc.
 
 resolve_project_dependencies(Prefix,
 			      ErtsVersion,
-			      [Dep | Deps], Acc) ->
+			      Deps0 = [Dep | Deps],
+			      AllProjectApps, Acc) ->
      case already_resolved(Dep, Acc) of
 	 false ->
+	     resolve_project_dependencies2(Prefix, ErtsVersion, Deps0,
+					   AllProjectApps,
+					   Acc);
+	 true ->
+	     resolve_project_dependencies(Prefix, ErtsVersion, Deps,
+					  AllProjectApps,
+					  Acc)
+    end;
+resolve_project_dependencies(_, _, [], _, Acc) ->
+    Acc.
+
+resolve_project_dependencies2(Prefix,
+			      ErtsVersion,
+			      [Dep | Deps], AllProjectApps, Acc) ->
+    case lists:keysearch(Dep, 1, AllProjectApps) of
+	{value, App={Dep, _Version, NDeps, _Location}} ->
+	    resolve_project_dependencies(Prefix, ErtsVersion, Deps ++ NDeps,
+					 AllProjectApps,
+					 [App | Acc]);
+	false ->
 	     Version =
 		 case sin_resolver:package_versions(Prefix,
 						    ErtsVersion,
@@ -153,7 +184,7 @@ resolve_project_dependencies(Prefix,
 				       [Dep]);
 		     [Version1 | _] ->
 			 Version1
-		 end,		 
+		 end,
 	     NDeps = sin_resolver:package_dependencies(Prefix,
 						       ErtsVersion,
 						       Dep,
@@ -163,13 +194,11 @@ resolve_project_dependencies(Prefix,
 							   Dep,
 							   Version),
 	     resolve_project_dependencies(Prefix, ErtsVersion, Deps ++ NDeps,
+					  AllProjectApps,
 					  [{Dep, Version, NDeps, Location} |
-					   Acc]);
-	 true ->
-	     resolve_project_dependencies(Prefix, ErtsVersion, Deps,
-					 Acc)
+					   Acc])
     end;
-resolve_project_dependencies(_, _, [], Acc) ->
+resolve_project_dependencies2(_, _, [], _, Acc) ->
     Acc.
 
 
