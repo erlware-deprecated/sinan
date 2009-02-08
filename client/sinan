@@ -5,11 +5,14 @@ import socket
 import time
 import platform
 
+import libsinan.version_check_handler
 import libsinan.args
 from libsinan import sinexceptions
 
 CONNECTION_REFUSED = 111
 MAC_CONNECTION_REFUSED = 61
+
+VERSION = "0.12.0.9"
 
 if platform.system() == 'Darwin':
     CONNECTION_REFUSED = MAC_CONNECTION_REFUSED
@@ -61,6 +64,41 @@ def try_reconnect(largs, handler, retry_count=10, retry_interval=1):
                 print e
                 break
 
+def check_version(largs):
+    """ Check  that the version of the server matchs this client. 
+        If it does good. Otherwise ask it to restart """
+    original_task = largs['task']
+    largs['task'] = "version"
+    checkhandler = libsinan.version_check_handler.VersionCheckHandler()
+    try_reconnect(largs, checkhandler)
+
+    if VERSION == libsinan.version_check_handler.version:
+       largs['task'] = original_task
+       return True
+
+    print "Server version mismatch with client. Attempting server restart"
+
+    largs['task'] = "shutdown"
+    
+    shutdownhandler = libsinan.handler.Handler()
+
+    try_reconnect(largs, shutdownhandler)
+ 
+    print "Waiting a couple of seconds to give it time to shutdown"
+    time.sleep(3)
+    
+    largs['task'] = "version"
+ 
+    try_reconnect(largs, checkhandler)
+  
+    if VERSION == libsinan.version_check_handler.version:
+     	print "Restart successful. Starting task"
+        largs['task'] = original_task
+        return True
+    else:
+        print "Restart unsuccessful, something is seriously out of whack. Try the command 'pkill beam' and run again."
+	return False
+
 def initiate_task(largs):
     """ Trys to open a connection. If the connection fails
     due to a connection refused we probably just need to start
@@ -68,7 +106,8 @@ def initiate_task(largs):
     or in the default path"""
     task = largs['task']
     handler = libsinan.get_handler_for_task(task)
-    return try_reconnect(largs, handler)
+    if check_version(largs):
+	try_reconnect(largs, handler)
 
 def main(argv=None):
     if argv is None:
