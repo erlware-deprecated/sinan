@@ -118,9 +118,9 @@ get_application_env(Key) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%%  Parse the app description into a format consumable by the
-%%  deps engine.
-%% @spec preformat_version_data(AppInfo, Acc) -> {Deps, Pkg, Vsns}
+%%  Check for per project dependencies
+%% @spec (Prefix, ErtsVersion, AppInfo, Acc) -> 
+%%                              [{Deps, Vsn, NDeps, Location}]
 %% @end
 %%--------------------------------------------------------------------
 check_project_dependencies(Prefix,
@@ -277,7 +277,7 @@ save_repo_apps(BuildRef, BuildDir) ->
 %% @doc
 %%   Roll through the list of project apps and gather the app
 %%   name and version number.
-%% @spec (BuildRef) -> ListOfAppVsn
+%% @spec (BuildRef, AppBuildDir) -> ListOfAppVsn
 %% @end
 %% @private
 %%-------------------------------------------------------------------

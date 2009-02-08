@@ -1,6 +1,5 @@
 %%%-------------------------------------------------------------------
 %%% @copyright 2008 Anders Nygren
-%%% @version  {@vsn}
 %%% @author Anders Nygren <anders.nygren@gmail.com>
 %%% @doc Find the applications that an application or realease
 %%% is depending on.
