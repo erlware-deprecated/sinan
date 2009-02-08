@@ -2,7 +2,7 @@
 
 {application, sinan_web_api,
  [{description, "Build system for erlang"},
-  {vsn, "0.1.0.5"},
+  {vsn, "0.1.0.6"},
   {modules, [sinan_web_api,
              swa_output_handler,
              swa_app,
