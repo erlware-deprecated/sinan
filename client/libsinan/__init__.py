@@ -1,7 +1,7 @@
 """ libsinan provides an interface to the sinan build system """
 import libsinan.handler
 
-__all__ = ["args", "output", "sinexceptions", "handler", "gen_handler"]
+__all__ = ["args", "output", "sinexceptions", "handler", "gen_handler", "version_handler", "shell_handler", "version_check_handler"]
 
 
 __taskhandlers__ = []
