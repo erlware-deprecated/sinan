@@ -280,8 +280,8 @@ setup_code_path(BuildRef, Env, AppName) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Gather path and include information from the dep list.
-%% @spec (BuildRef, AppList, AppList, Repo,
-%%                       AppBDir, Deps, Acc, IAcc) -> {Paths, Includes}
+%% @spec (BuildRef, AppList, AppList, Marked,
+%%                       Acc, IAcc) -> {Paths, Includes}
 %% @end
 %% @private
 %%--------------------------------------------------------------------
