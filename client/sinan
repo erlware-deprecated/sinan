@@ -14,8 +14,6 @@ MAC_CONNECTION_REFUSED = 61
 if platform.system() == 'Darwin':
     CONNECTION_REFUSED = MAC_CONNECTION_REFUSED
 
-
-
 def start_server(largs):
     """ Start the server. Use the 'server_command' client
     opt if it exists, otherwise just use 'sinserv' on the path """
@@ -63,7 +61,6 @@ def try_reconnect(largs, handler, retry_count=10, retry_interval=1):
                 print e
                 break
 
-
 def initiate_task(largs):
     """ Trys to open a connection. If the connection fails
     due to a connection refused we probably just need to start
@@ -72,7 +69,6 @@ def initiate_task(largs):
     task = largs['task']
     handler = libsinan.get_handler_for_task(task)
     return try_reconnect(largs, handler)
-
 
 def main(argv=None):
     if argv is None:
@@ -87,7 +83,6 @@ def main(argv=None):
         print e.value
     except KeyboardInterrupt:
         print "\n\nexiting at user request. Thanks!"
-
 
 if __name__ == "__main__":
     sys.exit(main())
