@@ -28,8 +28,8 @@ class GenHandler(libsinan.handler.Handler):
 
 
     def get_application_names(self):
-        print ("Please specify the names of the OTP apps" +
-        " that belong to this project. ")
+        print ("Please specify the names the OTP apps" +
+        " that you would like to create within this project.")
         value = self.ask_user('apps', None, self.APPS_VALIDATOR)
         values = value.split()
 
