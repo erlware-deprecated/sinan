@@ -53,7 +53,7 @@ class GenHandler(libsinan.handler.Handler):
             if len(name.split())==1:
                 break
             print "Error: project name may NOT contain spaces"
-        print "Please specify the version of your project \n"
+        print "Please specify the version of your project"
         version = self.ask_user('project version', '0.1.0.0')
 
         return {"project_version" : version,
