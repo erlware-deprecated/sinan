@@ -12,7 +12,7 @@ from libsinan import sinexceptions
 CONNECTION_REFUSED = 111
 MAC_CONNECTION_REFUSED = 61
 
-VERSION = "0.12.0.13"
+VERSION = "0.12.0.14"
 
 if platform.system() == 'Darwin':
     CONNECTION_REFUSED = MAC_CONNECTION_REFUSED
@@ -67,7 +67,7 @@ def try_reconnect(largs, handler, retry_count=10, retry_interval=1, print_retry=
     return False
 
 def check_version(largs):
-    """ Check  that the version of the server matchs this client. 
+    """ Check  that the version of the server matchs this client.
         If it does good. Otherwise ask it to restart """
     original_task = largs['task']
     largs['task'] = "version"
@@ -82,20 +82,20 @@ def check_version(largs):
     print "Server version mismatch with client. Attempting server restart"
 
     largs['task'] = "shutdown"
-    
+
     shutdownhandler = libsinan.handler.Handler()
 
     if not try_reconnect(largs, shutdownhandler, print_retry=False):
          print "Unable to start or connect to the server."
- 
+
     print "Waiting a couple of seconds to give it time to shutdown"
     time.sleep(3)
-    
+
     largs['task'] = "version"
- 
+
     if not try_reconnect(largs, checkhandler, print_retry=False):
          print "Unable to start or connect to the server."
-  
+
     if VERSION == libsinan.version_check_handler.version:
      	print "Restart successful. Starting task"
         largs['task'] = original_task
