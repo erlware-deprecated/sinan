@@ -87,6 +87,10 @@ changed(NS, BuildDir, File) ->
 %%--------------------------------------------------------------------
 target_changed(StartFile, TargetFile) ->
     case {file:read_file_info(TargetFile), file:read_file_info(StartFile)} of
+        {_, {error, enoent}} ->
+            file_not_found;
+        {_, {error, eacces}} ->
+            unable_to_access;
         {{ok, TargetInfo}, {ok, FileInfo}}  when TargetInfo#file_info.mtime <
                                                  FileInfo#file_info.mtime ->
             true;
