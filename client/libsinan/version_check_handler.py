@@ -4,6 +4,9 @@ from libsinan import handler, output, jsax
 
 
 class VersionCheckTaskHandler(output.SimpleTaskHandler):
+    def __init__(self):
+        output.SimpleTaskHandler.__init__(self)
+        self.version = None
 
     def object_end(self):
         """ We only get one object per right now so
