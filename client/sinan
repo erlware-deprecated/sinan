@@ -12,7 +12,7 @@ from libsinan import sinexceptions
 CONNECTION_REFUSED = 111
 MAC_CONNECTION_REFUSED = 61
 
-VERSION = "0.12.0.9"
+VERSION = "0.12.0.13"
 
 if platform.system() == 'Darwin':
     CONNECTION_REFUSED = MAC_CONNECTION_REFUSED
@@ -34,35 +34,37 @@ def start_server(largs):
     if os.system(prefix + cmd) != 0:
         raise sinexceptions.SinanError("Unable to start " + cmd)
 
-def try_reconnect(largs, handler, retry_count=10, retry_interval=1):
+def try_reconnect(largs, handler, retry_count=10, retry_interval=1, print_retry=True):
     count = 0
     while 1:
         try:
-            return handler.handle(largs)
+            handler.handle(largs)
+            return True
         except (socket.error), e:
             code, reason = e
             if code == CONNECTION_REFUSED:
                 if count == 0:
-                    print ("Server doesn't seem to be started. I am " +
-                    "starting it now. ")
+                    print "starting server now."
                     start_server(largs)
                 if count < retry_count:
-                    print ("Unable to connect after " + str(count *
+		    if print_retry:
+                       print ("Unable to connect after " + str(count *
                                                             retry_interval) +
-                           " seconds. Waiting " + str(retry_interval) +
-                           " second(s)")
+                              " seconds. Waiting " + str(retry_interval) +
+                              " second(s)")
                     count += 1
                     time.sleep(retry_interval)
                     continue
                 else:
                     print ("Unable to connect to server after "
                     + str(retry_count) +
-                    " tries. It seems that the server is probably hung.")
+                    " tries")
                     break
             else:
                 print "Unable to build got : "
                 print e
                 break
+    return False
 
 def check_version(largs):
     """ Check  that the version of the server matchs this client. 
@@ -70,7 +72,8 @@ def check_version(largs):
     original_task = largs['task']
     largs['task'] = "version"
     checkhandler = libsinan.version_check_handler.VersionCheckHandler()
-    try_reconnect(largs, checkhandler)
+    if not try_reconnect(largs, checkhandler, print_retry=False):
+	print "Unable to start or connect to the server."
 
     if VERSION == libsinan.version_check_handler.version:
        largs['task'] = original_task
@@ -82,21 +85,24 @@ def check_version(largs):
     
     shutdownhandler = libsinan.handler.Handler()
 
-    try_reconnect(largs, shutdownhandler)
+    if not try_reconnect(largs, shutdownhandler, print_retry=False):
+         print "Unable to start or connect to the server."
  
     print "Waiting a couple of seconds to give it time to shutdown"
     time.sleep(3)
     
     largs['task'] = "version"
  
-    try_reconnect(largs, checkhandler)
+    if not try_reconnect(largs, checkhandler, print_retry=False):
+         print "Unable to start or connect to the server."
   
     if VERSION == libsinan.version_check_handler.version:
      	print "Restart successful. Starting task"
         largs['task'] = original_task
         return True
     else:
-        print "Restart unsuccessful, something is seriously out of whack. Try the command 'pkill beam' and run again."
+        print ("Restart unsuccessful, it could be that the currently running sinan doesn't support shutdown. " +
+               "Its not a big deal, just kill sinan's beam process manually.")
 	return False
 
 def initiate_task(largs):
