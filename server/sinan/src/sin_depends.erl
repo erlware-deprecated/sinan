@@ -119,7 +119,7 @@ get_application_env(Key) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Check for per project dependencies
-%% @spec (Prefix, ErtsVersion, AppInfo, Acc) -> 
+%% @spec (Prefix, ErtsVersion, AppInfo, Acc) ->
 %%                              [{Deps, Vsn, NDeps, Location}]
 %% @end
 %%--------------------------------------------------------------------
@@ -135,7 +135,7 @@ check_project_dependencies(Prefix,
                            AllProjectApps, Acc) ->
     Acc2 = resolve_project_dependencies(Prefix, ErtsVersion, Deps,
                                         AllProjectApps,
-                                        [App | Acc]),
+                                        merge_deps(App, Acc, Acc)),
     check_project_dependencies(Prefix,
 			       ErtsVersion,
 			       ProjectApps,
@@ -147,6 +147,13 @@ check_project_dependencies(_,
 			    _,
 			   Acc) ->
     Acc.
+
+merge_deps(App, [App | _], All) ->
+    All;
+merge_deps(App,  [_ | Rest], All) ->
+    merge_deps(App, Rest, All);
+merge_deps(App, [], All) ->
+    [App | All].
 
 resolve_project_dependencies(Prefix,
 			      ErtsVersion,
