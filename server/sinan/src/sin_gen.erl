@@ -281,28 +281,9 @@ get_user_information(BuildRef, Env) ->
     CopyHolder =
         sin_build_config:get_value(BuildRef,
                                      "tasks.gen.user_info.copyright_holder"),
-    Repositories = get_repositories(BuildRef),
     Env2 = [{username, Name}, {email_address, Address},
-            {copyright_holder, CopyHolder},
-            {repositories, Repositories} | Env],
+            {copyright_holder, CopyHolder} | Env],
     get_new_project_name(BuildRef, Env2).
-
-
-get_repositories(BuildRef) ->
-    quote_repositories(sin_build_config:get_value(BuildRef,
-                                                  "tasks.gen.repositories"),
-                      []).
-
-
-
-quote_repositories([Rep = [$" | _] | Rest], Acc) ->
-    quote_repositories(Rest, [Rep | Acc]);
-quote_repositories([], Acc) ->
-    lists:reverse(Acc);
-quote_repositories([Rep | Rest], Acc) ->
-    quote_repositories(Rest, ["\"" ++ Rep ++ "\"" | Acc]);
-quote_repositories(undefined, _) ->
-    [].
 
 
 %%--------------------------------------------------------------------
