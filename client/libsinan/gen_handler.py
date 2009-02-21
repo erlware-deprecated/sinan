@@ -2,7 +2,6 @@ import re
 import libsinan.handler
 
 class GenHandler(libsinan.handler.Handler):
-    DEFAULT_REPO = "http://repo.erlware.org/pub"
     PROJECT_VALIDATOR = re.compile(r'^[a-z][a-zA-Z0-9_]*$')
     APPS_VALIDATOR = re.compile(r'^\s*([a-z][a-zA-Z0-9_@]*)\s*$|^(\s*([a-z][a-zA-Z0-9_@]*)(\s+([a-z][a-zA-Z0-9_@]*))*\s*)$')
 
@@ -11,31 +10,6 @@ class GenHandler(libsinan.handler.Handler):
 
     def valid_repo(self, repo):
         return not repo.strip() == "" and len(repo.split())==1
-
-    def get_repositories(self):
-        print "Please specify the locations of the repositories. "
-        while 1:
-            value = self.ask_user('repository', self.DEFAULT_REPO)
-            if self.valid_repo(value):
-                values = [value]
-                break
-            print "Error: repository locations may NOT contain spaces"
-
-        more = self.ask_user('would you like to enter another y/n', 'n').upper()
-        if more == 'Y' or more == 'YES':
-            while 1:
-                while 1:
-                    value = self.ask_user('repository')
-                    if self.valid_repo(value):
-                        values.append(value)
-                        break
-                    print "Error: repository locations may NOT contain spaces"
-                more = self.ask_user('would you like to enter another y/n',
-                                     'n').upper()
-                if more == 'N' or more == 'NO':
-                    break
-        return values
-
 
     def gather_user_info(self):
         print "Please specify your name"
@@ -97,7 +71,6 @@ class GenHandler(libsinan.handler.Handler):
                 largs['server_opts']['tasks'] = {}
 
             shell_info =  {"user_info" : self.gather_user_info(),
-                           "repositories" : self.get_repositories(),
                            "project_info" :
                            self.get_new_project_info(),
                            "apps" : self.get_application_names()}

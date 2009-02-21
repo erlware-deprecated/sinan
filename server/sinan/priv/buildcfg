@@ -3,8 +3,6 @@ project : {
    vsn  : "$project_version$"
 },
 
-repositories : [$join:{, } repositories$],
-
 build_dir : _build,
 
 ignore_dirs : ["_",
