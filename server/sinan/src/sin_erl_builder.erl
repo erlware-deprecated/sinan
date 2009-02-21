@@ -230,8 +230,7 @@ build_app(BuildRef, Env, AppName, Args) ->
                        % Search directory with .hrl files
                        % generated from .asn1 files.
                        {i, TargetSrcDir} | Includes],
-    eta_event:task_event(BuildRef, ?TASK, compile_args,
-			 {"Compile args:~n~p", [Options]}),
+    event_compile_args(BuildRef, Options),
     Ignorables = sin_build_config:get_value(BuildRef, "ignore_dirs", []),
     sin_utils:copy_dir(AppBuildDir, AppDir, "", Ignorables),
     code:add_patha(Target),
@@ -243,6 +242,17 @@ build_app(BuildRef, Env, AppName, Args) ->
     check_for_errors(NModules),
     sin_utils:remove_code_paths([Target | EbinPaths]).
 
+event_compile_args(BuildRef, Options) ->
+	case sin_build_config:get_value(BuildRef, "task.build.print_args", undefined) of
+	    undefined ->
+	        ok;
+	    true ->
+                eta_event:task_event(BuildRef, ?TASK, compile_args,
+                         {"Compile args:~n~p", [Options]});
+	    "True" ->
+                eta_event:task_event(BuildRef, ?TASK, compile_args,
+                         {"Compile args:~n~p", [Options]})
+         end.
 
 %%--------------------------------------------------------------------
 %% @doc
