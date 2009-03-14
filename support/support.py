@@ -21,16 +21,16 @@ ERLWARE_PATH = "/usr/local/erlware"
 ERLC = "erlc +debug_info "
 
 LOCAL_APPS = [("etask", "0.5.0"),
-              ("sinan", "0.11.0.1"),
-              ("sinan_web_api", "0.1.0.5")]
+              ("sinan", "0.13.0.4"),
+              ("sinan_web_api", "0.1.0.6")]
 
-ERLWARE_APPS = ["fconf-0.3.0.0",
+ERLWARE_APPS = [
                 "ktuo-0.4.0.1",
                 "crary-0.2.3",
                 "eunit-2.0",
                 "cryptographic-0.2.1",
                 "ewlib-0.8.2.0",
-                "ewrepo-0.19.0.0",
+                "ewrepo-0.18.7.0",
                 "gas-6.1.1",
                 "kernel-2.12.3",
                 "ibrowse-1.4",
