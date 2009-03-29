@@ -11,11 +11,15 @@ from libsinan import sinexceptions
 
 CONNECTION_REFUSED = 111
 MAC_CONNECTION_REFUSED = 61
+SUN_CONNECTION_REFUSED = 128
 
 VERSION = "0.14.0.1"
 
 if platform.system() == 'Darwin':
     CONNECTION_REFUSED = MAC_CONNECTION_REFUSED
+
+if platform.system() == 'SunOS':
+    CONNECTION_REFUSED = SUN_CONNECTION_REFUSED
 
 def start_server(largs):
     """ Start the server. Use the 'server_command' client
