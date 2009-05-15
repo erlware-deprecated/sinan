@@ -183,7 +183,6 @@ resolve_project_dependencies2(Prefix,
 	false ->
 	     Version =
 		 case sin_resolver:package_versions(Prefix,
-						    ErtsVersion,
 						    Dep) of
 		     [] ->
 			 ?ETA_RAISE_DA(unable_to_find_dependency,
@@ -193,11 +192,9 @@ resolve_project_dependencies2(Prefix,
 			 Version1
 		 end,
 	     NDeps = sin_resolver:package_dependencies(Prefix,
-						       ErtsVersion,
 						       Dep,
 						       Version),
 	     Location = sin_resolver:find_package_location(Prefix,
-							   ErtsVersion,
 							   Dep,
 							   Version),
 	     resolve_project_dependencies(Prefix, ErtsVersion, Deps ++ NDeps,

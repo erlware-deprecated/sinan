@@ -3,7 +3,7 @@
 
 #### Fill in values for these variables ####
 REL_NAME=sinan
-REL_VSN=0.14.0.1
+REL_VSN=0.15.0.1
 ###########################################
 
 PROG=$0
@@ -11,6 +11,6 @@ test -h $0 && PROG=$(readlink $0)
 PREFIX=$(cd $(dirname $(dirname $PROG)); pwd)
 
 
-REL_DIR=$PREFIX/release_packages/$REL_NAME-$REL_VSN
+REL_DIR=$PREFIX/releases/$REL_NAME-$REL_VSN
 
 /usr/bin/env python $REL_DIR/client/sinan --prefix $PREFIX $@

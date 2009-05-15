@@ -9,14 +9,16 @@ mkdir -p $CONFIGDIR
 
 #### Fill in values for these variables ####
 REL_NAME=sinan
-REL_VSN=0.14.0.1
-ERTS_VSN=5.6.5
+REL_VSN=0.15.0.1
+ERTS_VSN=5.7.1
 INVOCATION_SUFFIX=""
 ###########################################
 
 PROG=$0
 test -h $0 && PROG=$(readlink $0)
 PREFIX=$(cd $(dirname $(dirname $PROG)); pwd)
+
+echo $PREFIX $PROG
 
 CONFIGFILE=$CONFIGDIR/sinserv-$REL_VSN.config
 if [ ! -f $CONFIGFILE ]; then
@@ -30,12 +32,12 @@ fi
 
 
 
-export ROOTDIR=$PREFIX/packages/$ERTS_VSN
-export BINDIR=$PREFIX/packages/$ERTS_VSN/erts-$ERTS_VSN/bin
+export ROOTDIR=$PREFIX
+export BINDIR=$PREFIX/erts-$ERTS_VSN/bin
 export EMU=beam
 export PROGNAME=erl
-export LD_LIBRARY_PATH=$PREFIX/packages/$ERTS_VSN/erts-$ERTS_VSN/lib
+export LD_LIBRARY_PATH=$PREFIX/erts-$ERTS_VSN/lib
 
-REL_DIR=$PREFIX/release_packages/$REL_NAME-$REL_VSN/release
+REL_DIR=$PREFIX/releases/$REL_NAME-$REL_VSN
 
 $BINDIR/erlexec -detached -config $CONFIGFILE -boot $REL_DIR/$REL_NAME $INVOCATION_SUFFIX

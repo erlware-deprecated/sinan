@@ -38,7 +38,7 @@ def main():
 
     args = filter(lambda a: a != "", ["erl"] + run.split(" "))
 
-    print "erl ", args
+    print "erl ", " ".join(args)
 
     os.execvp("erl", args)
 
