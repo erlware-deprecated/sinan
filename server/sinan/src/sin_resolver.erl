@@ -32,10 +32,9 @@
 -include("eunit.hrl").
 
 %% API
--export([package_versions/3,
-         package_dependencies/4,
-	 find_package_location/4,
-	 gather_version_info/2]).
+-export([package_versions/2,
+         package_dependencies/3,
+	 find_package_location/3]).
 
 
 
@@ -49,30 +48,26 @@
 %% @spec (Prefix, ErtsVersion, Package) -> VersionList
 %% @end
 %%--------------------------------------------------------------------
-package_versions(Prefix, ErtsVersion, Package) when is_atom(Package) ->
-    VList = gather_version_info(Prefix, ErtsVersion),
-    get_package_versions(Package,
-			 Prefix,
-			 VList,
-			 []);
-package_versions(_, _, _) ->
-    throw({error, "Package name must be an atom"}).
+package_versions(Prefix, Package) when is_atom(Package) ->
+    LibDir = filename:join([Prefix, "lib"]),
+    lists:sort(fun ewr_util:is_version_greater/2,
+	       get_package_versions(Package,
+			 LibDir)).
+
 
 %%--------------------------------------------------------------------
 %% @doc
 %%  Get the list of dependencies for the specified package and the
 %%  specified version.
 %%
-%% @spec (Prefix, ErtsVersion, Package, Version) -> Deps | Error
+%% @spec (Prefix, Package, Version) -> Deps | Error
 %% @end
 %%--------------------------------------------------------------------
-package_dependencies(Prefix, ErtsVersion, Package, Version) ->
-    VList = gather_version_info(Prefix, ErtsVersion),
+package_dependencies(Prefix, Package, Version) ->
     NPackage = atom_to_list(Package),
     NDeps = get_package_dependencies(NPackage,
 				     Version,
-				     Prefix,
-				     VList),
+				     Prefix),
     NDeps.
 
 
@@ -83,98 +78,14 @@ package_dependencies(Prefix, ErtsVersion, Package, Version) ->
 %% @spec (Package, Version, Prefix, Versions) -> Location
 %% @end
 %%--------------------------------------------------------------------
-find_package_location(Prefix, ErtsVersion, Package, Version) ->
-    VList = gather_version_info(Prefix, ErtsVersion),
-    find_package_location_across_versions(Package, Version, Prefix, VList).
-
+find_package_location(Prefix, Package, Version) when is_atom(Package) ->
+    find_package_location(Prefix, atom_to_list(Package), Version);
+find_package_location(Prefix, Package, Version) ->
+    filename:join([Prefix, "lib", Package ++ "-" ++ Version]).
 
 %%====================================================================
 %%% Internal functions
 %%====================================================================
-%%--------------------------------------------------------------------
-%% @doc
-%%  Get the list of subdirectories for the current directory
-%%
-%% @spec (Dir) -> ListOfDirs
-%% @end
-%%--------------------------------------------------------------------
-list_subdirectories(Dir) ->
-    lists:filter(fun(X) -> filelib:is_dir(X) end,
-                 filelib:wildcard(Dir ++ "/*")).
-
-%%--------------------------------------------------------------------
-%% @doc
-%%  Get the dependencies for a package and version.
-%%
-%% @spec (Package, Version, Prefix, Versions) -> Location
-%% @end
-%%--------------------------------------------------------------------
-find_package_location_across_versions(Package, Version,
-				      Prefix, [ErtsVersion | ErtsVersions]) ->
-    PackageName = lists:flatten([Package, "-", Version]),
-    FileName = filename:join([Prefix, "packages", ErtsVersion,
-			      "lib", PackageName]),
-    case filelib:is_dir(FileName) of
-	true ->
-	    FileName;
-	false ->
-	    find_package_location_across_versions(Package, Version,
-						  Prefix, ErtsVersions)
-    end;
-find_package_location_across_versions(_, _, _, []) ->
-    throw({error, "Unable to find location for package"}).
-
-%%--------------------------------------------------------------------
-%% @doc
-%%  Get all versions that share the same major.minor version
-%%  with the current erts. Thats erts version, not app version
-%%
-%% @spec gather_version_info(Prefix, ErtsVersion) -> ErtsVersions
-%% @end
-%%--------------------------------------------------------------------
-gather_version_info(Prefix, ErtsVersion) ->
-    ErtsVersions = lists:reverse(
-		     lists:sort(
-		       lists:map(fun(File) ->
-					 filename:basename(File)
-				 end,
-				 list_subdirectories(
-				   filename:join([Prefix, "packages"]))))),
-    NewErtsVersion = get_major_minor(ErtsVersion, 0, []),
-    lists:filter(fun(X) ->
-			 starts_with(NewErtsVersion, X)
-		 end,
-		 ErtsVersions).
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Check that list1 is the same as the first part of list2
-%%
-%% @spec (List1, List2) -> true | false
-%% @end
-%%--------------------------------------------------------------------
-starts_with([C1 | Rest1], [C1 | Rest2]) ->
-    starts_with(Rest1, Rest2);
-starts_with([], _) ->
-    true;
-starts_with(_, _) ->
-    false.
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Get the major.minor version from version string.
-%%
-%% @spec (Name, Count, Acc) -> MajorMinor
-%% @end
-%%--------------------------------------------------------------------
-get_major_minor([$. | _], 1, Acc) ->
-    lists:reverse(Acc);
-get_major_minor([$. | Rest], 0, Acc) ->
-    get_major_minor(Rest, 1, [$. | Acc]);
-get_major_minor([Head | Rest], Count, Acc) ->
-    get_major_minor(Rest, Count, [Head | Acc]);
-get_major_minor([], _, Acc) ->
-    lists:reverse(Acc).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -192,72 +103,42 @@ get_version([]) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%%  Acc is a set. It this just makes sure only one entry is in the set
-%%
-%% @spec (Name, In, Acc) -> NewAcc
-%% @end
-%%--------------------------------------------------------------------
-add_to_acc([Name | Rest1] , [Name | _], Acc) ->
-    add_to_acc(Rest1, Acc, Acc);
-add_to_acc(All, [_ | Rest], Acc) ->
-    add_to_acc(All, Rest, Acc);
-add_to_acc([Name | Rest], [], Acc) ->
-    NewAcc = [Name | Acc],
-    add_to_acc(Rest, NewAcc, NewAcc);
-add_to_acc([], [], Acc) ->
-    Acc.
-
-%%--------------------------------------------------------------------
-%% @doc
 %%  Get all the versions for a package, search across all
 %%  relavent major/minor versions.
 %%
-%% @spec (Package, Prefix, Versions, Acc) -> Versions
+%% @spec (Package, Prefix) -> Versions
 %% @end
 %%--------------------------------------------------------------------
-get_package_versions(Package, Prefix, [ErtsVersion | ErtsVersions], Acc) ->
-    FileName = filename:join([Prefix, "packages", ErtsVersion,
-			      "lib"]),
+get_package_versions(Package, Prefix) ->
+
     AppVersions = lists:filter(fun(X) ->
-				       starts_with(atom_to_list(Package)
-						   ++ "-", filename:basename(X))
-			       end,
-			       list_subdirectories(FileName)),
-    Versions = lists:map(fun(X) ->
-				 get_version(X)
-			    end,
-			 AppVersions),
-    get_package_versions(Package, Prefix, ErtsVersions,
-			 add_to_acc(Versions, Acc, Acc));
-get_package_versions(_, _, [], Acc) ->
-    lists:sort(fun(A, B) -> ewr_util:is_version_greater(A, B) end,
-	       Acc).
+				       filelib:is_dir(X) end,
+			       filelib:wildcard(filename:join(Prefix,
+							      Package) ++
+						"-*")),
+    lists:map(fun(X) ->
+		      get_version(filename:basename(X))
+	      end,
+	      AppVersions).
+
 
 %%--------------------------------------------------------------------
 %% @doc
 %%  Get the dependencies for a package and version.
 %%
-%% @spec (Package, Version, Prefix, Versions) -> Deps
+%% @spec (Package, Version, Prefix) -> Deps
 %% @end
 %%--------------------------------------------------------------------
-get_package_dependencies(Package, Version, Prefix,
-			 [ErtsVersion | ErtsVersions]) ->
+get_package_dependencies(Package, Version, Prefix) ->
     DotAppName = lists:flatten([Package, ".app"]),
     AppName = lists:flatten([Package, "-", Version]),
-    case file:consult(filename:join([Prefix, "packages",
-				     ErtsVersion, "lib", AppName,
+    case file:consult(filename:join([Prefix, "lib", AppName,
 				     "ebin", DotAppName])) of
 	{ok, [Term]} ->
 	    handle_parse_output(Term);
 	{error, _} ->
-	    get_package_dependencies(Package, Version, Prefix,
-				     ErtsVersions)
-    end;
-get_package_dependencies(_, _, _, []) ->
-    throw({error, "Unable to find dependencies for package"}).
-
-
-
+	    throw({error, "Invalid application"})
+    end.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -272,7 +153,6 @@ handle_parse_output({application, _, Ops}) ->
 		 lists:sort(get_ideps(Ops)));
 handle_parse_output(_) ->
    throw({error, "Invalid dependency info"}).
-
 
 
 %%--------------------------------------------------------------------
@@ -320,28 +200,7 @@ handle_parse_output_test() ->
                   {app1, [0, 1, 0]}, app5, app4],
                  handle_parse_output(Data)).
 
-starts_with_test() ->
-    ?assertMatch(true, starts_with("onetwo", "onetwothree")),
-    ?assertMatch(false, starts_with("onetwo", "threetwoone")).
-
-get_major_minor_test() ->
-    ?assertMatch("5.6", get_major_minor("5.6.3", 0, [])),
-    ?assertMatch("5.5", get_major_minor("5.5.5", 0, [])).
-
 get_version_test() ->
     ?assertMatch("1.0", get_version("sinan-1.0")),
     ?assertMatch("1.3.2.2", get_version("bah-1.3.2.2")).
 
-add_to_acc_test() ->
-    Start = ["one", "two", "one", "three", "four", "two"],
-    ?assertMatch(["one", "two", "three", "four"], add_to_acc(Start, [], [])).
-
-gather_version_info_test() ->
-    Prefix = "/usr/local/erlware",
-    Version = "5.6.3",
-    ?assertMatch([Version], gather_version_info(Prefix, Version)).
-
-get_package_versions_test() ->
-    ?assertMatch(["10.0.1"], get_package_versions(sinan,
-						  "/usr/local/erlware",
-						  ["5.6.3"], [])).
