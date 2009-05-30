@@ -30,7 +30,6 @@ get_hooks_function(ProjectRoot) ->
     HooksDir = filename:join([ProjectRoot, "_hooks"]),
     case sin_utils:file_exists(HooksDir) of
        false ->
-	    io:format("NO HOOKS DIR ~s", [HooksDir]),
 	    none;
        true ->
 	    gen_build_hooks_function(HooksDir)
@@ -64,7 +63,6 @@ do_hook(Type, Task, RunId, HooksDir) when is_atom(Task) ->
        true ->
 	    run_hook(HookPath, RunId, list_to_atom(HookName));
        _ ->
-	    io:format("NO HOOKS FILE ~s", [HookPath]),
 	    ok
     end.
 
