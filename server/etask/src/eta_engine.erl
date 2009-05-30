@@ -34,7 +34,7 @@
 
 
 %% API
--export([start_link/0, run/2, run/3, make_run_id/0]).
+-export([start_link/0, run/2, run/3, run/4, make_run_id/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -57,6 +57,7 @@
 start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE,
                           [], []).
+
 %%--------------------------------------------------------------------
 %% @doc
 %%  Run a task chain
@@ -64,17 +65,27 @@ start_link() ->
 %% @end
 %%--------------------------------------------------------------------
 run(Chain, Target) ->
-    gen_server:call(?SERVER, {run, Chain, Target}, infinity).
+    gen_server:call(?SERVER, {run, Chain, Target, none}, infinity).
 
 
 %%--------------------------------------------------------------------
 %% @doc
 %%  Run a task chain
-%% @spec (Chain, Target, RunId) -> ok
+%% @spec (Chain, Target, PrePostHandler) -> ok
 %% @end
 %%--------------------------------------------------------------------
-run(Chain, Target, RunId) ->
-    gen_server:call(?SERVER, {run, Chain, Target, RunId}, infinity).
+run(Chain, Target, PrePostHandler) ->
+    gen_server:call(?SERVER, {run, Chain, Target, PrePostHandler}, infinity).
+
+%%--------------------------------------------------------------------
+%% @doc
+%%  Run a task chain
+%% @spec (Chain, Target, RunId, PrePostHandler) -> ok
+%% @end
+%%--------------------------------------------------------------------
+run(Chain, Target, RunId, PrePostHandler) ->
+    gen_server:call(?SERVER, {run, Chain, Target, RunId,
+			      PrePostHandler}, infinity).
 
 
 
@@ -117,11 +128,11 @@ init([]) ->
 %% Handling call messages
 %% @end
 %%--------------------------------------------------------------------
-handle_call({run, Chain, Target}, From, State) ->
-    eta_task_runner:run_task_reply(From, Chain, Target),
+handle_call({run, Chain, Target, PrePostHandler}, From, State) ->
+    eta_task_runner:run_task_reply(From, Chain, Target, PrePostHandler),
     {noreply, State};
-handle_call({run, Chain, Target, RunId}, From, State) ->
-    eta_task_runner:run_task_reply(From, Chain, Target, RunId),
+handle_call({run, Chain, Target, RunId, PrePostHandler}, From, State) ->
+    eta_task_runner:run_task_reply(From, Chain, Target, RunId, PrePostHandler),
     {noreply, State};
 handle_call(_Request, _From, State) ->
     Reply = ok,
@@ -136,11 +147,11 @@ handle_call(_Request, _From, State) ->
 %% Handling cast messages
 %% @end
 %%--------------------------------------------------------------------
-handle_cast({run, Chain, Target}, State) ->
-    eta_task_runner:run_task(Chain, Target),
+handle_cast({run, Chain, Target, PrePostHandler}, State) ->
+    eta_task_runner:run_task(Chain, Target, PrePostHandler),
     {noreply, State};
-handle_cast({run, Chain, Target, RunId}, State) ->
-    eta_task_runner:run_task(Chain, Target, RunId),
+handle_cast({run, Chain, Target, RunId, PrePostHandler}, State) ->
+    eta_task_runner:run_task(Chain, Target, RunId, PrePostHandler),
     {noreply, State};
 handle_cast(_Msg, State) ->
     {noreply, State}.

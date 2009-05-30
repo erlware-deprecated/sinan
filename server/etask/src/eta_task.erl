@@ -51,7 +51,7 @@
 %% API
 -export([start_link/1, register_task/6, register_task/5, register_task/1,
          unregister_task/1, gen_task_chain/1, get_task_def/1,
-         shutdown/0, get_task_defs/0, get_task_opts/1]).
+         shutdown/0, get_task_defs/0, get_task_opts/1, get_task_name/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -177,6 +177,15 @@ get_task_opts(TaskName) when is_atom(TaskName) ->
 get_task_defs() ->
     gen_server:call(?SERVER, all_task_defs).
 
+%%--------------------------------------------------------------------
+%% @doc
+%%  Given an implementation get a name
+%% @spec (TaskImpl::term()) -> TaskName::term()
+%% @end
+%%--------------------------------------------------------------------
+get_task_name(TaskImpl) when is_atom(TaskImpl) ->
+    gen_server:call(?SERVER, {task_name, TaskImpl}).
+
 %%====================================================================
 %% gen_server callbacks
 %%====================================================================
@@ -220,7 +229,10 @@ handle_call({task_opts, TaskName}, _From, State = #state{tid=Tid}) ->
     {reply, Res, State};
 handle_call(all_task_defs, _From, State = #state{tid=Tid}) ->
     List1 = ets:tab2list(Tid),
-    {reply, strip_to_defs(List1, []), State}.
+    {reply, strip_to_defs(List1, []), State};
+handle_call({task_name, TaskImpl}, _From, State = #state{tid=Tid}) ->
+    [{_, Res}] = ets:lookup(Tid, TaskImpl),
+    {reply, Res, State}.
 
 %%--------------------------------------------------------------------
 %% @spec (Msg, State) -> {noreply, State} |
@@ -301,7 +313,8 @@ strip_to_defs([], Acc) ->
 %% @private
 %%--------------------------------------------------------------------
 register_task(Tid, TaskName, TaskDesc) when is_record(TaskDesc, task) ->
-    ets:insert(Tid, {TaskName, TaskDesc}).
+    ets:insert(Tid, {TaskName, TaskDesc}),
+    ets:insert(Tid, {TaskDesc#task.task_impl, TaskName}).
 
 
 %%--------------------------------------------------------------------

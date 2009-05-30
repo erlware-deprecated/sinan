@@ -43,6 +43,7 @@
          store/3,
          get_value/2,
          get_value/3,
+	 get_pairs/1,
          delete/2,
          shutdown/1]).
 
@@ -154,7 +155,6 @@ get_value(BuildId, Path) ->
     Pid = sin_config_registry:get_by_build_id(BuildId),
     gen_server:call(Pid, {get, Path}).
 
-
 %%--------------------------------------------------------------------
 %% @doc
 %%  Attempts to get the specified key. If the key doesn't exist it
@@ -181,6 +181,17 @@ get_value(BuildId, Key, Default) ->
 delete(BuildId, Key) ->
     Pid = sin_config_registry:get_by_build_id(BuildId),
     gen_server:cast(Pid, {delete,  Key}).
+
+%%-------------------------------------------------------------------
+%% @doc
+%%  Get the complete config as key,value pairs
+%%
+%% @spec delete(BuildId) -> ListOfKeyValuePairs::list()
+%% @end
+%%-------------------------------------------------------------------
+get_pairs(BuildId) ->
+    Pid = sin_config_registry:get_by_build_id(BuildId),
+    gen_server:call(Pid, {get_pairs}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -324,6 +335,13 @@ handle_call({get, Key}, _From, State = #state{config = Config}) ->
             {reply, Reply, State, ?RECHECK};
         error ->
             {reply, undefined, State, ?RECHECK}
+    end;
+handle_call({get_pairs}, _From, State = #state{config = Config}) ->
+    case in_get_pairs(Config) of
+        {ok, Reply} ->
+            {reply, Reply, State, ?RECHECK};
+        error ->
+            {reply, error, State, ?RECHECK}
     end.
 
 %%--------------------------------------------------------------------
@@ -479,6 +497,16 @@ get_item(Key, Config) ->
 
 %%--------------------------------------------------------------------
 %% @doc
+%%  Get the complete list of key value pairs from the system
+%% @spec (Config) -> {ok, KeyValuePairs} | error
+%% @end
+%% @private
+%%--------------------------------------------------------------------
+in_get_pairs(Config) ->
+    {ok, dict:to_list(Config)}.
+
+%%--------------------------------------------------------------------
+%% @doc
 %%  Delete the value from the dict recursively.
 %% @spec (Key, Config) -> Config | Error
 %% @end
@@ -486,7 +514,6 @@ get_item(Key, Config) ->
 %%--------------------------------------------------------------------
 in_delete(Key, Config) ->
     dict:erase(Key, Config).
-
 
 
 %%--------------------------------------------------------------------

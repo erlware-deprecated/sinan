@@ -13,7 +13,7 @@ CONNECTION_REFUSED = 111
 MAC_CONNECTION_REFUSED = 61
 SUN_CONNECTION_REFUSED = 128
 
-VERSION = "0.15.0.1"
+VERSION = "0.16.0.0"
 
 if platform.system() == 'Darwin':
     CONNECTION_REFUSED = MAC_CONNECTION_REFUSED
@@ -116,8 +116,8 @@ def initiate_task(largs):
     or in the default path"""
     task = largs['task']
     handler = libsinan.get_handler_for_task(task)
-    if check_version(largs):
-	try_reconnect(largs, handler)
+    #if check_version(largs):
+    try_reconnect(largs, handler)
 
 def main(argv=None):
     if argv is None:

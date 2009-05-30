@@ -229,7 +229,7 @@ do_task(Chain, Task, BuildRef, Args) when is_atom(Task) ->
         ProjectRoot = sin_utils:find_project_root(StartDir),
         Seed = sin_build_config:get_seed(ProjectRoot),
         sin_build_config:start_config(BuildRef, ProjectRoot, Seed, Args),
-        eta_engine:run(Chain, Task, BuildRef),
+        eta_engine:run(Chain, Task, BuildRef, sin_hooks:get_hooks_function(ProjectRoot)),
         sin_build_config:stop_config(BuildRef)
     catch
         no_build_config ->
@@ -250,7 +250,7 @@ do_task(Chain, Task, BuildRef, Args) when is_atom(Task) ->
 do_task_bare(Chain, Task, BuildRef, Args) when is_atom(Task) ->
     StartDir = find_start_dir(Args),
     sin_build_config:start_config(BuildRef, StartDir, Args),
-    eta_engine:run(Chain, Task, BuildRef),
+    eta_engine:run(Chain, Task, BuildRef, none),
     sin_build_config:stop_config(BuildRef).
 
 %%--------------------------------------------------------------------

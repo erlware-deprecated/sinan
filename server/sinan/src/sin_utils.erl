@@ -41,7 +41,8 @@
          remove_code_paths/1,
          is_dir_ignorable/2,
          file_exists/1,
-         find_project_root/1]).
+         find_project_root/1,
+	 term_to_list/1]).
 
 
 %%====================================================================
@@ -281,4 +282,53 @@ find_project_root(Start) ->
             Start;
         {error, _Reason} ->
             find_project_root(sin_utils:parent_dir(Start))
+    end.
+%%-------------------------------------------------------------------
+%% @doc
+%% convert a list body to a list
+%% @spec (I::term()) -> list()
+%% @end
+%% @private
+%%-------------------------------------------------------------------
+listify_list_body([H | T], []) ->
+    listify_list_body(T, term_to_list(H));
+listify_list_body([H | T], Acc) ->
+    listify_list_body(T, [Acc, ",", term_to_list(H)]);
+listify_list_body([], Acc) ->
+    Acc.
+
+%%-------------------------------------------------------------------
+%% @doc
+%%  Convert an arbitrary term to a list
+%% @spec (I::term()) -> list()
+%% @end
+%% @private
+%%-------------------------------------------------------------------
+term_to_list(I) when is_integer(I)->
+    integer_to_list(I);
+term_to_list(I) when is_atom(I)->
+    atom_to_list(I);
+term_to_list(I) when is_float(I)->
+    float_to_list(I);
+term_to_list(I) when is_tuple(I)->
+    ["{", listify_list_body(tuple_to_list(I), []), "}"];
+term_to_list(I) when is_list(I) ->
+    case is_string(I) of
+	true ->
+	    ["\"", I, "\""];
+	false ->
+	    ["[", listify_list_body(I, []), "]"]
+    end.
+
+
+is_character (XX) ->
+    if XX < 0 -> false;
+       XX > 255 -> false;
+       true -> true
+    end.
+
+is_string(XY) ->
+    case is_list(XY) of
+	false -> false;
+	true -> lists:all(fun is_character/1, XY)
     end.

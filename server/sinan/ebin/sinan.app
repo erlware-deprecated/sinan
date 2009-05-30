@@ -2,7 +2,7 @@
 
 {application, sinan,
  [{description, "Build system for erlang"},
-  {vsn, "0.15.0.1"},
+  {vsn, "0.16.0.0"},
   {modules, [sinan,
              sin_edoc,
              sin_shell,
@@ -17,6 +17,7 @@
              sin_gen,
 	     sin_resolver,
              sin_skel,
+	     sin_hooks,
              sin_config_parser,
              sin_group_leader,
              sin_group_leader_sup,

@@ -53,7 +53,7 @@
 
 
 %% API
--export([run_task_reply/3, run_task_reply/4, run_task/2, run_task/3]).
+-export([run_task_reply/4, run_task_reply/5, run_task/3, run_task/4]).
 
 
 %%====================================================================
@@ -63,12 +63,13 @@
 %% @doc
 %%  Start the task running process, reply to the gen_server who
 %%  made the request.
-%% @spec (From::pid(), Chain::chain(), Target::task()) -> ok
+%% @spec (From::pid(), Chain::chain(), Target::task(),
+%%        PrePostHandler::function()) -> ok
 %% @end
 %%--------------------------------------------------------------------
-run_task_reply(From, Chain, Target) ->
+run_task_reply(From, Chain, Target, PrePostHandler) ->
     proc_lib:spawn_link(fun() ->
-                                Res = do_tasks(Chain, Target),
+                                Res = do_tasks(Chain, Target, PrePostHandler),
                                 gen_server:reply(From, Res)
                         end).
 
@@ -77,12 +78,14 @@ run_task_reply(From, Chain, Target) ->
 %% @doc
 %%  Start the task running process, reply to the gen_server who
 %%  made the request.
-%% @spec (From::pid(), Chain::chain(), Target::task(), RunId::run_id()) -> ok
+%% @spec (From::pid(), Chain::chain(), Target::task(), RunId::run_id(),
+%%        PrePostHandler::function()) -> ok
 %% @end
 %%--------------------------------------------------------------------
-run_task_reply(From, Chain, Target, RunId) ->
+run_task_reply(From, Chain, Target, RunId, PrePostHandler) ->
     proc_lib:spawn_link(fun() ->
-                                Res = do_tasks(Chain, Target, RunId),
+                                Res = do_tasks(Chain, Target, RunId,
+					       PrePostHandler),
                                 gen_server:reply(From, Res)
                         end).
 
@@ -90,12 +93,13 @@ run_task_reply(From, Chain, Target, RunId) ->
 %% @doc
 %%   Runs the selected task with no attempt at a return value
 %%
-%% @spec (Chain::chain(), Target::task()) -> ok
+%% @spec (Chain::chain(), Target::task(),
+%%         PrePostHandler::function()) -> ok
 %% @end
 %%--------------------------------------------------------------------
-run_task(Chain, Target) ->
+run_task(Chain, Target, PrePostHandler) ->
     proc_lib:spawn_link(fun() ->
-                                do_tasks(Chain, Target)
+                                do_tasks(Chain, Target, PrePostHandler)
                         end).
 
 
@@ -103,12 +107,13 @@ run_task(Chain, Target) ->
 %% @doc
 %%   Runs the selected task with no attempt at a return value
 %%
-%% @spec (Chain::chain(), Target::task(), RunId::run_id()) -> ok
+%% @spec (Chain::chain(), Target::task(), RunId::run_id(),
+%%        PrePostHandler::function()) -> ok
 %% @end
 %%--------------------------------------------------------------------
-run_task(Chain, Target, RunId) ->
+run_task(Chain, Target, RunId, PrePostHandler) ->
     proc_lib:spawn_link(fun() ->
-                                do_tasks(Chain, Target, RunId)
+                                do_tasks(Chain, Target, RunId, PrePostHandler)
                         end).
 
 %%====================================================================
@@ -118,28 +123,29 @@ run_task(Chain, Target, RunId) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  run the task chain and event handlers, gathering any exceptions.
-%% @spec (Chain::chain(), Task::task()) -> ok
+%% @spec (Chain::chain(), Task::task(), PrePostHandler::function()) -> ok
 %% @end
 %% @private
 %%--------------------------------------------------------------------
-do_tasks(Chain, Task) ->
+do_tasks(Chain, Task, PrePostHandler) ->
     RunId = eta_engine:make_run_id(),
-    do_tasks(Chain, Task, RunId).
+    do_tasks(Chain, Task, RunId, PrePostHandler).
 
 
 %%--------------------------------------------------------------------
 %% @doc
 %% Do the task with a run id.
-%% @spec (Chain::chain(), Task::task(), RunId::run_id()) -> ok
+%% @spec (Chain::chain(), Task::task(), RunId::run_id(),
+%%        PrePostHandler::function()) -> ok
 %% @end
 %% @private
 %%--------------------------------------------------------------------
-do_tasks(Chain, Task, RunId) ->
+do_tasks(Chain, Task, RunId, PrePostHandler) ->
     eta_event:run_start(RunId),
     PreHandlers = eta_meta_task:get_pre_chain_handlers(Chain),
     execute_handlers(RunId, PreHandlers, Chain),
     Tasks = get_tasks(Task),
-    try run_tasks(RunId, Chain, Tasks) catch
+    try run_tasks(RunId, Chain, Tasks, PrePostHandler) catch
      _:problem ->
          eta_event:run_fault(RunId, "Task failed");
      _:Error ->
@@ -192,12 +198,13 @@ get_tasks(Task) when is_atom(Task) ->
 %% @doc
 %%  executes the task at the head of the task list. It also
 %%  executes any pre and post handlers required.
-%% @spec (RunId::run_id(), Chain::chain(), Tasks::task_list()) -> ok
+%% @spec (RunId::run_id(), Chain::chain(), Tasks::task_list(),
+%%        PrePostHandlers::function()) -> ok
 %% @end
 %% @private
 %%-------------------------------------------------------------------
-run_tasks(RunId, Chain, [Task | RestTasks])  ->
-    try execute_task_stack(RunId, Chain, Task) catch
+run_tasks(RunId, Chain, [Task | RestTasks], PrePostHandler)  ->
+    try execute_task_stack(RunId, Chain, Task, PrePostHandler) catch
         _:{eta_excep, Problem} ->
             eta_event:task_fault(RunId, Task, {"~p", [Problem]}),
             throw(problem);
@@ -216,8 +223,8 @@ run_tasks(RunId, Chain, [Task | RestTasks])  ->
                                                 erlang:get_stacktrace()]}),
             throw(problem)
     end,
-    run_tasks(RunId, Chain, RestTasks);
-run_tasks(_, _, []) ->
+    run_tasks(RunId, Chain, RestTasks, PrePostHandler);
+run_tasks(_, _, [], _) ->
     ok.
 
 %%--------------------------------------------------------------------
@@ -225,14 +232,15 @@ run_tasks(_, _, []) ->
 %%  Executes the full task stack. This includes pre and post handlers.
 %%  This does not catch exceptions. The stack execution fails
 %%  and no more tasks are run if a failure occures.
-%% @spec (RunId::run_id(), Chain::chain(), Task::task()) -> ok
+%% @spec (RunId::run_id(), Chain::chain(), Task::task(),
+%%        PrePostHandler::function()) -> ok
 %% @end
 %% @private
 %%--------------------------------------------------------------------
-execute_task_stack(RunId, Chain, Task) ->
+execute_task_stack(RunId, Chain, Task, PrePostHandler) ->
     PreHandlers = eta_meta_task:get_pre_task_handlers(Chain, Task),
     execute_handlers(RunId, PreHandlers, Chain),
-    Res = apply_task(RunId, Task),
+    Res = apply_task(RunId, Task, PrePostHandler),
     PostHandlers = eta_meta_task:get_post_task_handlers(Chain, Task),
     execute_handlers(RunId, PostHandlers, Chain),
     Res.
@@ -258,10 +266,14 @@ execute_handlers(_, [], _) ->
 %% @end
 %% @private
 %%--------------------------------------------------------------------
-apply_task(RunId, Task) when is_function(Task) ->
-    Task(RunId);
-apply_task(RunId, Task) when is_atom(Task) ->
-    Task:do_task(RunId).
+apply_task(RunId, Task, PrePostHandler) when is_function(Task) ->
+    apply_pre_post_handler(pre, Task, RunId, PrePostHandler),
+    Task(RunId),
+    apply_pre_post_handler(post, Task, RunId, PrePostHandler);
+apply_task(RunId, Task, PrePostHandler) when is_atom(Task) ->
+    apply_pre_post_handler(pre, Task, RunId, PrePostHandler),
+    Task:do_task(RunId),
+    apply_pre_post_handler(post, Task, RunId, PrePostHandler).
 
 
 %%--------------------------------------------------------------------
@@ -277,5 +289,16 @@ apply_handler(RunId, Handler) when is_function(Handler) ->
 apply_handler(RunId, Handler) when is_atom(Handler) ->
     Handler:do_event(RunId).
 
-
+%%--------------------------------------------------------------------
+%% @doc
+%%  Apply the pre/post handler if it exists
+%% @spec (Type::atom(), Task::task(), RunId::run_id(), Handler::term()) -> Result::term()
+%% @end
+%% @private
+%%--------------------------------------------------------------------
+apply_pre_post_handler(_Type, _Task, _RunId, none) ->
+    ok;
+apply_pre_post_handler(Type, Task, RunId, Handler) ->
+    TaskName = eta_task:get_task_name(Task),
+    Handler(Type, TaskName, RunId).
 
