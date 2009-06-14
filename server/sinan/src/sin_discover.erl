@@ -95,7 +95,7 @@ build_app_info(Config, [H|T], Acc) ->
         {error, {_, Module, Desc}} ->
             Error = Module:format_error(Desc),
             throw({error, {invalid_app_file, Error},
-                   io_lib:format("*.app file is invaled for ~s at ~s",
+                   io_lib:format("*.app file is invalid for ~s at ~s",
                     [AppName, AppFile])});
         {error, Error} ->
             throw({error, {no_app_file, Error},

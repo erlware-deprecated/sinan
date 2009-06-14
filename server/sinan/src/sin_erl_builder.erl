@@ -348,7 +348,7 @@ gather_modules(BuildRef, AppName, SrcDir) ->
     FileList =
         filelib:fold_files(SrcDir,
                            "(.+\.erl|.+\.yrl|.+\.asn1|.+\.asn)$",
-                   false,
+                   true, % Recurse into subdirectories of src
                    fun(File, Acc) ->
                            Ext = filename:extension(File),
                            [{File, module_name(File), Ext} | Acc]
