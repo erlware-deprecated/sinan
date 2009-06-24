@@ -44,6 +44,7 @@ information about server arguments read the sinan documentation.
 """
 
     parser = optparse.OptionParser(usage)
+    parser.disable_interspersed_args()
 
     help = "all arguments after this option will be passed to erl"
     parser.add_option("-e", "--erl-args", help=help, action="callback",
@@ -69,7 +70,7 @@ information about server arguments read the sinan documentation.
 
         key, value, posargs = posargs[0], posargs[1], posargs[2:]
 
-        parse_key_value(key, value, args['server_opts'])
+        parse_key_value(key, value.replace(':', ' '), args['server_opts'])
 
     return args
 
