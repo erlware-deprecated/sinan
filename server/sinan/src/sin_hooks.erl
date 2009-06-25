@@ -91,7 +91,7 @@ stringify([], Acc) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Given a command an an environment run that command with the environment
-%% @spec (Command::list(), Env:list(), RunId::list(), HookName::atom()) -> list()
+%% @spec (Command::list(), Env::list(), RunId::list(), HookName::atom()) -> list()
 %% @end
 %%--------------------------------------------------------------------
 command(Cmd, Env, RunId, HookName) ->
@@ -103,7 +103,7 @@ command(Cmd, Env, RunId, HookName) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Event results only at newline boundries.
-%% @spec (RunId::list(), HookName::atom(), Acc::list()) -> list()
+%% @spec (RunId::list(), HookName::atom(), Line::list(), Acc::list()) -> list()
 %% @end
 %%--------------------------------------------------------------------
 event_newline(RunId, HookName, [?NEWLINE | T], Acc) ->

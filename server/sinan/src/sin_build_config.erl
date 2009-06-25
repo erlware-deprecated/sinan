@@ -186,7 +186,7 @@ delete(BuildId, Key) ->
 %% @doc
 %%  Get the complete config as key,value pairs
 %%
-%% @spec delete(BuildId) -> ListOfKeyValuePairs::list()
+%% @spec (BuildId) -> ListOfKeyValuePairs::list()
 %% @end
 %%-------------------------------------------------------------------
 get_pairs(BuildId) ->

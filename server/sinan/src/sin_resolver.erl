@@ -45,7 +45,7 @@
 %% @doc
 %%  Get the list of versions available for the specified package.
 %%
-%% @spec (Prefix, ErtsVersion, Package) -> VersionList
+%% @spec (Prefix, Package) -> VersionList
 %% @end
 %%--------------------------------------------------------------------
 package_versions(Prefix, Package) when is_atom(Package) ->
@@ -75,7 +75,7 @@ package_dependencies(Prefix, Package, Version) ->
 %% @doc
 %%  Get the dependencies for a package and version.
 %%
-%% @spec (Package, Version, Prefix, Versions) -> Location
+%% @spec (Package, Prefix, Version) -> Location
 %% @end
 %%--------------------------------------------------------------------
 find_package_location(Prefix, Package, Version) when is_atom(Package) ->

@@ -262,7 +262,7 @@ execute_handlers(_, [], _) ->
 %% @doc
 %%  Apply the task. If its a fun, call the fun. If its an atom call
 %%  its do_task function.
-%% @spec (RunId::run_id(), Task::task()) -> Result::term()
+%% @spec (RunId::run_id(), Task::task(), PrePostHandler::fun()) -> Result::term()
 %% @end
 %% @private
 %%--------------------------------------------------------------------

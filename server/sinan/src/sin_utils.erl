@@ -286,7 +286,7 @@ find_project_root(Start) ->
 %%-------------------------------------------------------------------
 %% @doc
 %% convert a list body to a list
-%% @spec (I::term()) -> list()
+%% @spec (I::term(), Acc::list()) -> list()
 %% @end
 %% @private
 %%-------------------------------------------------------------------
