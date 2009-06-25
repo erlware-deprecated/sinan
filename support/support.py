@@ -12,7 +12,7 @@ class BuildError(Exception):
     def __str__(self):
         return repr(self.value)
 
-ERTS_VERSION = "5.7.1"
+ERTS_VERSION = "5.7.2"
 
 BUILD_PATH = "_build/development/apps/%s/ebin"
 
@@ -21,7 +21,7 @@ ERLWARE_PATH = "/usr/local/erlware"
 ERLC = "erlc +debug_info "
 
 LOCAL_APPS = [("etask", "0.6.0"),
-              ("sinan", "0.16.0.0"),
+              ("sinan", "0.16.0.4"),
               ("sinan_web_api", "0.1.0.6")]
 
 ERLWARE_APPS = [
@@ -29,8 +29,8 @@ ERLWARE_APPS = [
                 "crary-0.2.3",
                 "eunit-2.0",
                 "cryptographic-0.2.2",
-                "ewlib-0.8.2.0",
-                "ewrepo-0.18.7.0",
+                "ewlib-0.9.0.0",
+                "ewrepo-0.18.8.0",
                 "kernel-2.13.1",
                 "ibrowse-1.4",
                 "uri-0.2.0",

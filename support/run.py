@@ -27,7 +27,7 @@ def main():
     parser.add_option("-e", "--erlware",
                       dest="erlware",
                       type="string",
-                      default="/usr/local/erlware",
+                      default="/usr/local/lib/erlang",
                       help="The location of Erlware")
 
     (options, args) = parser.parse_args()
