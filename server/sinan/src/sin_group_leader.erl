@@ -172,17 +172,32 @@ handle_cast(shutdown, _) ->
 %%--------------------------------------------------------------------
 handle_info({io_request, From, ReplyAs,
              {put_chars, io_lib, Func, [Format, Args]}},
-            State) when list(Format) ->
+            State) when is_list(Format) ->
+    Msg = (catch io_lib:Func(Format,Args)),
+    handle_msg(ReplyAs, Msg, From, Func, State),
+    {noreply, State};
+handle_info({io_request, From, ReplyAs,
+             {put_chars, unicode, io_lib, Func, [Format, Args]}},
+            State) when is_list(Format) ->
     Msg = (catch io_lib:Func(Format,Args)),
     handle_msg(ReplyAs, Msg, From, Func, State),
     {noreply, State};
 handle_info({io_request, From, ReplyAs,
              {put_chars, io_lib, Func, [Format, Args]}}, State)
-  when atom(Format) ->
+  when is_atom(Format) ->
+    Msg = (catch io_lib:Func(Format,Args)),
+    handle_msg(ReplyAs, Msg, From, Func, State),
+    {noreply, State};
+handle_info({io_request, From, ReplyAs,
+             {put_chars, unicode, io_lib, Func, [Format, Args]}}, State)
+  when is_atom(Format) ->
     Msg = (catch io_lib:Func(Format,Args)),
     handle_msg(ReplyAs, Msg, From, Func, State),
     {noreply, State};
 handle_info({io_request, From, ReplyAs, {put_chars, Bytes}}, State) ->
+    handle_msg(ReplyAs, Bytes, From, put_chars, State),
+    {noreply, State};
+handle_info({io_request, From, ReplyAs, {put_chars,unicode,Bytes}}, State) ->
     handle_msg(ReplyAs, Bytes, From, put_chars, State),
     {noreply, State};
 handle_info(IoReq, State) when element(1, IoReq) == io_request ->
