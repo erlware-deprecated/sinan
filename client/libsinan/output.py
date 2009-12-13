@@ -78,12 +78,7 @@ class SimpleTaskHandler(object):
             sys.stdout.write(self.desc)
             sys.stdout.flush()
         elif self.type == "task_event" and self.desc:
-            addition = ""
-            if self.event_type == "fault":
-                addition = " fault!!"
-                self.fault = True
-
-            print "[" + self.task + addition + "]", self.desc
+            print self.desc
         elif self.type == "task_event":
             print "[" + self.task + "]", self.event_type
         elif self.type == "run_event" and self.event_type == "stop" and self.desc:
