@@ -222,16 +222,16 @@ handle_call({task_chain, TaskName}, _From, State = #state{tid=Tid}) ->
     TaskChain = resolve_tasks(reorder_tasks(gather_tasks(Tid, TaskName, [])), Tid, []),
     {reply, TaskChain, State};
 handle_call({task_def, TaskName}, _From, State = #state{tid=Tid}) ->
-    Res = get_value(ets:lookup(Tid, TaskName)),
+    Res = get_value(ets:lookup(Tid, {desc, TaskName})),
     {reply, Res, State};
 handle_call({task_opts, TaskName}, _From, State = #state{tid=Tid}) ->
-    Res = get_opts(ets:lookup(Tid, TaskName)),
+    Res = get_opts(ets:lookup(Tid, {desc, TaskName})),
     {reply, Res, State};
 handle_call(all_task_defs, _From, State = #state{tid=Tid}) ->
     List1 = ets:tab2list(Tid),
     {reply, strip_to_defs(List1, []), State};
 handle_call({task_name, TaskImpl}, _From, State = #state{tid=Tid}) ->
-    [{_, Res}] = ets:lookup(Tid, TaskImpl),
+    [{_, Res}] = ets:lookup(Tid, {desc, TaskImpl}),
     {reply, Res, State}.
 
 %%--------------------------------------------------------------------
@@ -299,8 +299,10 @@ code_change(_OldVsn, State, _Extra) ->
 %% @end
 %% @private
 %%--------------------------------------------------------------------
-strip_to_defs([{_, Desc} | Rest], Acc) ->
+strip_to_defs([{{desc, _}, Desc} | Rest], Acc) ->
     strip_to_defs(Rest, [Desc | Acc]);
+strip_to_defs([_ | Rest], Acc) ->
+    strip_to_defs(Rest, Acc);
 strip_to_defs([], Acc) ->
     lists:reverse(Acc).
 
@@ -313,8 +315,8 @@ strip_to_defs([], Acc) ->
 %% @private
 %%--------------------------------------------------------------------
 register_task(Tid, TaskName, TaskDesc) when is_record(TaskDesc, task) ->
-    ets:insert(Tid, {TaskName, TaskDesc}),
-    ets:insert(Tid, {TaskDesc#task.task_impl, TaskName}).
+    ets:insert(Tid, {{desc, TaskName}, TaskDesc}),
+    ets:insert(Tid, {{impl, TaskDesc#task.task_impl}, TaskName}).
 
 
 %%--------------------------------------------------------------------
@@ -326,7 +328,7 @@ register_task(Tid, TaskName, TaskDesc) when is_record(TaskDesc, task) ->
 %% @private
 %%--------------------------------------------------------------------
 unregister_task(Tid, TaskName) ->
-    ets:delete(Tid, TaskName).
+    ets:delete(Tid, {desc, TaskName}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -339,7 +341,7 @@ unregister_task(Tid, TaskName) ->
 %%--------------------------------------------------------------------
 gather_tasks(Tid, TaskName, Acc) ->
     gather_depends(Tid, TaskName,
-                   get_deps(ets:lookup(Tid, TaskName)),
+                   get_deps(ets:lookup(Tid, {desc, TaskName})),
                    Acc).
 
 
@@ -393,7 +395,7 @@ reorder_tasks(OTaskList) ->
 resolve_tasks(['NONE' | Tail], Tid, Acc) ->
     resolve_tasks(Tail, Tid, Acc);
 resolve_tasks([Task | Tail], Tid, Acc) ->
-    Impl = get_impl(ets:lookup(Tid, Task)),
+    Impl = get_impl(ets:lookup(Tid, {desc, Task})),
     resolve_tasks(Tail, Tid, [Impl | Acc]);
 resolve_tasks([], _Tid, Acc) ->
     lists:reverse(Acc).
@@ -406,7 +408,7 @@ resolve_tasks([], _Tid, Acc) ->
 %% @end
 %% @private
 %%--------------------------------------------------------------------
-get_deps([{_, TaskDesc}]) ->
+get_deps([{{desc, _}, TaskDesc}]) ->
     TaskDesc#task.deps;
 get_deps([]) ->
     none.
