@@ -2,7 +2,7 @@
 
 {application, etask,
  [{description, "Tasking kernel for task running."},
-  {vsn, "0.6.1"},
+  {vsn, "0.6.2"},
   {modules, [eta_event,
              eta_task,
              eta_meta_task,
