@@ -42,12 +42,25 @@
          is_dir_ignorable/2,
          file_exists/1,
          find_project_root/1,
-	 term_to_list/1]).
+	 term_to_list/1,
+	 get_ignore_dirs/1]).
 
 
 %%====================================================================
 %% API
 %%====================================================================
+%%-------------------------------------------------------------------
+%% @doc
+%%  Get the ignore dirs
+%%
+%% @spec (BuildRef) -> IgnoreDirs
+%% @end
+%%-------------------------------------------------------------------
+get_ignore_dirs(BuildRef) ->
+    BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
+    IgnoreDirs = sin_build_config:get_value(BuildRef, "ignore_dirs", []),
+    [BuildDir | IgnoreDirs].
+
 %%-------------------------------------------------------------------
 %% @doc
 %%  Check to see if a file exists.

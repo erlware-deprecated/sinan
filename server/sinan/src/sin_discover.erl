@@ -134,10 +134,10 @@ process_details(_, [], Config) ->
 %% @private
 %%-------------------------------------------------------------------
 look_for_app_dirs(Config, BuildDir, ProjectDir) ->
-    Ignorables = case dict:find("ignore_dirs", Config) of
-                     {ok, Value} -> Value;
-                     _ -> []
-                 end,
+    Ignorables = [BuildDir] ++ case dict:find("ignore_dirs", Config) of
+				   {ok, Value} -> Value;
+				   _ -> []
+			       end,
     case look_for_app_dirs(Config, BuildDir, ProjectDir, "",
                            Ignorables, []) of
         [] ->

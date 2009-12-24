@@ -1,7 +1,6 @@
 build_dir : _build,
 
-ignore_dirs : ["_",
-               "."],
+ignore_dirs : ["."],
 
 ignore_apps : [],
 
