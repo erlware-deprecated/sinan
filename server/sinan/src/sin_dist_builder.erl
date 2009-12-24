@@ -229,19 +229,10 @@ get_project_name(BuildRef) ->
 %% @doc
 %%  Get the release information for the system.
 %%
-%% @spec (BuildDir, TopLevel, BuildDir, ProjectDir) -> ok
+%% @spec (BuildDir, ProjectName, BuildDir, ProjectDir) -> ok
 %% @end
 %%--------------------------------------------------------------------
-get_release_dirs(BuildRef, TopLevel, BuildDir, ProjectDir) ->
-    Version = case sin_build_config:get_value(BuildRef, "project.vsn") of
-                  undefined ->
-                      eta_event:task_fault(BuildRef, ?TASK,
-                                           "No project version defined in build config"
-                                           " aborting!"),
-                      throw(no_project_version);
-                  Vsn ->
-                      Vsn
-              end,
+get_release_dirs(BuildRef, ProjectName, BuildDir, ProjectDir) ->
     Name = case sin_build_config:get_value(BuildRef, "project.name") of
                undefined ->
                    eta_event:task_fault(BuildRef, ?TASK,
@@ -251,8 +242,8 @@ get_release_dirs(BuildRef, TopLevel, BuildDir, ProjectDir) ->
                Nm ->
                    Nm
            end,
-    SourceReleases = filename:join([BuildDir, "releases", Version]),
-    TargetReleases = filename:join([TopLevel, "releases", Version]),
+    SourceReleases = filename:join([BuildDir, "releases", ProjectName]),
+    TargetReleases = filename:join([ProjectName, "releases", ProjectName]),
     Result =
         case sin_build_config:get_value(BuildRef, "dist.include_release_info") of
             Value when Value == true; Value == undefined ->

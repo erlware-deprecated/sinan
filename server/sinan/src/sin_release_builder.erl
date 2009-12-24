@@ -87,7 +87,7 @@ release(BuildRef) ->
     Version = project_version(BuildRef),
     ReleaseInfo = generate_rel_file(BuildRef, BuildDir, Name, Version),
     sin_build_config:store(BuildRef, "project.release_info", ReleaseInfo),
-    copy_or_generate_sys_config_file(BuildRef, BuildDir, Version),
+    copy_or_generate_sys_config_file(BuildRef, BuildDir, Name, Version),
     make_boot_script(BuildRef, ReleaseInfo),
     eta_event:task_stop(BuildRef, ?TASK).
 
@@ -203,7 +203,7 @@ process_inc_list([], Acc) ->
 %% @private
 %%--------------------------------------------------------------------
 save_release(BuildRef, BuildDir, Name, Version, RelInfo) ->
-    Location = filename:join([BuildDir, "releases", Version]),
+    Location = filename:join([BuildDir, "releases", Name ++ "-" ++ Version]),
     filelib:ensure_dir(filename:join([Location, "tmp"])),
     Relbase = filename:join([Location, Name]),
     Relf = lists:flatten([Relbase, ".rel"]),
@@ -278,8 +278,8 @@ make_tar(BuildRef, File, Options) ->
 %% @spec (BuildRef, BuildDir, Version) -> ok
 %% @end
 %%--------------------------------------------------------------------
-copy_or_generate_sys_config_file(BuildRef, BuildDir, Version) ->
-    RelSysConfPath = filename:join([BuildDir, "releases",
+copy_or_generate_sys_config_file(BuildRef, BuildDir, Name, Version) ->
+    RelSysConfPath = filename:join([BuildDir, "releases", Name ++ "-" ++
                                     Version, "sys.config"]),
     case sin_build_config:get_value(BuildRef, "config_dir") of
         undefined ->
@@ -333,7 +333,7 @@ get_code_paths(BuildRef) ->
                                               ".code_paths")
                     end, ProjApps)),
     RepoPaths = lists:map(
-                  fun ({App, Vsn, _, Path}) ->
+                  fun ({_App, _Vsn, _, Path}) ->
                           filename:join([Path, "ebin"])
                   end, sin_build_config:get_value(BuildRef, "project.repoapps")),
     lists:merge([ProjPaths, RepoPaths]).
