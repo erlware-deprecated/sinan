@@ -2,7 +2,7 @@
 
 {application, sinan,
  [{description, "Build system for erlang"},
-  {vsn, "0.16.1.4"},
+  {vsn, "0.16.2.0"},
   {modules, [sinan,
              sin_edoc,
              sin_shell,
