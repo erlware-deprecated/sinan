@@ -142,8 +142,6 @@ store(BuildId, Path, Value) ->
     gen_server:cast(Pid, {add, Path, Value}),
     ok.
 
-
-
 %%-------------------------------------------------------------------
 %% @doc
 %%  Get a value from the config.
@@ -220,8 +218,7 @@ shutdown(BuildId) ->
 %% @end
 %%--------------------------------------------------------------------
 init([ProjectDir]) ->
-    try process_build_config(ProjectDir,
-                             filename:join([ProjectDir, "_build.cfg"])) of
+    try get_build_config(ProjectDir) of
         Config ->
             sin_config_registry:register_canonical(ProjectDir, self()),
             {ok, #state{config = Config, project_dir = ProjectDir,
@@ -231,7 +228,7 @@ init([ProjectDir]) ->
             {stop, Error}
     end;
 init([BuildId, ProjectDir, Override]) ->
-    Config = get_config(ProjectDir),
+    Config = get_build_config(ProjectDir),
     NewConfig = merge_config(Config, Override, ""),
     sin_config_registry:register_config(BuildId, self()),
     {ok, #state{config = NewConfig, build_id = BuildId,
@@ -241,7 +238,7 @@ init([BuildId, ProjectDir, Config, Override]) ->
     OverrideDict = merge_config(dict:new(), Override, ""),
     Flavor = get_build_flavor(Config, OverrideDict),
     NewConfig0 = merge_config(apply_flavors(Config, Flavor), Override, ""),
-    BuildConfigDict = get_config(ProjectDir),
+    BuildConfigDict = get_build_config(ProjectDir),
     NewConfig = merge_config(NewConfig0, dict:to_list(BuildConfigDict), ""),
     BuildRoot = filename:join([ProjectDir, in_get_value(NewConfig, "build_dir",
                                                         "_build")]),
@@ -269,21 +266,6 @@ get_build_flavor(Config, Override) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%%  Return the build configuration based on the project _build.cfg file
-%% @spec get_config(ProjectDir) -> dict()
-%% @end
-%%--------------------------------------------------------------------
-get_config(ProjectDir) ->
-    BuildConfig = filename:join([ProjectDir, "_build.cfg"]),
-    case sin_utils:file_exists(filename:join([ProjectDir, "_build.cfg"])) of
-        true ->
-            process_build_config(ProjectDir, BuildConfig);
-        false ->
-            dict:new()
-    end.
-
-%%--------------------------------------------------------------------
-%% @doc
 %%  Apply flavor changes to the config file.
 %% @spec (Config, Flavor) -> NewConfig
 %% @end
@@ -304,7 +286,7 @@ apply_flavors(Config, Flavor) ->
     dict:fold(FilterFun, Config, Config).
 
 
-%%--------------------------------------------------------------------
+%%-------------------------------------------------------<-------------
 %% @doc
 %% Handling call messages
 %%
@@ -325,8 +307,7 @@ handle_call(get_raw_config, _From, State = #state{config = Config,
         false ->
             {reply, Config, State, ?RECHECK};
         _ ->
-            NewConfig = process_build_config(ProjectDir,
-                                          filename:join([ProjectDir, "_build.cfg"])),
+            NewConfig = get_build_config(ProjectDir),
             {reply, NewConfig, State#state{config = NewConfig}, ?RECHECK}
     end;
 handle_call({get, Key}, _From, State = #state{config = Config}) ->
@@ -385,8 +366,7 @@ handle_cast(exit, _) ->
 %%--------------------------------------------------------------------
 handle_info(timeout, State = #state{canonical = true,
                                     project_dir = ProjectDir}) ->
-    Config = process_build_config(ProjectDir,
-                                  filename:join([ProjectDir, "_build.cfg"])),
+    Config = get_build_config(ProjectDir),
     {noreply, State#state{config = Config}};
 handle_info(_Info, State) ->
     {noreply, State}.
@@ -424,6 +404,29 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
 %% Internal Functions
 %%====================================================================
+%%-------------------------------------------------------------------
+%% @doc
+%%   Find the build config under _build.cfg or _sinan.cfg
+%%
+%% @spec (ProjectDir::string()) -> NewConfig
+%% @end
+%% @private
+%%------------------------------------------------------------------
+get_build_config(ProjectDir) ->
+    Config1 = filename:join([ProjectDir, "_build.cfg"]),
+    Config2 = filename:join([ProjectDir, "sinan.cfg"]),
+    case sin_utils:file_exists(Config1) of
+	true ->
+	    process_build_config(ProjectDir, Config1);
+	false ->
+	    case sin_utils:file_exists(Config2) of
+		true ->
+		    process_build_config(ProjectDir, Config2);
+		false ->
+		    throw(no_config_file)
+	    end
+    end.
+
 %%-------------------------------------------------------------------
 %% @doc
 %%   Read in the build config/parse and send to the config process.

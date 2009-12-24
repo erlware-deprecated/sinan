@@ -276,12 +276,18 @@ are_dirs_ignorable([], _Igs) ->
 find_project_root("/") ->
     throw(no_build_config);
 find_project_root(Start) ->
-    ConfigFile = filename:join(Start, "_build.cfg"),
-    case file:read_file_info(ConfigFile) of
+    ConfigFile1 = filename:join(Start, "_build.cfg"),
+    ConfigFile2 = filename:join(Start, "sinan.cfg"),
+    case file:read_file_info(ConfigFile1) of
         {ok, _FileInfo} ->
             Start;
         {error, _Reason} ->
-            find_project_root(sin_utils:parent_dir(Start))
+	    case file:read_file_info(ConfigFile2) of
+		{ok, _FileInfo} ->
+		    Start;
+		{error, _Reason} ->
+		    find_project_root(sin_utils:parent_dir(Start))
+	    end
     end.
 %%-------------------------------------------------------------------
 %% @doc
