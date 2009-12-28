@@ -4,6 +4,7 @@
  [{description, "Build system for erlang"},
   {vsn, "0.16.2.0"},
   {modules, [sinan,
+	     sin_release,
              sin_edoc,
              sin_shell,
              sin_config_registry,

@@ -245,8 +245,9 @@ init([BuildId, ProjectDir, Config, Override]) ->
     BuildDir = filename:join([BuildRoot, Flavor]),
     NewConfig1 = in_store("build.dir", NewConfig, BuildDir),
     NewConfig2 = in_store("build.root", NewConfig1, BuildRoot),
+    NewConfig3 = in_store("build.flavor", NewConfig2, Flavor),
     sin_config_registry:register_config(BuildId, self()),
-    {ok, #state{config = NewConfig2, build_id = BuildId,
+    {ok, #state{config = NewConfig3, build_id = BuildId,
                 project_dir = ProjectDir, canonical = false},
      ?RECHECK}.
 

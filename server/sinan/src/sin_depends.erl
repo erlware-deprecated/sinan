@@ -85,12 +85,26 @@ depends(BuildRef) ->
     AppBDir = filename:join([BuildDir, "apps"]),
     ProjectApps = gather_project_apps(BuildRef, AppBDir),
     sin_build_config:store(BuildRef, "project.apps", ProjectApps),
-    Prefix = get_application_env(prefix),
-    ErtsVersion = get_application_env(erts_version),
-    AllDeps = check_project_dependencies(Prefix,
-					 ErtsVersion,
-					 ProjectApps,
-					 []),
+
+    BuildFlavor = sin_build_config:get_value(BuildRef, "build.flavor"),
+    ProjectName = sin_build_config:get_value(BuildRef, "project.name"),
+    ProjectVsn = sin_build_config:get_value(BuildRef, "project.vsn"),
+    RootDir = sin_build_config:get_value(BuildRef, "project.dir"),
+
+    case process_release(RootDir, BuildFlavor,
+			 ProjectName, ProjectVsn, ProjectApps) of
+	{ok, AllDeps} ->
+	    ok;
+	_ ->
+	    case do_transitive_resolution(ProjectApps) of
+		{ok, AllDeps} ->
+		    ok;
+		_ ->
+		    AllDeps = none,
+		    ?ETA_RAISE_DA(unable_to_resolve,
+				  "Unable to resolve dependencies", [])
+	    end
+    end,
     RepoApps = get_repo_apps(ProjectApps, AllDeps),
     sin_build_config:store(BuildRef, "project.deps", AllDeps),
     sin_build_config:store(BuildRef, "project.repoapps", RepoApps),
@@ -191,19 +205,24 @@ resolve_project_dependencies2(Prefix,
 		     [Version1 | _] ->
 			 Version1
 		 end,
-	     NDeps = sin_resolver:package_dependencies(Prefix,
-						       Dep,
-						       Version),
-	     Location = sin_resolver:find_package_location(Prefix,
-							   Dep,
-							   Version),
-	     resolve_project_dependencies(Prefix, ErtsVersion, Deps ++ NDeps,
-					  AllProjectApps,
-					  [{Dep, Version, NDeps, Location} |
-					   Acc])
+	    NewEntry = {_, _, NDeps, _} =
+		resolve_package_information(Prefix, Dep, Version),
+	    resolve_project_dependencies(Prefix, ErtsVersion, Deps ++ NDeps,
+					 AllProjectApps,
+					 [NewEntry | Acc])
     end;
 resolve_project_dependencies2(_, _, [], _, Acc) ->
     Acc.
+
+
+resolve_package_information(Prefix, Name, Version) ->
+    Deps = sin_resolver:package_dependencies(Prefix,
+					     Name,
+					     Version),
+    Location = sin_resolver:find_package_location(Prefix,
+						  Name,
+						  Version),
+    {Name, Version, Deps, Location}.
 
 
 already_resolved(Dep, [{Dep, _, _, _} | _]) ->
@@ -357,3 +376,37 @@ update_app_sigs(BuildRef, BuildDir, [H | T]) ->
     update_app_sigs(BuildRef, BuildDir, T);
 update_app_sigs(_BuildRef, _BuildDir, []) ->
     ok.
+
+process_release(RootDir, BuildFlavor,
+		ProjectName, ProjectVsn, ProjectApps) ->
+
+    case sin_release:get_release(RootDir, BuildFlavor, ProjectName, ProjectVsn) of
+	no_file ->
+	    no_release_file;
+	RelFile ->
+	    Prefix = get_application_env(prefix),
+	    Deps = sin_release:get_deps(RelFile),
+	    process_deps(Prefix, Deps, ProjectApps, [])
+    end.
+
+
+process_deps(Prefix, [{Name, Vsn} | Rest], ProjectApps, Acc) ->
+    case lists:keymember(Name, 1, ProjectApps) of
+	true ->
+	    process_deps(Prefix, Rest, ProjectApps, Acc);
+	false ->
+	    process_deps(Prefix, Rest,
+			 ProjectApps,
+			 [resolve_package_information(Prefix, Name, Vsn) | Acc])
+    end;
+process_deps(_, [], _, Acc) ->
+    Acc.
+
+do_transitive_resolution(ProjectApps) ->
+    Prefix = get_application_env(prefix),
+    ErtsVersion = get_application_env(erts_version),
+    AllDeps = check_project_dependencies(Prefix,
+					 ErtsVersion,
+					 ProjectApps,
+					 []),
+    {ok, ProjectApps ++ AllDeps}.

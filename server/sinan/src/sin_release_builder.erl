@@ -104,11 +104,25 @@ release(BuildRef) ->
 %% @private
 %%--------------------------------------------------------------------
 generate_rel_file(BuildRef, BuildDir, Name, Version) ->
-    Erts = get_erts_info(),
-    Deps = process_deps(BuildRef, sin_build_config:get_value(BuildRef,
-                                                  "project.deps"), []),
-    Release = {release, {Name, Version}, {erts, Erts},
-               Deps},
+    BuildFlavor = sin_build_config:get_value(BuildRef, "build.flavor"),
+    ProjectName = sin_build_config:get_value(BuildRef, "project.name"),
+    ProjectVsn = sin_build_config:get_value(BuildRef, "project.vsn"),
+    RootDir = sin_build_config:get_value(BuildRef, "project.dir"),
+
+    case sin_release:get_release(RootDir, BuildFlavor, ProjectName,
+				 ProjectVsn) of
+	no_file ->
+
+	    Erts = get_erts_info(),
+	    Deps = process_deps(BuildRef,
+				sin_build_config:get_value(BuildRef,
+							   "project.deps"), []),
+	    Release = {release, {Name, Version}, {erts, Erts},
+		       Deps};
+
+	Release ->
+	    ok
+    end,
     {save_release(BuildRef, BuildDir, Name, Version, Release),
      Release}.
 
