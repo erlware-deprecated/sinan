@@ -386,7 +386,7 @@ process_release(RootDir, BuildFlavor,
 	RelFile ->
 	    Prefix = get_application_env(prefix),
 	    Deps = sin_release:get_deps(RelFile),
-	    process_deps(Prefix, Deps, ProjectApps, [])
+	    {ok, process_deps(Prefix, Deps, ProjectApps, [])}
     end.
 
 
@@ -399,8 +399,8 @@ process_deps(Prefix, [{Name, Vsn} | Rest], ProjectApps, Acc) ->
 			 ProjectApps,
 			 [resolve_package_information(Prefix, Name, Vsn) | Acc])
     end;
-process_deps(_, [], _, Acc) ->
-    Acc.
+process_deps(_, [], ProjectApps, Acc) ->
+    ProjectApps ++ Acc.
 
 do_transitive_resolution(ProjectApps) ->
     Prefix = get_application_env(prefix),
@@ -409,4 +409,4 @@ do_transitive_resolution(ProjectApps) ->
 					 ErtsVersion,
 					 ProjectApps,
 					 []),
-    {ok, ProjectApps ++ AllDeps}.
+    {ok, AllDeps}.
