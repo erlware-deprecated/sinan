@@ -228,7 +228,7 @@ init([ProjectDir]) ->
             {stop, Error}
     end;
 init([BuildId, ProjectDir, Override]) ->
-    Config = get_build_config(ProjectDir),
+    Config = dict:new(),
     NewConfig = merge_config(Config, Override, ""),
     sin_config_registry:register_config(BuildId, self()),
     {ok, #state{config = NewConfig, build_id = BuildId,
