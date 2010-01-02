@@ -256,11 +256,11 @@ make_boot_script(BuildRef, {{Location, File}, {release, {Name, _}, _, _}}) ->
                no_module_tests, silent],
     case systools_make:make_script(Name, File, [{outdir, Location} | Options]) of
         ok ->
-            make_tar(BuildRef, File, Options);
+	    ok;
         error ->
             ?ETA_RAISE(release_script_generation_error);
         {ok, _, []} ->
-            make_tar(BuildRef, File, Options);
+	    ok;
         {ok,Module,Warnings} ->
             ?ETA_RAISE_DA(release_script_generation_error,
                           "~s~n", [Module:format_warning(Warnings)]);
@@ -268,22 +268,6 @@ make_boot_script(BuildRef, {{Location, File}, {release, {Name, _}, _, _}}) ->
             ?ETA_RAISE_DA(release_script_generation_error,
                           "~s~n", [Module:format_error(Error)])
     end.
-
-
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%%  Make a tar file from the release.
-%% @spec (BuildRef, File, Options) -> ok
-%% @end
-%%--------------------------------------------------------------------
-make_tar(BuildRef, File, Options) ->
-    BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
-    Location = filename:join([BuildDir, "tar"]),
-    filelib:ensure_dir(filename:join([Location, "tmp"])),
-    systools_make:make_tar(File, [{outdir, Location} | Options]).
-
 
 
 %%--------------------------------------------------------------------
