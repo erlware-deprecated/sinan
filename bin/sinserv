@@ -9,7 +9,7 @@ mkdir -p $CONFIGDIR
 
 #### Fill in values for these variables ####
 REL_NAME=sinan
-REL_VSN=0.16.2.1
+REL_VSN=0.16.2.2
 ERTS_VSN=5.7.4
 INVOCATION_SUFFIX=""
 ###########################################
