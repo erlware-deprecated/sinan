@@ -107,8 +107,13 @@ all_done(BuildRef) ->
 %%--------------------------------------------------------------------
 build_out_build_config(BuildRef, Env) ->
     ProjectDir = get_env(project_dir, Env),
+    ProjectName = get_env(project_name, Env),
     ConfName = filename:join([ProjectDir, "_build.cfg"]),
+    BinFile = filename:join([ProjectDir,  "bin", ProjectName]),
+    ConfigFile = filename:join([ProjectDir,  "config", "sys.config"]),
     sin_skel:build_config(Env, ConfName),
+    sin_skel:bin(Env, BinFile),
+    sin_skel:sysconfig(Env, ConfigFile),
     all_done(BuildRef).
 
 
@@ -219,6 +224,8 @@ build_out_app_doc(_BuildRef, Env, App) ->
 build_out_skeleton(BuildRef, Env) ->
     ProjDir = get_env(project_dir, Env),
     make_dir(BuildRef, filename:join(ProjDir, "doc")),
+    make_dir(BuildRef, filename:join(ProjDir, "bin")),
+    make_dir(BuildRef, filename:join(ProjDir, "config")),
     build_out_applications(BuildRef, Env).
 
 %%--------------------------------------------------------------------
@@ -260,9 +267,11 @@ get_new_project_name(BuildRef, Env) ->
     Version =
         sin_build_config:get_value(BuildRef,
                                    "tasks.gen.project_info.project_version"),
+    {ok, ErtsVersion} = application:get_env(sinan, erts_version),
     Env2 = [{project_version, Version},
             {project_name, Name},
-            {project_dir, Dir} | Env],
+            {project_dir, Dir},
+	    {erts_version, ErtsVersion} | Env],
     get_application_names(BuildRef, Env2).
 
 

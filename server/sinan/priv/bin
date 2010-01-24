@@ -1,0 +1,22 @@
+#!/bin/sh
+
+#### Fill in values for these variables ####
+REL_NAME=$project_name$
+REL_VSN=$project_version$
+ERTS_VSN=$erts_version$
+INVOCATION_SUFFIX=""
+###########################################
+
+PROG=$0
+test -h $0 && PROG=$(readlink $0)
+PREFIX=$(cd $(dirname $(dirname $PROG)); pwd)
+
+export ROOTDIR=$PREFIX
+export BINDIR=$PREFIX/erts-$ERTS_VSN/bin
+export EMU=beam
+export PROGNAME=erl
+export LD_LIBRARY_PATH=$PREFIX/erts-$ERTS_VSN/lib
+
+REL_DIR=$PREFIX/releases/$REL_NAME-$REL_VSN
+
+$BINDIR/erlexec -detached -config $CONFIGFILE -boot $REL_DIR/$REL_NAME $INVOCATION_SUFFIX

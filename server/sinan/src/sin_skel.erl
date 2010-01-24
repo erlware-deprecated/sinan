@@ -34,7 +34,9 @@
 %%% API
 -export([application/3, supervisor/3,
          app_info/3, edoc_overview/3,
-	 build_config/2]).
+	 build_config/2,
+	 sysconfig/2,
+	 bin/2]).
 
 %-include("eunit.hrl").
 
@@ -87,6 +89,25 @@ edoc_overview(Env, FileName, AppName) ->
 %%--------------------------------------------------------------------
 build_config(Env, FileName) ->
     write_template("buildcfg", Env, FileName).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Writes the bin file out to the specified library
+%% @spec bin(Env, Filename) -> ok
+%% @end
+%%-------------------------------------------------------------------
+bin(Env, FileName) ->
+    write_template("bin", Env, FileName).
+
+%%--------------------------------------------------------------------
+%% @doc
+%%  Writes the sys config out to the specifiecd place
+%% @spec sysconfig(Env, Filename) -> ok
+%% @end
+%%-------------------------------------------------------------------
+sysconfig(Env, FileName) ->
+    write_template("sysconfig", Env, FileName).
 
 
 %%====================================================================
