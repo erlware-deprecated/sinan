@@ -109,10 +109,12 @@ build_out_build_config(BuildRef, Env) ->
     ProjectDir = get_env(project_dir, Env),
     ProjectName = get_env(project_name, Env),
     ConfName = filename:join([ProjectDir, "_build.cfg"]),
+    ErlwareFile = filename:join([ProjectDir,  "bin", "erlware_release_start_helper"]),
     BinFile = filename:join([ProjectDir,  "bin", ProjectName]),
     ConfigFile = filename:join([ProjectDir,  "config", "sys.config"]),
     sin_skel:build_config(Env, ConfName),
     sin_skel:bin(Env, BinFile),
+    sin_skel:bin_support(Env, ErlwareFile),
     sin_skel:sysconfig(Env, ConfigFile),
     all_done(BuildRef).
 
@@ -314,7 +316,7 @@ make_dir(BuildRef, DirName) ->
 %% @spec (BuildRef, DirName, Output) -> ok
 %% @end
 %%--------------------------------------------------------------------
-is_made(BuildRef, DirName, {error, eexists})->
+is_made(BuildRef, DirName, {error, eexist})->
     eta_event:task_event(BuildRef, ?TASK, info, {"~s exists ok.", [DirName]});
 is_made(BuildRef, DirName, ok) ->
     eta_event:task_event(BuildRef, ?TASK, info, {"~s created ok.", [DirName]}).

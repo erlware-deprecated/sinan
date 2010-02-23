@@ -1,22 +1,15 @@
 #!/bin/sh
 
+PROG=$$0
+PROG_DIR=$$(cd `dirname $$0`; pwd)
+test -h $$0 && PROG=$$(readlink $$0)
+export ROOTDIR=$$(dirname $$PROG_DIR)
+
 #### Fill in values for these variables ####
 REL_NAME=$project_name$
 REL_VSN=$project_version$
 ERTS_VSN=$erts_version$
-INVOCATION_SUFFIX=""
+INVOCATION_SUFFIX="-prefix $$ROOTDIR"
 ###########################################
 
-PROG=$0
-test -h $0 && PROG=$(readlink $0)
-PREFIX=$(cd $(dirname $(dirname $PROG)); pwd)
-
-export ROOTDIR=$PREFIX
-export BINDIR=$PREFIX/erts-$ERTS_VSN/bin
-export EMU=beam
-export PROGNAME=erl
-export LD_LIBRARY_PATH=$PREFIX/erts-$ERTS_VSN/lib
-
-REL_DIR=$PREFIX/releases/$REL_NAME-$REL_VSN
-
-$BINDIR/erlexec -detached -config $CONFIGFILE -boot $REL_DIR/$REL_NAME $INVOCATION_SUFFIX
+$$ROOTDIR/bin/erlware_release_start_helper $$REL_NAME $$REL_VSN $$ERTS_VSN sys.config $$INVOCATION_SUFFIX

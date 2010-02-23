@@ -36,6 +36,7 @@
          app_info/3, edoc_overview/3,
 	 build_config/2,
 	 sysconfig/2,
+	 bin_support/2,
 	 bin/2]).
 
 %-include("eunit.hrl").
@@ -99,6 +100,16 @@ build_config(Env, FileName) ->
 %%-------------------------------------------------------------------
 bin(Env, FileName) ->
     write_template("bin", Env, FileName).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Writes the bin support file
+%% @spec bin_support(Env, Filename) -> ok
+%% @end
+%%-------------------------------------------------------------------
+bin_support(Env, FileName) ->
+    write_template("erlware_release_start_helper", Env, FileName).
+
 
 %%--------------------------------------------------------------------
 %% @doc
