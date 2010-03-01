@@ -30,7 +30,6 @@
              sin_release_builder,
              sin_print_handler,
              sin_test,
-	     sin_analyze,
              sin_app,
              sin_sup,
              sin_help,
@@ -42,6 +41,6 @@
   {applications, [kernel, stdlib, compiler,
                   edoc, sasl, syntax_tools,
                   ibrowse, ktuo, ewrepo, ewlib, tools,
-                  dialyzer, xmerl, mnesia, etask, sgte,
+                  xmerl, mnesia, etask, sgte,
 		  parsetools, asn1]},
   {mod, {sin_app, []}}]}.

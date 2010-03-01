@@ -91,7 +91,6 @@ stop(_State) ->
 %% @private
 %%--------------------------------------------------------------------
 register_tasks() ->
-    sin_analyze:start(),
     sin_edoc:start(),
     sin_erl_builder:start(),
     sin_shell:start(),
