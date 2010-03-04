@@ -44,8 +44,14 @@ class ShellHandler(handler.Handler):
 
         args.extend(largs['client_opts'].get('erl_args', []))
 
+        full_path = prefix + "bin/erl"
+
+        if not os.path.exists(full_path):
+            print "The erl release needs to be installed to use the shell task"
+            return
+
         print "starting shell ..."
-        os.execvp(prefix + "bin/erl", args)
+        os.execvp(full_path, args)
 
 def handle(task, conn):
     """ Handles output from the server. For the most part this just
