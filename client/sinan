@@ -123,8 +123,12 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
 
-    largs = libsinan.args.parse(argv, "build",
-                                {'url' : 'localhost:8599'})
+    try:
+        largs = libsinan.args.parse(argv, "build",
+                                    {'url' : 'localhost:8599'})
+    except libsinan.args.ParseError, e:
+        print e.value
+        return 2
 
     try:
         return initiate_task(largs)
