@@ -231,7 +231,7 @@ handle_call(all_task_defs, _From, State = #state{tid=Tid}) ->
     List1 = ets:tab2list(Tid),
     {reply, strip_to_defs(List1, []), State};
 handle_call({task_name, TaskImpl}, _From, State = #state{tid=Tid}) ->
-    [{_, Res}] = ets:lookup(Tid, {desc, TaskImpl}),
+    [{_, Res}] = ets:lookup(Tid, {impl, TaskImpl}),
     {reply, Res, State}.
 
 %%--------------------------------------------------------------------
