@@ -181,7 +181,9 @@ copy_additional_dirs(BuildRef, TopLevel, ProjectDir) ->
 					{Name, NewName}
 				end, RequiredDirs)
 	    end,
-    NewDirs ++ hooks_dir(TopLevel, ProjectDir).
+    hooks_dir(TopLevel, ProjectDir) ++
+	erts_dir(BuildRef, TopLevel) ++
+	NewDirs.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -199,6 +201,31 @@ hooks_dir(TopLevel, ProjectDir) ->
 	_ ->
 	    []
     end.
+
+%%--------------------------------------------------------------------
+%% @doc
+%%  If an erts version should be included in the dist include it
+%% copy it.
+%% @spec (BuildRef, TopLevel) -> Dirs
+%% @end
+%%--------------------------------------------------------------------
+erts_dir(BuildRef, TopLevel) ->
+    ConvFun = fun(Arg) when is_list(Arg) ->
+		      Arg;
+		 (Arg) when is_atom(Arg) ->
+		      atom_to_list(Arg)
+	      end,
+    Prefix = sin_utils:get_application_env(prefix),
+    ErtsVersion = ConvFun(sin_utils:get_application_env(erts_version)),
+    ErtsToInclude = filename:join([Prefix, "erts-" ++ ErtsVersion]),
+    case sin_build_config:get_value(BuildRef, "dist.include_erts") of
+	true ->
+	    [{ErtsToInclude, filename:join([TopLevel, "erts-" ++ ErtsVersion])}];
+	_ ->
+	    []
+    end.
+
+
 
 %%--------------------------------------------------------------------
 %% @doc
