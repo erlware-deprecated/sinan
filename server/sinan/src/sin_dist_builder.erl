@@ -167,19 +167,37 @@ create_tar_file(BuildRef, FileName, TarContents) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Create addition file links for the system.
-%% @spec (BuildRef, TopLevel, ProjectDir) -> ok
+%% @spec (BuildRef, TopLevel, ProjectDir) -> Dirs
 %% @end
 %%--------------------------------------------------------------------
 copy_additional_dirs(BuildRef, TopLevel, ProjectDir) ->
-    case sin_build_config:get_value(BuildRef, "dist.include_dirs") of
-        undefined ->
-            [];
-        RequiredDirs ->
-            lists:map(fun(Elem) ->
-                              Name = filename:join([ProjectDir, Elem]),
-                              NewName = filename:join([TopLevel, Elem]),
-                              {Name, NewName}
-                      end, RequiredDirs)
+    NewDirs = case sin_build_config:get_value(BuildRef, "dist.include_dirs") of
+		  undefined ->
+		      [];
+		  RequiredDirs ->
+		      lists:map(fun(Elem) ->
+					Name = filename:join([ProjectDir, Elem]),
+					NewName = filename:join([TopLevel, Elem]),
+					{Name, NewName}
+				end, RequiredDirs)
+	    end,
+    NewDirs ++ hooks_dir(TopLevel, ProjectDir).
+
+%%--------------------------------------------------------------------
+%% @doc
+%%  Check to see if there is faxien hooks in the hooks dir. If so
+%% copy it.
+%% @spec (TopLevel, ProjectDir) -> Dirs
+%% @end
+%%--------------------------------------------------------------------
+hooks_dir(TopLevel, ProjectDir) ->
+    HooksDir = filename:join([ProjectDir, "_hooks"]),
+    case sin_utils:file_exists(HooksDir) andalso
+	filelib:fold_files(HooksDir, "fax.*\.erl", false, fun(_,_) -> true end, false) of
+	true ->
+	    [{HooksDir, filename:join([TopLevel, "_hooks"])}];
+	_ ->
+	    []
     end.
 
 %%--------------------------------------------------------------------
