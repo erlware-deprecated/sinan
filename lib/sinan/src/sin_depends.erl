@@ -116,22 +116,6 @@ depends(BuildRef) ->
 %%====================================================================
 %%--------------------------------------------------------------------
 %% @doc
-%%  Get an enviroment variable, throw error if unavailable.
-%% @spec (Key) -> Value
-%% @end
-%%--------------------------------------------------------------------
-get_application_env(Key) ->
-    case application:get_env(sinan, Key) of
-	{ok, Value} ->
-	    Value;
-	_ ->
-	     ?ETA_RAISE_DA(variables_not_set,
-			   "Key ~w not set, must be set as application"
-			   " environment variable ", [Key])
-    end.
-
-%%--------------------------------------------------------------------
-%% @doc
 %%  Check for per project dependencies
 %% @spec (Prefix, ErtsVersion, AppInfo, Acc) ->
 %%                              [{Deps, Vsn, NDeps, Location}]
@@ -384,7 +368,7 @@ process_release(RootDir, BuildFlavor,
 	no_file ->
 	    no_release_file;
 	RelFile ->
-	    Prefix = get_application_env(prefix),
+	    Prefix = sun_utils:get_application_env(prefix),
 	    Deps = sin_release:get_deps(RelFile),
 	    {ok, process_deps(Prefix, Deps, ProjectApps, [])}
     end.
@@ -403,8 +387,8 @@ process_deps(_, [], ProjectApps, Acc) ->
     ProjectApps ++ Acc.
 
 do_transitive_resolution(ProjectApps) ->
-    Prefix = get_application_env(prefix),
-    ErtsVersion = get_application_env(erts_version),
+    Prefix = sin_utils:get_application_env(prefix),
+    ErtsVersion = sin_utils:get_application_env(erts_version),
     AllDeps = check_project_dependencies(Prefix,
 					 ErtsVersion,
 					 ProjectApps,

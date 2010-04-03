@@ -32,6 +32,7 @@
 -module(sin_utils).
 
 -include("file.hrl").
+-include("etask.hrl").
 
 %% API
 -export([copy_dir/3,
@@ -39,6 +40,7 @@
          parent_dir/1,
          delete_dir/1,
          remove_code_paths/1,
+	 get_application_env/1,
          is_dir_ignorable/2,
          file_exists/1,
          find_project_root/1,
@@ -350,4 +352,20 @@ is_string(XY) ->
     case is_list(XY) of
 	false -> false;
 	true -> lists:all(fun is_character/1, XY)
+    end.
+
+%%--------------------------------------------------------------------
+%% @doc
+%%  Get an enviroment variable, throw error if unavailable.
+%% @spec (Key) -> Value
+%% @end
+%%--------------------------------------------------------------------
+get_application_env(Key) ->
+    case application:get_env(sinan, Key) of
+	{ok, Value} ->
+	    Value;
+	_ ->
+	     ?ETA_RAISE_DA(variables_not_set,
+			   "Key ~w not set, must be set as application"
+			   " environment variable ", [Key])
     end.
