@@ -1,5 +1,5 @@
 %%%-------------------------------------------------------------------
-%%% Copyright (c) 2006, 2007 Erlware
+%%% Copyright (c) 2006-2010 Erlware
 %%%
 %%% Permission is hereby granted, free of charge, to any
 %%% person obtaining a copy of this software and associated
@@ -28,7 +28,7 @@
 %%%   It just starts a new process ({@link eta_task_runner}) with the required
 %%%   information and whats for a new request
 %%% @end
-%%% @copyright 2006 Erlware
+%%% @copyright 2006-2010 Erlware
 %%%---------------------------------------------------------------------------
 -module(eta_engine).
 

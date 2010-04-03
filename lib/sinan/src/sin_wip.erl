@@ -1,6 +1,6 @@
 %%%-------------------------------------------------------------------
 %%% @author Eric Merritt <cyberlync@gmail.com>
-%%% @copyright (C) 2008, Eric Merritt
+%%% @copyright (C) 2008-2010 Eric Merritt
 %%% @doc
 %%%  Simple notifier that will repeatedly send a description
 %%%  to the event system until it is told to stop

@@ -1,5 +1,5 @@
 %%%-------------------------------------------------------------------
-%%% Copyright (c) 2006, 2007 Erlware
+%%% Copyright (c) 2006-2010 Erlware
 %%%
 %%% Permission is hereby granted, free of charge, to any
 %%% person obtaining a copy of this software and associated
@@ -47,7 +47,7 @@
 %%%   @type run_id() = term(). A unique id used to identify an instance of a run.
 %%%   @type arg_list() = [string()]. A list of args from the command line.
 %%% @end
-%%% @copyright 2006 Erlware
+%%% @copyright 2006-2010 Erlware
 %%%---------------------------------------------------------------------------
 -module(eta_task_runner).
 

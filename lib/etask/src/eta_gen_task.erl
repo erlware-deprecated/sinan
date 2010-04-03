@@ -1,5 +1,5 @@
 %%%-------------------------------------------------------------------
-%%% Copyright (c) 2006, 2007 Erlware
+%%% Copyright (c) 2006-2010 Erlware
 %%%
 %%% Permission is hereby granted, free of charge, to any
 %%% person obtaining a copy of this software and associated
@@ -28,7 +28,7 @@
 %%%   just defines the do_task/2 function. In otherwords, it requires that
 %%%   the do_task/2 function be implemented in the requiring modules.
 %%% @end
-%%% @copyright 2006 Erlware
+%%% @copyright 2006-2010 Erlware
 %%%---------------------------------------------------------------------------
 -module(eta_gen_task).
 

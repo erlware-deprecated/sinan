@@ -1,6 +1,6 @@
 %%%-------------------------------------------------------------------
 %%% @author Eric Merritt <cyberlync@gmail.com>
-%%% @copyright (C) 2009, Eric Merritt
+%%% @copyright (C) 2009-2010 Erlware
 %%% @doc
 %%%  Provides a means of correctly creating eta pre/post task hooks
 %%%  and executing those hooks that exist.

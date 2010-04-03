@@ -1,6 +1,6 @@
 %%%-------------------------------------------------------------------
 %%% @author Eric Merritt <cyberlync@gmail.com>
-%%% @copyright (C) 2009, PEAK6 LP
+%%% @copyright (C) 2009-2010 Erlware
 %%% @doc
 %%%
 %%% @end

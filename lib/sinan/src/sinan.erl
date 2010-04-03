@@ -1,6 +1,6 @@
 %% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
 %%%-------------------------------------------------------------------
-%%% Copyright (c) 2007 Erlware
+%%% Copyright (c) 2007-2010 Erlware
 %%%
 %%% Permission is hereby granted, free of charge, to any
 %%% person obtaining a copy of this software and associated
@@ -34,7 +34,7 @@
 %%%  @type args() = {[{TaskName, args}]}
 %%%    TaskName = string(). The name of the task the args apply too.
 %%% @end
-%%% @copyright (C) 2007, Erlware
+%%% @copyright (C) 2007-2010 Erlware
 %%% Created :  8 Dec 2007 by Eric Merritt <cyberlync@gmail.com>
 %%%-------------------------------------------------------------------
 -module(sinan).

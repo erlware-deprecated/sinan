@@ -1,5 +1,5 @@
 %%%-------------------------------------------------------------------
-%%% Copyright (c) 2006, 2007 Eric Merritt
+%%% Copyright (c) 2007-2010 Erlware
 %%%
 %%% Permission is hereby granted, free of charge, to any
 %%% person obtaining a copy of this software and associated
@@ -26,7 +26,7 @@
 %%% @doc
 %%%  Provides name/build id registration for build projects.
 %%% @end
-%%% @copyright (C) 2007 Eric Merritt
+%%% @copyright (C) 2007-2010 Erlware
 %%% Created : 11 Mar 2007 by Eric Merritt <cyberlync@gmail.com>
 %%%-------------------------------------------------------------------
 -module(sin_config_registry).

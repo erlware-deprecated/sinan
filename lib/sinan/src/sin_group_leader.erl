@@ -1,6 +1,6 @@
 %% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
 %%%-------------------------------------------------------------------
-%%% Copyright (c) 2007, 2008 Erlware
+%%% Copyright (c) 2008-2010 Erlware
 %%%
 %%% Permission is hereby granted, free of charge, to any
 %%% person obtaining a copy of this software and associated
@@ -24,7 +24,7 @@
 %%% OTHER DEALINGS IN THE SOFTWARE.
 %%%-------------------------------------------------------------------
 %%% @author Eric Merritt <cyberlync@gmail.com>
-%%% @copyright (C) 2008, Erlware
+%%% @copyright (C) 2008-2010 Erlware
 %%% @doc
 %%%   This provides a mechenism to convert io for a particular
 %%%   set of (sub) processes into eta_events for a specific build ref.

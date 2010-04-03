@@ -1,6 +1,6 @@
 %% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
 %%%%-------------------------------------------------------------------
-%%% Copyright (c) 2006, 2007 Eric Merritt
+%%% Copyright (c) 2007-2010 Erlware
 %%%
 %%% Permission is hereby granted, free of charge, to any
 %%% person obtaining a copy of this software and associated
@@ -28,7 +28,7 @@
 %%%  Provides utitlities to generate an polar complient otp/erlang
 %%%  project
 %%% @end
-%%% @copyright (C) 2007, Erlware
+%%% @copyright (C) 2007-2010 Erlware
 %%%-------------------------------------------------------------------
 -module(sin_gen).
 

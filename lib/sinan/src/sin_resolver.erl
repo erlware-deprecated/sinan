@@ -1,5 +1,5 @@
 %%%-------------------------------------------------------------------
-%%% Copyright (c) 2007 Eric Merritt, Martin Logan
+%%% Copyright (c) 2007-2010 Erlware
 %%%
 %%% Permission is hereby granted, free of charge, to any
 %%% person obtaining a copy of this software and associated
@@ -24,7 +24,7 @@
 %%%-------------------------------------------------------------------
 %%% @doc
 %%%  Resolves individual items for the dependency engine.
-%%% @copyright Erlware 2007
+%%% @copyright 2007-2010 Erlware
 %%% @end
 %%%-------------------------------------------------------------------
 -module(sin_resolver).

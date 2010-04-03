@@ -1,5 +1,5 @@
 %%%-------------------------------------------------------------------
-%%% Copyright (c) 2006, 2007 Erlware
+%%% Copyright (c) 2006-2010 Erlware
 %%%
 %%% Permission is hereby granted, free of charge, to any
 %%% person obtaining a copy of this software and associated
@@ -27,7 +27,7 @@
 %%%   Central supervisor for the sinan build system. Starts up all tasks
 %%%   and allows them to run.
 %%% @end
-%%% @copyright (C) 2007, Erlware
+%%% @copyright (C) 2007-2010 Erlware
 %%% Created : 14 Mar 2007 by Eric Merritt <cyberlync@gmail.com>
 %%%-------------------------------------------------------------------
 -module(eta_sup).

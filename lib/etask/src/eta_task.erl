@@ -1,6 +1,6 @@
 %% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
 %%%-------------------------------------------------------------------
-%%% Copyright (c) 2006, 2007 Erlware
+%%% Copyright (c) 2006-2010 Erlware
 %%%
 %%% Permission is hereby granted, free of charge, to any
 %%% person obtaining a copy of this software and associated
@@ -36,7 +36,7 @@
 %%%  @type desc() = string(). A string description of the task, used in help among other things.
 %%%  @type opts() = [{string(), string(), bool()}]. An option description, in the form of ewl_get_opts.
 %%% @end
-%%% @copyright (C) 2007, Erlware
+%%% @copyright (C) 2007-2010, Erlware
 %%% Created : 18 Oct 2007 by Eric Merritt <cyberlync@gmail.com>
 %%%-------------------------------------------------------------------
 -module(eta_task).

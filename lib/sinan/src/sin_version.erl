@@ -1,6 +1,6 @@
 %% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
 %%%-------------------------------------------------------------------
-%%% Copyright (c) 2008 Eric Merritt
+%%% Copyright (c) 2008-2010 Eric Merritt
 %%%
 %%% Permission is hereby granted, free of charge, to any
 %%% person obtaining a copy of this software and associated
@@ -27,7 +27,7 @@
 %%% @doc
 %%%   Return the sinan server version.
 %%% @end
-%%% @copyright (C) 2008, Erlware
+%%% @copyright (C) 2008-2010 Erlware
 %%%---------------------------------------------------------------------------
 -module(sin_version).
 

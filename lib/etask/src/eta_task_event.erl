@@ -1,5 +1,5 @@
 %%%-------------------------------------------------------------------
-%%% Copyright (c) 2006, 2007 Erlware
+%%% Copyright (c) 2006-2010 Erlware
 %%%
 %%% Permission is hereby granted, free of charge, to any
 %%% person obtaining a copy of this software and associated
@@ -26,7 +26,7 @@
 %%% @doc
 %%%   A generic event for the meta_tasks/events
 %%% @end
-%%% @copyright 2006 Erlware
+%%% @copyright 2006-2010 Erlware
 %%%---------------------------------------------------------------------------
 -module(eta_task_event).
 

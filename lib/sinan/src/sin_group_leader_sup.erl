@@ -1,6 +1,6 @@
 %% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
 %%%-------------------------------------------------------------------
-%%% Copyright (c) 2007 Erlware
+%%% Copyright (c) 2007-2010 Erlware
 %%%
 %%% Permission is hereby granted, free of charge, to any
 %%% person obtaining a copy of this software and associated
@@ -24,7 +24,7 @@
 %%% OTHER DEALINGS IN THE SOFTWARE.
 %%%-------------------------------------------------------------------
 %%% @author Eric Merritt <cyberlync@gmail.com>
-%%% @copyright (C) 2008, Eric Merritt
+%%% @copyright (C) 2007-2010 Erlware
 %%% @doc
 %%%  Provides a simple supervisor for group_leaders.
 %%% @end

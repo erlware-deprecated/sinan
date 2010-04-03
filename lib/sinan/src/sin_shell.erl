@@ -1,6 +1,6 @@
 %% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
 %%%-------------------------------------------------------------------
-%%% Copyright (c) 2006, 2007 Eric Merritt
+%%% Copyright (c) 2006-2010 Eric Merritt
 %%%
 %%% Permission is hereby granted, free of charge, to any
 %%% person obtaining a copy of this software and associated
@@ -27,7 +27,7 @@
 %%% @doc
 %%%   Starts a shell with the correct code paths.
 %%% @end
-%%% @copyright (C) 2007, Erlware
+%%% @copyright (C) 2006-2010 Erlware
 %%%---------------------------------------------------------------------------
 -module(sin_shell).
 
