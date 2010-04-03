@@ -171,7 +171,7 @@ create_tar_file(BuildRef, FileName, TarContents) ->
 %% @end
 %%--------------------------------------------------------------------
 copy_additional_dirs(BuildRef, TopLevel, ProjectDir) ->
-    NewDirs = case sin_build_config:get_value(BuildRef, "dist.include_dirs") of
+    NewDirs = case sin_build_config:get_value(BuildRef, "tasks.dist.include_dirs") of
 		  undefined ->
 		      [];
 		  RequiredDirs ->
@@ -218,7 +218,7 @@ erts_dir(BuildRef, TopLevel) ->
     Prefix = sin_utils:get_application_env(prefix),
     ErtsVersion = ConvFun(sin_utils:get_application_env(erts_version)),
     ErtsToInclude = filename:join([Prefix, "erts-" ++ ErtsVersion]),
-    case sin_build_config:get_value(BuildRef, "dist.include_erts") of
+    case sin_utils:sin_build_config:get_value(BuildRef, "tasks.dist.include_erts") of
 	true ->
 	    [{ErtsToInclude, filename:join([TopLevel, "erts-" ++ ErtsVersion])}];
 	_ ->
@@ -290,7 +290,7 @@ get_release_dirs(BuildRef, ProjectName, BuildDir, ProjectDir) ->
     SourceReleases = filename:join([BuildDir, "releases", ProjectName]),
     TargetReleases = filename:join([ProjectName, "releases", ProjectName]),
     Result =
-        case sin_build_config:get_value(BuildRef, "dist.include_release_info") of
+        case sin_build_config:get_value(BuildRef, "tasks.dist.include_release_info") of
             Value when Value == true; Value == undefined ->
                 [{filename:join([SourceReleases,
                                  lists:flatten([Name, ".boot"])]),
