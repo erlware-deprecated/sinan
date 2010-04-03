@@ -23,7 +23,7 @@
 %%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 %%% OTHER DEALINGS IN THE SOFTWARE.
 %%%---------------------------------------------------------------------------
-%%% @author Eric Merritt <cyberlync@gmail.com>
+%%% @author Eric Merritt <ericbmerritt@gmail.com>
 %%% @doc
 %%%  This allows clients to add tasks around functions. Handlers may be
 %%%  either pre run of the entire chain or post run of the entire chain.
@@ -55,7 +55,7 @@
 %%%
 %%% @end
 %%% @copyright (C) 2007-2010 Erlware
-%%% Created : 28 Nov 2007 by Eric Merritt <cyberlync@gmail.com>
+%%% Created : 28 Nov 2007 by Eric Merritt <ericbmerritt@gmail.com>
 %%%-------------------------------------------------------------------
 -module(eta_meta_task).
 

@@ -23,7 +23,7 @@
 %%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 %%% OTHER DEALINGS IN THE SOFTWARE.
 %%%---------------------------------------------------------------------------
-%%% @author Eric Merritt <cyberlync@gmail.com>
+%%% @author Eric Merritt <ericbmerritt@gmail.com>
 %%% @doc
 %%%   Runs the 'test' function on all modules in an application
 %%%   if that function exits.

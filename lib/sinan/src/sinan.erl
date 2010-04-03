@@ -23,7 +23,7 @@
 %%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 %%% OTHER DEALINGS IN THE SOFTWARE.
 %%%---------------------------------------------------------------------------
-%%% @author Eric Merritt <cyberlync@gmail.com>
+%%% @author Eric Merritt <ericbmerritt@gmail.com>
 %%% @doc
 %%%  The module provides a simple api for the sinan system.
 %%%  Two possible arguments may be passed in. The start dir that should
@@ -35,7 +35,7 @@
 %%%    TaskName = string(). The name of the task the args apply too.
 %%% @end
 %%% @copyright (C) 2007-2010 Erlware
-%%% Created :  8 Dec 2007 by Eric Merritt <cyberlync@gmail.com>
+%%% Created :  8 Dec 2007 by Eric Merritt <ericbmerritt@gmail.com>
 %%%-------------------------------------------------------------------
 -module(sinan).
 

@@ -23,12 +23,12 @@
 %%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 %%% OTHER DEALINGS IN THE SOFTWARE.
 %%%---------------------------------------------------------------------------
-%%% @author Eric Merritt <cyberlync@gmail.com>
+%%% @author Eric Merritt <ericbmerritt@gmail.com>
 %%% @doc
 %%%  The config level supervisor.
 %%% @end
 %%% @copyright (C) 2007-2010 Erlware
-%%% Created : 13 Mar 2007 by Eric Merritt <cyberlync@gmail.com>
+%%% Created : 13 Mar 2007 by Eric Merritt <ericbmerritt@gmail.com>
 %%%-------------------------------------------------------------------
 -module(sin_config_sup).
 

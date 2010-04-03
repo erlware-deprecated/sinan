@@ -23,7 +23,7 @@
 %%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 %%% OTHER DEALINGS IN THE SOFTWARE.
 %%%---------------------------------------------------------------------------
-%%% @author Eric Merritt <cyberlync@gmail.com>
+%%% @author Eric Merritt <ericbmerritt@gmail.com>
 %%% @doc
 %%%   Define a behaviour that tasks must implement. In this case, it
 %%%   just defines the do_task/2 function. In otherwords, it requires that

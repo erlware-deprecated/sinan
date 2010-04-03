@@ -28,7 +28,7 @@
 %%%   Deletes everything in the Build directory
 %%% @end
 %%% @copyright (C) 2006-2007 Erlware
-%%% Created : 11 Oct 2006 by Eric Merritt <cyberlync@gmail.com>
+%%% Created : 11 Oct 2006 by Eric Merritt <ericbmerritt@gmail.com>
 %%%---------------------------------------------------------------------------
 -module(sin_clean).
 

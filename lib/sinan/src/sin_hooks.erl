@@ -23,13 +23,13 @@
 %%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 %%% OTHER DEALINGS IN THE SOFTWARE.
 %%%---------------------------------------------------------------------------
-%%% @author Eric Merritt <cyberlync@gmail.com>
+%%% @author Eric Merritt <ericbmerritt@gmail.com>
 %%% @copyright (C) 2009-2010 Erlware
 %%% @doc
 %%%  Provides a means of correctly creating eta pre/post task hooks
 %%%  and executing those hooks that exist.
 %%% @end
-%%% Created : 30 May 2009 by Eric Merritt <cyberlync@gmail.com>
+%%% Created : 30 May 2009 by Eric Merritt <ericbmerritt@gmail.com>
 %%%-------------------------------------------------------------------
 -module(sin_hooks).
 

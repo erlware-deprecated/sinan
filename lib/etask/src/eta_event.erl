@@ -23,12 +23,12 @@
 %%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 %%% OTHER DEALINGS IN THE SOFTWARE.
 %%%---------------------------------------------------------------------------
-%%% @author Eric Merritt <cyberlync@gmail.com>
+%%% @author Eric Merritt <ericbmerritt@gmail.com>
 %%% @doc
 %%%  Provides a nice interface to the eventing system.
 %%% @end
 %%% @copyright (C) 2007-2010 Erlware
-%%% Created : 18 Nov 2007 by Eric Merritt <cyberlync@gmail.com>
+%%% Created : 18 Nov 2007 by Eric Merritt <ericbmerritt@gmail.com>
 %%%-------------------------------------------------------------------
 -module(eta_event).
 

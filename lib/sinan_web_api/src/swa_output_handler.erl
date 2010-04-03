@@ -23,13 +23,13 @@
 %%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 %%% OTHER DEALINGS IN THE SOFTWARE.
 %%%---------------------------------------------------------------------------
-%%% @author Eric Merritt <cyberlync@gmail.com>
+%%% @author Eric Merritt <ericbmerritt@gmail.com>
 %%% @copyright (C) 2008-2010 Eric Merritt
 %%% @doc
 %%% This handles output of the eventing system. Used to write to the
 %%% socket.
 %%% @end
-%%% Created : 20 Apr 2008 by Eric Merritt <cyberlync@gmail.com>
+%%% Created : 20 Apr 2008 by Eric Merritt <ericbmerritt@gmail.com>
 %%%-------------------------------------------------------------------
 -module(swa_output_handler).
 

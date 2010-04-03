@@ -23,12 +23,12 @@
 %%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 %%% OTHER DEALINGS IN THE SOFTWARE.
 %%%-------------------------------------------------------------------
-%%% @author Eric Merritt <cyberlync@gmail.com>
+%%% @author Eric Merritt <ericbmerritt@gmail.com>
 %%% @doc
 %%%  Supervisor for all of the sinan build tasks.
 %%% @end
 %%% @copyright (C) 2007-2010 Erlware
-%%% Created : 18 Nov 2007 by Eric Merritt <cyberlync@gmail.com>
+%%% Created : 18 Nov 2007 by Eric Merritt <ericbmerritt@gmail.com>
 %%%-------------------------------------------------------------------
 -module(sin_sup).
 

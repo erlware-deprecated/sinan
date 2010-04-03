@@ -23,13 +23,13 @@
 %%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 %%% OTHER DEALINGS IN THE SOFTWARE.
 %%%---------------------------------------------------------------------------
-%%% @author Eric Merritt <cyberlync@gmail.com>
+%%% @author Eric Merritt <ericbmerritt@gmail.com>
 %%% @doc
 %%%  Supports generating 'compile' args from a string using standard
 %%%  erlc arguments.
 %%% @end
 %%% @copyright (C) 2007-2010 Erlware
-%%% Created :  5 Apr 2007 by Eric Merritt <cyberlync@gmail.com>
+%%% Created :  5 Apr 2007 by Eric Merritt <ericbmerritt@gmail.com>
 %%%-------------------------------------------------------------------
 -module(sin_build_arg_parser).
 

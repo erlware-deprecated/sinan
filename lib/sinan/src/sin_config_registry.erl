@@ -23,12 +23,12 @@
 %%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 %%% OTHER DEALINGS IN THE SOFTWARE.
 %%%---------------------------------------------------------------------------
-%%% @author Eric Merritt <cyberlync@gmail.com>
+%%% @author Eric Merritt <ericbmerritt@gmail.com>
 %%% @doc
 %%%  Provides name/build id registration for build projects.
 %%% @end
 %%% @copyright (C) 2007-2010 Erlware
-%%% Created : 11 Mar 2007 by Eric Merritt <cyberlync@gmail.com>
+%%% Created : 11 Mar 2007 by Eric Merritt <ericbmerritt@gmail.com>
 %%%-------------------------------------------------------------------
 -module(sin_config_registry).
 

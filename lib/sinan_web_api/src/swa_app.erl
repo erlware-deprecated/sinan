@@ -23,12 +23,12 @@
 %%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 %%% OTHER DEALINGS IN THE SOFTWARE.
 %%%---------------------------------------------------------------------------
-%%% @author Eric Merritt <cyberlync@gmail.com>
+%%% @author Eric Merritt <ericbmerritt@gmail.com>
 %%% @copyright (C) 2008-2010 Eric Merritt
 %%% @doc
 %%%  Strait forward application used to start the sinan interface
 %%% @end
-%%% Created : 14 Mar 2008 by Eric Merritt <cyberlync@gmail.com>
+%%% Created : 14 Mar 2008 by Eric Merritt <ericbmerritt@gmail.com>
 %%%-------------------------------------------------------------------
 -module(swa_app).
 

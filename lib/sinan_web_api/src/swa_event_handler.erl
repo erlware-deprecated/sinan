@@ -23,13 +23,13 @@
 %%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 %%% OTHER DEALINGS IN THE SOFTWARE.
 %%%---------------------------------------------------------------------------
-%%% @author Eric Merritt <cyberlync@gmail.com>
+%%% @author Eric Merritt <ericbmerritt@gmail.com>
 %%% @copyright (C) 2008-2010 Eric Merritt
 %%% @doc
 %%%  Handle sinan events by converting them to json and sending them to
 %%%  the client.
 %%% @end
-%%% Created : 14 Apr 2008 by Eric Merritt <cyberlync@gmail.com>
+%%% Created : 14 Apr 2008 by Eric Merritt <ericbmerritt@gmail.com>
 %%%-------------------------------------------------------------------
 -module(swa_event_handler).
 

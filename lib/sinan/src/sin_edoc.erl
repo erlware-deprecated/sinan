@@ -23,12 +23,12 @@
 %%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 %%% OTHER DEALINGS IN THE SOFTWARE.
 %%%---------------------------------------------------------------------------
-%%% @author Eric Merritt <cyberlync@gmail.com>
+%%% @author Eric Merritt <ericbmerritt@gmail.com>
 %%% @doc
 %%%  Creates edoc format documentation for the project
 %%% @end
 %%% @copyright (C) 2006-2010 Erlware
-%%% Created : 16 Oct 2006 by Eric Merritt <cyberlync@gmail.com>
+%%% Created : 16 Oct 2006 by Eric Merritt <ericbmerritt@gmail.com>
 %%%---------------------------------------------------------------------------
 -module(sin_edoc).
 

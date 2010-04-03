@@ -23,12 +23,12 @@
 %%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 %%% OTHER DEALINGS IN THE SOFTWARE.
 %%%-------------------------------------------------------------------
-%%% @author Eric Merritt <cyberlync@gmail.com>
+%%% @author Eric Merritt <ericbmerritt@gmail.com>
 %%% @copyright (C) 2007-2010 Erlware
 %%% @doc
 %%%  Provides a simple supervisor for group_leaders.
 %%% @end
-%%% Created : 25 Mar 2008 by Eric Merritt <cyberlync@gmail.com>
+%%% Created : 25 Mar 2008 by Eric Merritt <ericbmerritt@gmail.com>
 %%%-------------------------------------------------------------------
 -module(sin_group_leader_sup).
 

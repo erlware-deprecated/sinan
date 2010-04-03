@@ -24,7 +24,7 @@
 %%% OTHER DEALINGS IN THE SOFTWARE.
 %%%---------------------------------------------------------------------------
 %%% @author Caoyuan <dcaoyuan@gmail.com>
-%%% @author Eric Merritt <cyberlync@gmail.com>
+%%% @author Eric Merritt <ericbmerritt@gmail.com>
 %%% @doc
 %%%  The module provides a way to generate a GUID in
 %%%  accord with http://www.ietf.org/rfc/rfc4122.txt
@@ -32,7 +32,7 @@
 %%%  used and released with permision from caoyuan
 %%% @end
 %%% @copyright (C) 2007-2010 Erlware
-%%% Created :  8 Dec 2007 by Eric Merritt <cyberlync@gmail.com>
+%%% Created :  8 Dec 2007 by Eric Merritt <ericbmerritt@gmail.com>
 %%%-------------------------------------------------------------------
 -module(eta_guid).
 

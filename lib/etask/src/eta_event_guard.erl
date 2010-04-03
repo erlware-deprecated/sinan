@@ -23,13 +23,13 @@
 %%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 %%% OTHER DEALINGS IN THE SOFTWARE.
 %%%---------------------------------------------------------------------------
-%%% @author Eric Merritt <cyberlync@gmail.com>
+%%% @author Eric Merritt <ericbmerritt@gmail.com>
 %%% @doc
 %%%   Provides a guard for the printer handler of the
 %%%  eta_event gen_event system.
 %%% @end
 %%% @copyright (C) 2007-2010 Erlware
-%%% Created : 23 Nov 2007 by Eric Merritt <cyberlync@gmail.com>
+%%% Created : 23 Nov 2007 by Eric Merritt <ericbmerritt@gmail.com>
 %%%-------------------------------------------------------------------
 -module(eta_event_guard).
 

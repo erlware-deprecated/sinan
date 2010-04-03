@@ -23,7 +23,7 @@
 %%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 %%% OTHER DEALINGS IN THE SOFTWARE.
 %%%---------------------------------------------------------------------------
-%%% @author Eric Merritt <cyberlync@gmail.com>
+%%% @author Eric Merritt <ericbmerritt@gmail.com>
 %%% @doc
 %%%  This module manages tasks, task descriptions and task relationships.
 %%%
@@ -37,7 +37,7 @@
 %%%  @type opts() = [{string(), string(), bool()}]. An option description, in the form of ewl_get_opts.
 %%% @end
 %%% @copyright (C) 2007-2010, Erlware
-%%% Created : 18 Oct 2007 by Eric Merritt <cyberlync@gmail.com>
+%%% Created : 18 Oct 2007 by Eric Merritt <ericbmerritt@gmail.com>
 %%%-------------------------------------------------------------------
 -module(eta_task).
 

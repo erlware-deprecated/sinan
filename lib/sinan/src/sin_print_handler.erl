@@ -28,7 +28,7 @@
 %%%   Prints out information from the eta_event system.
 %%% @end
 %%% @copyright (C) 2007-2010 Erlware
-%%% Created : 31 Jan 2007 by Eric Merritt <cyberlync@gmail.com>
+%%% Created : 31 Jan 2007 by Eric Merritt <ericbmerritt@gmail.com>
 %%%---------------------------------------------------------------------------
 -module(sin_print_handler).
 

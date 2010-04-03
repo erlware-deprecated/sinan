@@ -23,13 +23,13 @@
 %%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 %%% OTHER DEALINGS IN THE SOFTWARE.
 %%%---------------------------------------------------------------------------
-%%% @author Eric Merritt <cyberlync@gmail.com>
+%%% @author Eric Merritt <ericbmerritt@gmail.com>
 %%% @doc
 %%%   Central supervisor for the sinan build system. Starts up all tasks
 %%%   and allows them to run.
 %%% @end
 %%% @copyright (C) 2007-2010 Erlware
-%%% Created : 14 Mar 2007 by Eric Merritt <cyberlync@gmail.com>
+%%% Created : 14 Mar 2007 by Eric Merritt <ericbmerritt@gmail.com>
 %%%-------------------------------------------------------------------
 -module(eta_sup).
 
