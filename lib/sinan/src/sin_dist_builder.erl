@@ -218,7 +218,7 @@ erts_dir(BuildRef, TopLevel) ->
     Prefix = sin_utils:get_application_env(prefix),
     ErtsVersion = ConvFun(sin_utils:get_application_env(erts_version)),
     ErtsToInclude = filename:join([Prefix, "erts-" ++ ErtsVersion]),
-    case sin_utils:sin_build_config:get_value(BuildRef, "tasks.dist.include_erts") of
+    case sin_utils:to_bool(sin_build_config:get_value(BuildRef, "tasks.dist.include_erts")) of
 	true ->
 	    [{ErtsToInclude, filename:join([TopLevel, "erts-" ++ ErtsVersion])}];
 	_ ->
