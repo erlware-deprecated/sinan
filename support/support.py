@@ -29,7 +29,7 @@ ERLWARE_APPS = [
                 "crary-0.2.3",
                 "eunit-2.1.4",
                 "cryptographic-0.2.2",
-                "ewlib-0.9.1.0",
+                "ewlib-0.9.2.0",
                 "ewrepo-0.18.8.0",
                 "kernel-2.13.4",
                 "sasl-2.1.8",
