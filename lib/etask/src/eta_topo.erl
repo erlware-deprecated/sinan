@@ -1,3 +1,4 @@
+%% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
 %%%-------------------------------------------------------------------
 %%% @author Joe Armstrong
 %%  @author Eric Merritt

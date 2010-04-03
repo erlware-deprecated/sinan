@@ -1,3 +1,4 @@
+%% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
 %%%-------------------------------------------------------------------
 %%% Copyright (c) 2006-2010 Eric Merritt
 %%%
