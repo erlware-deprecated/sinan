@@ -39,11 +39,11 @@ def start_server(largs):
         raise sinexceptions.SinanError("Unable to start " + cmd)
 
 def try_reconnect(largs, handler, retry_count=10, retry_interval=1, print_retry=True):
+    status = 1
     count = 0
     while 1:
         try:
-            handler.handle(largs)
-            return True
+            return handler.handle(largs)
         except (socket.error), e:
             code, reason = e
             if code == CONNECTION_REFUSED:
@@ -63,12 +63,14 @@ def try_reconnect(largs, handler, retry_count=10, retry_interval=1, print_retry=
                     print ("Unable to connect to server after "
                     + str(retry_count) +
                     " tries")
+                    status = 5
                     break
             else:
                 print "Unable to build got : "
                 print e
+                status = 3
                 break
-    return False
+    return status
 
 def check_version(largs):
     """ Check  that the version of the server matchs this client.

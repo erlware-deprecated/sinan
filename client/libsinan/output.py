@@ -69,6 +69,7 @@ class SimpleTaskHandler(object):
         return True
 
     def object_end(self):
+        status = 0
         """ We only get one object per right now so
         lets print it out when we get it """
 
@@ -88,13 +89,15 @@ class SimpleTaskHandler(object):
             if self.desc:
                 print self.desc
             print "run complete with faults"
+            status = 4
+            sys.exit(4)
 
         self.event_type = None
         self.type = None
         self.desc = None
         self.task = None
         self.next = None
-        return True
+        return status
 
     def value_end(self):
         return True
