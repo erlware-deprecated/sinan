@@ -108,6 +108,12 @@ make_tar(BuildRef, ProjectDir, ProjectApps, ProjectRepoApps, Repo) ->
     TarDir = filename:join([BuildDir, "tar"]),
     filelib:ensure_dir(filename:join([TarDir, "tmp"])),
     ProjectName = get_project_name(BuildRef),
+    ReleaseName = case sin_build_config:get_value(BuildRef, "-r") of
+                      undefined ->
+                          ProjectName;
+                      R ->
+                          R++"-"++sin_build_config:get_value(BuildRef, "releases."++R++".vsn")
+                  end,
     LibDir = filename:join([ProjectName, "lib"]),
     AppDir = filename:join([BuildDir, "apps"]),
     List1 = gather_dirs(LibDir, Repo, ProjectRepoApps, []),
@@ -116,7 +122,7 @@ make_tar(BuildRef, ProjectDir, ProjectApps, ProjectRepoApps, Repo) ->
         get_release_dirs(BuildRef, ProjectName, BuildDir, ProjectDir) ++
         add_defaults(ProjectDir, ProjectName),
     create_tar_file(BuildRef, filename:join([TarDir,
-                                             lists:flatten([ProjectName, ".tar.gz"])]),
+                                             lists:flatten([ReleaseName, ".tar.gz"])]),
                     List3).
 
 

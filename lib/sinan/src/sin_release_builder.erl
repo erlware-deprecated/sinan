@@ -83,15 +83,18 @@ do_task(BuildRef) ->
 release(BuildRef) ->
     eta_event:task_start(BuildRef, ?TASK),
     BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
-    Name = project_name(BuildRef),
+    ReleaseName = case sin_build_config:get_value(BuildRef, "-r") of
+                      undefined ->
+                          project_name(BuildRef);
+                      R ->
+                          R
+                  end,
     Version = project_version(BuildRef),
-    ReleaseInfo = generate_rel_file(BuildRef, BuildDir, Name, Version),
+    ReleaseInfo = generate_rel_file(BuildRef, BuildDir, ReleaseName, Version),
     sin_build_config:store(BuildRef, "project.release_info", ReleaseInfo),
-    copy_or_generate_sys_config_file(BuildRef, BuildDir, Name, Version),
+    copy_or_generate_sys_config_file(BuildRef, BuildDir, ReleaseName, Version),
     make_boot_script(BuildRef, ReleaseInfo),
     eta_event:task_stop(BuildRef, ?TASK).
-
-
 
 %%====================================================================
 %% Internal functions
@@ -105,23 +108,37 @@ release(BuildRef) ->
 %%--------------------------------------------------------------------
 generate_rel_file(BuildRef, BuildDir, Name, Version) ->
     BuildFlavor = sin_build_config:get_value(BuildRef, "build.flavor"),
-    ProjectName = sin_build_config:get_value(BuildRef, "project.name"),
-    ProjectVsn = sin_build_config:get_value(BuildRef, "project.vsn"),
+    {ProjectName, ProjectVsn} = case sin_build_config:get_value(BuildRef, "-r") of
+                                    undefined ->
+                                        {sin_build_config:get_value(BuildRef, "project.name"), sin_build_config:get_value(BuildRef, "project.vsn")};
+                                    ReleaseName ->
+                                        {ReleaseName, sin_build_config:get_value(BuildRef, "releases."++ ReleaseName ++".vsn")}
+                                end,
+
     RootDir = sin_build_config:get_value(BuildRef, "project.dir"),
 
     case sin_release:get_release(RootDir, BuildFlavor, ProjectName,
-				 ProjectVsn) of
-	no_file ->
+                                 ProjectVsn) of
+        no_file ->
 
-	    Erts = get_erts_info(),
-	    Deps = process_deps(BuildRef,
-				sin_build_config:get_value(BuildRef,
-							   "project.deps"), []),
-	    Release = {release, {Name, Version}, {erts, Erts},
-		       Deps};
+            Erts = get_erts_info(),
 
-	Release ->
-	    ok
+            Deps = process_deps(BuildRef,
+                                element(1,sin_build_config:get_value(BuildRef,
+                                                                     "project.deps")), []),
+            Deps2 = process_deps(BuildRef,
+                                element(2,sin_build_config:get_value(BuildRef,
+                                                                     "project.deps")), []),
+
+            Deps3 = lists:map(fun({App, AppVersion}) ->
+                                      {App, AppVersion, load}
+                              end, Deps2),
+
+            Release = {release, {Name, Version}, {erts, Erts},
+                      lists:ukeymerge(1, lists:sort(Deps), lists:sort(Deps3))};
+
+        Release ->
+            ok
     end,
     {save_release(BuildRef, BuildDir, Name, Version, Release),
      Release}.

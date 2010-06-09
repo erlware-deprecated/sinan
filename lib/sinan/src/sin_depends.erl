@@ -83,7 +83,17 @@ do_task(BuildRef) ->
 depends(BuildRef) ->
     BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
     AppBDir = filename:join([BuildDir, "apps"]),
-    ProjectApps = gather_project_apps(BuildRef, AppBDir),
+    Release = sin_build_config:get_value(BuildRef, "-r"),
+    AllProjectApps = gather_project_apps(BuildRef, AppBDir),
+
+    case Release of
+        undefined ->
+            ProjectApps = AllProjectApps;
+        _ ->
+            ProjectApps = gather_project_apps(BuildRef, AppBDir, sin_build_config:get_value(BuildRef, "releases."++Release++".apps"))
+    end,
+
+    sin_build_config:store(BuildRef, "project.allapps", AllProjectApps),
     sin_build_config:store(BuildRef, "project.apps", ProjectApps),
 
     BuildFlavor = sin_build_config:get_value(BuildRef, "build.flavor"),
@@ -92,21 +102,38 @@ depends(BuildRef) ->
     RootDir = sin_build_config:get_value(BuildRef, "project.dir"),
 
     case process_release(RootDir, BuildFlavor,
-			 ProjectName, ProjectVsn, ProjectApps) of
-	{ok, AllDeps} ->
-	    ok;
-	_ ->
-	    case do_transitive_resolution(ProjectApps) of
-		{ok, AllDeps} ->
-		    ok;
-		_ ->
-		    AllDeps = none,
-		    ?ETA_RAISE_DA(unable_to_resolve,
-				  "Unable to resolve dependencies", [])
-	    end
+                         ProjectName, ProjectVsn, ProjectApps) of
+        {ok, AllDeps} ->
+            ok;
+        _ ->
+            case do_transitive_resolution(ProjectApps, AllProjectApps) of
+                {ok, AllDeps} ->
+                    ok;
+                _ ->
+                    AllDeps = none,
+                    ?ETA_RAISE_DA(unable_to_resolve,
+                                  "Unable to resolve dependencies", [])
+            end
     end,
-    RepoApps = get_repo_apps(ProjectApps, AllDeps),
+    RepoApps = get_repo_apps(AllProjectApps, element(1, AllDeps)),
+
+    case process_release(RootDir, BuildFlavor,
+                         ProjectName, ProjectVsn, AllProjectApps) of
+        {ok, AllDeps2} ->
+            ok;
+        _ ->
+            case do_transitive_resolution(AllProjectApps, AllProjectApps) of
+                {ok, AllDeps2} ->
+                    ok;
+                _ ->
+                    AllDeps2 = none,
+                    ?ETA_RAISE_DA(unable_to_resolve,
+                                  "Unable to resolve dependencies", [])
+            end
+    end,
+
     sin_build_config:store(BuildRef, "project.deps", AllDeps),
+    sin_build_config:store(BuildRef, "project.alldeps", AllDeps2),
     sin_build_config:store(BuildRef, "project.repoapps", RepoApps),
     save_deps(BuildRef, AllDeps),
     update_sigs(BuildRef).
@@ -121,29 +148,46 @@ depends(BuildRef) ->
 %%                              [{Deps, Vsn, NDeps, Location}]
 %% @end
 %%--------------------------------------------------------------------
-check_project_dependencies(Prefix,
-			   ErtsVersion,
-			   ProjectApps, Acc) ->
-    check_project_dependencies(Prefix, ErtsVersion, ProjectApps,
-				ProjectApps, Acc).
+% check_project_dependencies(Prefix,
+%                            ErtsVersion,
+%                            ProjectApps,
+%                            AllProjectApps,
+%                            Acc) ->
+%     check_project_dependencies(Prefix, ErtsVersion, ProjectApps,
+%                                ProjectApps, Acc).
 
 check_project_dependencies(Prefix,
                            ErtsVersion,
-                           [App = {_Name, _Vsn, Deps, _} | ProjectApps],
-                           AllProjectApps, Acc) ->
-    Acc2 = resolve_project_dependencies(Prefix, ErtsVersion, Deps,
+                           [App = {_Name, _Vsn, {Deps, IncDeps}, _} | ProjectApps],
+                           AllProjectApps,
+                           {Acc1, IncAcc1}) ->
+    Acc2 = resolve_project_dependencies(Prefix,
+                                        ErtsVersion,
+                                        Deps,
                                         AllProjectApps,
-                                        merge_deps(App, Acc, Acc)),
+                                        merge_deps(App, Acc1, Acc1)),
+
+    Acc3 = case IncDeps of
+               [] ->
+                   [];
+               undefined ->
+                   [];
+               _ ->
+                   resolve_project_dependencies(Prefix, ErtsVersion, IncDeps,
+                                                AllProjectApps,
+                                                merge_deps(App, IncAcc1, IncAcc1))
+           end,
+
     check_project_dependencies(Prefix,
-			       ErtsVersion,
-			       ProjectApps,
-			       AllProjectApps,
-			       Acc2);
+                               ErtsVersion,
+                               ProjectApps,
+                               AllProjectApps,
+                               {Acc2, Acc3});
 check_project_dependencies(_,
-			   _,
-			   [],
-			    _,
-			   Acc) ->
+                           _,
+                           [],
+                           _,
+                           Acc) ->
     Acc.
 
 merge_deps(App, [App | _], All) ->
@@ -154,60 +198,60 @@ merge_deps(App, [], All) ->
     [App | All].
 
 resolve_project_dependencies(Prefix,
-			      ErtsVersion,
-			      Deps0 = [Dep | Deps],
-			      AllProjectApps, Acc) ->
-     case already_resolved(Dep, Acc) of
-	 false ->
-	     resolve_project_dependencies2(Prefix, ErtsVersion, Deps0,
-					   AllProjectApps,
-					   Acc);
-	 true ->
-	     resolve_project_dependencies(Prefix, ErtsVersion, Deps,
-					  AllProjectApps,
-					  Acc)
+                             ErtsVersion,
+                             Deps0 = [Dep | Deps],
+                             AllProjectApps, Acc) ->
+    case already_resolved(Dep, Acc) of
+        false ->
+            resolve_project_dependencies2(Prefix, ErtsVersion, Deps0,
+                                          AllProjectApps,
+                                          Acc);
+        true ->
+            resolve_project_dependencies(Prefix, ErtsVersion, Deps,
+                                         AllProjectApps,
+                                         Acc)
     end;
 resolve_project_dependencies(_, _, [], _, Acc) ->
     Acc.
 
 resolve_project_dependencies2(Prefix,
-			      ErtsVersion,
-			      [Dep | Deps], AllProjectApps, Acc) ->
+                              ErtsVersion,
+                              [Dep | Deps], AllProjectApps, Acc) ->
     case lists:keysearch(Dep, 1, AllProjectApps) of
-	{value, App={Dep, _Version, NDeps, _Location}} ->
-	    resolve_project_dependencies(Prefix, ErtsVersion, Deps ++ NDeps,
-					 AllProjectApps,
-					 [App | Acc]);
-	false ->
-	     Version =
-		 case sin_resolver:package_versions(Prefix,
-						    Dep) of
-		     [] ->
-			 ?ETA_RAISE_DA(unable_to_find_dependency,
-				       "Couldn't find dependency ~s.",
-				       [Dep]);
-		     [Version1 | _] ->
-			 Version1
-		 end,
-	    NewEntry = {_, _, NDeps, _} =
-		resolve_package_information(Prefix, Dep, Version),
-	    resolve_project_dependencies(Prefix, ErtsVersion, Deps ++ NDeps,
-					 AllProjectApps,
-					 [NewEntry | Acc])
+        {value, App={Dep, _Version, NDeps, _Location}} ->
+            resolve_project_dependencies(Prefix, ErtsVersion, Deps ++ element(1,NDeps),
+                                         AllProjectApps,
+                                         [App | Acc]);
+        false ->
+            Version =
+                case sin_resolver:package_versions(Prefix,
+                                                   Dep) of
+                    [] ->
+                        ?ETA_RAISE_DA(unable_to_find_dependency,
+                                      "Couldn't find dependency ~s.",
+                                      [Dep]);
+                    [Version1 | _] ->
+                        Version1
+                end,
+            NewEntry = {_, _, {NewDeps, _NewIncDeps}, _} =
+                resolve_package_information(Prefix, Dep, Version),
+            resolve_project_dependencies(Prefix, ErtsVersion, Deps ++ NewDeps,
+                                         AllProjectApps,
+                                         [NewEntry | Acc])
     end;
 resolve_project_dependencies2(_, _, [], _, Acc) ->
     Acc.
 
 
 resolve_package_information(Prefix, Name, Version) ->
-    Deps = sin_resolver:package_dependencies(Prefix,
-					     Name,
-					     Version),
-    Location = sin_resolver:find_package_location(Prefix,
-						  Name,
-						  Version),
-    {Name, Version, Deps, Location}.
+    {Deps, IncDeps} = sin_resolver:package_dependencies(Prefix,
+                                                        Name,
+                                                        Version),
 
+    Location = sin_resolver:find_package_location(Prefix,
+                                                  Name,
+                                                  Version),
+    {Name, Version, {Deps, IncDeps}, Location}.
 
 already_resolved(Dep, [{Dep, _, _, _} | _]) ->
     true;
@@ -290,28 +334,33 @@ save_repo_apps(BuildRef, BuildDir) ->
 %%-------------------------------------------------------------------
 gather_project_apps(BuildRef, AppBDir) ->
     gather_project_apps(BuildRef,
-			AppBDir,
+                        AppBDir,
                         sin_build_config:get_value(BuildRef, "project.applist"), []).
+
+gather_project_apps(BuildRef, AppBDir, AppList) ->
+    gather_project_apps(BuildRef,
+                        AppBDir,
+                        AppList, []).
 
 gather_project_apps(BuildRef, AppBDir, [AppName | T], Acc) ->
     Vsn = sin_build_config:get_value(BuildRef, "apps." ++ AppName ++ ".vsn"),
     Name = sin_build_config:get_value(BuildRef,
                                       "apps." ++ AppName ++ ".name"),
     OpenDeps = sin_build_config:get_value(BuildRef,
-                                       "apps." ++ AppName ++
-                                        ".applications"),
+                                          "apps." ++ AppName ++
+                                          ".applications"),
     IncludedDeps = sin_build_config:get_value(BuildRef,
-                                           "apps." ++ AppName ++
-                                            ".included_applications"),
+                                              "apps." ++ AppName ++
+                                              ".included_applications", []),
 
     Eunit = case sin_build_config:get_value(BuildRef, "eunit") of
-		"disable" ->
-		    [];
-		_ ->
-		    [eunit]
+                "disable" ->
+                    [];
+                _ ->
+                    [eunit]
+            end,
 
-	    end,
-    NDeps = merge(OpenDeps ++ Eunit, IncludedDeps),
+    NDeps = {OpenDeps ++ Eunit, IncludedDeps},
 
     BuildTarget = lists:flatten([atom_to_list(Name), "-", Vsn]),
     AppPath = filename:join([AppBDir, BuildTarget]),
@@ -323,17 +372,6 @@ gather_project_apps(BuildRef, AppBDir, [AppName | T], Acc) ->
 gather_project_apps(_, _, [], Acc) ->
     Acc.
 
-
-%%--------------------------------------------------------------------
-%% @doc
-%%   Merge the two types of deps removing duplicates.
-%% @spec (OpenDeps, IncludedDeps) -> MergedList
-%% @end
-%%--------------------------------------------------------------------
-merge(OpenDeps, undefined) ->
-    OpenDeps;
-merge(OpenDeps, IncludedDeps) ->
-    lists:umerge(lists:sort(OpenDeps), lists:sort(IncludedDeps)).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -386,11 +424,12 @@ process_deps(Prefix, [{Name, Vsn} | Rest], ProjectApps, Acc) ->
 process_deps(_, [], ProjectApps, Acc) ->
     ProjectApps ++ Acc.
 
-do_transitive_resolution(ProjectApps) ->
+do_transitive_resolution(ProjectApps, AllProjectApps) ->
     Prefix = sin_utils:get_application_env(prefix),
     ErtsVersion = sin_utils:get_application_env(erts_version),
     AllDeps = check_project_dependencies(Prefix,
-					 ErtsVersion,
-					 ProjectApps,
-					 []),
+                                         ErtsVersion,
+                                         ProjectApps,
+                                         AllProjectApps,
+                                         {[], []}),
     {ok, AllDeps}.

@@ -52,8 +52,8 @@
 package_versions(Prefix, Package) when is_atom(Package) ->
     LibDir = filename:join([Prefix, "lib"]),
     lists:sort(fun ewr_util:is_version_greater/2,
-	       get_package_versions(Package,
-			 LibDir)).
+               get_package_versions(Package,
+                                    LibDir)).
 
 
 %%--------------------------------------------------------------------
@@ -67,8 +67,8 @@ package_versions(Prefix, Package) when is_atom(Package) ->
 package_dependencies(Prefix, Package, Version) ->
     NPackage = atom_to_list(Package),
     NDeps = get_package_dependencies(NPackage,
-				     Version,
-				     Prefix),
+                                     Version,
+                                     Prefix),
     NDeps.
 
 
@@ -150,8 +150,9 @@ get_package_dependencies(Package, Version, Prefix) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_parse_output({application, _, Ops}) ->
-    lists:umerge(lists:sort(get_deps(Ops)),
-		 lists:sort(get_ideps(Ops)));
+    %lists:umerge(lists:sort(get_deps(Ops)),
+	%	 lists:sort(get_ideps(Ops)));
+    {get_deps(Ops), get_ideps(Ops)};
 handle_parse_output(_) ->
    throw({error, "Invalid dependency info"}).
 

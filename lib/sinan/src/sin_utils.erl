@@ -314,12 +314,12 @@ find_project_root(Start) ->
         {ok, _FileInfo} ->
             Start;
         {error, _Reason} ->
-	    case file:read_file_info(ConfigFile2) of
-		{ok, _FileInfo} ->
-		    Start;
-		{error, _Reason} ->
-		    find_project_root(sin_utils:parent_dir(Start))
-	    end
+            case file:read_file_info(ConfigFile2) of
+                {ok, _FileInfo} ->
+                    Start;
+                {error, _Reason} ->
+                    find_project_root(sin_utils:parent_dir(Start))
+            end
     end.
 %%-------------------------------------------------------------------
 %% @doc

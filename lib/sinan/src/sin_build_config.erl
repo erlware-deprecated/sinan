@@ -408,7 +408,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
 %%-------------------------------------------------------------------
 %% @doc
-%%   Find the build config under _build.cfg or _sinan.cfg
+%%   Find the build config under _build.cfg or sinan.cfg
 %%
 %% @spec (ProjectDir::string()) -> NewConfig
 %% @end
@@ -443,10 +443,12 @@ process_build_config(ProjectDir, BuildConfig) ->
                                                            "default_build"])),
     Config = merge_config(dict:new(), DefaultData, ""),
     Data = sin_config_parser:parse_config_file(BuildConfig),
+
     NewConfig = merge_config(Config, Data, ""),
 
     NewConfig1 = dict:store("build.config", BuildConfig, NewConfig),
-    NewConfig2 = dict:store("project.dir", ProjectDir, NewConfig1),
+    NewConfig2 = dict:store("project.dir", ProjectDir, NewConfig1),    
+
     sin_discover:discover(ProjectDir, NewConfig2).
 
 

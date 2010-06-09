@@ -92,7 +92,7 @@ do_task(BuildRef) ->
 build(BuildRef) ->
     eta_event:task_start(BuildRef, ?TASK),
     ensure_build_dir(BuildRef),
-    Apps = sin_build_config:get_value(BuildRef, "project.apps"),
+    Apps = sin_build_config:get_value(BuildRef, "project.allapps"),
     NApps = reorder_apps_according_to_deps(Apps),
     RawArgs = sin_build_config:get_value(BuildRef,
                                          "tasks.build.compile_args", ""),
@@ -113,14 +113,15 @@ build(BuildRef) ->
 %%--------------------------------------------------------------------
 reorder_apps_according_to_deps(AllApps) ->
     ReOrdered = lists:foldr(
-		  fun ({App, _, Deps, _}, Acc) ->
-			  case map_deps(App, Deps, AllApps) of
-			      [] ->
-				  [{'NONE', to_list(App)} | Acc];
-			      Else ->
-				  Else ++ Acc
-			  end
-		  end, [], AllApps),
+                  fun ({App, _, {Deps, IncDeps}, _}, Acc) ->
+                          AllDeps = Deps++IncDeps,
+                          case map_deps(App, AllDeps, AllApps) of
+                              [] ->
+                                  [{'NONE', to_list(App)} | Acc];
+                              Else ->
+                                  Else ++ Acc
+                          end
+                  end, [], AllApps),
     case eta_topo:sort(ReOrdered) of
         {ok, DepList} ->
             DepList;
@@ -170,18 +171,19 @@ to_list(Atom) when is_list(Atom) ->
 %% @private
 %%--------------------------------------------------------------------
 build_apps(BuildRef, Apps, Args) ->
-    AppList = sin_build_config:get_value(BuildRef, "project.apps"),
-    Deps = sin_build_config:get_value(BuildRef, "project.deps"),
+    AppList = sin_build_config:get_value(BuildRef, "project.allapps"),
+    AllDeps = sin_build_config:get_value(BuildRef, "project.alldeps"),
     ProjectDir = sin_build_config:get_value(BuildRef, "project.dir"),
     BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
     AppBDir = filename:join([BuildDir, "apps"]),
     SigDir = filename:join([BuildDir, "sigs"]),
+
     build_apps(BuildRef, #env{project_dir=ProjectDir,
                               build_dir=BuildDir,
                               apps_build_dir=AppBDir,
                               sig_dir=SigDir,
                               app_list=AppList,
-                              deps=Deps},
+                              deps=AllDeps},
                Apps, Args).
 
 
@@ -196,12 +198,12 @@ build_apps(BuildRef, Apps, Args) ->
 %%--------------------------------------------------------------------
 build_apps(BuildRef, BuildSupInfo, AppList, Args) ->
     lists:foreach(fun ('NONE') ->
-			  %% We ignore an app type of none, its a remnent
-			  %% of the reorder process.
-			  ok;
-		      (App) ->
-			  build_app(BuildRef, BuildSupInfo, App, Args)
-		  end, AppList).
+                    %% We ignore an app type of none, its a remnent
+                      %% of the reorder process.
+                          ok;
+                      (App) ->
+                          build_app(BuildRef, BuildSupInfo, App, Args)
+                  end, AppList).
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -280,11 +282,16 @@ setup_code_path(BuildRef, Env, AppName) ->
     case get_app_from_list(AtomApp, Env#env.app_list) of
         not_in_list ->
             ?ETA_RAISE_DA(app_name_not_in_list,
-                         "App ~s is not in the list of project apps. "
-                         "This shouldn't happen!!",
-                         [AppName]);
-        {_, _, Deps, _} ->
-	    extract_info_from_deps(BuildRef, Deps, Env#env.deps, [], [], [])
+                          "App ~s is not in the list of project apps. "
+                          "This shouldn't happen!!",
+                          [AppName]);
+        {_, _, {Deps, IncDeps}, _} ->
+            %{ok, File} = file:open("/tmp/sinan_log", [read, append]),
+            %io:format (File, "Deps: ~p~n", [Deps]),
+            %io:format (File, "EnvDeps: ~p~n", [element(1,Env#env.deps)]),
+            %file:close(File),
+
+            extract_info_from_deps(BuildRef, Deps++IncDeps, element(1,Env#env.deps), [], [], [])
 	end.
 
 %%--------------------------------------------------------------------
@@ -296,26 +303,27 @@ setup_code_path(BuildRef, Env, AppName) ->
 %% @private
 %%--------------------------------------------------------------------
 extract_info_from_deps(BuildRef, [AppName | T], AppList, Marked, Acc, IAcc) ->
+
     case lists:member(AppName, Marked) of
-	false ->
-	    case get_app_from_list(AppName, AppList) of
-		not_in_list ->
-		    ?ETA_RAISE_DA(app_name_not_in_list,
-				  "App ~s is not in the list of project apps. "
-				  "This shouldn't happen!!",
-				  [AppName]);
-		{_, _, Deps, Path} ->
-		    Ebin = filename:join([Path, "ebin"]),
-		    Include = {i, filename:join([Path, "include"])},
-		    code:add_patha(Ebin),
-		    extract_info_from_deps(BuildRef, T, AppList ++ Deps,
-					   Marked,
-					   [Ebin | Acc],
-					   [Include | IAcc])
-	    end;
-	true ->
-	    extract_info_from_deps(BuildRef, T, AppList, Marked, Acc,
-				   IAcc)
+        false ->
+            case get_app_from_list(AppName, AppList) of
+                not_in_list ->
+                    ?ETA_RAISE_DA(app_name_not_in_list,
+                                  "App ~s is not in the list of project apps. "
+                                  "This shouldn't happen!!!",
+                                  [AppName]);
+                {_, _, {Deps, IncDeps}, Path} ->
+                    Ebin = filename:join([Path, "ebin"]),
+                    Include = {i, filename:join([Path, "include"])},
+                    code:add_patha(Ebin),
+                    extract_info_from_deps(BuildRef, T, AppList ++ Deps ++ IncDeps,
+                                           Marked,
+                                           [Ebin | Acc],
+                                           [Include | IAcc])
+            end;
+        true ->
+            extract_info_from_deps(BuildRef, T, AppList, Marked, Acc,
+                                   IAcc)
     end;
 extract_info_from_deps(_, [], _, _, Acc, IAcc) ->
     {Acc, IAcc}.
@@ -329,10 +337,10 @@ extract_info_from_deps(_, [], _, _, Acc, IAcc) ->
 %%--------------------------------------------------------------------
 get_app_from_list(App, AppList) ->
     case lists:keysearch(App, 1, AppList) of
-	{value, Entry} ->
-	    Entry;
-	false ->
-	    not_in_list
+        {value, Entry} ->
+            Entry;
+        false ->
+            not_in_list
     end.
 
 %%--------------------------------------------------------------------

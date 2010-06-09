@@ -55,6 +55,8 @@ information about server arguments read the sinan documentation.
 
     parser.add_option("-u", "--url", help="the url for the sinan server")
 
+    parser.add_option("-r", "--release", help="the relesae to build for a 'sinan dist'")
+
     options, posargs = parser.parse_args(argv)
 
     for opt in ('prefix', 'url', 'erl_args'):
