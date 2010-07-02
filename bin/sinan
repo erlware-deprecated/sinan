@@ -3,7 +3,7 @@
 
 #### Fill in values for these variables ####
 REL_NAME=sinan
-REL_VSN=0.17.0.0
+REL_VSN=0.17.0.1
 ###########################################
 
 PROG=$0
