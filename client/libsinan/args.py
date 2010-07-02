@@ -74,9 +74,10 @@ information about server arguments read the sinan documentation.
 
         parse_key_value(key, value.replace(':', ' '), args['server_opts'])
 
+    if options.release:
+        parse_key_value('-r', options.release, args['server_opts'])
+
     return args
-
-
 
 def _test():
     import doctest
