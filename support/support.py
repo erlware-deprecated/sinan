@@ -21,7 +21,7 @@ ERLWARE_PATH = "/usr/local/erlware"
 ERLC = "erlc +debug_info "
 
 LOCAL_APPS = [("etask", "0.6.3"),
-              ("sinan", "0.16.4.1"),
+              ("sinan", "0.17.0.0"),
               ("sinan_web_api", "0.1.0.6")]
 
 ERLWARE_APPS = [
@@ -37,7 +37,7 @@ ERLWARE_APPS = [
                 "uri-0.2.0",
                 "sgte-0.7.1",
                 "gtime-0.9.4",
-                "asn1-1.6.12"]
+                "asn1-1.6.13"]
 
 
 def generate_local_path(app):
