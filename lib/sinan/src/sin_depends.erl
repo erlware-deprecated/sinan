@@ -90,7 +90,10 @@ depends(BuildRef) ->
         undefined ->
             ProjectApps = AllProjectApps;
         _ ->
-            ProjectApps = gather_project_apps(BuildRef, AppBDir, sin_build_config:get_value(BuildRef, "releases."++Release++".apps"))
+            ProjectApps =
+		gather_project_apps(BuildRef, AppBDir,
+				    sin_build_config:get_value(BuildRef,
+							       "releases."++Release++".apps"))
     end,
 
     sin_build_config:store(BuildRef, "project.allapps", AllProjectApps),
@@ -335,14 +338,19 @@ save_repo_apps(BuildRef, BuildDir) ->
 gather_project_apps(BuildRef, AppBDir) ->
     gather_project_apps(BuildRef,
                         AppBDir,
-                        sin_build_config:get_value(BuildRef, "project.applist"), []).
+                        sin_build_config:get_value(BuildRef, "project.applist"), [],
+			sin_build_config:get_value(BuildRef, "project.applist")).
 
 gather_project_apps(BuildRef, AppBDir, AppList) ->
     gather_project_apps(BuildRef,
                         AppBDir,
-                        AppList, []).
+                        AppList, [],
+			lists:map(fun(El) ->
+					  list_to_atom(El)
+				  end,
+				  sin_build_config:get_value(BuildRef, "project.applist"))).
 
-gather_project_apps(BuildRef, AppBDir, [AppName | T], Acc) ->
+gather_project_apps(BuildRef, AppBDir, [AppName | T], Acc, ProjectApps) ->
     Vsn = sin_build_config:get_value(BuildRef, "apps." ++ AppName ++ ".vsn"),
     Name = sin_build_config:get_value(BuildRef,
                                       "apps." ++ AppName ++ ".name"),
@@ -367,10 +375,38 @@ gather_project_apps(BuildRef, AppBDir, [AppName | T], Acc) ->
 
     sin_build_config:store(BuildRef, "apps." ++ AppName ++ ".deps", NDeps),
 
-    gather_project_apps(BuildRef, AppBDir, T,
-			[{Name, Vsn, NDeps, AppPath} | Acc]);
-gather_project_apps(_, _, [], Acc) ->
+    AddToT = lists:foldl(fun(El, LAcc) ->
+			       case add_to_project_app_list(El, Acc, ProjectApps) of
+				   true ->
+				       [atom_to_list(El) | LAcc];
+				   false ->
+				       LAcc
+			       end
+			 end,
+			 [],
+			 OpenDeps ++ IncludedDeps),
+
+    gather_project_apps(BuildRef, AppBDir, AddToT ++ T,
+			[{Name, Vsn, NDeps, AppPath} | Acc], ProjectApps);
+gather_project_apps(_, _, [], Acc, _) ->
     Acc.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%%  Check to see if this is a project app, but don't include it if its
+%%  already been processed
+%% @spec (AppName, ProcessedApps, ProjectApps) -> true | false
+%% @end
+%% @private
+%%--------------------------------------------------------------------
+add_to_project_app_list(AppName, ProccessedApps, ProjectApps) ->
+    case lists:keymember(AppName, 1, ProccessedApps) of
+	true ->
+	    false;
+	false ->
+	    lists:member(AppName, ProjectApps)
+    end.
 
 
 %%--------------------------------------------------------------------
