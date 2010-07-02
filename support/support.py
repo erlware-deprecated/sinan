@@ -24,7 +24,7 @@ LOCAL_APPS = [("etask", "0.6.3"),
               ("sinan", "0.17.0.0"),
               ("sinan_web_api", "0.1.0.6")]
 
-ERLWARE_APPS = [
+ERLWARE_APPS = ["tools-2.6.5.1",
                 "ktuo-0.4.0.3",
                 "crary-0.2.3",
                 "eunit-2.1.4",
