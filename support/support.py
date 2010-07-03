@@ -21,7 +21,7 @@ ERLWARE_PATH = "/usr/local/erlware"
 ERLC = "erlc +debug_info "
 
 LOCAL_APPS = [("etask", "0.6.3"),
-              ("sinan", "0.17.0.0"),
+              ("sinan", "0.17.1.0"),
               ("sinan_web_api", "0.1.0.6")]
 
 ERLWARE_APPS = ["tools-2.6.5.1",
