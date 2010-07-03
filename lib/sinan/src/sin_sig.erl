@@ -36,13 +36,41 @@
 
 
 %% API
--export([changed/3, update/3,
-        target_changed/2]).
+-export([save_sig_info/4,
+	 get_sig_info/3,
+	 changed/3, update/3,
+	 target_changed/2]).
 
 %%====================================================================
 %% API
 %%====================================================================
+%%--------------------------------------------------------------------
+%% @doc
+%%  Take a term and put it in the correct place in the sig area.
+%% @spec (NS, BuildDir, File, Terms) -> true | false
+%% @end
+%%--------------------------------------------------------------------
+save_sig_info(NS, BuildDir, File, Terms) ->
+    Target = make_filename(File, []),
+    SIG = filename:join([BuildDir, "sig", NS, Target]),
+    filelib:ensure_dir(filename:join([BuildDir, "sig", NS, "tmp"])),
+    file:write_file(SIG,io_lib:fwrite("~p.\n",[Terms])).
 
+%%--------------------------------------------------------------------
+%% @doc
+%%  Take a predefined sig term file and return the values in that file.
+%% @spec (NS, BuildDir, File) -> true | false
+%% @end
+%%--------------------------------------------------------------------
+get_sig_info(NS, BuildDir, File) ->
+    Target = make_filename(File, []),
+    SIG = filename:join([BuildDir, "sig", NS, Target]),
+    case file:consult(SIG) of
+	{ok, [Terms]} ->
+	    Terms;
+	_  ->
+	    undefined
+    end.
 
 %%--------------------------------------------------------------------
 %% @doc

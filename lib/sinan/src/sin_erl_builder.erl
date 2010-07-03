@@ -49,6 +49,7 @@
                app_list,
                deps}).
 
+-define(SIGNS, "erldeps").
 -define(TASK, build).
 -define(DEPS, [depends]).
 
@@ -459,34 +460,40 @@ build_file(BuildRef, SrcDir, File, Ext, Options, Target) ->
 %% @private
 %%-------------------------------------------------------------------
 build_file(BuildRef, File, ".erl", Options, Target) ->
-   case needs_building(File, ".erl", Target, ".beam") of
+   case needs_building(BuildRef, File, ".erl", Target, ".beam") of
        true ->
            eta_event:task_event(BuildRef, ?TASK, file_build,
                                 {"Building ~s", [File]}),
-           case compile:file(File, Options) of
-               {ok, ModuleName} ->
-                   ModuleName;
-               {ok, ModuleName, []} ->
-                   ModuleName;
-               {ok, ModuleName, Warnings} ->
-                  eta_event:task_event(BuildRef, ?TASK, file_warning,
-                                       gather_fail_info(Warnings, "warning")),
-                   ModuleName;
-               {error, Errors, Warnings} ->
-                   eta_event:task_event(BuildRef, ?TASK, file_error,
-                                        [gather_fail_info(Errors, "error"),
-                                         gather_fail_info(Warnings, "warning")]),
-                  {sinan,  error};
-               error ->
-                   eta_event:task_fault(BuildRef, ?TASK,
-                                        "Unknown error occured during build"),
-                   {sinan, error}
-           end;
+           Result = case compile:file(File, Options) of
+			{ok, ModuleName} ->
+			    ModuleName;
+			{ok, ModuleName, []} ->
+			    ModuleName;
+			{ok, ModuleName, Warnings} ->
+			    eta_event:task_event(BuildRef, ?TASK, file_warning,
+						 gather_fail_info(Warnings, "warning")),
+			    ModuleName;
+			{error, Errors, Warnings} ->
+			    eta_event:task_event(BuildRef, ?TASK, file_error,
+						 [gather_fail_info(Errors, "error"),
+						  gather_fail_info(Warnings, "warning")]),
+			    {sinan,  error};
+			error ->
+			    eta_event:task_fault(BuildRef, ?TASK,
+						 "Unknown error occured during build"),
+			    {sinan, error}
+		    end,
+	   case Result of
+	       Res when is_atom(Res) ->
+		   save_module_dependencies(BuildRef, File, Options);
+	       _ ->
+		   Result
+	   end;
        false ->
            ok
    end;
 build_file(BuildRef, File, ".yrl", Options, Target) ->
-    case needs_building(File, ".yrl", Target, ".beam") of
+    case needs_building(BuildRef, File, ".yrl", Target, ".beam") of
         true ->
             ErlFile = filename:basename(File, ".yrl"),
 	    AppDir = filename:dirname(Target),
@@ -534,7 +541,7 @@ build_file(BuildRef, File, _, _Options, _Target) ->
 %% @private
 %%-------------------------------------------------------------------
 build_asn1(BuildRef, File, Ext, Options, Target) ->
-    case needs_building(File, Ext, Target, ".beam") of
+    case needs_building(BuildRef, File, Ext, Target, ".beam") of
         true ->
             ErlFile = filename:basename(File, Ext),
             AppDir = filename:dirname(Target),
@@ -591,11 +598,58 @@ strip_options(Opts) ->
 %%   -> true | false
 %% @end
 %%--------------------------------------------------------------------
-needs_building(FileName, Ext, TargetDir, TargetExt) ->
+base_needs_building(FileName, Ext, TargetDir, TargetExt) ->
     Name = filename:basename(FileName, Ext),
     NewFile = lists:flatten([Name, TargetExt]),
     TFileName = filename:join([TargetDir, NewFile]),
     sin_sig:target_changed(FileName, TFileName).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%%   Check to see if the file needs building. If it does run the
+%%   passed in build fin. If thats successful then update the sig.
+%% @spec (BuildRef, FileName, Ext, TargetDir, TargetExt)
+%%   -> true | false
+%% @end
+%%--------------------------------------------------------------------
+needs_building(BuildRef, FileName, ".erl", TargetDir, TargetExt) ->
+    case base_needs_building(FileName, ".erl", TargetDir, TargetExt) of
+	false ->
+	    check_module_deps(BuildRef, FileName);
+	_ ->
+	    true
+    end;
+needs_building(_, FileName, Ext, TargetDir, TargetExt) ->
+    base_needs_building(FileName, Ext, TargetDir, TargetExt).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%%   Check to see if any of the dependencies on a file have changed. If
+%%   they have then return true, otherwise false.
+%%
+%% @spec (BuildRef, FileName) -> true | false
+%% @end
+%%--------------------------------------------------------------------
+
+check_module_deps(BuildRef, FileName) ->
+    BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
+    case sin_sig:get_sig_info(?SIGNS, BuildDir, FileName) of
+	undefined ->
+	    false;
+	Terms ->
+	    lists:foldl(fun({Include, Ts}, Acc) ->
+				case file:read_file_info(Include) of
+				    {ok, TargetInfo} when TargetInfo#file_info.mtime > Ts ->
+					true;
+				    _ ->
+					Acc
+				end
+			end,
+			false,
+			Terms)
+    end.
 
 
 
@@ -649,6 +703,54 @@ gather_fail_info(File, ListOfProblems, Acc, WoE) ->
 	      [lists:flatten([File, ":noline:", WoE, $:,
 			      Type:format_error(Detail), $\n]) | Acc1]
       end, Acc, ListOfProblems).
+
+
+%%-------------------------------------------------------------------
+%% @doc
+%%  Get the list of processed included files from the specified *.erl
+%% @spec (File, Includes) -> [{Include, Ts}]
+%% @end
+%% @private
+%%-------------------------------------------------------------------
+get_hrl_files(File, Includes) ->
+    {ok, Forms} = epp:parse_file(File, Includes,[]),
+    HrlFiles = lists:foldl(fun({attribute, _ , file, {Include, _}}, Acc) ->
+				   case File of
+				       Include ->
+					   Acc;
+				       _ ->
+					   [Include | Acc]
+				   end;
+			      (_, Acc) ->
+				   Acc
+			   end,
+			   [],
+			   Forms),
+    lists:foldl(fun(Hrl, Acc) ->
+			{ok, FileInfo} =  file:read_file_info(Hrl),
+			[{Hrl, FileInfo#file_info.mtime} | Acc]
+		end,
+		[],
+		HrlFiles).
+
+%%-------------------------------------------------------------------
+%% @doc
+%%  Find and save eh module dependencies for a specific module.
+%% @spec (BuildRef, File, Options) -> ok.
+%% @end
+%% @private
+%%-------------------------------------------------------------------
+save_module_dependencies(BuildRef, File, Options) ->
+    BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
+    IncludeDirs = lists:reverse(lists:foldl(fun({i, Include}, Acc) ->
+						    [Include | Acc];
+					       (_, Acc) ->
+						    Acc
+					    end,
+					    [],
+					    Options)),
+    sin_sig:save_sig_info(?SIGNS, BuildDir, File, get_hrl_files(File, IncludeDirs)).
+
 
 %%====================================================================
 %% Tests
