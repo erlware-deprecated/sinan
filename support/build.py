@@ -10,7 +10,7 @@ from optparse import OptionParser
 
 def compile_app(app):
     ebin = "_build/development/apps/%s-%s/ebin" % (app[0], app[1])
-    compile_command = ("erlc +debug_info %s %s -o %s/ ./server/%s/src/*.erl" %
+    compile_command = ("erlc +debug_info %s %s -o %s/ ./lib/%s/src/*.erl" %
                        (' '.join(map(support.generate_local_path,
                                      support.LOCAL_APPS)),
                         ' '.join(map(support.generate_erlware_path,
