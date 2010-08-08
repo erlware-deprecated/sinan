@@ -33,6 +33,7 @@
 
 -include("file.hrl").
 -include("etask.hrl").
+-include("eunit.hrl").
 
 %% API
 -export([copy_dir/3,
@@ -386,3 +387,29 @@ get_application_env(Key) ->
 			   "Key ~w not set, must be set as application"
 			   " environment variable ", [Key])
     end.
+
+%%====================================================================
+%% tests
+%%====================================================================
+copy_from_app_test_() ->
+    % Create a directory in /tmp for the test. Clean everything afterwards
+    {ok, BaseDir} = ewl_file:create_tmp_dir("/tmp"),
+    {setup,
+     fun() ->
+             ok = file:make_dir(filename:join(BaseDir,"app_name")),
+             ok = file:make_dir(filename:join(BaseDir,"ebin")),
+             ok = file:make_dir(filename:join(BaseDir,"doc"))
+     end,
+     fun(_) ->
+             ewl_file:delete_dir(BaseDir)
+     end,
+     fun(_) ->
+             TargetDir = filename:join(BaseDir, "app_name"),
+             BuildDir =
+                 filename:join(TargetDir, "_build/development/apps/app_name"),
+
+             {timeout, 2,
+              ?_assertThrow(
+                 circular_recursion,
+                 sin_utils:copy_dir(BuildDir, TargetDir, [], ["."]))}
+     end}.
