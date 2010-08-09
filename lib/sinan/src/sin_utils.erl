@@ -109,7 +109,7 @@ copy_dir(BuildDir, TargetDir, Sub) ->
     copy_dir(BuildDir, TargetDir, Sub, []).
 
 copy_dir(BuildDir, TargetDir, SubDir, Ignorables) ->
-    check_not_circular(BuildDir, TargetDir),
+    check_not_circular(BuildDir, TargetDir, SubDir),
     copy_dir_safe(BuildDir, TargetDir, SubDir, Ignorables).
 
 copy_dir_safe(BuildDir, TargetDir, SubDir, Ignorables) ->
@@ -136,11 +136,12 @@ copy_dir_safe(BuildDir, TargetDir, SubDir, Ignorables) ->
                         end, [], Files)
     end.
 
-check_not_circular(Target, Source) ->
-    case lists:prefix(filename:split(Source), filename:split(Target)) of
+check_not_circular(Target, Source, SubDir) ->
+    case filename:split(Source) ++ SubDir == filename:split(Target) of
 	true ->
 	    ewl_talk:say(
-	      "Cannot copy a directory to itself (~p to ~p)", [Source, Target]),
+	      "Can't copy a directory to itself (~p to ~p)",
+	      [filename:join([Source | SubDir]), Target]),
 	    throw(circular_recursion);
 	false ->
 	    ok
