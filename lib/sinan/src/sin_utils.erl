@@ -110,9 +110,6 @@ copy_dir(BuildDir, TargetDir, Sub) ->
 
 copy_dir(BuildDir, TargetDir, SubDir, Ignorables) ->
     check_not_circular(BuildDir, TargetDir, SubDir),
-    copy_dir_safe(BuildDir, TargetDir, SubDir, Ignorables).
-
-copy_dir_safe(BuildDir, TargetDir, SubDir, Ignorables) ->
     case are_dirs_ignorable(SubDir, Ignorables) of
         true ->
             ok;
