@@ -235,7 +235,8 @@ build_app(BuildRef, Env, AppName, Args) ->
                        {i, TargetSrcDir} | Includes],
     event_compile_args(BuildRef, Options),
     Ignorables = sin_build_config:get_value(BuildRef, "ignore_dirs", []),
-    sin_utils:copy_dir(AppBuildDir, AppDir, "", Ignorables),
+    sin_utils:copy_dir(
+      AppBuildDir, AppDir, "", ["_build" | Ignorables]),
     code:add_patha(Target),
     Modules = gather_modules(BuildRef, AppName, SrcDir),
     NModules = lists:map(fun({File, _AbsName, Ext}) ->
