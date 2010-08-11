@@ -26,7 +26,7 @@ LOCAL_APPS = [("etask", "0.6.3"),
 
 ERLWARE_APPS = ["tools-2.6.5.1",
                 "ktuo-0.4.0.3",
-                "crary-0.2.3",
+                "crary-0.2.5",
                 "eunit-2.1.4",
                 "cryptographic-0.2.2",
                 "ewlib-0.9.2.0",

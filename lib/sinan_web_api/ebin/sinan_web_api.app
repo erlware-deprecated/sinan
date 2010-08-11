@@ -11,7 +11,7 @@
              swa_crary_handler]},
   {registered, [swa_sup]},
   {versioned_dependencies, [{gtime, "0.9.4", gte},
-                            {crary, "0.2.3", gte},
+                            {crary, "0.2.5", gte},
                             {sinan, "0.10.0.2", gte}]},
   {applications, [kernel, stdlib, sinan, crary, uri]},
   {mod, {swa_app, []}}]}.
