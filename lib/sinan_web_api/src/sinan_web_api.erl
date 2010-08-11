@@ -51,6 +51,7 @@ start() ->
     application:start(uri),
     application:start(gtime),
     application:start(crary),
+    application:set_env(sinan_web_api, socket_opts, [{reuseaddr, true}]),
     application:start(sinan_web_api).
 
 
