@@ -114,19 +114,20 @@ start_crary() ->
 %% @end
 %%--------------------------------------------------------------------
 get_port() ->
-    case application:get_env(sinan_web_api, port) of
-        undefined ->
-            ?DEFAULT_PORT;
-        {ok, Port} when is_list(Port) ->
+    case get_option(port, ?DEFAULT_PORT) of
+        Port when is_list(Port) ->
             list_to_integer(Port);
-        {ok, Port} when is_integer(Port) ->
+        Port when is_integer(Port) ->
             Port
     end.
 
 get_socket_opts() ->
-    case application:get_env(sinan_web_api, socket_opts) of
+    get_option(socket_opts, []).
+
+get_option(Option, Default) ->
+    case application:get_env(sinan_web_api, Option) of
 	undefined ->
-	    [];
-	{ok, Opts} ->
-	    Opts
+	    Default;
+	{ok, Value} ->
+	    Value
     end.
