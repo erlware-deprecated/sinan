@@ -93,7 +93,11 @@ stop(_State) ->
 %%--------------------------------------------------------------------
 start_crary() ->
     Port = get_port(),
-    crary:start({{127,0,0,1}, Port}, fun swa_crary_handler:handler/2).
+    Opts = get_socket_opts(),
+    crary:start(
+      {{127,0,0,1}, Port},
+      fun swa_crary_handler:handler/2,
+      [{socket_opts, Opts}]).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -119,3 +123,10 @@ get_port() ->
             Port
     end.
 
+get_socket_opts() ->
+    case application:get_env(sinan_web_api, socket_opts) of
+	undefined ->
+	    [];
+	{ok, Opts} ->
+	    Opts
+    end.
