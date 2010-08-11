@@ -110,6 +110,12 @@ start_crary() ->
 %%  </ol>
 %%     If it doesn't find a port in either place it uses its default port.
 %%
+%%   It is also possible to pass raw socket options in the env variable <strong>socket_opts.</strong> This is useful, for example,
+%%   when debugging, to set reuseaddr option so that we can reboot sinan after a crash without having to wait for the socket timeout
+%%   or changing the port. For example:
+%%
+%% `application:set_env(sinan_web_api, socket_opts, [{reuseaddr, true}]),'
+%%
 %% @spec get_port() -> integer()
 %% @end
 %%--------------------------------------------------------------------
