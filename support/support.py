@@ -21,23 +21,23 @@ ERLWARE_PATH = "/usr/local/erlware"
 ERLC = "erlc +debug_info "
 
 LOCAL_APPS = [("etask", "0.6.3"),
-              ("sinan", "0.17.1.1"),
+              ("sinan", "0.18.0.0"),
               ("sinan_web_api", "0.1.0.6")]
 
-ERLWARE_APPS = ["tools-2.6.5.1",
+ERLWARE_APPS = ["tools-2.6.6.1",
                 "ktuo-0.4.0.3",
                 "crary-0.2.5",
                 "eunit-2.1.4",
                 "cryptographic-0.2.2",
                 "ewlib-0.9.2.0",
                 "ewrepo-0.18.8.0",
-                "kernel-2.13.4",
-                "sasl-2.1.8",
+                "kernel-2.14.1",
+                "sasl-2.1.9.2",
                 "ibrowse-1.4",
                 "uri-0.2.0",
                 "sgte-0.7.1",
                 "gtime-0.9.4",
-                "asn1-1.6.13"]
+                "asn1-1.6.14.1"]
 
 
 def generate_local_path(app):
