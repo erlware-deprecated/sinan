@@ -1,6 +1,6 @@
 %% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
 %%%-------------------------------------------------------------------
-%%% Copyright (c) 2006-2010 Erlware
+%%% Copyright (c) 2008-2010 Eric Merritt
 %%%
 %%% Permission is hereby granted, free of charge, to any
 %%% person obtaining a copy of this software and associated
@@ -25,20 +25,20 @@
 %%%---------------------------------------------------------------------------
 %%% @author Eric Merritt
 %%% @doc
-%%%   Describes the extant tasks.
+%%%   Return the sinan server version.
 %%% @end
-%%% @copyright (C) 2007-2010 Erlware
+%%% @copyright (C) 2008-2010 Erlware
 %%%---------------------------------------------------------------------------
--module(sin_help).
+-module(sin_task_version).
 
--behaviour(eta_gen_task).
+-behaviour(sin_task).
 
--include("etask.hrl").
+-include("internal.hrl").
 
 %% API
--export([start/0, do_task/1, help/1]).
+-export([description/0, do_task/1, version/1]).
 
--define(TASK, help).
+-define(TASK, version).
 -define(DEPS, []).
 
 
@@ -52,15 +52,13 @@
 %% Starts the server
 %% @end
 %%--------------------------------------------------------------------
-start() ->
-    Desc = "Provides help information for the available tasks",
-    TaskDesc = #task{name = ?TASK,
-                     task_impl = ?MODULE,
-                     deps = ?DEPS,
-                     desc = Desc,
-                     callable = true,
-                     opts = []},
-    eta_task:register_task(TaskDesc).
+description() ->
+    Desc = "Provides sinan server version information",
+    #task{name = ?TASK,
+	  task_impl = ?MODULE,
+	  deps = ?DEPS,
+	  desc = Desc,
+	  opts = []}.
 
 
 %%--------------------------------------------------------------------
@@ -70,28 +68,25 @@ start() ->
 %% @end
 %%--------------------------------------------------------------------
 do_task(BuildRef) ->
-    help(BuildRef).
+    version(BuildRef).
 
 
 %%--------------------------------------------------------------------
 %% @doc
-%%  Run the help command.
+%%  Run the version command.
 %% @spec (BuildRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
-help(BuildRef) ->
-    eta_event:task_start(BuildRef, ?TASK, "Describing tasks ..."),
-    case eta_task:get_task_defs() of
-        [] ->
-            eta_event:task_event(BuildRef, ?TASK, info,
-                                 "No tasks to describe.");
-        Tasks ->
-            Fun = fun(Val) ->
-                          process_task_entry(BuildRef, Val)
-                  end,
-            lists:map(Fun, Tasks)
-    end,
-    eta_event:task_stop(BuildRef, ?TASK).
+version(BuildRef) ->
+    Version = case get_version() of
+		  unknown_version ->
+		      "unknown";
+		  SinVersion ->
+		      SinVersion
+	      end,
+    ewl_talk:say("sinan version: ~s", [Version]),
+    sin_build_config:store(BuildRef, "sinan.vsn", Version).
+
 
 
 %%====================================================================
@@ -99,27 +94,21 @@ help(BuildRef) ->
 %%====================================================================
 %%--------------------------------------------------------------------
 %% @doc
-%%  Prints out the task description.
-%%
-%% @spec (BuildRef, {Key, Value}) -> ok
+%%  Gets the current version of the sinan release.
+%% @spec () -> Vsn | unkown_version
 %% @end
 %%--------------------------------------------------------------------
-process_task_entry(BuildRef, #task{name=Key, desc=Desc, deps=Deps}) ->
-    eta_event:task_event(BuildRef, ?TASK, info,
-                        {"~s~n   ~s~n depends on: ~s~n~n",
-                         [Key, Desc,
-                          print_dependencies(Deps, "")]}).
+get_version() ->
+    SinDir = filename:join([filename:dirname(code:priv_dir(sinan)), "ebin", "sinan.app"]),
+    get_version(file:consult(SinDir)).
 
+get_version({ok, [{application, sinan, Opts}]}) ->
+    case lists:keysearch(vsn, 1, Opts) of
+	{value, {vsn, Vsn}} ->
+	    Vsn;
+	_ ->
+	    unknown_version
+    end;
+get_version(_) ->
+    unknown_version.
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Print the dependency list.
-%% @spec (DepList, Acc) -> ok
-%% @end
-%%--------------------------------------------------------------------
-print_dependencies([H | T], "") ->
-    print_dependencies(T, io_lib:format("~s", [H]));
-print_dependencies([H | T], Acc) ->
-    print_dependencies(T, io_lib:format("~s, ~s", [H, Acc]));
-print_dependencies([], Acc) ->
-    Acc.

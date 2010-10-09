@@ -30,7 +30,7 @@
 %%%-------------------------------------------------------------------
 -module(sin_resolver).
 
--include("eunit.hrl").
+-include_lib("eunit/include/eunit.hrl").
 
 %% API
 -export([package_versions/2,
@@ -46,11 +46,10 @@
 %% @doc
 %%  Get the list of versions available for the specified package.
 %%
-%% @spec (Prefix, Package) -> VersionList
+%% @spec (LibDir, Package) -> VersionList
 %% @end
 %%--------------------------------------------------------------------
-package_versions(Prefix, Package) when is_atom(Package) ->
-    LibDir = filename:join([Prefix, "lib"]),
+package_versions(LibDir, Package) when is_atom(Package) ->
     lists:sort(fun ewr_util:is_version_greater/2,
                get_package_versions(Package,
                                     LibDir)).
@@ -61,14 +60,14 @@ package_versions(Prefix, Package) when is_atom(Package) ->
 %%  Get the list of dependencies for the specified package and the
 %%  specified version.
 %%
-%% @spec (Prefix, Package, Version) -> Deps | Error
+%% @spec (LibDir, Package, Version) -> Deps | Error
 %% @end
 %%--------------------------------------------------------------------
-package_dependencies(Prefix, Package, Version) ->
+package_dependencies(LibDir, Package, Version) ->
     NPackage = atom_to_list(Package),
     NDeps = get_package_dependencies(NPackage,
                                      Version,
-                                     Prefix),
+                                     LibDir),
     NDeps.
 
 
@@ -76,13 +75,13 @@ package_dependencies(Prefix, Package, Version) ->
 %% @doc
 %%  Get the dependencies for a package and version.
 %%
-%% @spec (Package, Prefix, Version) -> Location
+%% @spec (Package, LibDir, Version) -> Location
 %% @end
 %%--------------------------------------------------------------------
-find_package_location(Prefix, Package, Version) when is_atom(Package) ->
-    find_package_location(Prefix, atom_to_list(Package), Version);
-find_package_location(Prefix, Package, Version) ->
-    filename:join([Prefix, "lib", Package ++ "-" ++ Version]).
+find_package_location(LibDir, Package, Version) when is_atom(Package) ->
+    find_package_location(LibDir, atom_to_list(Package), Version);
+find_package_location(LibDir, Package, Version) ->
+    filename:join([LibDir, Package ++ "-" ++ Version]).
 
 %%====================================================================
 %%% Internal functions
@@ -107,14 +106,14 @@ get_version([]) ->
 %%  Get all the versions for a package, search across all
 %%  relavent major/minor versions.
 %%
-%% @spec (Package, Prefix) -> Versions
+%% @spec (Package, LibDir) -> Versions
 %% @end
 %%--------------------------------------------------------------------
-get_package_versions(Package, Prefix) ->
+get_package_versions(Package, LibDir) ->
 
     AppVersions = lists:filter(fun(X) ->
 				       filelib:is_dir(X) end,
-			       filelib:wildcard(filename:join(Prefix,
+			       filelib:wildcard(filename:join(LibDir,
 							      Package) ++
 						"-*")),
     lists:map(fun(X) ->
@@ -127,13 +126,13 @@ get_package_versions(Package, Prefix) ->
 %% @doc
 %%  Get the dependencies for a package and version.
 %%
-%% @spec (Package, Version, Prefix) -> Deps
+%% @spec (Package, Version, LibDir) -> Deps
 %% @end
 %%--------------------------------------------------------------------
-get_package_dependencies(Package, Version, Prefix) ->
+get_package_dependencies(Package, Version, LibDir) ->
     DotAppName = lists:flatten([Package, ".app"]),
     AppName = lists:flatten([Package, "-", Version]),
-    case file:consult(filename:join([Prefix, "lib", AppName,
+    case file:consult(filename:join([LibDir,AppName,
 				     "ebin", DotAppName])) of
 	{ok, [Term]} ->
 	    handle_parse_output(Term);

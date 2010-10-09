@@ -23,24 +23,24 @@
 %%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 %%% OTHER DEALINGS IN THE SOFTWARE.
 %%%---------------------------------------------------------------------------
-%%% @author Eric Merritt <ericbmerritt@gmail.com>
+%%% @author Eric Merritt
 %%% @doc
-%%%  Creates edoc format documentation for the project
+%%%   Deletes everything in the Build directory
 %%% @end
-%%% @copyright (C) 2006-2010 Erlware
-%%% Created : 16 Oct 2006 by Eric Merritt <ericbmerritt@gmail.com>
+%%% @copyright (C) 2006-2007 Erlware
+%%% Created : 11 Oct 2006 by Eric Merritt <ericbmerritt@gmail.com>
 %%%---------------------------------------------------------------------------
--module(sin_edoc).
+-module(sin_task_clean).
 
--behaviour(eta_gen_task).
+-behaviour(sin_task).
 
--include("etask.hrl").
+-include("internal.hrl").
 
 %% API
--export([start/0, do_task/1, doc/1]).
+-export([description/0, do_task/1, clean/1]).
 
--define(TASK, doc).
--define(DEPS, [build]).
+-define(TASK, clean).
+-define(DEPS, []).
 
 
 %%====================================================================
@@ -52,67 +52,36 @@
 %% @spec () -> ok
 %% @end
 %%--------------------------------------------------------------------
-start() ->
-    Desc = "Runs edoc across all sources in the project and "
-        "outputs it into the build area",
-    TaskDesc = #task{name = ?TASK,
-                     task_impl = ?MODULE,
-                     deps = ?DEPS,
-                     desc = Desc,
-                     callable = true,
-                     opts = []},
-    eta_task:register_task(TaskDesc).
-
+description() ->
+    Desc = "Removes the build area and everything underneath",
+    #task{name = ?TASK,
+	  task_impl = ?MODULE,
+	  deps = ?DEPS,
+	  desc = Desc,
+	  opts = []}.
 
 %%--------------------------------------------------------------------
 %% @doc
-%%  Do the task defined in this module.
+%%  dO the task defined in this module.
 %% @spec (BuildRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
 do_task(BuildRef) ->
-    doc(BuildRef).
-
+    clean(BuildRef).
 
 %%--------------------------------------------------------------------
 %% @doc
-%%  Run the docs.
+%%   Run the clean task.
 %%
 %% @spec (BuildRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
-doc(BuildRef) ->
-    eta_event:task_start(BuildRef, ?TASK),
-    Apps = sin_build_config:get_value(BuildRef, "project.apps"),
-    GL = sin_group_leader:capture_start(BuildRef, ?TASK),
-    run_docs(BuildRef, Apps),
-    sin_group_leader:capture_stop(GL),
-    eta_event:task_stop(BuildRef, ?TASK).
-
+clean(BuildRef) ->
+    ewl_talk:say("cleaning build artifacts"),
+    BuildDir = sin_build_config:get_value(BuildRef, "build.root"),
+    ewl_talk:say("Removing directories and contents in ~s", [BuildDir]),
+    sin_utils:delete_dir(BuildDir).
 
 %%====================================================================
 %%% Internal functions
 %%====================================================================
-%%--------------------------------------------------------------------
-%% @doc
-%%  Run edoc on all the modules in all of the applications.
-%%
-%% @spec (BuildRef, AppList) -> ok
-%% @end
-%%--------------------------------------------------------------------
-run_docs(BuildRef, [{AppName, _, _, Path} | T]) ->
-    DocDir = filename:join([Path, "docs"]),
-    filelib:ensure_dir(filename:join([DocDir, "tmp"])),
-
-    try
-    edoc:application(AppName,
-                     Path,
-                     [{dir, DocDir}]) catch
-                               _:Error ->
-                                   Error
-                           end,
-    run_docs(BuildRef, T);
-run_docs(_BuildRef, []) ->
-    ok.
-
-

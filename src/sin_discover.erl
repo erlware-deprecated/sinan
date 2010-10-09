@@ -31,7 +31,7 @@
 %%%--------------------------------------------------------------------------
 -module(sin_discover).
 
--include("etask.hrl").
+-include("internal.hrl").
 
 %% API
 -export([discover/2]).

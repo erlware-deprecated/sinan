@@ -31,14 +31,14 @@
 %%% @copyright (C) 2007-2010 Erlware
 %%% Created : 16 Oct 2006 by Eric Merritt
 %%%---------------------------------------------------------------------------
--module(sin_test).
+-module(sin_task_test).
 
--behaviour(eta_gen_task).
+-behaviour(sin_task).
 
--include("etask.hrl").
+-include("internal.hrl").
 
 %% API
--export([start/0, do_task/1, test/1]).
+-export([description/0, do_task/1, test/1]).
 
 -define(TASK, test).
 -define(DEPS, [build]).
@@ -53,15 +53,13 @@
 %% @spec () -> ok
 %% @end
 %%--------------------------------------------------------------------
-start() ->
+description() ->
     Desc = "Runs all of the existing eunit unit tests in the project",
-    TaskDesc = #task{name = ?TASK,
-                     task_impl = ?MODULE,
-                     deps = ?DEPS,
-                     desc = Desc,
-                     callable = true,
-                     opts = []},
-    eta_task:register_task(TaskDesc).
+    #task{name = ?TASK,
+	  task_impl = ?MODULE,
+	  deps = ?DEPS,
+	  desc = Desc,
+	  opts = []}.
 
 
 %%--------------------------------------------------------------------
@@ -80,25 +78,20 @@ do_task(BuildRef) ->
 %% @end
 %%--------------------------------------------------------------------
 test(BuildRef) ->
-    eta_event:task_start(BuildRef, ?TASK),
     case sin_build_config:get_value(BuildRef, "eunit") of
         "disabled" ->
-            eta_event:task_fault(BuildRef, ?TASK,
-                                 "Unit testing is disabled for this project. "
-                                 "If you wish to change this change the eunit "
-                                 "value of the build config from 'disabled' to "
-                                 "'enabled' or remove it.");
+	    ewl_talk:say("Unit testing is disabled for this project. "
+			 "If you wish to change this change the eunit "
+			 "value of the build config from 'disabled' to "
+			 "'enabled' or remove it.");
         _ ->
-            GL = sin_group_leader:capture_start(BuildRef, ?TASK),
             Apps = lists:map(fun({App, _Vsn, _Deps, _}) ->
                                      atom_to_list(App)
                              end, sin_build_config:get_value(BuildRef,
                                                   "project.apps")),
-            test_apps(BuildRef, Apps),
-            sin_group_leader:capture_stop(GL)
-
+            test_apps(BuildRef, Apps)
     end,
-    eta_event:task_stop(BuildRef, ?TASK).
+    BuildRef.
 
 
 %%====================================================================
@@ -117,9 +110,8 @@ test_apps(BuildRef, [AppName | T]) ->
                               "apps." ++ AppName ++ ".modules"),
     case Modules == undefined orelse length(Modules) =< 0 of
         true ->
-            eta_event:task_fault(BuildRef, ?TASK,
-                                 {"No modules defined for ~s.",
-                                  [AppName]}),
+	    ewl_talk:say("No modules defined for ~s.",
+			 [AppName]),
             ok;
         false ->
             prepare_for_tests(BuildRef, AppName, Modules)
@@ -223,7 +215,7 @@ make_index([], Acc) ->
 setup_code_coverage(BuildRef, [Module | T]) ->
     case cover:compile_beam(Module) of
         {error, _} ->
-            eta_event:task_event(BuildRef, ?TASK, info, {"Couldn't add code coverage to ~w", [Module]});
+            ewl_talk:say("Couldn't add code coverage to ~w", [Module]);
         _ ->
             ok
     end,
@@ -245,9 +237,8 @@ output_code_coverage(BuildRef, DocDir, [Module | T], Acc) ->
         {ok, _} ->
             output_code_coverage(BuildRef, DocDir, T, [{File, Module} | Acc]);
         {error, _} ->
-            eta_event:task_event(BuildRef, ?TASK, info,
-            {"Unable to write coverage information for ~w",
-             [Module]}),
+	    ewl_talk:say("Unable to write coverage information for ~w",
+			 [Module]),
             output_code_coverage(BuildRef, DocDir, T, Acc)
     end;
 output_code_coverage(_, _DocDir, [], Acc) ->

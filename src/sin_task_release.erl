@@ -29,14 +29,14 @@
 %%% @end
 %%% @copyright (C) 2006-2010 Erlware
 %%%---------------------------------------------------------------------------
--module(sin_release_builder).
+-module(sin_task_release).
 
--behaviour(eta_gen_task).
+-behaviour(sin_task).
 
--include("etask.hrl").
+-include("internal.hrl").
 
 %% API
--export([start/0, do_task/1, release/1]).
+-export([description/0, do_task/1, release/1]).
 
 -define(TASK, release).
 -define(DEPS, [build]).
@@ -51,18 +51,16 @@
 %% Starts the server
 %% @end
 %%--------------------------------------------------------------------
-start() ->
+description() ->
     Desc = "Creates the *.rel, *.boot and *.script into the "
         "<build-area>/realeases/<vsn> directory. It also "
         "builds up a release tar bal into the "
         "<build-area>/tar/ directory",
-    TaskDesc = #task{name = ?TASK,
-                     task_impl = ?MODULE,
-                     deps = ?DEPS,
-                     desc = Desc,
-                     callable = true,
-                     opts = []},
-    eta_task:register_task(TaskDesc).
+    #task{name = ?TASK,
+	  task_impl = ?MODULE,
+	  deps = ?DEPS,
+	  desc = Desc,
+	  opts = []}.
 
 
 %%--------------------------------------------------------------------
@@ -81,7 +79,6 @@ do_task(BuildRef) ->
 %% @end
 %%--------------------------------------------------------------------
 release(BuildRef) ->
-    eta_event:task_start(BuildRef, ?TASK),
     BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
     ReleaseName = case sin_build_config:get_value(BuildRef, "-r") of
                       undefined ->
@@ -91,10 +88,10 @@ release(BuildRef) ->
                   end,
     Version = project_version(BuildRef),
     ReleaseInfo = generate_rel_file(BuildRef, BuildDir, ReleaseName, Version),
-    sin_build_config:store(BuildRef, "project.release_info", ReleaseInfo),
-    copy_or_generate_sys_config_file(BuildRef, BuildDir, ReleaseName, Version),
-    make_boot_script(BuildRef, ReleaseInfo),
-    eta_event:task_stop(BuildRef, ?TASK).
+    BuildRef2 = sin_build_config:store(BuildRef, "project.release_info", ReleaseInfo),
+    copy_or_generate_sys_config_file(BuildRef2, BuildDir, ReleaseName, Version),
+    make_boot_script(BuildRef2, ReleaseInfo),
+    BuildRef2.
 
 %%====================================================================
 %% Internal functions
@@ -140,7 +137,7 @@ generate_rel_file(BuildRef, BuildDir, Name, Version) ->
         Release ->
             ok
     end,
-    {save_release(BuildRef, BuildDir, Name, Version, Release),
+    {save_release(BuildDir, Name, Version, Release),
      Release}.
 
 
@@ -156,9 +153,8 @@ generate_rel_file(BuildRef, BuildDir, Name, Version) ->
 project_version(BuildRef) ->
     case sin_build_config:get_value(BuildRef, "project.vsn") of
         undefined ->
-            eta_event:task_fault(BuildRef, ?TASK,
-                                 "No project version defined in build config; "
-                                 "aborting!"),
+	    ewl_talk:say("No project version defined in build config; "
+			 "aborting!"),
             throw(no_project_version);
         Vsn ->
             Vsn
@@ -175,9 +171,8 @@ project_version(BuildRef) ->
 project_name(BuildRef) ->
     case sin_build_config:get_value(BuildRef, "project.name") of
         undefined ->
-            eta_event:task_fault(BuildRef, ?TASK,
-                                 "No project name defined in build config; "
-                                 "aborting!"),
+	    ewl_talk:say("No project name defined in build config; "
+			 "aborting!"),
             throw(no_project_name);
         Nm ->
             Nm
@@ -233,17 +228,16 @@ process_inc_list([], Acc) ->
 %% @end
 %% @private
 %%--------------------------------------------------------------------
-save_release(BuildRef, BuildDir, Name, Version, RelInfo) ->
+save_release(BuildDir, Name, Version, RelInfo) ->
     Location = filename:join([BuildDir, "releases", Name ++ "-" ++ Version]),
     filelib:ensure_dir(filename:join([Location, "tmp"])),
     Relbase = filename:join([Location, Name]),
     Relf = lists:flatten([Relbase, ".rel"]),
     case file:open(Relf, write) of
         {error, _} ->
-            eta_event:task_fault(BuildRef, ?TASK,
-                                 {"Couldn't open ~s for writing. Unable to "
-                                  "write release information",
-                                  [Relf]}),
+	    ewl_talk:say("Couldn't open ~s for writing. Unable to "
+			 "write release information",
+			 [Relf]),
             throw(unable_to_write_rel_info);
         {ok, IoDev} ->
             io:format(IoDev, "~p.", [RelInfo]),
@@ -275,14 +269,14 @@ make_boot_script(BuildRef, {{Location, File}, {release, {Name, _}, _, _}}) ->
         ok ->
 	    ok;
         error ->
-            ?ETA_RAISE(release_script_generation_error);
+            ?SIN_RAISE(release_script_generation_error);
         {ok, _, []} ->
 	    ok;
         {ok,Module,Warnings} ->
-            ?ETA_RAISE_DA(release_script_generation_error,
+            ?SIN_RAISE_DA(release_script_generation_error,
                           "~s~n", [Module:format_warning(Warnings)]);
         {error,Module,Error} ->
-            ?ETA_RAISE_DA(release_script_generation_error,
+            ?SIN_RAISE_DA(release_script_generation_error,
                           "~s~n", [Module:format_error(Error)])
     end.
 

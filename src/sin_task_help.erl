@@ -1,6 +1,6 @@
 %% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
 %%%-------------------------------------------------------------------
-%%% Copyright (c) 2008-2010 Eric Merritt
+%%% Copyright (c) 2006-2010 Erlware
 %%%
 %%% Permission is hereby granted, free of charge, to any
 %%% person obtaining a copy of this software and associated
@@ -25,20 +25,20 @@
 %%%---------------------------------------------------------------------------
 %%% @author Eric Merritt
 %%% @doc
-%%%   Return the sinan server version.
+%%%   Describes the extant tasks.
 %%% @end
-%%% @copyright (C) 2008-2010 Erlware
+%%% @copyright (C) 2007-2010 Erlware
 %%%---------------------------------------------------------------------------
--module(sin_version).
+-module(sin_task_help).
 
--behaviour(eta_gen_task).
+-behaviour(sin_task).
 
--include("etask.hrl").
+-include("internal.hrl").
 
 %% API
--export([start/0, do_task/1, version/1]).
+-export([description/0, do_task/1, help/1]).
 
--define(TASK, version).
+-define(TASK, help).
 -define(DEPS, []).
 
 
@@ -52,15 +52,13 @@
 %% Starts the server
 %% @end
 %%--------------------------------------------------------------------
-start() ->
-    Desc = "Provides sinan server version information",
-    TaskDesc = #task{name = ?TASK,
-                     task_impl = ?MODULE,
-                     deps = ?DEPS,
-                     desc = Desc,
-                     callable = true,
-                     opts = []},
-    eta_task:register_task(TaskDesc).
+description() ->
+    Desc = "Provides help information for the available tasks",
+    #task{name = ?TASK,
+	  task_impl = ?MODULE,
+	  deps = ?DEPS,
+	  desc = Desc,
+	  opts = []}.
 
 
 %%--------------------------------------------------------------------
@@ -70,23 +68,27 @@ start() ->
 %% @end
 %%--------------------------------------------------------------------
 do_task(BuildRef) ->
-    version(BuildRef).
+    help(BuildRef).
 
 
 %%--------------------------------------------------------------------
 %% @doc
-%%  Run the version command.
+%%  Run the help command.
 %% @spec (BuildRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
-version(BuildRef) ->
-    case get_version() of
-	unknown_version ->
-	    eta_event:task_event(BuildRef, ?TASK, info, "unknown");
-	Version ->
-	    eta_event:task_event(BuildRef, ?TASK, info, Version)
+help(BuildRef) ->
+    case sin_task:get_tasks() of
+        [] ->
+	    ewl_talk:say("No tasks to describe.");
+        Tasks ->
+            Fun = fun(Val) ->
+                          process_task_entry(Val)
+                  end,
+            lists:map(Fun, Tasks)
     end,
-    eta_event:task_stop(BuildRef, ?TASK).
+    BuildRef.
+
 
 
 %%====================================================================
@@ -94,17 +96,13 @@ version(BuildRef) ->
 %%====================================================================
 %%--------------------------------------------------------------------
 %% @doc
-%%  Gets the current version of the sinan release.
-%% @spec () -> Vsn | unkown_version
+%%  Prints out the task description.
+%%
+%% @spec (BuildRef, {Key, Value}) -> ok
 %% @end
 %%--------------------------------------------------------------------
-get_version() ->
-    Info = release_handler:which_releases(),
-    get_version(Info).
+process_task_entry(#task{name=Key, desc=Desc}) ->
+    ewl_talk:say("~s~n   ~s~n~n",
+		  [Key, Desc]).
 
-get_version([{"sinan", Vsn, _, _} | _]) ->
-    Vsn;
-get_version([_ | T]) ->
-    get_version(T);
-get_version([]) ->
-    unknown_version.
+

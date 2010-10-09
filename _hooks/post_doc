@@ -1,7 +1,0 @@
-#!/bin/sh
-
-OUT_DIR=$BUILD_DIR/$FLAVOR/docs
-
-mkdir -p $OUT_DIR
-
-pdflatex -shell-escape -output-directory=$OUT_DIR ./docs/manual.tex

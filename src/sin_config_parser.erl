@@ -31,7 +31,7 @@
 %%%----------------------------------------------------------------------------
 -module(sin_config_parser).
 
--include("eunit.hrl").
+-include("internal.hrl").
 
 -export([parse_config_file/1]).
 
@@ -78,7 +78,7 @@ parse_config(All = [${ | _], NewLines, Chars) ->
             Value
     end;
 parse_config(All, NewLines, Chars) ->
-   case ktj_decode:decode([${ | All] ++ [$}], NewLines, Chars) of
+   case ktj_parse:parse([${ | All] ++ [$}], NewLines, Chars) of
         Error = {error, _} ->
             Error;
         {Value, _, _} ->

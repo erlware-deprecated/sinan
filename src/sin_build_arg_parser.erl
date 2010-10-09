@@ -33,7 +33,7 @@
 %%%-------------------------------------------------------------------
 -module(sin_build_arg_parser).
 
--include("eunit.hrl").
+-include_lib("eunit/include/eunit.hrl").
 
 %% API
 -export([compile_build_args/1]).

@@ -9,7 +9,7 @@
 %%%-------------------------------------------------------------------
 -module(sin_hooks).
 
--include("etask.hrl").
+-include("internal.hrl").
 
 -define(NEWLINE, 10).
 -define(CARRIAGE_RETURN, 13).
@@ -30,7 +30,7 @@ get_hooks_function(ProjectRoot) ->
     HooksDir = filename:join([ProjectRoot, "_hooks"]),
     case sin_utils:file_exists(HooksDir) of
        false ->
-	    none;
+	    no_hooks;
        true ->
 	    gen_build_hooks_function(HooksDir)
     end.
@@ -45,23 +45,23 @@ get_hooks_function(ProjectRoot) ->
 %% @end
 %%--------------------------------------------------------------------
 gen_build_hooks_function(HooksDir) ->
-    fun(Type, Task, RunId) ->
-	    do_hook(Type, Task, RunId, HooksDir)
+    fun(Type, Task, BuildConfig) ->
+	    do_hook(Type, Task, BuildConfig, HooksDir)
     end.
 
 %%--------------------------------------------------------------------
 %% @doc
 %%  Setup to run the hook and run it if it exists.
-%% @spec (Type::atom(), Task::atom(), RunId::string(),
+%% @spec (Type::atom(), Task::atom(), BuildConfig::string(),
 %%        HooksDir::string()) -> ok
 %% @end
 %%--------------------------------------------------------------------
-do_hook(Type, Task, RunId, HooksDir) when is_atom(Task) ->
+do_hook(Type, Task, BuildConfig, HooksDir) when is_atom(Task) ->
     HookName = atom_to_list(Type) ++ "_" ++ atom_to_list(Task),
     HookPath = filename:join(HooksDir, HookName),
     case sin_utils:file_exists(HookPath) of
        true ->
-	    run_hook(HookPath, RunId, list_to_atom(HookName));
+	    run_hook(HookPath, BuildConfig, list_to_atom(HookName));
        _ ->
 	    ok
     end.
@@ -69,12 +69,12 @@ do_hook(Type, Task, RunId, HooksDir) when is_atom(Task) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Setup the execution environment and run the hook.
-%% @spec (HookPath::list(), RunId::list(), HookName::atom()) -> ok
+%% @spec (HookPath::list(), BuildConfig::list(), HookName::atom()) -> ok
 %% @end
 %%--------------------------------------------------------------------
-run_hook(HookPath, RunId, HookName) ->
-    Env = sin_build_config:get_pairs(RunId),
-    command(HookPath, stringify(Env, []), RunId, HookName).
+run_hook(HookPath, BuildConfig, HookName) ->
+    Env = sin_build_config:get_pairs(BuildConfig),
+    command(HookPath, stringify(Env, []), BuildConfig, HookName).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -91,51 +91,51 @@ stringify([], Acc) ->
 %%--------------------------------------------------------------------
 %% @doc
 %%  Given a command an an environment run that command with the environment
-%% @spec (Command::list(), Env::list(), RunId::list(), HookName::atom()) -> list()
+%% @spec (Command::list(), Env::list(), BuildConfig::list(), HookName::atom()) -> list()
 %% @end
 %%--------------------------------------------------------------------
-command(Cmd, Env, RunId, HookName) ->
+command(Cmd, Env, BuildConfig, HookName) ->
     Opt =  [{env, Env}, stream, exit_status, use_stdio,
 	    stderr_to_stdout, in, eof],
     P = open_port({spawn, Cmd}, Opt),
-    get_data(P, RunId, HookName, []).
+    get_data(P, BuildConfig, HookName, []).
 
 %%--------------------------------------------------------------------
 %% @doc
 %%  Event results only at newline boundries.
-%% @spec (RunId::list(), HookName::atom(), Line::list(), Acc::list()) -> list()
+%% @spec (BuildConfig::list(), HookName::atom(), Line::list(), Acc::list()) -> list()
 %% @end
 %%--------------------------------------------------------------------
-event_newline(RunId, HookName, [?NEWLINE | T], Acc) ->
-    eta_event:task_event(RunId, HookName, info, {"~s", [lists:reverse(Acc)]}),
-    event_newline(RunId, HookName, T, []);
-event_newline(RunId, HookName, [?CARRIAGE_RETURN | T], Acc) ->
-    eta_event:task_event(RunId, HookName, info, {"~s", [lists:reverse(Acc)]}),
-    event_newline(RunId, HookName, T, []);
-event_newline(RunId, HookName, [H | T], Acc) ->
-    event_newline(RunId, HookName, T, [H | Acc]);
-event_newline(_RunId, _HookName, [], Acc) ->
+event_newline(BuildConfig, HookName, [?NEWLINE | T], Acc) ->
+    ewl_talk:say(lists:reverse(Acc)),
+    event_newline(BuildConfig, HookName, T, []);
+event_newline(BuildConfig, HookName, [?CARRIAGE_RETURN | T], Acc) ->
+    ewl_talk:say(lists:reverse(Acc)),
+    event_newline(BuildConfig, HookName, T, []);
+event_newline(BuildConfig, HookName, [H | T], Acc) ->
+    event_newline(BuildConfig, HookName, T, [H | Acc]);
+event_newline(_BuildConfig, _HookName, [], Acc) ->
     lists:reverse(Acc).
 
 %%--------------------------------------------------------------------
 %% @doc
 %%  Recieve the data from the port and exit when complete.
-%% @spec (P::port(), RunId::list(), HookName::atom(), Acc::list()) -> list()
+%% @spec (P::port(), BuildConfig::list(), HookName::atom(), Acc::list()) -> list()
 %% @end
 %%--------------------------------------------------------------------
-get_data(P, RunId, HookName, Acc) ->
+get_data(P, BuildConfig, HookName, Acc) ->
     receive
 	{P, {data, D}} ->
-	    NewAcc = event_newline(RunId, HookName, Acc ++ D, []),
-	    get_data(P, RunId, HookName, NewAcc);
+	    NewAcc = event_newline(BuildConfig, HookName, Acc ++ D, []),
+	    get_data(P, BuildConfig, HookName, NewAcc);
 	{P, eof} ->
-	    eta_event:task_event(RunId, HookName, info, {"~s", [Acc]}),
+	    ewl_talk:say(Acc),
 	    port_close(P),
 	    receive
 		{P, {exit_status, 0}} ->
 		    ok;
 		{P, {exit_status, N}} ->
-		    ?ETA_RAISE_DA(bad_exit_status,
+		    ?SIN_RAISE_DA(bad_exit_status,
 				  "Hook ~s exited with status ~p",
 				  [HookName, N])
 	    end
