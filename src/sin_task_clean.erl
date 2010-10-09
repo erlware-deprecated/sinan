@@ -1,6 +1,6 @@
 %% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
 %%%-------------------------------------------------------------------
-%%% Copyright (c) 2008-2010 Eric Merritt
+%%% Copyright (c) 2006-2010 Erlware
 %%%
 %%% Permission is hereby granted, free of charge, to any
 %%% person obtaining a copy of this software and associated
@@ -25,20 +25,21 @@
 %%%---------------------------------------------------------------------------
 %%% @author Eric Merritt
 %%% @doc
-%%%   Return the sinan server version.
+%%%   Deletes everything in the Build directory
 %%% @end
-%%% @copyright (C) 2008-2010 Erlware
+%%% @copyright (C) 2006-2007 Erlware
+%%% Created : 11 Oct 2006 by Eric Merritt <ericbmerritt@gmail.com>
 %%%---------------------------------------------------------------------------
--module(sin_version).
+-module(sin_task_clean).
 
--behaviour(eta_gen_task).
+-behaviour(sin_task).
 
--include("etask.hrl").
+-include("internal.hrl").
 
 %% API
--export([start/0, do_task/1, version/1]).
+-export([description/0, do_task/1, clean/1]).
 
--define(TASK, version).
+-define(TASK, clean).
 -define(DEPS, []).
 
 
@@ -46,65 +47,41 @@
 %% API
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @spec start() -> ok
-%%
 %% @doc
 %% Starts the server
+%% @spec () -> ok
 %% @end
 %%--------------------------------------------------------------------
-start() ->
-    Desc = "Provides sinan server version information",
-    TaskDesc = #task{name = ?TASK,
-                     task_impl = ?MODULE,
-                     deps = ?DEPS,
-                     desc = Desc,
-                     callable = true,
-                     opts = []},
-    eta_task:register_task(TaskDesc).
-
+description() ->
+    Desc = "Removes the build area and everything underneath",
+    #task{name = ?TASK,
+	  task_impl = ?MODULE,
+	  deps = ?DEPS,
+	  desc = Desc,
+	  opts = []}.
 
 %%--------------------------------------------------------------------
 %% @doc
-%%  do the task defined in this module.
+%%  dO the task defined in this module.
 %% @spec (BuildRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
 do_task(BuildRef) ->
-    version(BuildRef).
-
+    clean(BuildRef).
 
 %%--------------------------------------------------------------------
 %% @doc
-%%  Run the version command.
+%%   Run the clean task.
+%%
 %% @spec (BuildRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
-version(BuildRef) ->
-    case get_version() of
-	unknown_version ->
-	    eta_event:task_event(BuildRef, ?TASK, info, "unknown");
-	Version ->
-	    eta_event:task_event(BuildRef, ?TASK, info, Version)
-    end,
-    eta_event:task_stop(BuildRef, ?TASK).
-
+clean(BuildRef) ->
+    sin_talk:say("cleaning build artifacts"),
+    BuildDir = sin_build_config:get_value(BuildRef, "build.root"),
+    sin_talk:say("Removing directories and contents in ~s", [BuildDir]),
+    sin_utils:delete_dir(BuildDir).
 
 %%====================================================================
 %%% Internal functions
 %%====================================================================
-%%--------------------------------------------------------------------
-%% @doc
-%%  Gets the current version of the sinan release.
-%% @spec () -> Vsn | unkown_version
-%% @end
-%%--------------------------------------------------------------------
-get_version() ->
-    Info = release_handler:which_releases(),
-    get_version(Info).
-
-get_version([{"sinan", Vsn, _, _} | _]) ->
-    Vsn;
-get_version([_ | T]) ->
-    get_version(T);
-get_version([]) ->
-    unknown_version.

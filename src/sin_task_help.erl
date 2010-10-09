@@ -23,71 +23,72 @@
 %%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 %%% OTHER DEALINGS IN THE SOFTWARE.
 %%%---------------------------------------------------------------------------
-%%% @author Eric Merritt <ericbmerritt@gmail.com>
+%%% @author Eric Merritt
 %%% @doc
-%%%  Creates edoc format documentation for the project
+%%%   Describes the extant tasks.
 %%% @end
-%%% @copyright (C) 2006-2010 Erlware
-%%% Created : 16 Oct 2006 by Eric Merritt <ericbmerritt@gmail.com>
+%%% @copyright (C) 2007-2010 Erlware
 %%%---------------------------------------------------------------------------
--module(sin_edoc).
+-module(sin_task_help).
 
--behaviour(eta_gen_task).
+-behaviour(sin_task).
 
--include("etask.hrl").
+-include("internal.hrl").
 
 %% API
--export([start/0, do_task/1, doc/1]).
+-export([description/0, do_task/1, help/1]).
 
--define(TASK, doc).
--define(DEPS, [build]).
+-define(TASK, help).
+-define(DEPS, []).
 
 
 %%====================================================================
 %% API
 %%====================================================================
 %%--------------------------------------------------------------------
+%% @spec start() -> ok
+%%
 %% @doc
 %% Starts the server
-%% @spec () -> ok
 %% @end
 %%--------------------------------------------------------------------
-start() ->
-    Desc = "Runs edoc across all sources in the project and "
-        "outputs it into the build area",
-    TaskDesc = #task{name = ?TASK,
-                     task_impl = ?MODULE,
-                     deps = ?DEPS,
-                     desc = Desc,
-                     callable = true,
-                     opts = []},
-    eta_task:register_task(TaskDesc).
+description() ->
+    Desc = "Provides help information for the available tasks",
+    #task{name = ?TASK,
+	  task_impl = ?MODULE,
+	  deps = ?DEPS,
+	  desc = Desc,
+	  opts = []}.
 
 
 %%--------------------------------------------------------------------
 %% @doc
-%%  Do the task defined in this module.
+%%  do the task defined in this module.
 %% @spec (BuildRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
 do_task(BuildRef) ->
-    doc(BuildRef).
+    help(BuildRef).
 
 
 %%--------------------------------------------------------------------
 %% @doc
-%%  Run the docs.
-%%
+%%  Run the help command.
 %% @spec (BuildRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
-doc(BuildRef) ->
-    eta_event:task_start(BuildRef, ?TASK),
-    Apps = sin_build_config:get_value(BuildRef, "project.apps"),
-    GL = sin_group_leader:capture_start(BuildRef, ?TASK),
-    run_docs(BuildRef, Apps),
-    sin_group_leader:capture_stop(GL),
-    eta_event:task_stop(BuildRef, ?TASK).
+help(BuildRef) ->
+    case sin_task:get_tasks() of
+        [] ->
+	    sin_talk:say("No tasks to describe.");
+        Tasks ->
+            Fun = fun(Val) ->
+                          process_task_entry(Val)
+                  end,
+            lists:map(Fun, Tasks)
+    end,
+    BuildRef.
+
 
 
 %%====================================================================
@@ -95,24 +96,13 @@ doc(BuildRef) ->
 %%====================================================================
 %%--------------------------------------------------------------------
 %% @doc
-%%  Run edoc on all the modules in all of the applications.
+%%  Prints out the task description.
 %%
-%% @spec (BuildRef, AppList) -> ok
+%% @spec (BuildRef, {Key, Value}) -> ok
 %% @end
 %%--------------------------------------------------------------------
-run_docs(BuildRef, [{AppName, _, _, Path} | T]) ->
-    DocDir = filename:join([Path, "docs"]),
-    filelib:ensure_dir(filename:join([DocDir, "tmp"])),
-
-    try
-    edoc:application(AppName,
-                     Path,
-                     [{dir, DocDir}]) catch
-                               _:Error ->
-                                   Error
-                           end,
-    run_docs(BuildRef, T);
-run_docs(_BuildRef, []) ->
-    ok.
+process_task_entry(#task{name=Key, desc=Desc}) ->
+    sin_talk:say("~s~n   ~s~n~n",
+		  [Key, Desc]).
 
 

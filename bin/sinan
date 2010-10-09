@@ -1,16 +1,17 @@
-#!/bin/sh
+#!/usr/bin/env escript
+%% -*- mode: Erlang; fill-column: 80; comment-column: 75; -*-
+%%%-------------------------------------------------------------------
+%%% @author Eric Merritt <ericbmerritt@gmail.com>
+%%% @doc
+%%%  Start up for the erlb system
+%%% @end
+%%% @copyright (C) 2010 Erlware.org
+%%%-------------------------------------------------------------------
+-export([main/1]).
 
+%%====================================================================
+%% API
+%%====================================================================
+main(Args) ->
+    sinan:main(Args).
 
-#### Fill in values for these variables ####
-REL_NAME=sinan
-REL_VSN=0.18.0.0
-###########################################
-
-PROG=$0
-test -h $0 && PROG=$(readlink $0)
-PREFIX=$(cd $(dirname $(dirname $PROG)); pwd)
-
-
-REL_DIR=$PREFIX/releases/$REL_NAME-$REL_VSN
-
-/usr/bin/env python $REL_DIR/client/sinan --prefix $PREFIX $@

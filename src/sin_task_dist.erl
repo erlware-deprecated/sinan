@@ -32,14 +32,14 @@
 %%% @end
 %%% @copyright (C) 2007-2010 Erlware
 %%%---------------------------------------------------------------------------
--module(sin_dist_builder).
+-module(sin_task_dist).
 
--behaviour(eta_gen_task).
+-behaviour(sin_task).
 
--include("etask.hrl").
+-include("internal.hrl").
 
 %% API
--export([start/0, do_task/1, dist/1]).
+-export([description/0, do_task/1, dist/1]).
 
 -define(TASK, dist).
 -define(DEPS, [release]).
@@ -55,17 +55,15 @@
 %% Starts the server
 %% @end
 %%--------------------------------------------------------------------
-start() ->
+description() ->
     Desc = "Creates an tarball of the distribution including "
         "release information. Check documentation for the "
         "dist task for configuration information ",
-    TaskDesc = #task{name = ?TASK,
-                     task_impl = ?MODULE,
-                     deps = ?DEPS,
-                     desc = Desc,
-                     callable = true,
-                     opts = []},
-    eta_task:register_task(TaskDesc).
+    #task{name = ?TASK,
+	  task_impl = ?MODULE,
+	  deps = ?DEPS,
+	  desc = Desc,
+	  opts = []}.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -84,13 +82,12 @@ do_task(BuildRef) ->
 %% @end
 %%--------------------------------------------------------------------
 dist(BuildRef) ->
-    eta_event:task_start(BuildRef, ?TASK),
     ProjectDir = sin_build_config:get_value(BuildRef, "project.dir"),
     ProjectApps = sin_build_config:get_value(BuildRef, "project.apps"),
     ProjectRepoApps = sin_build_config:get_value(BuildRef, "project.repoapps"),
     Repo = sin_build_config:get_value(BuildRef, "project.repository"),
     make_tar(BuildRef, ProjectDir, ProjectApps, ProjectRepoApps, Repo),
-    eta_event:task_stop(BuildRef, ?TASK).
+    BuildRef.
 
 
 %%====================================================================
@@ -182,10 +179,17 @@ copy_additional_dirs(BuildRef, TopLevel, ProjectDir) ->
 		      [];
 		  RequiredDirs ->
 		      lists:map(fun(Elem) ->
-					Name = filename:join([ProjectDir, Elem]),
-					NewName = filename:join([TopLevel, Elem]),
+					NewElem = case is_binary(Elem) of
+						      true ->
+							  binary_to_list(Elem);
+						      false ->
+							  Elem
+						  end,
+					Name = filename:join([ProjectDir, NewElem]),
+					NewName = filename:join([TopLevel, NewElem]),
 					{Name, NewName}
-				end, RequiredDirs)
+				end,
+				RequiredDirs)
 	    end,
     hooks_dir(TopLevel, ProjectDir) ++
 	erts_dir(BuildRef, TopLevel) ++
@@ -216,13 +220,8 @@ hooks_dir(TopLevel, ProjectDir) ->
 %% @end
 %%--------------------------------------------------------------------
 erts_dir(BuildRef, TopLevel) ->
-    ConvFun = fun(Arg) when is_list(Arg) ->
-		      Arg;
-		 (Arg) when is_atom(Arg) ->
-		      atom_to_list(Arg)
-	      end,
-    Prefix = sin_utils:get_application_env(prefix),
-    ErtsVersion = ConvFun(sin_utils:get_application_env(erts_version)),
+    Prefix = code:root_dir(),
+    ErtsVersion = erlang:system_info(version),
     ErtsToInclude = filename:join([Prefix, "erts-" ++ ErtsVersion]),
     case sin_utils:to_bool(sin_build_config:get_value(BuildRef, "tasks.dist.include_erts")) of
 	true ->

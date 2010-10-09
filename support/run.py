@@ -8,24 +8,6 @@ import commands
 import support
 from optparse import OptionParser
 
-def get_ebin(app):
-   return "_build/development/apps/%s-%s/ebin" % (app[0], app[1])
-
-def run_app(prefix):
-    local_pa = '-pa'.join([get_ebin(app) for app in support.LOCAL_APPS])
-    run = ("%s %s %s -sinan "
-           "prefix '%s' -sinan erts_version "
-           " '%s' -run sinan_web_api start " %
-           (' '.join(map(support.generate_local_path,
-                         support.LOCAL_APPS)),
-            ' '.join(map(support.generate_erlware_path,
-                         support.ERLWARE_APPS)),
-            local_pa,
-            prefix,
-            support.ERTS_VERSION))
-
-    return run
-
 def main():
     parser = OptionParser()
     parser.add_option("-e", "--erlware",

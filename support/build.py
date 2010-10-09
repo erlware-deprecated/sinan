@@ -8,24 +8,32 @@ import commands
 import support
 from optparse import OptionParser
 
-def compile_app(app):
-    ebin = "_build/development/apps/%s-%s/ebin" % (app[0], app[1])
-    compile_command = ("erlc +debug_info %s %s -o %s/ ./lib/%s/src/*.erl" %
-                       (' '.join(map(support.generate_local_path,
-                                     support.LOCAL_APPS)),
-                        ' '.join(map(support.generate_erlware_path,
+import os, errno
+
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc: # Python >2.5
+        if exc.errno == errno.EEXIST:
+            pass
+        else: raise
+
+def compile_app():
+    ebin = "_build/development/apps/sinan-%s/ebin" % support.VERSION
+
+    mkdir_p(ebin)
+
+    compile_command = ("erlc +debug_info -pa %s  %s -o %s ./src/*.erl" %
+                        (ebin,
+                         ' '.join(map(support.generate_erlware_path,
                                      support.ERLWARE_APPS)),
-                        ebin,
-                        app[0]))
+                        ebin))
 
     print compile_command
     (status, out) = commands.getstatusoutput(compile_command)
 
     print out
 
-def compile_apps():
-    for app in support.LOCAL_APPS:
-        compile_app(app)
 
 def main():
     parser = OptionParser()
@@ -39,7 +47,7 @@ def main():
 
     support.ERLWARE_PATH = options.erlware
 
-    compile_apps()
+    compile_app()
 
 if __name__ == "__main__":
     main()

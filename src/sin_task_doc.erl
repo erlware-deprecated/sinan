@@ -23,75 +23,66 @@
 %%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 %%% OTHER DEALINGS IN THE SOFTWARE.
 %%%---------------------------------------------------------------------------
-%%% @author Eric Merritt
+%%% @author Eric Merritt <ericbmerritt@gmail.com>
 %%% @doc
-%%%   Describes the extant tasks.
+%%%  Creates edoc format documentation for the project
 %%% @end
-%%% @copyright (C) 2007-2010 Erlware
+%%% @copyright (C) 2006-2010 Erlware
+%%% Created : 16 Oct 2006 by Eric Merritt <ericbmerritt@gmail.com>
 %%%---------------------------------------------------------------------------
--module(sin_help).
+-module(sin_task_doc).
 
--behaviour(eta_gen_task).
+-behaviour(sin_task).
 
--include("etask.hrl").
+-include("internal.hrl").
 
 %% API
--export([start/0, do_task/1, help/1]).
+-export([description/0, do_task/1, doc/1]).
 
--define(TASK, help).
--define(DEPS, []).
+-define(TASK, doc).
+-define(DEPS, [build]).
 
 
 %%====================================================================
 %% API
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @spec start() -> ok
-%%
 %% @doc
 %% Starts the server
+%% @spec () -> ok
 %% @end
 %%--------------------------------------------------------------------
-start() ->
-    Desc = "Provides help information for the available tasks",
-    TaskDesc = #task{name = ?TASK,
-                     task_impl = ?MODULE,
-                     deps = ?DEPS,
-                     desc = Desc,
-                     callable = true,
-                     opts = []},
-    eta_task:register_task(TaskDesc).
+description() ->
+    Desc = "Runs edoc across all sources in the project and "
+        "outputs it into the build area",
+    #task{name = ?TASK,
+	  task_impl = ?MODULE,
+	  deps = ?DEPS,
+	  desc = Desc,
+	  opts = []}.
 
 
 %%--------------------------------------------------------------------
 %% @doc
-%%  do the task defined in this module.
+%%  Do the task defined in this module.
 %% @spec (BuildRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
 do_task(BuildRef) ->
-    help(BuildRef).
+    doc(BuildRef).
 
 
 %%--------------------------------------------------------------------
 %% @doc
-%%  Run the help command.
+%%  Run the docs.
+%%
 %% @spec (BuildRef) -> ok
 %% @end
 %%--------------------------------------------------------------------
-help(BuildRef) ->
-    eta_event:task_start(BuildRef, ?TASK, "Describing tasks ..."),
-    case eta_task:get_task_defs() of
-        [] ->
-            eta_event:task_event(BuildRef, ?TASK, info,
-                                 "No tasks to describe.");
-        Tasks ->
-            Fun = fun(Val) ->
-                          process_task_entry(BuildRef, Val)
-                  end,
-            lists:map(Fun, Tasks)
-    end,
-    eta_event:task_stop(BuildRef, ?TASK).
+doc(BuildRef) ->
+    Apps = sin_build_config:get_value(BuildRef, "project.apps"),
+    run_docs(BuildRef, Apps),
+    BuildRef.
 
 
 %%====================================================================
@@ -99,27 +90,25 @@ help(BuildRef) ->
 %%====================================================================
 %%--------------------------------------------------------------------
 %% @doc
-%%  Prints out the task description.
+%%  Run edoc on all the modules in all of the applications.
 %%
-%% @spec (BuildRef, {Key, Value}) -> ok
+%% @spec (BuildRef, AppList) -> ok
 %% @end
 %%--------------------------------------------------------------------
-process_task_entry(BuildRef, #task{name=Key, desc=Desc, deps=Deps}) ->
-    eta_event:task_event(BuildRef, ?TASK, info,
-                        {"~s~n   ~s~n depends on: ~s~n~n",
-                         [Key, Desc,
-                          print_dependencies(Deps, "")]}).
+run_docs(BuildRef, [{AppName, _, _, Path} | T]) ->
+    DocDir = filename:join([Path, "docs"]),
+    filelib:ensure_dir(filename:join([DocDir, "tmp"])),
+
+    try
+	edoc:application(AppName,
+			 Path,
+			 [{dir, DocDir}])
+    catch
+	throw:Error ->
+	    ?SIN_RAISE(Error)
+    end,
+    run_docs(BuildRef, T);
+run_docs(_BuildRef, []) ->
+    ok.
 
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Print the dependency list.
-%% @spec (DepList, Acc) -> ok
-%% @end
-%%--------------------------------------------------------------------
-print_dependencies([H | T], "") ->
-    print_dependencies(T, io_lib:format("~s", [H]));
-print_dependencies([H | T], Acc) ->
-    print_dependencies(T, io_lib:format("~s, ~s", [H, Acc]));
-print_dependencies([], Acc) ->
-    Acc.

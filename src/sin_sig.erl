@@ -31,14 +31,15 @@
 %%%--------------------------------------------------------------------------
 -module(sin_sig).
 
--include("file.hrl").
--include("eunit.hrl").
+-include_lib("kernel/include/file.hrl").
+-include_lib("eunit/include/eunit.hrl").
 
 
 %% API
 -export([save_sig_info/4,
 	 get_sig_info/3,
-	 changed/3, update/3,
+	 changed/3,
+	 update/3,
 	 target_changed/2]).
 
 %%====================================================================

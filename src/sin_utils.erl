@@ -31,12 +31,14 @@
 %%%---------------------------------------------------------------------------
 -module(sin_utils).
 
--include("file.hrl").
--include("etask.hrl").
--include("eunit.hrl").
+-include_lib("kernel/include/file.hrl").
+-include_lib("eunit/include/eunit.hrl").
+
+-include("internal.hrl").
 
 %% API
--export([copy_dir/3,
+-export([copy_dir/2,
+	 copy_dir/3,
          copy_dir/4,
 	 to_bool/1,
          parent_dir/1,
@@ -98,6 +100,8 @@ file_exists(FileName) ->
             true
     end.
 
+
+
 %%-------------------------------------------------------------------
 %% @doc
 %%  Copies the specified directory down to the build
@@ -107,6 +111,10 @@ file_exists(FileName) ->
 %%-------------------------------------------------------------------
 copy_dir(BuildDir, TargetDir, Sub) ->
     copy_dir(BuildDir, TargetDir, Sub, []).
+
+copy_dir(BuildDir, TargetDir) ->
+    copy_dir(BuildDir, TargetDir, [], []).
+
 
 copy_dir(BuildDir, TargetDir, SubDir, Ignorables) ->
     check_not_circular(BuildDir, TargetDir, SubDir),
@@ -361,6 +369,8 @@ term_to_list(I) when is_float(I)->
     float_to_list(I);
 term_to_list(I) when is_tuple(I)->
     ["{", listify_list_body(tuple_to_list(I), []), "}"];
+term_to_list(I)  when is_binary(I) ->
+    binary_to_list(I);
 term_to_list(I) when is_list(I) ->
     case is_string(I) of
 	true ->
@@ -393,7 +403,7 @@ get_application_env(Key) ->
 	{ok, Value} ->
 	    Value;
 	_ ->
-	     ?ETA_RAISE_DA(variables_not_set,
+	     ?SIN_RAISE_DA(variables_not_set,
 			   "Key ~w not set, must be set as application"
 			   " environment variable ", [Key])
     end.

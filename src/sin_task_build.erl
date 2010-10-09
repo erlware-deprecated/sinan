@@ -29,17 +29,17 @@
 %%% @end
 %%% @copyright (C) 2007-2010 Erlware
 %%%--------------------------------------------------------------------------
--module(sin_erl_builder).
+-module(sin_task_build).
 
--behaviour(eta_gen_task).
+-behaviour(sin_task).
 
--include("file.hrl").
--include("etask.hrl").
--include("eunit.hrl").
+-include_lib("kernel/include/file.hrl").
+-include_lib("eunit/include/eunit.hrl").
+-include("internal.hrl").
 
 
 %% API
--export([start/0, do_task/1, build/1]).
+-export([description/0, do_task/1, build/1]).
 
 
 -record(env,  {project_dir,
@@ -64,15 +64,13 @@
 %% @spec () -> ok
 %% @end
 %%--------------------------------------------------------------------
-start() ->
+description() ->
     Desc = "Compiles all of the compilable files in the project",
-    TaskDesc = #task{name = ?TASK,
-                     task_impl = ?MODULE,
-                     deps = ?DEPS,
-                     desc = Desc,
-                     callable = true,
-                     opts = []},
-    eta_task:register_task(TaskDesc).
+    #task{name = ?TASK,
+	  task_impl = ?MODULE,
+	  deps = ?DEPS,
+	  desc = Desc,
+	  opts = []}.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -91,15 +89,14 @@ do_task(BuildRef) ->
 %% @end
 %%--------------------------------------------------------------------
 build(BuildRef) ->
-    eta_event:task_start(BuildRef, ?TASK),
     ensure_build_dir(BuildRef),
     Apps = sin_build_config:get_value(BuildRef, "project.allapps"),
     NApps = reorder_apps_according_to_deps(Apps),
     RawArgs = sin_build_config:get_value(BuildRef,
                                          "tasks.build.compile_args", ""),
     NArgs = sin_build_arg_parser:compile_build_args(RawArgs),
-    build_apps(BuildRef, NApps, NArgs),
-    eta_event:task_stop(BuildRef, ?TASK).
+    build_apps(BuildRef, NApps, NArgs).
+
 
 %%====================================================================
 %%% Internal functions
@@ -123,11 +120,11 @@ reorder_apps_according_to_deps(AllApps) ->
                                   Else ++ Acc
                           end
                   end, [], AllApps),
-    case eta_topo:sort(ReOrdered) of
+    case sin_topo:sort(ReOrdered) of
         {ok, DepList} ->
             DepList;
         {cycle, CycleList} ->
-            ?ETA_RAISE_DA(cycles_detected,
+            ?SIN_RAISE_DA(cycles_detected,
                           "A cycle was detected in the dependency graph "
                           " I don't know how to build cycles. ~p",
                           [CycleList])
@@ -198,13 +195,13 @@ build_apps(BuildRef, Apps, Args) ->
 %% @private
 %%--------------------------------------------------------------------
 build_apps(BuildRef, BuildSupInfo, AppList, Args) ->
-    lists:foreach(fun ('NONE') ->
-                    %% We ignore an app type of none, its a remnent
-                      %% of the reorder process.
-                          ok;
-                      (App) ->
-                          build_app(BuildRef, BuildSupInfo, App, Args)
-                  end, AppList).
+    lists:foldl(fun ('NONE', BuildRef2) ->
+			% We ignore an app type of none, its a remnent
+			% of the reorder process.
+			BuildRef2;
+		    (App, BuildRef2) ->
+			build_app(BuildRef2, BuildSupInfo, App, Args)
+                  end, BuildRef, AppList).
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -219,13 +216,14 @@ build_app(BuildRef, Env, AppName, Args) ->
                                         ++ ".basedir"),
     BuildTarget = lists:flatten([AppName, "-", AppVsn]),
     AppBuildDir = filename:join([Env#env.apps_build_dir, BuildTarget]),
-    sin_build_config:store(BuildRef, "apps." ++ AppName ++ ".builddir",
-                           AppBuildDir),
+    BuildRef2 = sin_build_config:store(BuildRef, "apps." ++ AppName ++ ".builddir",
+				       AppBuildDir),
     Target = filename:join([AppBuildDir, "ebin"]),
     TargetSrcDir = filename:join([AppBuildDir, "src"]),
     SrcDir = filename:join([AppDir, "src"]),
-    {EbinPaths, Includes} = setup_code_path(BuildRef, Env, AppName),
-    sin_build_config:store(BuildRef, "apps." ++ AppName ++ ".code_paths",
+    ExistingPaths = code:get_path(),
+    {EbinPaths, Includes} = setup_code_path(BuildRef2, Env, AppName),
+    BuildRef3 = sin_build_config:store(BuildRef2, "apps." ++ AppName ++ ".code_paths",
                    [Target | EbinPaths]),
     Options = Args ++ [{outdir, Target}, strict_record_tests,
                        return_errors, return_warnings,
@@ -233,33 +231,32 @@ build_app(BuildRef, Env, AppName, Args) ->
                        % Search directory with .hrl files
                        % generated from .asn1 files.
                        {i, TargetSrcDir} | Includes],
-    event_compile_args(BuildRef, Options),
-    Ignorables = sin_build_config:get_value(BuildRef, "ignore_dirs", []),
+    event_compile_args(BuildRef3, Options),
+    Ignorables = sin_build_config:get_value(BuildRef3, "ignore_dirs", []),
 
     % Ignore the build dir when copying or we will create a deep monster in a
     % few builds
-    BuildDir = sin_build_config:get_value(BuildRef, "build_dir"),
+    BuildDir = sin_build_config:get_value(BuildRef3, "build_dir"),
     sin_utils:copy_dir(
       AppBuildDir, AppDir, "", [BuildDir | Ignorables]),
     code:add_patha(Target),
-    Modules = gather_modules(BuildRef, AppName, SrcDir),
+    Modules = gather_modules(BuildRef3, AppName, SrcDir),
     NModules = lists:map(fun({File, _AbsName, Ext}) ->
-                                 build_file(BuildRef, SrcDir, File, Ext,
+                                 build_file(BuildRef3, SrcDir, File, Ext,
                                             Options, Target)
                          end, Modules),
     check_for_errors(NModules),
-    sin_utils:remove_code_paths([Target | EbinPaths]).
+    code:set_path(ExistingPaths),
+    BuildRef3.
 
 event_compile_args(BuildRef, Options) ->
 	case sin_build_config:get_value(BuildRef, "task.build.print_args", undefined) of
 	    undefined ->
 	        ok;
 	    true ->
-                eta_event:task_event(BuildRef, ?TASK, compile_args,
-                         {"Compile args:~n~p", [Options]});
+                sin_talk:say("Compile args:~n~p", [Options]);
 	    "True" ->
-                eta_event:task_event(BuildRef, ?TASK, compile_args,
-                         {"Compile args:~n~p", [Options]})
+		sin_talk:say("Compile args:~n~p", [Options])
          end.
 
 %%--------------------------------------------------------------------
@@ -271,7 +268,7 @@ event_compile_args(BuildRef, Options) ->
 check_for_errors(ModuleList) ->
     case lists:member({sinan, error}, ModuleList) of
 	true ->
-	    ?ETA_RAISE(build_errors);
+	    ?SIN_RAISE(build_errors);
 	false ->
 	    ok
     end.
@@ -287,16 +284,11 @@ setup_code_path(BuildRef, Env, AppName) ->
     AtomApp = list_to_atom(AppName),
     case get_app_from_list(AtomApp, Env#env.app_list) of
         not_in_list ->
-            ?ETA_RAISE_DA(app_name_not_in_list,
+            ?SIN_RAISE_DA(app_name_not_in_list,
                           "App ~s is not in the list of project apps. "
                           "This shouldn't happen!!",
                           [AppName]);
         {_, _, {Deps, IncDeps}, _} ->
-            %{ok, File} = file:open("/tmp/sinan_log", [read, append]),
-            %io:format (File, "Deps: ~p~n", [Deps]),
-            %io:format (File, "EnvDeps: ~p~n", [element(1,Env#env.deps)]),
-            %file:close(File),
-
             extract_info_from_deps(BuildRef, Deps++IncDeps, element(1,Env#env.deps), [], [], [])
 	end.
 
@@ -309,12 +301,11 @@ setup_code_path(BuildRef, Env, AppName) ->
 %% @private
 %%--------------------------------------------------------------------
 extract_info_from_deps(BuildRef, [AppName | T], AppList, Marked, Acc, IAcc) ->
-
     case lists:member(AppName, Marked) of
         false ->
             case get_app_from_list(AppName, AppList) of
                 not_in_list ->
-                    ?ETA_RAISE_DA(app_name_not_in_list,
+                    ?SIN_RAISE_DA(app_name_not_in_list,
                                   "App ~s is not in the list of project apps. "
                                   "This shouldn't happen!!!",
                                   [AppName]);
@@ -367,8 +358,8 @@ gather_modules(BuildRef, AppName, SrcDir) ->
                            Ext = filename:extension(File),
                            [{File, module_name(File), Ext} | Acc]
                    end, []),
-    reorder_list(BuildRef, ModuleList,
-                 filter_file_list(BuildRef, FileList, ModuleList)).
+    reorder_list(ModuleList,
+                 filter_file_list(FileList, ModuleList)).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -388,14 +379,13 @@ module_name(File) ->
 %% @end
 %% @private
 %%--------------------------------------------------------------------
-reorder_list(BuildRef, ModList, FileList) ->
+reorder_list(ModList, FileList) ->
     Res = lists:foldr(
 	    fun (Mod, {Acc,OkFlag}) ->
 		    case get_file_list(Mod, FileList) of
 			not_in_list ->
-			    eta_event:task_fault(BuildRef, ?TASK,
-						 {"The module specified by ~w is not "
-						  "on the filesystem!! Not building.", [Mod]}),
+			    sin_talk:say("The module specified by ~w is not "
+					 "on the filesystem!! Not building.", [Mod]),
 			    {Acc, not_ok};
 			Entry ->
 			    {[Entry | Acc], OkFlag}
@@ -405,7 +395,7 @@ reorder_list(BuildRef, ModList, FileList) ->
 	{Acc, ok} ->
 	    lists:reverse(Acc);
 	{_, not_ok} ->
-	    ?ETA_RAISE(build_errors)
+	    ?SIN_RAISE(build_errors)
     end.
 
 %%--------------------------------------------------------------------
@@ -431,17 +421,16 @@ get_file_list(ModuleName, FileList) ->
 %% @end
 %% @private
 %%--------------------------------------------------------------------
-filter_file_list(BuildRef, FileList, ModuleList) ->
+filter_file_list(FileList, ModuleList) ->
     lists:foldr(
       fun ({File, AbsName, _}=Entry, Acc) ->
 	      case lists:member(AbsName, ModuleList) of
 		  true ->
 		      [Entry | Acc];
 		  false ->
-		      eta_event:task_event(BuildRef, ?TASK, module_missing,
-					   {"Module (~w) in file ~s is not in the "
-					    "module list. Removing from build queue.",
-					    [AbsName, File]}),
+		      sin_talk:say("Module (~w) in file ~s is not in the "
+				   "module list. Removing from build queue.",
+				   [AbsName, File]),
 		      Acc
 	      end
       end, [], FileList).
@@ -467,25 +456,21 @@ build_file(BuildRef, SrcDir, File, Ext, Options, Target) ->
 build_file(BuildRef, File, ".erl", Options, Target) ->
    case needs_building(BuildRef, File, ".erl", Target, ".beam") of
        true ->
-           eta_event:task_event(BuildRef, ?TASK, file_build,
-                                {"Building ~s", [File]}),
+	   sin_talk:say("Building ~s", [File]),
            Result = case compile:file(File, Options) of
 			{ok, ModuleName} ->
 			    ModuleName;
 			{ok, ModuleName, []} ->
 			    ModuleName;
 			{ok, ModuleName, Warnings} ->
-			    eta_event:task_event(BuildRef, ?TASK, file_warning,
-						 gather_fail_info(Warnings, "warning")),
+			    sin_talk:say(gather_fail_info(Warnings, "warning")),
 			    ModuleName;
 			{error, Errors, Warnings} ->
-			    eta_event:task_event(BuildRef, ?TASK, file_error,
-						 [gather_fail_info(Errors, "error"),
-						  gather_fail_info(Warnings, "warning")]),
+			    sin_talk:say(lists:flatten([gather_fail_info(Errors, "error"),
+							gather_fail_info(Warnings, "warning")])),
 			    {sinan,  error};
 			error ->
-			    eta_event:task_fault(BuildRef, ?TASK,
-						 "Unknown error occured during build"),
+			    sin_talk:say("Unknown error occured during build"),
 			    {sinan, error}
 		    end,
 	   case Result of
@@ -505,8 +490,7 @@ build_file(BuildRef, File, ".yrl", Options, Target) ->
 	    ErlTarget = filename:join([AppDir,"src"]),
             ErlName = filename:join([ErlTarget,
                                      lists:flatten([ErlFile, ".erl"])]),
-            eta_event:task_event(BuildRef, ?TASK, file_build,
-                                 {"Building ~s", [File]}),
+	    sin_talk:say("Building ~s", [File]),
             case yecc:file(File, [{parserfile, ErlName} |
                                   strip_options(Options)]) of
                 {ok, _ModuleName} ->
@@ -516,13 +500,11 @@ build_file(BuildRef, File, ".yrl", Options, Target) ->
                     build_file(BuildRef, ErlName, ".erl",
                                Options, Target);
                 {ok, _ModuleName, Warnings} ->
-                    eta_event:task_event(BuildRef, ?TASK, file_warning,
-                                         gather_fail_info(Warnings, "warning")),
+		    sin_talk:say(gather_fail_info(Warnings, "warning")),
                     ok;
                 {error, Errors, Warnings} ->
-                    eta_event:task_event(BuildRef, ?TASK, file_error,
-                                         [gather_fail_info(Errors, "error"),
-                                          gather_fail_info(Warnings, "warning")]),
+		    sin_talk:say(lists:flatten([gather_fail_info(Errors, "error"),
+						gather_fail_info(Warnings, "warning")])),
                     error
             end;
         false ->
@@ -532,11 +514,9 @@ build_file(BuildRef, File, Ext=".asn1", Options, Target) ->
     build_asn1(BuildRef, File, Ext, Options, Target);
 build_file(BuildRef, File, Ext=".asn", Options, Target) ->
     build_asn1(BuildRef, File, Ext, Options, Target);
-build_file(BuildRef, File, _, _Options, _Target) ->
-    eta_event:task_event(BuildRef, ?TASK, file_error,
-                         {"Got file ~s with an extention I do not know how to build. "
-                          "Ignoring!",
-                          [File]}).
+build_file(_BuildRef, File, _, _Options, _Target) ->
+    sin_talk:say("Got file ~s with an extention I do not know how to build. "
+		 "Ignoring!",  [File]).
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -553,15 +533,13 @@ build_asn1(BuildRef, File, Ext, Options, Target) ->
             ErlTarget = filename:join([AppDir,"src"]),
             ErlName = filename:join([ErlTarget,
                                      lists:flatten([ErlFile, ".erl"])]),
-            eta_event:task_event(BuildRef, ?TASK, file_build,
-                                 {"Building ~s", [File]}),
+            sin_talk:say("Building ~s", [File]),
             case asn1ct:compile(File, [{outdir, ErlTarget}, noobj] ++
                                        strip_options(Options)) of
                 ok ->
                     build_file(BuildRef, ErlName, ".erl", Options, Target);
                 {error, Errors} ->
-                    eta_event:task_event(BuildRef, ?TASK, file_error,
-                                         [gather_fail_info(Errors, "error")]),
+		    sin_talk:say(gather_fail_info(Errors, "error")),
                     error
             end;
         false ->
