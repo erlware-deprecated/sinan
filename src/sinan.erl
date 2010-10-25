@@ -196,7 +196,7 @@ do_task(Task, Args) when is_atom(Task) ->
 -spec do_task_bare(task_name(), args()) -> ok.
 do_task_bare(Task, Args) when is_atom(Task) ->
     StartDir = find_start_dir(Args),
-    Config = sin_build_config:new(StartDir, Args),
+    Config = sin_build_config:new(),
     run_task(Task, StartDir, Config).
 
 
@@ -213,7 +213,7 @@ main(Args) ->
 %% Internal functions
 %%====================================================================
 do_build(_Options, [Target]) ->
-    sinan:do_task(list_to_atom(Target), []);
+    erlang:apply(?MODULE, list_to_atom(Target), [[]]);
 do_build(_Options, []) ->
     sinan:do_task(build, []).
 
@@ -267,23 +267,31 @@ start() ->
 %% @end
 -spec run_task(task_name(), string(), sin_build_config:build_config()) -> ok.
 run_task(Task, ProjectDir, BuildConfig) ->
-    Tasks = sin_task:get_task_list(Task),
-    case sin_hooks:get_hooks_function(ProjectDir) of
-	no_hooks ->
-	    lists:foldl(fun(TaskDesc, NewConfig) ->
-				ewl_talk:say("starting: ~p", TaskDesc#task.name),
-				NewNewConfig = (TaskDesc#task.task_impl):do_task(NewConfig),
+    try
+       Tasks = sin_task:get_task_list(Task),
+       case sin_hooks:get_hooks_function(ProjectDir) of
+	   no_hooks ->
+	       lists:foldl(fun(TaskDesc, NewConfig) ->
+				   ewl_talk:say("starting: ~p",
+						TaskDesc#task.name),
+				   NewNewConfig =
+				       (TaskDesc#task.task_impl):do_task(NewConfig),
+				   NewNewConfig
+			   end, BuildConfig, Tasks);
+	   HooksFun ->
+	       lists:foldl(fun(TaskDesc, NewConfig) ->
+				   ewl_talk:say("starting: ~p", TaskDesc#task.name),
+				   HooksFun(pre, Task, NewConfig),
+				   NewNewConfig = (TaskDesc#task.task_impl):do_task(NewConfig),
+				   HooksFun(post, Task, NewNewConfig),
 				NewNewConfig
-			end, BuildConfig, Tasks);
-	HooksFun ->
-	    lists:foldl(fun(TaskDesc, NewConfig) ->
-				ewl_talk:say("starting: ~p", TaskDesc#task.name),
-				HooksFun(pre, Task, NewConfig),
-				NewNewConfig = (TaskDesc#task.task_impl):do_task(NewConfig),
-				HooksFun(post, Task, NewNewConfig),
-				NewNewConfig
-			end, BuildConfig, Tasks)
+			   end, BuildConfig, Tasks)
+       end
+    catch
+	throw:{task_not_found, Task} ->
+	    sin_talk:say("Unknown task ~p", [Task])
     end.
+
 
 %% @doc
 %%  parse the start dir out of the args passed in.

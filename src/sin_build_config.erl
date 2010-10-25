@@ -34,7 +34,8 @@
 -include_lib("eunit/include/eunit.hrl").
 
 %% API
--export([new/1,
+-export([new/0,
+	 new/1,
 	 new/3,
          get_seed/1,
          store/3,
@@ -132,6 +133,10 @@ delete(BuildConfig, Key) ->
 -spec get_pairs(build_config()) -> [{key(), value()}].
 get_pairs(BuildConfig) ->
 	      dict:to_list(BuildConfig).
+
+-spec new() -> build_config().
+new() ->
+    dict:new().
 
 -spec new(project_dir() | build_config()) -> build_config().
 new(ProjectDir) when is_list(ProjectDir)->
