@@ -32,11 +32,13 @@
 -module(sin_build_config).
 
 -include_lib("eunit/include/eunit.hrl").
+-include("internal.hrl").
 
 %% API
 -export([new/0,
 	 new/1,
 	 new/3,
+	 parse_args/1,
          get_seed/1,
          store/3,
          get_value/2,
@@ -62,6 +64,14 @@
 %%====================================================================
 %% API
 %%====================================================================
+
+%% @doc
+%%  Parse the command line args into a spec that can be overridden.
+%% @end
+-spec parse_args(list()) -> build_config().
+parse_args(ArgList) when is_list(ArgList) ->
+    parse_args(ArgList, dict:new()).
+
 %%--------------------------------------------------------------------
 %% @doc
 %%  Get a preexisting seed from the the seed config.
@@ -147,16 +157,15 @@ new(ProjectDir) when is_list(ProjectDir)->
         Error ->
 	    throw(Error)
     end;
-new( Override) ->
+new(Override) ->
     Config = dict:new(),
-    NewConfig = merge_config(Config, Override, ""),
+    NewConfig = merge_build_configs(Config, Override),
     NewConfig.
 
 -spec new(project_dir(), build_config(), build_config()) -> build_config().
 new(ProjectDir, Config, Override) ->
-    OverrideDict = merge_config(dict:new(), Override, ""),
-    Flavor = get_build_flavor(Config, OverrideDict),
-    NewConfig0 = merge_config(apply_flavors(Config, Flavor), Override, ""),
+    Flavor = get_build_flavor(Config, Override),
+    NewConfig0 = merge_build_configs(apply_flavors(Config, Flavor), Override),
     BuildConfigDict = get_build_config(ProjectDir),
     NewConfig = merge_config(NewConfig0, dict:to_list(BuildConfigDict), ""),
     BuildRoot = filename:join([ProjectDir, get_value(NewConfig, "build_dir",
@@ -169,6 +178,14 @@ new(ProjectDir, Config, Override) ->
 %%====================================================================
 %% Internal Functions
 %%====================================================================
+%% @doc
+%%  Merges the build config. The second config always overrides the first
+%% @end
+-spec merge_build_configs(build_config(), build_config()) -> build_config().
+merge_build_configs(Config1, Config2) ->
+    dict:merge(fun(_Key, _Value1, Value2) ->
+		       Value2
+	       end, Config1, Config2).
 %%--------------------------------------------------------------------
 %% @doc
 %%  Return the flavor for the current build attempt
@@ -304,7 +321,27 @@ convert_value(Value) when is_binary(Value) ->
 convert_value(Value) ->
     Value.
 
+%% @doc
+%%  Parse pairs of keys and values into a build config form
+%% @end
+-spec parse_args(list(), build_config()) -> build_config().
+parse_args([Key, Value | Rest], Dict) ->
+    parse_args(Rest, dict:store(strip_key(Key, []), Value, Dict));
+parse_args([], Dict) ->
+    Dict;
+parse_args(_, _Dict) ->
+    ?SIN_RAISE_D(sinan_arg_exception, "Problem parsing config args").
 
+%% @doc
+%%  strip out the : and replace it with .
+%% @end
+-spec strip_key(string(), list()) -> string().
+strip_key([$: | Rest], Acc) ->
+    strip_key(Rest, [$. | Acc]);
+strip_key([H | Rest], Acc) ->
+    strip_key(Rest, [H | Acc]);
+strip_key([], Acc) ->
+    lists:reverse(Acc).
 %%====================================================================
 %%% Tests
 %%====================================================================

@@ -58,6 +58,7 @@ description() ->
         "<build-area>/tar/ directory",
     #task{name = ?TASK,
 	  task_impl = ?MODULE,
+	  bare = false,
 	  deps = ?DEPS,
 	  desc = Desc,
 	  opts = []}.

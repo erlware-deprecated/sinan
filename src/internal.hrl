@@ -40,6 +40,7 @@
 
 -record(task,  {name :: atom(),            % The 'user friendly' name of the task
                 task_impl :: atom(),       % The implementation of the task, maybe fun or
+		bare :: boolean(),         % Indicates whether a build config is needed
                 deps :: [atom()],          % The list of dependencies
                 desc :: string(),          % The description for the task
                 opts :: list()}).          % The list of options that the task requires/understands

@@ -56,6 +56,7 @@ description() ->
     Desc = "Generates a buildable default project layout ",
     #task{name = ?TASK,
 	  task_impl = ?MODULE,
+	  bare = true,
 	  deps = ?DEPS,
 	  desc = Desc,
 	  opts = []}.

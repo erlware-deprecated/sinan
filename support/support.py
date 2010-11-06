@@ -20,7 +20,7 @@ ERLWARE_PATH = "/usr/local/lib/erlang"
 
 ERLC = "erlc +debug_info "
 
-VERSION = "0.19.0.1"
+VERSION = "0.20.0.0"
 
 
 ERLWARE_APPS = ["tools-2.6.5.1",
@@ -34,7 +34,6 @@ ERLWARE_APPS = ["tools-2.6.5.1",
                 "ibrowse-1.4",
                 "getopt-0.3.0",
                 "sgte-0.7.1",
-                "gtime-0.9.4",
                 "asn1-1.6.13"]
 
 

@@ -56,6 +56,7 @@ description() ->
     Desc = "Removes the build area and everything underneath",
     #task{name = ?TASK,
 	  task_impl = ?MODULE,
+	  bare = false,
 	  deps = ?DEPS,
 	  desc = Desc,
 	  opts = []}.

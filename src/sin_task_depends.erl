@@ -59,6 +59,7 @@ description() ->
         "locally",
     #task{name = ?TASK,
 	  task_impl = ?MODULE,
+	  bare = false,
 	  deps = ?DEPS,
 	  desc = Desc,
 	  opts = []}.

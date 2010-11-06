@@ -107,7 +107,7 @@ shell(Args) ->
 %% @end
 -spec gen(args()) -> ok.
 gen(Args) ->
-    do_task_bare(gen, Args).
+    do_task(gen, Args).
 
 
 %% @doc
@@ -125,7 +125,7 @@ clean(Args) ->
 %% @end
 -spec help(args()) -> ok.
 help(Args) ->
-    do_task_bare(help, Args).
+    do_task(help, Args).
 
 %% @doc
 %%  run the version task.
@@ -133,7 +133,7 @@ help(Args) ->
 %% @end
 -spec version(args()) -> ok.
 version(Args) ->
-    do_task_bare(version, Args).
+    do_task(version, Args).
 
 %% @doc
 %%  run the depends task.
@@ -170,12 +170,26 @@ dist(Args) ->
 %%  run the specified task
 %% @end
 -spec do_task(task_name(), args()) -> ok.
-do_task(Task, Args) when is_atom(Task) ->
+do_task(Task, Args) ->
     StartDir = find_start_dir(Args),
+    TaskDesc = sin_task:get_task(Task),
+    Override = sin_build_config:parse_args(Args),
+    case TaskDesc#task.bare of
+	false ->
+	    do_task_full(StartDir, Override, Task);
+	true ->
+	    do_task_bare(StartDir, Override, Task)
+    end.
+
+%% @doc
+%%  run the specified task with a full project dir
+%% @end
+-spec do_task_full(string(), sin_build_config:build_config(), task_name()) -> ok.
+do_task_full(StartDir, Override, Task) when is_atom(Task) ->
     try
         ProjectRoot = sin_utils:find_project_root(StartDir),
         Seed = sin_build_config:get_seed(ProjectRoot),
-        BuildConfig = sin_build_config:new(ProjectRoot, Seed, Args),
+        BuildConfig = sin_build_config:new(ProjectRoot, Seed, Override),
 	run_task(Task, ProjectRoot, BuildConfig)
     catch
         no_build_config ->
@@ -194,10 +208,9 @@ do_task(Task, Args) when is_atom(Task) ->
 %%  run the specified task, without expecting a build config and
 %% what not.
 %% @end
--spec do_task_bare(task_name(), args()) -> ok.
-do_task_bare(Task, Args) when is_atom(Task) ->
-    StartDir = find_start_dir(Args),
-    Config = sin_build_config:new(),
+-spec do_task_bare(string(), task_name(), args()) -> ok.
+do_task_bare(StartDir, Override, Task) when is_atom(Task) ->
+    Config = sin_build_config:new(Override),
     run_task(Task, StartDir, Config).
 
 
@@ -218,11 +231,10 @@ main(Args) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
-do_build(_Options, [Target]) ->
-    erlang:apply(?MODULE, list_to_atom(Target), [[]]);
+do_build(_Options, [Target | Rest]) ->
+    sinan:do_task(list_to_atom(Target), Rest);
 do_build(_Options, []) ->
     sinan:do_task(build, []).
-
 
 usage() ->
     usage(option_spec_list()).
@@ -265,9 +277,6 @@ start() ->
     application:start(sinan).
 
 
-%%====================================================================
-%% Internal functions
-%%====================================================================
 %% @doc
 %% run the task including all task dependencies
 %% @end

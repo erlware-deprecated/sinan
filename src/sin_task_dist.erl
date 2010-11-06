@@ -61,6 +61,7 @@ description() ->
         "dist task for configuration information ",
     #task{name = ?TASK,
 	  task_impl = ?MODULE,
+	  bare = false,
 	  deps = ?DEPS,
 	  desc = Desc,
 	  opts = []}.

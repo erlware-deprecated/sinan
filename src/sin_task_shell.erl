@@ -57,6 +57,7 @@ description() ->
         "code to his hearts content",
     #task{name = ?TASK,
 	  task_impl = ?MODULE,
+	  bare = false,
 	  deps = ?DEPS,
 	  desc = Desc,
 	  opts = []}.

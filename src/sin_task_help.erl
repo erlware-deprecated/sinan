@@ -56,6 +56,7 @@ description() ->
     Desc = "Provides help information for the available tasks",
     #task{name = ?TASK,
 	  task_impl = ?MODULE,
+	  bare = true,
 	  deps = ?DEPS,
 	  desc = Desc,
 	  opts = []}.

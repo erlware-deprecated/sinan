@@ -2,7 +2,7 @@
 
 {application, sinan,
  [{description, "Build system for erlang"},
-  {vsn, "0.19.0.2"},
+  {vsn, "0.20.0.0"},
   {modules, [sin_hooks,
 	     sin_task_doc,
 	     sin_task_version,
@@ -32,8 +32,7 @@
 	     sin_task_test]},
   {registered, [sin_sup]},
   {applications, [kernel, stdlib, compiler,
-                  edoc, sasl, syntax_tools,
-                  ibrowse, ktuo, ewrepo, ewlib, tools,
+                  edoc, syntax_tools,
+                  ktuo, ewrepo, ewlib, tools,
                   xmerl, mnesia, sgte,
-		  parsetools, asn1, getopt]},
-  {mod, {sin_app, []}}]}.
+		  parsetools, asn1, getopt]}]}.

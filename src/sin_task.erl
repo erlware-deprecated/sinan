@@ -7,11 +7,10 @@
 %%%-------------------------------------------------------------------
 -module(sin_task).
 
--compile(export_all).
-
 -include("internal.hrl").
 
--export([get_task_list/1,
+-export([get_task/1,
+	 get_task_list/1,
 	behaviour_info/1]).
 
 -export_type([task_description/0,
@@ -27,6 +26,11 @@
 %%====================================================================
 %%% API Functions
 %%====================================================================
+-spec get_task(task_name()) -> [task_name()].
+get_task(TaskName) ->
+    Tasks = get_tasks(),
+    get_task(TaskName, Tasks).
+
 -spec get_task_list(task_name()) -> [task_name()].
 get_task_list(TaskName) ->
     Tasks = get_tasks(),

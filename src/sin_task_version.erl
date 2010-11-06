@@ -56,6 +56,7 @@ description() ->
     Desc = "Provides sinan server version information",
     #task{name = ?TASK,
 	  task_impl = ?MODULE,
+	  bare = true,
 	  deps = ?DEPS,
 	  desc = Desc,
 	  opts = []}.

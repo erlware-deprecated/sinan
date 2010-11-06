@@ -68,6 +68,7 @@ description() ->
     Desc = "Compiles all of the compilable files in the project",
     #task{name = ?TASK,
 	  task_impl = ?MODULE,
+	  bare = false,
 	  deps = ?DEPS,
 	  desc = Desc,
 	  opts = []}.

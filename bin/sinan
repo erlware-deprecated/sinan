@@ -2,21 +2,29 @@
 
 LOGDIR=~/.sinan/logs
 CONFIGDIR=~/.sinan/config
+
 mkdir -p $LOGDIR
 mkdir -p $CONFIGDIR
-
-
 
 #### Fill in values for these variables ####
 REL_NAME=sinan
 REL_VSN=0.20.0.0
 ERTS_VSN=5.8.1
-INVOCATION_SUFFIX=" -eval 'sinan:main()' -eval ' init:stop() '"
+INVOCATION_SUFFIX=" -run sinan main -run init stop "
 ###########################################
 
 PROG=$0
 test -h $0 && PROG=$(readlink $0)
 PREFIX=$(cd $(dirname $(dirname $PROG)); pwd)
+
+CONFIGFILE=$CONFIGDIR/sinserv-$REL_VSN.config
+if [ ! -f $CONFIGFILE ]; then
+
+echo " [{kernel, [{error_logger, {file, \"$LOGDIR/kernel.log\"}}]}, \
+{sasl,[{sasl_error_logger, {file, \"$LOGDIR/sasl.log\"}}]}]." > $CONFIGFILE
+fi
+
+
 
 export ROOTDIR=$PREFIX
 export BINDIR=$PREFIX/erts-$ERTS_VSN/bin

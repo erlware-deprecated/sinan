@@ -57,6 +57,7 @@ description() ->
     Desc = "Runs all of the existing eunit unit tests in the project",
     #task{name = ?TASK,
 	  task_impl = ?MODULE,
+	  bare = false,
 	  deps = ?DEPS,
 	  desc = Desc,
 	  opts = []}.
