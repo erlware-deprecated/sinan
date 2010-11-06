@@ -34,7 +34,8 @@
 -module(sinan).
 
 %% API
--export([main/1,
+-export([main/0,
+	 main/1,
 	 build/1,
          analyze/1,
          doc/1,
@@ -198,6 +199,11 @@ do_task_bare(Task, Args) when is_atom(Task) ->
     StartDir = find_start_dir(Args),
     Config = sin_build_config:new(),
     run_task(Task, StartDir, Config).
+
+
+main() ->
+    Args = init:get_plain_arguments(),
+    main(Args).
 
 
 main(Args) ->

@@ -1,17 +1,30 @@
-#!/usr/bin/env escript
-%% -*- mode: Erlang; fill-column: 80; comment-column: 75; -*-
-%%%-------------------------------------------------------------------
-%%% @author Eric Merritt <ericbmerritt@gmail.com>
-%%% @doc
-%%%  Start up for the erlb system
-%%% @end
-%%% @copyright (C) 2010 Erlware.org
-%%%-------------------------------------------------------------------
--export([main/1]).
+#!/bin/sh
 
-%%====================================================================
-%% API
-%%====================================================================
-main(Args) ->
-    sinan:main(Args).
+LOGDIR=~/.sinan/logs
+CONFIGDIR=~/.sinan/config
+mkdir -p $LOGDIR
+mkdir -p $CONFIGDIR
 
+
+
+#### Fill in values for these variables ####
+REL_NAME=sinan
+REL_VSN=0.20.0.0
+ERTS_VSN=5.8.1
+INVOCATION_SUFFIX=" -eval 'sinan:main()' -eval ' init:stop() '"
+###########################################
+
+PROG=$0
+test -h $0 && PROG=$(readlink $0)
+PREFIX=$(cd $(dirname $(dirname $PROG)); pwd)
+
+export ROOTDIR=$PREFIX
+export BINDIR=$PREFIX/erts-$ERTS_VSN/bin
+export EMU=beam
+export PROGNAME=erl
+export LD_LIBRARY_PATH=$PREFIX/erts-$ERTS_VSN/lib
+
+REL_DIR=$PREFIX/releases/$REL_NAME-$REL_VSN
+
+
+$BINDIR/erlexec -noshell -config $CONFIGFILE -boot $REL_DIR/$REL_NAME $INVOCATION_SUFFIX -- "$@"
