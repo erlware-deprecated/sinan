@@ -261,19 +261,49 @@ process_build_config(ProjectDir, BuildConfig) ->
 merge_config(Config, {obj, Data}, CurrentName) ->
     merge_config(Config, Data, CurrentName);
 merge_config(Config, [{Key, {obj, Data}} | Rest], "") ->
-    NewConfig = merge_config(Config, Data, Key),
+    NewConfig = merge_config(Config, Data, convert_value(Key)),
     merge_config(NewConfig, Rest, "");
 merge_config(Config, [{Key, {obj, Data}} | Rest], CurrentName) ->
-    NewConfig = merge_config(Config, Data, CurrentName ++ "." ++ Key),
+    NewConfig = merge_config(Config, Data, CurrentName ++ "." ++ convert_value(Key)),
     merge_config(NewConfig, Rest, CurrentName);
 merge_config(Config, [{Key, Value} | Rest], "") ->
-    NewConfig = dict:store(Key, Value, Config),
+    NewConfig = dict:store(convert_value(Key), convert_value(Value), Config),
     merge_config(NewConfig, Rest, "");
 merge_config(Config, [{Key, Value} | Rest], CurrentName) ->
-    NewConfig = dict:store(CurrentName ++ "." ++ Key, Value, Config),
+    NewConfig = dict:store(CurrentName ++ "." ++ convert_value(Key), convert_value(Value), Config),
     merge_config(NewConfig, Rest, CurrentName);
 merge_config(Config, [], _) ->
     Config.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%%  take a list of binaries and convert it to a list of lists.
+%% @end
+%%--------------------------------------------------------------------
+-spec convert_list(Target::list(), Acc::list()) -> list().
+convert_list([H | T], Acc) when is_binary(H) ->
+    convert_list(T, [binary_to_list(H) | Acc]);
+convert_list([H | T], Acc) ->
+    convert_list(T, [H | Acc]);
+convert_list([], Acc) ->
+    lists:reverse(Acc).
+
+%%--------------------------------------------------------------------
+%% @doc
+%%  Convert any values taken from the config from a binary to a list.
+%%  ktuo treats lists a binaries but we would rather use lists in the
+%%  system.
+%% @end
+%%--------------------------------------------------------------------
+-spec convert_value(Value::any()) -> any().
+convert_value(Value) when is_list(Value) ->
+    convert_list(Value, []);
+convert_value(Value) when is_binary(Value) ->
+    binary_to_list(Value);
+convert_value(Value) ->
+    Value.
+
 
 %%====================================================================
 %%% Tests
