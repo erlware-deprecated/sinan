@@ -119,7 +119,7 @@ get_new_project_name(Env) ->
     Dir = filename:join(CDir, Name),
     ewl_talk:say("Please specify version of your project"),
     Version = ewl_talk:ask("project version"),
-    ErtsVersion = ewl_talk:ask_default("Please specify the erst version", erlang:system_info(version)),
+    ErtsVersion = ewl_talk:ask_default("Please specify the ERTS version", erlang:system_info(version)),
     Env2 = [{project_version, Version},
             {project_name, Name},
             {project_dir, Dir},
@@ -136,7 +136,7 @@ get_new_project_name(Env) ->
 %%--------------------------------------------------------------------
 get_application_names(Env) ->
     ewl_talk:say("Please specify the names of the OTP apps"
-		 " that belong to this project. One application to a"
+		 " that will be developed under this project. One application to a"
 		 " line. Finish with a blank line."),
     get_application_names(Env, ewl_talk:ask("app"), []).
 
