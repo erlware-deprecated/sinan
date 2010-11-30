@@ -11,7 +11,8 @@
 
 -export([get_task/1,
 	 get_task_list/1,
-	behaviour_info/1]).
+	    get_tasks/0,
+	    behaviour_info/1]).
 
 -export_type([task_description/0,
 	      task_name/0]).
