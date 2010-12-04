@@ -274,6 +274,7 @@ start() ->
     application:start(sgte),
     application:start(parsetools),
     application:start(asn1),
+    application:start(getopt),
     application:start(sinan).
 
 
