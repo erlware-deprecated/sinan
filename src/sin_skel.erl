@@ -99,7 +99,7 @@ build_config(Env, FileName) ->
 %% @end
 %%-------------------------------------------------------------------
 bin(Env, FileName) ->
-    write_template("bin", Env, FileName).
+    write_template("exe", Env, FileName).
 
 %%--------------------------------------------------------------------
 %% @doc
