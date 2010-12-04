@@ -171,14 +171,19 @@ dist(Args) ->
 %% @end
 -spec do_task(task_name(), args()) -> ok.
 do_task(Task, Args) ->
-    StartDir = find_start_dir(Args),
-    TaskDesc = sin_task:get_task(Task),
-    Override = sin_build_config:parse_args(Args),
-    case TaskDesc#task.bare of
-	false ->
-	    do_task_full(StartDir, Override, Task);
-	true ->
-	    do_task_bare(StartDir, Override, Task)
+    try
+	StartDir = find_start_dir(Args),
+	TaskDesc = sin_task:get_task(Task),
+	Override = sin_build_config:parse_args(Args),
+	case TaskDesc#task.bare of
+	    false ->
+		do_task_full(StartDir, Override, Task);
+	    true ->
+		do_task_bare(StartDir, Override, Task)
+	end
+    catch
+        {task_not_found, TaskName} ->
+            ewl_talk:say("Task not found ~s.", [TaskName])
     end.
 
 %% @doc
