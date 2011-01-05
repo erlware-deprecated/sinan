@@ -149,8 +149,6 @@ get_package_dependencies(Package, Version, LibDir) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_parse_output({application, _, Ops}) ->
-    %lists:umerge(lists:sort(get_deps(Ops)),
-	%	 lists:sort(get_ideps(Ops)));
     {get_deps(Ops), get_ideps(Ops)};
 handle_parse_output(_) ->
    throw({error, "Invalid dependency info"}).
@@ -189,18 +187,6 @@ get_ideps([]) ->
 %%====================================================================
 %% tests
 %%====================================================================
-handle_parse_output_test() ->
-    Data = {application, testapp,
-            [{vsn, "0.1.0"},
-             {description, "test test test"},
-             {versioned_dependencies,
-              [{app1, "0.1.0"}, {app2, "0.33.1", gte},
-               {app3, "33.11.3"}]},
-             {applications, [app1, app2, app3, app4, app5]}]},
-    ?assertMatch([{app3, [33, 11, 3]}, {app2, [0, 33, 1],gte},
-                  {app1, [0, 1, 0]}, app5, app4],
-                 handle_parse_output(Data)).
-
 get_version_test() ->
     ?assertMatch("1.0", get_version("sinan-1.0")),
     ?assertMatch("1.3.2.2", get_version("bah-1.3.2.2")).
