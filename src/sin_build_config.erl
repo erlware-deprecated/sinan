@@ -39,6 +39,7 @@
 	 new/1,
 	 new/3,
 	 parse_args/1,
+	 parse_args/2,
          get_seed/1,
          store/3,
          get_value/2,

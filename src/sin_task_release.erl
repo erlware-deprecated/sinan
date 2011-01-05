@@ -81,13 +81,13 @@ do_task(BuildRef) ->
 %%--------------------------------------------------------------------
 release(BuildRef) ->
     BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
-    ReleaseName = case sin_build_config:get_value(BuildRef, "-r") of
-                      undefined ->
-                          project_name(BuildRef);
-                      R ->
-                          R
-                  end,
-    Version = project_version(BuildRef),
+    {ReleaseName, Version} =
+	case sin_build_config:get_value(BuildRef, "-r") of
+	    undefined ->
+		{project_name(BuildRef), project_version(BuildRef)};
+	    R ->
+		{R, sin_build_config:get_value(BuildRef, "releases." ++ R ++ ".vsn")}
+	end,
     ReleaseInfo = generate_rel_file(BuildRef, BuildDir, ReleaseName, Version),
     BuildRef2 = sin_build_config:store(BuildRef, "project.release_info", ReleaseInfo),
     copy_or_generate_sys_config_file(BuildRef2, BuildDir, ReleaseName, Version),
