@@ -36,19 +36,7 @@
 %% API
 -export([main/0,
 	 main/1,
-	 build/1,
-         analyze/1,
-         doc/1,
-         shell/1,
-         gen/1,
-         clean/1,
-         help/1,
-         version/1,
-         depends/1,
-         test/1,
-         release/1,
-         dist/1,
-         do_task/2,
+         do_task/3,
          start/0]).
 
 -export_type([args/0,
@@ -66,115 +54,13 @@
 %%====================================================================
 %% API
 %%====================================================================
-
-%% @doc
-%%  Run the build with the specified args.
-%% {@link sin_task_build}
-%% @end
--spec build(args()) -> ok.
-build(Args) ->
-    do_task(build, Args).
-
-%% @doc
-%%  Run the analyze task.
-%%
-%% {@link sin_task_analyze}
-%% @end
--spec analyze(args()) -> ok.
-analyze(Args) ->
-    do_task(analyze, Args).
-
-%% @doc
-%%  run the doc task.
-%% {@link sin_task_doc}
-%% @end
--spec doc(args()) -> ok.
-doc(Args) ->
-    do_task(doc, Args).
-
-
-%% @doc
-%%  run the shell task.
-%% {@link sin_task_shell}
-%% @end
--spec shell(args()) -> ok.
-shell(Args) ->
-   do_task(shell, Args).
-
-%% @doc
-%%  Run the gen task.
-%% {@link sin_task_gen}
-%% @end
--spec gen(args()) -> ok.
-gen(Args) ->
-    do_task(gen, Args).
-
-
-%% @doc
-%%  run the clean task.
-%% {@link sin_task_clean}
-%% @end
--spec clean(args()) -> ok.
-clean(Args) ->
-    do_task(clean, Args).
-
-
-%% @doc
-%%  run the help task.
-%% {@link sin_task_help}
-%% @end
--spec help(args()) -> ok.
-help(Args) ->
-    do_task(help, Args).
-
-%% @doc
-%%  run the version task.
-%% {@link sin_task_version}
-%% @end
--spec version(args()) -> ok.
-version(Args) ->
-    do_task(version, Args).
-
-%% @doc
-%%  run the depends task.
-%% {@link sin_task_depends}
-%% @end
--spec depends(args()) -> ok.
-depends(Args) ->
-    do_task(depends, Args).
-
-
-%% @doc
-%%  run the test task.
-%% {@link sin_task_test}
-%% @end
--spec test(args()) -> ok.
-test(Args) ->
-    do_task(test, Args).
-
-%% @doc
-%%  run the release task. {@link sin_release_builder}
-%% @end
--spec release(args()) -> ok.
-release(Args) ->
-    do_task(release, Args).
-
-%% @doc
-%%  run the dist task. {@link sin_dist_builder}
-%% @end
--spec dist(args()) -> ok.
-dist(Args) ->
-    do_task(dist, Args).
-
 %% @doc
 %%  run the specified task
 %% @end
--spec do_task(task_name(), args()) -> ok.
-do_task(Task, Args) ->
+-spec do_task(task_name(), string(), sin_build_config:build_config()) -> ok.
+do_task(Task, StartDir, Override) ->
     try
-	StartDir = find_start_dir(Args),
 	TaskDesc = sin_task:get_task(Task),
-	Override = sin_build_config:parse_args(Args),
 	case TaskDesc#task.bare of
 	    false ->
 		do_task_full(StartDir, Override, Task);
@@ -236,10 +122,10 @@ main(Args) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
-do_build(_Options, [Target | Rest]) ->
-    sinan:do_task(list_to_atom(Target), Rest);
-do_build(_Options, []) ->
-    sinan:do_task(build, []).
+do_build(Options, [Target | Rest]) ->
+    do_task(list_to_atom(Target), find_start_dir(Rest), setup_release(Options, Rest));
+do_build(Options, []) ->
+    do_build(Options, ["build"]).
 
 usage() ->
     usage(option_spec_list()).
@@ -251,7 +137,8 @@ usage(OptSpecList) ->
 
 option_spec_list() ->
     [{verbose, $v, "verbose", {boolean, false},
-      "Be verbose about what gets done"}].
+      "Be verbose about what gets done"},
+     {release, $r, "release", string, "the release to build"}].
 
 
 
@@ -335,3 +222,12 @@ find_start_dir(Data) ->
 	    Dir
     end.
 
+setup_release(Options, Args) ->
+    Override = case lists:keysearch(release, 1, Options) of
+		   {value, {release, Name}} ->
+		       NewConfig = sin_build_config:new(),
+		       sin_build_config:store(NewConfig, "-r", Name);
+		   _ ->
+		       sin_build_config:new()
+	       end,
+    sin_build_config:parse_args(Args, Override).
