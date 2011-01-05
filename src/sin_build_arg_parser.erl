@@ -151,7 +151,7 @@ parse_define([], LAcc, Acc) ->
 %%--------------------------------------------------------------------
 parse_define_value([$\" | T], _LAcc) ->
    {Dir, NewT, _} =  ktuo_parse_utils:stringish_body($\", T, [], 0, 0),
-   {Dir, NewT};
+   {binary_to_list(Dir), NewT};
 parse_define_value([$\ | T], LAcc) ->
     {lists:reverse(LAcc), T};
 parse_define_value([$\r | T], LAcc) ->
@@ -178,7 +178,7 @@ parse_define_value([], LAcc) ->
 %%--------------------------------------------------------------------
 parse_include([$\" | T], _LAcc, Acc) ->
    {Dir, NewT, _} =  ktuo_parse_utils:stringish_body($\", T, [], 0, 0),
-   compile_build_args(NewT, [{i, lists:reverse(Dir)} | Acc]);
+   compile_build_args(NewT, [{i, lists:reverse(binary_to_list(Dir))} | Acc]);
 parse_include([$\ | T], LAcc, Acc) ->
     compile_build_args(T, [{i, lists:reverse(LAcc)} | Acc]);
 parse_include([$\r | T], LAcc, Acc) ->
