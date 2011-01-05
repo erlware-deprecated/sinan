@@ -740,21 +740,20 @@ save_module_dependencies(BuildRef, File, Options) ->
 %% Tests
 %%====================================================================
 reorder_app_test() ->
-    AppList = [{app1, "123", {[app2, stdlib], undefined}},
-               {app2, "123", {[app3, kernel], undefined}},
-               {app3, "123", {[kernel], undefined}}],
+    AppList = [{app1, "123", {[app2, stdlib], []}, "path"},
+               {app2, "123", {[app3, kernel], []}, "path"},
+               {app3, "123", {[kernel], []}, "path"}],
     NewList  = reorder_apps_according_to_deps(AppList),
     ?assertMatch(['NONE', "app3", "app2", "app1"], NewList),
-    AppList2 = [{app1, "123", {[app2, zapp1, stdlib], undefined}},
-                {app2, "123", {[app3, kernel], undefined}},
-                {app3, "123", {[kernel], undefined}},
-                {zapp1, "vsn", {[app2, app3, zapp2], undefined}},
-                {zapp2, "vsn", {[kernel], undefined}},
-                {zapp3, "vsn", {[], undefined}}],
+    AppList2 = [{app1, "123", {[app2, zapp1, stdlib], []}, "path"},
+                {app2, "123", {[app3, kernel], []}, "path"},
+                {app3, "123", {[kernel, zapp2], []}, "path"},
+                {zapp1, "vsn", {[app2, app3, zapp2], []}, "path"},
+                {zapp2, "vsn", {[kernel], []}, "path"},
+                {zapp3, "vsn", {[], []}, "path"}],
     NewList2 = reorder_apps_according_to_deps(AppList2),
-    ?assertMatch(['NONE', "zapp2", "app3", "app2", "zapp1", "zapp3", "app1"],
-                 NewList2).
-
+    ?assertMatch(['NONE',"zapp2","app3","app2","zapp1","app1",
+		  "zapp3"], NewList2).
 
 
 
