@@ -106,12 +106,15 @@ release(BuildRef) ->
 %%--------------------------------------------------------------------
 generate_rel_file(BuildRef, BuildDir, Name, Version) ->
     BuildFlavor = sin_build_config:get_value(BuildRef, "build.flavor"),
-    {ProjectName, ProjectVsn} = case sin_build_config:get_value(BuildRef, "-r") of
-                                    undefined ->
-                                        {sin_build_config:get_value(BuildRef, "project.name"), sin_build_config:get_value(BuildRef, "project.vsn")};
-                                    ReleaseName ->
-                                        {ReleaseName, sin_build_config:get_value(BuildRef, "releases."++ ReleaseName ++".vsn")}
-                                end,
+    {ProjectName, ProjectVsn} =
+	case sin_build_config:get_value(BuildRef, "-r") of
+	    undefined ->
+		{sin_build_config:get_value(BuildRef,
+					    "project.name"),
+		 sin_build_config:get_value(BuildRef, "project.vsn")};
+	    ReleaseName ->
+		{ReleaseName, sin_build_config:get_value(BuildRef, "releases."++ ReleaseName ++".vsn")}
+	end,
 
     RootDir = sin_build_config:get_value(BuildRef, "project.dir"),
 
