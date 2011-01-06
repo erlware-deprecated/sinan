@@ -144,7 +144,14 @@ get_application_names(Env, [], Acc) ->
     Env2 = [{apps, Acc} | Env],
     build_out_project(Env2);
 get_application_names(Env, App, Acc) ->
-    get_application_names(Env, ewl_talk:ask_default("app", ""), [App | Acc]).
+    NewAcc = case lists:member(App, Acc) of
+		 true ->
+		     ewl_talk:say("App ~s is already specified", [App]),
+		     Acc;
+		 false ->
+		     [App | Acc]
+	     end,
+    get_application_names(Env, ewl_talk:ask_default("app", ""), NewAcc).
 
 %%--------------------------------------------------------------------
 %% @doc
