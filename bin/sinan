@@ -35,4 +35,4 @@ export LD_LIBRARY_PATH=$PREFIX/erts-$ERTS_VSN/lib
 REL_DIR=$PREFIX/releases/$REL_NAME-$REL_VSN
 
 
-$BINDIR/erlexec -noshell -config $CONFIGFILE -boot $REL_DIR/$REL_NAME $INVOCATION_SUFFIX -- "$@"
+$BINDIR/erlexec -noshell -config $CONFIGFILE -boot $REL_DIR/$REL_NAME $INVOCATION_SUFFIX -extra "$@"
