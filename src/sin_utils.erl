@@ -40,7 +40,6 @@
 	 copy_dir/4,
 	 delete_dir/1,
 	 file_exists/1,
-	 find_project_root/1,
 	 get_application_env/1,
 	 get_ignore_dirs/1,
 	 is_dir_ignorable/2,
@@ -254,25 +253,6 @@ are_dirs_ignorable([Dir | RestOfDirs], Igs) ->
 are_dirs_ignorable([], _Igs) ->
     false.
 
-%% @doc
-%%   find "_build.cfg" in the current directory. if not recurse
-%%   with parent directory.
-%% @end
--spec find_project_root(Dir::string()) -> string().
-find_project_root(Start) ->
-    ConfigFile1 = filename:join(Start, "_build.cfg"),
-    ConfigFile2 = filename:join(Start, "sinan.cfg"),
-    case file:read_file_info(ConfigFile1) of
-      {ok, _FileInfo} ->
-	    Start;
-	{error, _Reason} ->
-	    case file:read_file_info(ConfigFile2) of
-		{ok, _FileInfo} ->
-		    Start;
-		{error, _Reason} ->
-		    find_project_root(parent_dir(Start))
-	    end
-    end.
 
 %% @doc
 %% convert a list body to a string
@@ -348,26 +328,6 @@ check_not_circular(Target, Source, SubDir) ->
 	    ok
     end.
 
-%% @doc
-%%  Given a directory returns the name of the parent directory.
-%% @end
--spec parent_dir(Filename::string()) -> DirName::string().
-parent_dir(Filename) ->
-    parent_dir(filename:split(Filename), []).
-
-%% @doc
-%%  Given list of directories, splits the list and returns all
-%% dirs but the last as a path.
-%% @spec (List::list(), Acc::list()) -> DirName.
-%% @end
-parent_dir([_H], []) ->
-    throw(no_parent_dir);
-parent_dir([], []) ->
-    throw(no_parent_dir);
-parent_dir([_H], Acc) ->
-    filename:join(lists:reverse(Acc));
-parent_dir([H | T], Acc) ->
-    parent_dir(T, [H | Acc]).
 
 %%====================================================================
 %% tests
