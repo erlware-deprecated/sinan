@@ -42,6 +42,7 @@
 -export_type([args/0,
 	     task_name/0]).
 
+-include_lib("eunit/include/eunit.hrl").
 -include("internal.hrl").
 
 %%====================================================================
@@ -78,10 +79,9 @@ do_task(Task, StartDir, Override) ->
 -spec do_task_full(string(), sin_config:config(), task_name()) -> ok.
 do_task_full(StartDir, Override, Task) when is_atom(Task) ->
     try
-        ProjectRoot = sin_utils:find_project_root(StartDir),
-        Seed = sin_config:get_seed(ProjectRoot),
-        BuildConfig = sin_config:new(ProjectRoot, Seed, Override),
-	run_task(Task, ProjectRoot, BuildConfig)
+        Config = sin_discover:discover(StartDir, Override),
+	ProjectRoot = sin_config:get_value(Config, "project.dir"),
+	run_task(Task, ProjectRoot, Config)
     catch
         no_build_config ->
             ewl_talk:say("No build config found.");
@@ -100,8 +100,7 @@ do_task_full(StartDir, Override, Task) when is_atom(Task) ->
 %% what not.
 %% @end
 -spec do_task_bare(string(), task_name(), args()) -> ok.
-do_task_bare(StartDir, Override, Task) when is_atom(Task) ->
-    Config = sin_config:new(Override),
+do_task_bare(StartDir, Config, Task) when is_atom(Task) ->
     run_task(Task, StartDir, Config).
 
 
@@ -123,7 +122,9 @@ main(Args) ->
 %% Internal functions
 %%====================================================================
 do_build(Options, [Target | Rest]) ->
-    do_task(list_to_atom(Target), find_start_dir(Rest), setup_release(Options, Rest));
+    do_task(list_to_atom(Target),
+	    find_start_dir(Rest),
+	    setup_config_overrides(Options, Rest));
 do_build(Options, []) ->
     do_build(Options, ["build"]).
 
@@ -138,7 +139,9 @@ usage(OptSpecList) ->
 option_spec_list() ->
     [{verbose, $v, "verbose", {boolean, false},
       "Be verbose about what gets done"},
-     {release, $r, "release", string, "the release to build"}].
+     {release, $r, "release", string, "the release to build"},
+     {project, $p, "project", string, "the name of the project"},
+     {version, $n, "nversion", string, "the version of the project"}].
 
 
 
@@ -222,12 +225,51 @@ find_start_dir(Data) ->
 	    Dir
     end.
 
-setup_release(Options, Args) ->
-    Override = case lists:keysearch(release, 1, Options) of
-		   {value, {release, Name}} ->
-		       NewConfig = sin_config:new(),
-		       sin_config:store(NewConfig, "-r", Name);
-		   _ ->
-		       sin_config:new()
-	       end,
-    sin_config:parse_args(Args, Override).
+%% @doc
+%% Setup all configuration overrides from the command line
+%% @end
+-spec setup_config_overrides(Options::term(), term()) ->
+    sin_config:config().
+setup_config_overrides(Options, Args) ->
+    push_values_if_exist(sin_config:parse_args(Args, sin_config:new()),
+			 Options,
+			 [{release, "-r"},
+			  {project, "project.name"},
+			  {version, "project.vsn"}]).
+
+
+%% @doc
+%% This pushes the values given in the args (if they exist) into the override
+%% config under the name specified in key.
+%%
+%% For example the name/key mapping expects an atom for the name that matches
+%% the atom specified in the release and a string as the key. The string is
+%% used as the key to push into the config
+%% @end
+-spec push_values_if_exist(sin_config:config(), term(), [{atom(), string()}]) ->
+    sin_config:config().
+push_values_if_exist(Config, Options, [{Name, Key} | Rest]) ->
+    case lists:keysearch(Name, 1, Options) of
+	{value, {Name, Value}} ->
+	    push_values_if_exist(sin_config:store(Config, Key, Value),
+				 Options, Rest);
+	_ ->
+	    push_values_if_exist(Config, Options, Rest)
+    end;
+push_values_if_exist(Config, _Options, []) ->
+    Config.
+
+%%====================================================================
+%% Tests
+%%====================================================================
+push_values_if_exist_test() ->
+    Options = [{foo, "bar"},
+	       {bar, "baz"},
+	       {z, 333},
+	       {noid, avoid}],
+    Config = push_values_if_exist(sin_config:new(), Options, [{bar, "monsefu"},
+							      {z, "chiclayo"}]),
+    ?assertMatch("baz", sin_config:get_value(Config, "monsefu")),
+    ?assertMatch(333, sin_config:get_value(Config, "chiclayo")),
+    ?assertMatch(undefined, sin_config:get_value(Config, "noid")).
+
