@@ -79,7 +79,7 @@ do_task(BuildRef) ->
 %% @end
 %%--------------------------------------------------------------------
 test(BuildRef) ->
-    case sin_build_config:get_value(BuildRef, "eunit") of
+    case sin_config:get_value(BuildRef, "eunit") of
         "disabled" ->
 	    ewl_talk:say("Unit testing is disabled for this project. "
 			 "If you wish to change this change the eunit "
@@ -88,7 +88,7 @@ test(BuildRef) ->
         _ ->
             Apps = lists:map(fun({App, _Vsn, _Deps, _}) ->
                                      atom_to_list(App)
-                             end, sin_build_config:get_value(BuildRef,
+                             end, sin_config:get_value(BuildRef,
                                                   "project.apps")),
             test_apps(BuildRef, Apps)
     end,
@@ -107,7 +107,7 @@ test(BuildRef) ->
 %%--------------------------------------------------------------------
 test_apps(BuildRef, [AppName | T]) ->
     io:format("Testing ~s~n", [AppName]),
-    Modules = sin_build_config:get_value(BuildRef,
+    Modules = sin_config:get_value(BuildRef,
                               "apps." ++ AppName ++ ".modules"),
     case Modules == undefined orelse length(Modules) =< 0 of
         true ->
@@ -130,10 +130,10 @@ test_apps(_, []) ->
 %% @private
 %%--------------------------------------------------------------------
 prepare_for_tests(BuildRef, AppName, Modules) ->
-    BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
+    BuildDir = sin_config:get_value(BuildRef, "build.dir"),
     DocDir = filename:join([BuildDir, "docs", "coverage", AppName]),
     filelib:ensure_dir(filename:join([DocDir, "tmp"])),
-    Paths = sin_build_config:get_value(BuildRef,
+    Paths = sin_config:get_value(BuildRef,
                                        "apps." ++ AppName ++ ".code_paths"),
     code:add_pathsa(Paths),
     setup_code_coverage(BuildRef, Modules),

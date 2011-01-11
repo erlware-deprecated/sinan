@@ -83,10 +83,10 @@ do_task(BuildRef) ->
 %% @end
 %%--------------------------------------------------------------------
 dist(BuildRef) ->
-    ProjectDir = sin_build_config:get_value(BuildRef, "project.dir"),
-    ProjectApps = sin_build_config:get_value(BuildRef, "project.apps"),
-    ProjectRepoApps = sin_build_config:get_value(BuildRef, "project.repoapps"),
-    Repo = sin_build_config:get_value(BuildRef, "project.repository"),
+    ProjectDir = sin_config:get_value(BuildRef, "project.dir"),
+    ProjectApps = sin_config:get_value(BuildRef, "project.apps"),
+    ProjectRepoApps = sin_config:get_value(BuildRef, "project.repoapps"),
+    Repo = sin_config:get_value(BuildRef, "project.repository"),
     make_tar(BuildRef, ProjectDir, ProjectApps, ProjectRepoApps, Repo),
     BuildRef.
 
@@ -103,17 +103,17 @@ dist(BuildRef) ->
 %% @end
 %%--------------------------------------------------------------------
 make_tar(BuildRef, ProjectDir, ProjectApps, ProjectRepoApps, Repo) ->
-    BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
+    BuildDir = sin_config:get_value(BuildRef, "build.dir"),
     TarDir = filename:join([BuildDir, "tar"]),
     filelib:ensure_dir(filename:join([TarDir, "tmp"])),
     ProjectName = get_project_release_name(BuildRef),
     ReleaseName =
-	case sin_build_config:get_value(BuildRef, "-r") of
+	case sin_config:get_value(BuildRef, "-r") of
 	    undefined ->
 		ProjectName;
 	    R ->
 		R ++ "-" ++
-		    sin_build_config:get_value(BuildRef,
+		    sin_config:get_value(BuildRef,
 					       "releases." ++ R ++ ".vsn")
 	end,
     LibDir = filename:join([ProjectName, "lib"]),
@@ -181,7 +181,7 @@ create_tar_file(BuildRef, FileName, TarContents) ->
 %%--------------------------------------------------------------------
 copy_additional_dirs(BuildRef, TopLevel, ProjectDir) ->
     NewDirs =
-	case sin_build_config:get_value(BuildRef, "tasks.dist.include_dirs") of
+	case sin_config:get_value(BuildRef, "tasks.dist.include_dirs") of
 	    undefined ->
 		[];
 	    RequiredDirs ->
@@ -233,7 +233,7 @@ erts_dir(BuildRef, TopLevel) ->
     ErtsVersion = erlang:system_info(version),
     ErtsToInclude = filename:join([Prefix, "erts-" ++ ErtsVersion]),
     case sin_utils:to_bool(
-	   sin_build_config:get_value(BuildRef,
+	   sin_config:get_value(BuildRef,
 				      "tasks.dist.include_erts")) of
 	true ->
 	    [{ErtsToInclude,
@@ -267,7 +267,7 @@ gather_dirs(_, _, [], Acc) ->
 %%--------------------------------------------------------------------
 get_project_release_name(BuildRef) ->
     Version =
-	case sin_build_config:get_value(BuildRef, "project.vsn") of
+	case sin_config:get_value(BuildRef, "project.vsn") of
 	    undefined ->
 		eta_event:task_fault(BuildRef, ?TASK,
 				     "No project version defined in build "
@@ -283,9 +283,9 @@ get_project_release_name(BuildRef) ->
 %% @doc
 %%  Get the project name from the config.
 %% @end
--spec get_project_name(sin_build_config:config()) -> string().
+-spec get_project_name(sin_config:config()) -> string().
 get_project_name(BuildRef) ->
-    case sin_build_config:get_value(BuildRef, "project.name") of
+    case sin_config:get_value(BuildRef, "project.name") of
 	undefined ->
 	    eta_event:task_fault(BuildRef, ?TASK,
 				 "No project name defined in build config "
@@ -307,7 +307,7 @@ get_release_dirs(BuildRef, ProjectName, BuildDir, ProjectDir) ->
     SourceReleases = filename:join([BuildDir, "releases", ProjectName]),
     TargetReleases = filename:join([ProjectName, "releases", ProjectName]),
     Result =
-        case sin_build_config:get_value(BuildRef,
+        case sin_config:get_value(BuildRef,
 					"tasks.dist.include_release_info") of
             Value when Value == true; Value == undefined ->
                 [{filename:join([SourceReleases,

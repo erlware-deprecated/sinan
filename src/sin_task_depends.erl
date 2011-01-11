@@ -82,9 +82,9 @@ do_task(BuildRef) ->
 %% @end
 %%--------------------------------------------------------------------
 depends(BuildRef) ->
-    BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
+    BuildDir = sin_config:get_value(BuildRef, "build.dir"),
     AppBDir = filename:join([BuildDir, "apps"]),
-    Release = sin_build_config:get_value(BuildRef, "-r"),
+    Release = sin_config:get_value(BuildRef, "-r"),
     AllProjectApps = gather_project_apps(BuildRef, AppBDir),
 
     case Release of
@@ -93,19 +93,19 @@ depends(BuildRef) ->
         _ ->
             ProjectApps =
 		gather_project_apps(BuildRef, AppBDir,
-				    sin_build_config:get_value(BuildRef,
+				    sin_config:get_value(BuildRef,
 							       "releases."++Release++".apps"))
     end,
 
     BuildRef2 =
-	sin_build_config:store(
-	  sin_build_config:store(BuildRef, "project.allapps", AllProjectApps),
+	sin_config:store(
+	  sin_config:store(BuildRef, "project.allapps", AllProjectApps),
 	  "project.apps", ProjectApps),
 
-    BuildFlavor = sin_build_config:get_value(BuildRef2, "build.flavor"),
-    ProjectName = sin_build_config:get_value(BuildRef2, "project.name"),
-    ProjectVsn = sin_build_config:get_value(BuildRef2, "project.vsn"),
-    RootDir = sin_build_config:get_value(BuildRef2, "project.dir"),
+    BuildFlavor = sin_config:get_value(BuildRef2, "build.flavor"),
+    ProjectName = sin_config:get_value(BuildRef2, "project.name"),
+    ProjectVsn = sin_config:get_value(BuildRef2, "project.vsn"),
+    RootDir = sin_config:get_value(BuildRef2, "project.dir"),
 
     case process_release(RootDir, BuildFlavor,
                          ProjectName, ProjectVsn, ProjectApps) of
@@ -138,9 +138,9 @@ depends(BuildRef) ->
             end
     end,
 
-    BuildRef3 = sin_build_config:store(BuildRef2, "project.deps", AllDeps),
-    BuildRef4 = sin_build_config:store(BuildRef3, "project.alldeps", AllDeps2),
-    BuildRef5 = sin_build_config:store(BuildRef4, "project.repoapps", RepoApps),
+    BuildRef3 = sin_config:store(BuildRef2, "project.deps", AllDeps),
+    BuildRef4 = sin_config:store(BuildRef3, "project.alldeps", AllDeps2),
+    BuildRef5 = sin_config:store(BuildRef4, "project.repoapps", RepoApps),
     save_deps(BuildRef5, AllDeps),
     update_sigs(BuildRef5),
     BuildRef5.
@@ -295,7 +295,7 @@ is_project_app({Name, _Deps, _Version, _Location}, ProjectApps) ->
 %% @private
 %%--------------------------------------------------------------------
 save_deps(BuildRef, Deps) ->
-    BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
+    BuildDir = sin_config:get_value(BuildRef, "build.dir"),
     filelib:ensure_dir(filename:join([BuildDir, "info", "tmp"])),
     Depsf = filename:join([BuildDir, "info", "deps"]),
     case file:open(Depsf, write) of
@@ -318,7 +318,7 @@ save_deps(BuildRef, Deps) ->
 %% @end
 %%--------------------------------------------------------------------
 save_repo_apps(BuildRef, BuildDir) ->
-    Apps = sin_build_config:get_value(BuildRef, "project.repoapps"),
+    Apps = sin_config:get_value(BuildRef, "project.repoapps"),
     Repsf = filename:join([BuildDir, "info", "repoapps"]),
     case file:open(Repsf, write) of
         {error, _} ->
@@ -342,8 +342,8 @@ save_repo_apps(BuildRef, BuildDir) ->
 gather_project_apps(BuildRef, AppBDir) ->
     gather_project_apps(BuildRef,
                         AppBDir,
-                        sin_build_config:get_value(BuildRef, "project.applist"), [],
-			sin_build_config:get_value(BuildRef, "project.applist")).
+                        sin_config:get_value(BuildRef, "project.applist"), [],
+			sin_config:get_value(BuildRef, "project.applist")).
 
 gather_project_apps(BuildRef, AppBDir, AppList) ->
     gather_project_apps(BuildRef,
@@ -352,20 +352,20 @@ gather_project_apps(BuildRef, AppBDir, AppList) ->
 			lists:map(fun(El) ->
 					  list_to_atom(El)
 				  end,
-				  sin_build_config:get_value(BuildRef, "project.applist"))).
+				  sin_config:get_value(BuildRef, "project.applist"))).
 
 gather_project_apps(BuildRef, AppBDir, [AppName | T], Acc, ProjectApps) ->
-    Vsn = sin_build_config:get_value(BuildRef, "apps." ++ AppName ++ ".vsn"),
-    Name = sin_build_config:get_value(BuildRef,
+    Vsn = sin_config:get_value(BuildRef, "apps." ++ AppName ++ ".vsn"),
+    Name = sin_config:get_value(BuildRef,
                                       "apps." ++ AppName ++ ".name"),
-    OpenDeps = sin_build_config:get_value(BuildRef,
+    OpenDeps = sin_config:get_value(BuildRef,
                                           "apps." ++ AppName ++
                                           ".applications"),
-    IncludedDeps = sin_build_config:get_value(BuildRef,
+    IncludedDeps = sin_config:get_value(BuildRef,
                                               "apps." ++ AppName ++
                                               ".included_applications", []),
 
-    Eunit = case sin_build_config:get_value(BuildRef, "eunit") of
+    Eunit = case sin_config:get_value(BuildRef, "eunit") of
                 "disable" ->
                     [];
                 _ ->
@@ -377,7 +377,7 @@ gather_project_apps(BuildRef, AppBDir, [AppName | T], Acc, ProjectApps) ->
     BuildTarget = lists:flatten([atom_to_list(Name), "-", Vsn]),
     AppPath = filename:join([AppBDir, BuildTarget]),
 
-    sin_build_config:store(BuildRef, "apps." ++ AppName ++ ".deps", NDeps),
+    sin_config:store(BuildRef, "apps." ++ AppName ++ ".deps", NDeps),
 
     AddToT = lists:foldl(fun(El, LAcc) ->
 			       case add_to_project_app_list(El, Acc, ProjectApps) of
@@ -421,9 +421,9 @@ add_to_project_app_list(AppName, ProccessedApps, ProjectApps) ->
 %% @private
 %%--------------------------------------------------------------------
 update_sigs(BuildRef) ->
-    BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
+    BuildDir = sin_config:get_value(BuildRef, "build.dir"),
     update_app_sigs(BuildRef, BuildDir,
-                    sin_build_config:get_value(BuildRef, "project.applist")).
+                    sin_config:get_value(BuildRef, "project.applist")).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -433,7 +433,7 @@ update_sigs(BuildRef) ->
 %% @private
 %%--------------------------------------------------------------------
 update_app_sigs(BuildRef, BuildDir, [H | T]) ->
-    App = sin_build_config:get_value(BuildRef, "apps." ++ H ++ ".dotapp"),
+    App = sin_config:get_value(BuildRef, "apps." ++ H ++ ".dotapp"),
     sin_sig:update("dep", BuildDir, App),
     update_app_sigs(BuildRef, BuildDir, T);
 update_app_sigs(_BuildRef, _BuildDir, []) ->

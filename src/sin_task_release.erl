@@ -80,16 +80,16 @@ do_task(BuildRef) ->
 %% @end
 %%--------------------------------------------------------------------
 release(BuildRef) ->
-    BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
+    BuildDir = sin_config:get_value(BuildRef, "build.dir"),
     {ReleaseName, Version} =
-	case sin_build_config:get_value(BuildRef, "-r") of
+	case sin_config:get_value(BuildRef, "-r") of
 	    undefined ->
 		{project_name(BuildRef), project_version(BuildRef)};
 	    R ->
-		{R, sin_build_config:get_value(BuildRef, "releases." ++ R ++ ".vsn")}
+		{R, sin_config:get_value(BuildRef, "releases." ++ R ++ ".vsn")}
 	end,
     ReleaseInfo = generate_rel_file(BuildRef, BuildDir, ReleaseName, Version),
-    BuildRef2 = sin_build_config:store(BuildRef, "project.release_info", ReleaseInfo),
+    BuildRef2 = sin_config:store(BuildRef, "project.release_info", ReleaseInfo),
     copy_or_generate_sys_config_file(BuildRef2, BuildDir, ReleaseName, Version),
     make_boot_script(BuildRef2, ReleaseInfo),
     BuildRef2.
@@ -105,18 +105,18 @@ release(BuildRef) ->
 %% @private
 %%--------------------------------------------------------------------
 generate_rel_file(BuildRef, BuildDir, Name, Version) ->
-    BuildFlavor = sin_build_config:get_value(BuildRef, "build.flavor"),
+    BuildFlavor = sin_config:get_value(BuildRef, "build.flavor"),
     {ProjectName, ProjectVsn} =
-	case sin_build_config:get_value(BuildRef, "-r") of
+	case sin_config:get_value(BuildRef, "-r") of
 	    undefined ->
-		{sin_build_config:get_value(BuildRef,
+		{sin_config:get_value(BuildRef,
 					    "project.name"),
-		 sin_build_config:get_value(BuildRef, "project.vsn")};
+		 sin_config:get_value(BuildRef, "project.vsn")};
 	    ReleaseName ->
-		{ReleaseName, sin_build_config:get_value(BuildRef, "releases."++ ReleaseName ++".vsn")}
+		{ReleaseName, sin_config:get_value(BuildRef, "releases."++ ReleaseName ++".vsn")}
 	end,
 
-    RootDir = sin_build_config:get_value(BuildRef, "project.dir"),
+    RootDir = sin_config:get_value(BuildRef, "project.dir"),
 
     case sin_release:get_release(RootDir, BuildFlavor, ProjectName,
                                  ProjectVsn) of
@@ -125,10 +125,10 @@ generate_rel_file(BuildRef, BuildDir, Name, Version) ->
             Erts = get_erts_info(),
 
             Deps = process_deps(BuildRef,
-                                element(1,sin_build_config:get_value(BuildRef,
+                                element(1,sin_config:get_value(BuildRef,
                                                                      "project.deps")), []),
             Deps2 = process_deps(BuildRef,
-                                element(2,sin_build_config:get_value(BuildRef,
+                                element(2,sin_config:get_value(BuildRef,
                                                                      "project.deps")), []),
 
             Deps3 = lists:map(fun({App, AppVersion}) ->
@@ -155,7 +155,7 @@ generate_rel_file(BuildRef, BuildDir, Name, Version) ->
 %% @private
 %%--------------------------------------------------------------------
 project_version(BuildRef) ->
-    case sin_build_config:get_value(BuildRef, "project.vsn") of
+    case sin_config:get_value(BuildRef, "project.vsn") of
         undefined ->
 	    ewl_talk:say("No project version defined in build config; "
 			 "aborting!"),
@@ -173,7 +173,7 @@ project_version(BuildRef) ->
 %% @private
 %%--------------------------------------------------------------------
 project_name(BuildRef) ->
-    case sin_build_config:get_value(BuildRef, "project.name") of
+    case sin_config:get_value(BuildRef, "project.name") of
         undefined ->
 	    ewl_talk:say("No project name defined in build config; "
 			 "aborting!"),
@@ -192,9 +192,9 @@ project_name(BuildRef) ->
 %%--------------------------------------------------------------------
 process_deps(BuildRef, [{App, Vsn, _, _} | T], Acc) ->
     NewApp = stringify(App),
-    case {sin_build_config:get_value(BuildRef,
+    case {sin_config:get_value(BuildRef,
                                      "project.release." ++ NewApp ++ ".type"),
-          sin_build_config:get_value(BuildRef,
+          sin_config:get_value(BuildRef,
                                      "project.release." ++ NewApp ++
                                      ".include_apps")} of
         {undefined, undefined} ->
@@ -294,7 +294,7 @@ make_boot_script(BuildRef, {{Location, File}, {release, {Name, _}, _, _}}) ->
 copy_or_generate_sys_config_file(BuildRef, BuildDir, Name, Version) ->
     RelSysConfPath = filename:join([BuildDir, "releases", Name ++ "-" ++
                                     Version, "sys.config"]),
-    case sin_build_config:get_value(BuildRef, "config_dir") of
+    case sin_config:get_value(BuildRef, "config_dir") of
         undefined ->
             generate_sys_config_file(RelSysConfPath);
         ConfigDir ->
@@ -337,18 +337,18 @@ generate_sys_config_file(RelSysConfPath) ->
 %% @private
 %%--------------------------------------------------------------------
 get_code_paths(BuildRef) ->
-    ProjApps = sin_build_config:get_value(BuildRef, "project.apps"),
+    ProjApps = sin_config:get_value(BuildRef, "project.apps"),
     ProjPaths = lists:merge(
                   lists:map(
                     fun({App, _, _, _}) ->
-                            sin_build_config:get_value(BuildRef,
+                            sin_config:get_value(BuildRef,
                                             "apps." ++ atom_to_list(App) ++
                                               ".code_paths")
                     end, ProjApps)),
     RepoPaths = lists:map(
                   fun ({_App, _Vsn, _, Path}) ->
                           filename:join([Path, "ebin"])
-                  end, sin_build_config:get_value(BuildRef, "project.repoapps")),
+                  end, sin_config:get_value(BuildRef, "project.repoapps")),
     lists:merge([ProjPaths, RepoPaths]).
 
 %%--------------------------------------------------------------------

@@ -91,9 +91,9 @@ do_task(BuildRef) ->
 %%--------------------------------------------------------------------
 build(BuildRef) ->
     ensure_build_dir(BuildRef),
-    Apps = sin_build_config:get_value(BuildRef, "project.allapps"),
+    Apps = sin_config:get_value(BuildRef, "project.allapps"),
     NApps = reorder_apps_according_to_deps(Apps),
-    RawArgs = sin_build_config:get_value(BuildRef,
+    RawArgs = sin_config:get_value(BuildRef,
                                          "tasks.build.compile_args", ""),
     NArgs = sin_build_arg_parser:compile_build_args(RawArgs),
     build_apps(BuildRef, NApps, NArgs).
@@ -170,10 +170,10 @@ to_list(Atom) when is_list(Atom) ->
 %% @private
 %%--------------------------------------------------------------------
 build_apps(BuildRef, Apps, Args) ->
-    AppList = sin_build_config:get_value(BuildRef, "project.allapps"),
-    AllDeps = sin_build_config:get_value(BuildRef, "project.alldeps"),
-    ProjectDir = sin_build_config:get_value(BuildRef, "project.dir"),
-    BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
+    AppList = sin_config:get_value(BuildRef, "project.allapps"),
+    AllDeps = sin_config:get_value(BuildRef, "project.alldeps"),
+    ProjectDir = sin_config:get_value(BuildRef, "project.dir"),
+    BuildDir = sin_config:get_value(BuildRef, "build.dir"),
     AppBDir = filename:join([BuildDir, "apps"]),
     SigDir = filename:join([BuildDir, "sigs"]),
 
@@ -212,19 +212,19 @@ build_apps(BuildRef, BuildSupInfo, AppList, Args) ->
 %% @private
 %%-------------------------------------------------------------------
 build_app(BuildRef, Env, AppName, Args) ->
-    AppVsn = sin_build_config:get_value(BuildRef, "apps." ++ AppName ++ ".vsn"),
-    AppDir = sin_build_config:get_value(BuildRef, "apps." ++ AppName
+    AppVsn = sin_config:get_value(BuildRef, "apps." ++ AppName ++ ".vsn"),
+    AppDir = sin_config:get_value(BuildRef, "apps." ++ AppName
                                         ++ ".basedir"),
     BuildTarget = lists:flatten([AppName, "-", AppVsn]),
     AppBuildDir = filename:join([Env#env.apps_build_dir, BuildTarget]),
-    BuildRef2 = sin_build_config:store(BuildRef, "apps." ++ AppName ++ ".builddir",
+    BuildRef2 = sin_config:store(BuildRef, "apps." ++ AppName ++ ".builddir",
 				       AppBuildDir),
     Target = filename:join([AppBuildDir, "ebin"]),
     TargetSrcDir = filename:join([AppBuildDir, "src"]),
     SrcDir = filename:join([AppDir, "src"]),
     ExistingPaths = code:get_path(),
     {EbinPaths, Includes} = setup_code_path(BuildRef2, Env, AppName),
-    BuildRef3 = sin_build_config:store(BuildRef2, "apps." ++ AppName ++ ".code_paths",
+    BuildRef3 = sin_config:store(BuildRef2, "apps." ++ AppName ++ ".code_paths",
                    [Target | EbinPaths]),
     Options = Args ++ [{outdir, Target}, strict_record_tests,
                        return_errors, return_warnings,
@@ -233,11 +233,11 @@ build_app(BuildRef, Env, AppName, Args) ->
                        % generated from .asn1 files.
                        {i, TargetSrcDir} | Includes],
     event_compile_args(BuildRef3, Options),
-    Ignorables = sin_build_config:get_value(BuildRef3, "ignore_dirs", []),
+    Ignorables = sin_config:get_value(BuildRef3, "ignore_dirs", []),
 
     % Ignore the build dir when copying or we will create a deep monster in a
     % few builds
-    BuildDir = sin_build_config:get_value(BuildRef3, "build_dir"),
+    BuildDir = sin_config:get_value(BuildRef3, "build_dir"),
     sin_utils:copy_dir(
       AppBuildDir, AppDir, "", [BuildDir | Ignorables]),
     code:add_patha(Target),
@@ -251,7 +251,7 @@ build_app(BuildRef, Env, AppName, Args) ->
     BuildRef3.
 
 event_compile_args(BuildRef, Options) ->
-	case sin_build_config:get_value(BuildRef, "task.build.print_args", undefined) of
+	case sin_config:get_value(BuildRef, "task.build.print_args", undefined) of
 	    undefined ->
 	        ok;
 	    true ->
@@ -349,7 +349,7 @@ get_app_from_list(App, AppList) ->
 %% @private
 %%--------------------------------------------------------------------
 gather_modules(BuildRef, AppName, SrcDir) ->
-    ModuleList = sin_build_config:get_value(BuildRef,
+    ModuleList = sin_config:get_value(BuildRef,
                                  "apps." ++ AppName ++ ".modules"),
     FileList =
         filelib:fold_files(SrcDir,
@@ -618,7 +618,7 @@ needs_building(_, FileName, Ext, TargetDir, TargetExt) ->
 %%--------------------------------------------------------------------
 
 check_module_deps(BuildRef, FileName) ->
-    BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
+    BuildDir = sin_config:get_value(BuildRef, "build.dir"),
     case sin_sig:get_sig_info(?SIGNS, BuildDir, FileName) of
 	undefined ->
 	    false;
@@ -646,7 +646,7 @@ check_module_deps(BuildRef, FileName) ->
 %% @private
 %%--------------------------------------------------------------------
 ensure_build_dir(BuildRef) ->
-    BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
+    BuildDir = sin_config:get_value(BuildRef, "build.dir"),
     AppsDir = lists:flatten([BuildDir, "apps", "tmp"]),
     filelib:ensure_dir(AppsDir).
 
@@ -725,7 +725,7 @@ get_hrl_files(File, Includes) ->
 %% @private
 %%-------------------------------------------------------------------
 save_module_dependencies(BuildRef, File, Options) ->
-    BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
+    BuildDir = sin_config:get_value(BuildRef, "build.dir"),
     IncludeDirs = lists:reverse(lists:foldl(fun({i, Include}, Acc) ->
 						    [Include | Acc];
 					       (_, Acc) ->

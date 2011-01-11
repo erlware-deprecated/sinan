@@ -73,7 +73,7 @@ do_hook(Type, Task, BuildConfig, HooksDir) when is_atom(Task) ->
 %% @end
 %%--------------------------------------------------------------------
 run_hook(HookPath, BuildConfig, HookName) ->
-    Env = sin_build_config:get_pairs(BuildConfig),
+    Env = sin_config:get_pairs(BuildConfig),
     command(HookPath, stringify(Env, []), BuildConfig, HookName).
 
 %%--------------------------------------------------------------------

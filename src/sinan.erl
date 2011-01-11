@@ -57,7 +57,7 @@
 %% @doc
 %%  run the specified task
 %% @end
--spec do_task(task_name(), string(), sin_build_config:config()) -> ok.
+-spec do_task(task_name(), string(), sin_config:config()) -> ok.
 do_task(Task, StartDir, Override) ->
     try
 	TaskDesc = sin_task:get_task(Task),
@@ -75,12 +75,12 @@ do_task(Task, StartDir, Override) ->
 %% @doc
 %%  run the specified task with a full project dir
 %% @end
--spec do_task_full(string(), sin_build_config:config(), task_name()) -> ok.
+-spec do_task_full(string(), sin_config:config(), task_name()) -> ok.
 do_task_full(StartDir, Override, Task) when is_atom(Task) ->
     try
         ProjectRoot = sin_utils:find_project_root(StartDir),
-        Seed = sin_build_config:get_seed(ProjectRoot),
-        BuildConfig = sin_build_config:new(ProjectRoot, Seed, Override),
+        Seed = sin_config:get_seed(ProjectRoot),
+        BuildConfig = sin_config:new(ProjectRoot, Seed, Override),
 	run_task(Task, ProjectRoot, BuildConfig)
     catch
         no_build_config ->
@@ -101,7 +101,7 @@ do_task_full(StartDir, Override, Task) when is_atom(Task) ->
 %% @end
 -spec do_task_bare(string(), task_name(), args()) -> ok.
 do_task_bare(StartDir, Override, Task) when is_atom(Task) ->
-    Config = sin_build_config:new(Override),
+    Config = sin_config:new(Override),
     run_task(Task, StartDir, Config).
 
 
@@ -173,7 +173,7 @@ start() ->
 %% @doc
 %% run the task including all task dependencies
 %% @end
--spec run_task(task_name(), string(), sin_build_config:config()) -> ok.
+-spec run_task(task_name(), string(), sin_config:config()) -> ok.
 run_task(Task, ProjectDir, BuildConfig) ->
     try
        Tasks = sin_task:get_task_list(Task),
@@ -225,9 +225,9 @@ find_start_dir(Data) ->
 setup_release(Options, Args) ->
     Override = case lists:keysearch(release, 1, Options) of
 		   {value, {release, Name}} ->
-		       NewConfig = sin_build_config:new(),
-		       sin_build_config:store(NewConfig, "-r", Name);
+		       NewConfig = sin_config:new(),
+		       sin_config:store(NewConfig, "-r", Name);
 		   _ ->
-		       sin_build_config:new()
+		       sin_config:new()
 	       end,
-    sin_build_config:parse_args(Args, Override).
+    sin_config:parse_args(Args, Override).

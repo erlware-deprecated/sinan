@@ -79,7 +79,7 @@ do_task(BuildRef) ->
 %%--------------------------------------------------------------------
 clean(BuildRef) ->
     ewl_talk:say("cleaning build artifacts"),
-    BuildDir = sin_build_config:get_value(BuildRef, "build.root"),
+    BuildDir = sin_config:get_value(BuildRef, "build.root"),
     ewl_talk:say("Removing directories and contents in ~s", [BuildDir]),
     sin_utils:delete_dir(BuildDir).
 

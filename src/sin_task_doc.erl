@@ -81,7 +81,7 @@ do_task(BuildRef) ->
 %% @end
 %%--------------------------------------------------------------------
 doc(BuildRef) ->
-    Apps = sin_build_config:get_value(BuildRef, "project.apps"),
+    Apps = sin_config:get_value(BuildRef, "project.apps"),
     run_docs(BuildRef, Apps),
     BuildRef.
 

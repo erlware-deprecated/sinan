@@ -86,7 +86,7 @@ version(BuildRef) ->
 		      SinVersion
 	      end,
     ewl_talk:say("sinan version: ~s", [Version]),
-    sin_build_config:store(BuildRef, "sinan.vsn", Version).
+    sin_config:store(BuildRef, "sinan.vsn", Version).
 
 
 
