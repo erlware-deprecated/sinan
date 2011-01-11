@@ -20,7 +20,6 @@
 	     sin_sig,
 	     sin_task_clean,
 	     sin_task_release,
-	     sin_wip,
 	     sin_deps,
 	     sin_skel,
 	     sin_task_depends,
