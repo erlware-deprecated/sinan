@@ -1,85 +1,72 @@
-# -*- Doc -*-
-Sinan Manual
-============
-Eric Merritt ericbmerritt@gmail.com
-:Author Initials: EBM
-:toc:
-:icons:
-:numbered:
+// -*- mode: doc -*-
+
+README
+======
+:Author: Eric Merritt ericbmerritt@gmail.com
 :website: http://wwww.erlware.org
 
-Introduction
-------------
+What is Sinan
+-------------
 
-Getting Started
----------------
+Sinan is a build tool designed to build Erlang/OTP Projects, Releases
+and Applications. Sinan leverages the metadata artifacts provided by
+OTP to do a good job building, testing, releasing, etc with very
+little or no additional input from the developer.
 
-Available Tasks
----------------
+Quick Start
+-----------
 
-Integrating With External Tools
--------------------------------
+To get started just cd into an OTP Application and type
 
-Sinan provides a mechenism to integrate with external tools. This is
-via the hooks functionality. This functionality is used by putting a
-directory called '_hooks' in the root of your project. Inside this
-directory you place executable files that implement the functionality
-you want to run. When these files are run is determenid by there
-name. The are named in the form of '<when>-<task>'. The when is may be
-one of two values, either 'pre' or 'post'. The task is
-the name of the task you want the thing to run around. For example, if
-you wanted something to run just after the build task is complete you
-would create a file called 'post-build' and make it
-executable. This file will then be run (in the context of the root
-directory) immediatly after the build task and before any other tasks
-or run. A file called 'pre-build' would do just the opposite,
-running imeditaly before the build task.
+[source,sh]
+----------------------------------------------------------------------
+  sinan build
+----------------------------------------------------------------------
 
-Having the ability to run these files at specific times is
-good. However, without getting some information from sinan its not
-terribly useful. Fortunatly, there is a mechenism for getting this
-information. Sinan passes it to the running script via environmental
-variables. There are two sets of environmental variables that are
-passed. The first is the global information about the project. These
-variables are available as follows.
+This will give you an fully built OTP application under the _build
+directory. You can then run the command
 
-[glossary]
-PREFIX::
-	 The file path of the erlang/erlware installation that sinan
-  is running out of.
-ERTS_VSN::
-	 The erts version that sinan is building of
-BUILD_DIR::
-	 The build directory where the projectis being built too
-BUILD_FLAVOR::
-	 The current build flavor of the system
-BUILD_REF::
-	 The unique id for this run of sinan
-PROJECT_DIR::
-	 The project root directory
-PROJECT_NAME::
-	 The project name as defined in the build config
-PROJECT_VSN::
-	 The project version
-PROJECT_APPS::
-	 A comma seperated list of apps that are part of the project.
-PROJECT_DEPS::
-	 A comma seperated list of apps that are dependencies of the project
+[source,sh]
+----------------------------------------------------------------------
+  sinan shell
+----------------------------------------------------------------------
+
+to get an erlang shell with all the paths pointing correctly to the
+various parts of your system.
+
+If you want to get adventurous you can run all the eunit tests in your
+app by running:
+
+[source,sh]
+----------------------------------------------------------------------
+  sinan test
+----------------------------------------------------------------------
+
+and finially, if you want to package up a normal erlang release
+tarball you can run
+
+[source,sh]
+----------------------------------------------------------------------
+  sinan dist
+----------------------------------------------------------------------
+
+The tarball will end up in
+
+[source,sh]
+----------------------------------------------------------------------
+  <project-root>/_build/developement/tar/<app-name>-<app-vsn>.tar.gz
+----------------------------------------------------------------------
+
+To get a list of all tasks currently available run the command
+
+[source,sh]
+----------------------------------------------------------------------
+  sinan help
+----------------------------------------------------------------------
+
+Hopefully thats enough to get you started, but sinan has many options
+to do various things with projects from small single app projects to
+very large multiple app projects. To get more information take a look
+at the sinan manual.
 
 
-The second set environmental variables that are available for each
-application and dependency in the project. The 'APP' in the following
-descriptions is replaced by the name of the app in upper case. These
-values are as follows.
-
-[glossary]
-APP_VSN::
-	  The version of the application
-APP_LOCATION::
-	 The file path to the application that sinan is using.
-APP_DEPS::
-	 A comma seperated list of the names of the dependent
-	 applicatinos for this application.
-
-The combination of scripts and environmental variables should be
-enough to do most required actions on the these tertiary builds.
