@@ -37,7 +37,8 @@
 %% API
 -export([new/0,
 	 new/1,
-	 new/3,
+	 apply_flavor/1,
+	 merge_configs/2,
 	 parse_args/1,
 	 parse_args/2,
          get_seed/1,
@@ -63,6 +64,24 @@
 %%====================================================================
 %% API
 %%====================================================================
+%% @doc
+%% Create a new empty config
+%% @end
+-spec new() -> config().
+new() ->
+    dict:new().
+
+%% @doc
+%% Create a new config from a config file
+%% @end
+-spec new(ConfigFile::string()) -> config().
+new(ConfigFile) when is_list(ConfigFile)->
+    case sin_utils:file_exists(ConfigFile) of
+	true ->
+	    parse_config_file(ConfigFile);
+	false ->
+	    throw(invalid_config_file)
+    end.
 
 %% @doc
 %%  Parse the command line args into a spec that can be overridden.
@@ -128,40 +147,14 @@ delete(BuildConfig, Key) ->
 get_pairs(BuildConfig) ->
 	      dict:to_list(BuildConfig).
 
--spec new() -> config().
-new() ->
-    dict:new().
 
--spec new(string() | config()) -> config().
-new(ProjectDir) when is_list(ProjectDir)->
-    try get_config(ProjectDir) of
-        Config ->
-	    Config
-    catch
-        Error ->
-	    throw(Error)
-    end;
-new(Override) ->
-    Config = dict:new(),
-    NewConfig = merge_configs(Config, Override),
-    NewConfig.
+-spec apply_flavor(config()) -> config().
+apply_flavor(Config0) ->
+    Flavor = get_build_flavor(Config0),
+    Config1 = store(Config0, "build.flavor", Flavor),
+    apply_flavors(Config1, Flavor).
 
--spec new(string(), config(), config()) -> config().
-new(ProjectDir, Config, Override) ->
-    Flavor = get_build_flavor(Config, Override),
-    NewConfig0 = merge_configs(apply_flavors(Config, Flavor), Override),
-    BuildConfigDict = get_config(ProjectDir),
-    NewConfig = merge_config(NewConfig0, dict:to_list(BuildConfigDict), ""),
-    BuildRoot = filename:join([ProjectDir, get_value(NewConfig, "build_dir",
-                                                        "_build")]),
-    BuildDir = filename:join([BuildRoot, Flavor]),
-    NewConfig1 = store(NewConfig, "build.dir", BuildDir),
-    NewConfig2 = store(NewConfig1, "build.root", BuildRoot),
-    store(NewConfig2, "build.flavor",  Flavor).
 
-%%====================================================================
-%% Internal Functions
-%%====================================================================
 %% @doc
 %%  Merges the build config. The second config always overrides the first
 %% @end
@@ -171,17 +164,28 @@ merge_configs(Config1, Config2) ->
 		       Value2
 	       end, Config1, Config2).
 
+
+%%====================================================================
+%% Internal Functions
+%%====================================================================
+%% @doc
+%% Convert a text file to a fully parsed config object
+%% @end
+-spec parse_config_file(ConfigFile::string()) ->
+    config().
+parse_config_file(ConfigFile) ->
+    convert_parsed_data(new(),
+			sin_config_parser:parse_config_file(ConfigFile),
+			"").
+
+%%--------------------------------------------------------------------
 %% @doc
 %%  Return the flavor for the current build attempt
 %% @end
--spec get_build_flavor(config(), config()) -> string().
-get_build_flavor(Config, Override) ->
-   case get_value(Override, "build.flavor", undefined) of
-       undefined ->
-           get_value(Config, "build.flavor", "development");
-       Value ->
-           Value
-   end.
+%%--------------------------------------------------------------------
+-spec get_build_flavor(config()) -> string().
+get_build_flavor(Config) ->
+    get_value(Config, "build.flavor", "development").
 
 %% @doc
 %%  Apply flavor changes to the config file.
@@ -203,64 +207,29 @@ apply_flavors(Config, Flavor) ->
     dict:fold(FilterFun, Config, Config).
 
 
-%% @doc
-%%   Find the build config under _build.cfg or sinan.cfg
-%% @end
--spec get_config(string()) -> config().
-get_config(ProjectDir) ->
-    Config1 = filename:join([ProjectDir, "_build.cfg"]),
-    Config2 = filename:join([ProjectDir, "sinan.cfg"]),
-    case sin_utils:file_exists(Config1) of
-	true ->
-	    process_config(ProjectDir, Config1);
-	false ->
-	    case sin_utils:file_exists(Config2) of
-		true ->
-		    process_config(ProjectDir, Config2);
-		false ->
-		    throw(no_config_file)
-	    end
-    end.
-
-%% @doc
-%%   Read in the build config/parse and send to the config process.
-%% @end
--spec process_config(string(), config()) -> config().
-process_config(ProjectDir, BuildConfig) ->
-    DefaultData =
-        sin_config_parser:parse_config_file(filename:join([code:priv_dir(sinan),
-                                                           "default_build"])),
-    Config = merge_config(dict:new(), DefaultData, ""),
-    Data = sin_config_parser:parse_config_file(BuildConfig),
-
-    NewConfig = merge_config(Config, Data, ""),
-
-    NewConfig1 = dict:store("build.config", BuildConfig, NewConfig),
-    NewConfig2 = dict:store("project.dir", ProjectDir, NewConfig1),
-
-    sin_discover:discover(ProjectDir, NewConfig2).
-
 
 %% @doc
 %%  Take the parsed config data and push it into the actual
 %%  config.
 %% @end
--spec merge_config(config(), JSONData::any(), term()) -> config().
-merge_config(Config, {obj, Data}, CurrentName) ->
-    merge_config(Config, Data, CurrentName);
-merge_config(Config, [{Key, {obj, Data}} | Rest], "") ->
-    NewConfig = merge_config(Config, Data, convert_value(Key)),
-    merge_config(NewConfig, Rest, "");
-merge_config(Config, [{Key, {obj, Data}} | Rest], CurrentName) ->
-    NewConfig = merge_config(Config, Data, CurrentName ++ "." ++ convert_value(Key)),
-    merge_config(NewConfig, Rest, CurrentName);
-merge_config(Config, [{Key, Value} | Rest], "") ->
+-spec convert_parsed_data(config(), JSONData::any(), term()) -> config().
+convert_parsed_data(Config, {obj, Data}, CurrentName) ->
+    convert_parsed_data(Config, Data, CurrentName);
+convert_parsed_data(Config, [{Key, {obj, Data}} | Rest], "") ->
+    NewConfig = convert_parsed_data(Config, Data, convert_value(Key)),
+    convert_parsed_data(NewConfig, Rest, "");
+convert_parsed_data(Config, [{Key, {obj, Data}} | Rest], CurrentName) ->
+    NewConfig = convert_parsed_data(Config, Data, CurrentName ++ "." ++
+			     convert_value(Key)),
+    convert_parsed_data(NewConfig, Rest, CurrentName);
+convert_parsed_data(Config, [{Key, Value} | Rest], "") ->
     NewConfig = dict:store(convert_value(Key), convert_value(Value), Config),
-    merge_config(NewConfig, Rest, "");
-merge_config(Config, [{Key, Value} | Rest], CurrentName) ->
-    NewConfig = dict:store(CurrentName ++ "." ++ convert_value(Key), convert_value(Value), Config),
-    merge_config(NewConfig, Rest, CurrentName);
-merge_config(Config, [], _) ->
+    convert_parsed_data(NewConfig, Rest, "");
+convert_parsed_data(Config, [{Key, Value} | Rest], CurrentName) ->
+    NewConfig = dict:store(CurrentName ++ "." ++ convert_value(Key),
+			   convert_value(Value), Config),
+    convert_parsed_data(NewConfig, Rest, CurrentName);
+convert_parsed_data(Config, [], _) ->
     Config.
 
 
@@ -312,3 +281,24 @@ strip_key([], Acc) ->
 %%====================================================================
 %%% Tests
 %%====================================================================
+new_0_test() ->
+    Config = new(),
+    ?assertMatch(0, dict:size(Config)).
+
+new_1_test() ->
+    TestBuildConfigFile = filename:join(["test_data",
+					 "sin_build_config",
+					 "test_config.cfg"]),
+    NonExistantBuildConfigFile = filename:join(["test_data",
+						"sin_build_config",
+						"doesnt_exist.cfg"]),
+    Config = new(TestBuildConfigFile),
+    ?assertMatch("test", get_value(Config, "project.name")),
+    ?assertMatch("0.0.0.1", get_value(Config, "project.vsn")),
+    ?assertException(throw, invalid_config_file,
+		     new(NonExistantBuildConfigFile)).
+
+
+
+
+
