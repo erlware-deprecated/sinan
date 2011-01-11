@@ -92,7 +92,7 @@ delete_dir(Dir) ->
 %% @doc
 %%  Get the ignore dirs
 %% @end
--spec get_ignore_dirs(sin_build_config:build_config()) -> IgnoreDirs::[string()].
+-spec get_ignore_dirs(sin_build_config:config()) -> IgnoreDirs::[string()].
 get_ignore_dirs(BuildConfig) ->
     BuildDir = sin_build_config:get_value(BuildConfig,
 					  "build.dir"),

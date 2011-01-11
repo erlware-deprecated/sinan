@@ -50,16 +50,14 @@
 
 -export_type([key/0,
 	      value/0,
-	      project_dir/0,
-	      build_config/0]).
+	      config/0]).
 
 %%====================================================================
 %% Types
 %%====================================================================
 -type key() :: term().
 -type value() :: term().
--type project_dir() :: string().
--opaque build_config() :: any().
+-opaque config() :: any().
 
 
 %%====================================================================
@@ -69,35 +67,29 @@
 %% @doc
 %%  Parse the command line args into a spec that can be overridden.
 %% @end
--spec parse_args(list()) -> build_config().
+-spec parse_args(list()) -> config().
 parse_args(ArgList) when is_list(ArgList) ->
     parse_args(ArgList, dict:new()).
 
-%%--------------------------------------------------------------------
 %% @doc
 %%  Get a preexisting seed from the the seed config.
 %% @end
-%%--------------------------------------------------------------------
--spec get_seed(project_dir()) -> build_config().
+-spec get_seed(string()) -> config().
 get_seed(ProjectDir) when is_list(ProjectDir) ->
     new(ProjectDir).
 
-%%-------------------------------------------------------------------
 %% @doc
 %%  Add a key to the config.
-%%
 %% @end
-%%-------------------------------------------------------------------
--spec store(build_config(), key(), value()) -> build_config().
+-spec store(config(), key(), value()) -> config().
 store(BuildConfig, Key, Value) ->
     dict:store(Key, Value, BuildConfig).
 
-%%-------------------------------------------------------------------
+
 %% @doc
 %%  Get a value from the config.
 %% @end
-%%-------------------------------------------------------------------
--spec get_value(build_config(), key()) -> value() | undefined.
+-spec get_value(config(), key()) -> value() | undefined.
 get_value(BuildConfig, Key) ->
     case dict:find(Key, BuildConfig) of
 	error ->
@@ -109,14 +101,11 @@ get_value(BuildConfig, Key) ->
     end.
 
 
-%%--------------------------------------------------------------------
 %% @doc
 %%  Attempts to get the specified key. If the key doesn't exist it
 %%  returns the requested default instead of just undefined.
-%%
 %% @end
-%%--------------------------------------------------------------------
--spec get_value(build_config(), key(), value()) -> value().
+-spec get_value(config(), key(), value()) -> value().
 get_value(BuildConfig, Key, DefaultValue) ->
     case get_value(BuildConfig, Key) of
 	undefined ->
@@ -125,33 +114,27 @@ get_value(BuildConfig, Key, DefaultValue) ->
 	    Value
     end.
 
-%%-------------------------------------------------------------------
 %% @doc
 %%  Delete a value from the config.
-%%
 %% @end
-%%-------------------------------------------------------------------
--spec delete(build_config(), key()) -> build_config().
+-spec delete(config(), key()) -> config().
 delete(BuildConfig, Key) ->
     dict:erase(Key, BuildConfig).
 
-%%-------------------------------------------------------------------
 %% @doc
 %%  Get the complete config as key,value pairs
-%%
 %% @end
-%%-------------------------------------------------------------------
--spec get_pairs(build_config()) -> [{key(), value()}].
+-spec get_pairs(config()) -> [{key(), value()}].
 get_pairs(BuildConfig) ->
 	      dict:to_list(BuildConfig).
 
--spec new() -> build_config().
+-spec new() -> config().
 new() ->
     dict:new().
 
--spec new(project_dir() | build_config()) -> build_config().
+-spec new(string() | config()) -> config().
 new(ProjectDir) when is_list(ProjectDir)->
-    try get_build_config(ProjectDir) of
+    try get_config(ProjectDir) of
         Config ->
 	    Config
     catch
@@ -160,14 +143,14 @@ new(ProjectDir) when is_list(ProjectDir)->
     end;
 new(Override) ->
     Config = dict:new(),
-    NewConfig = merge_build_configs(Config, Override),
+    NewConfig = merge_configs(Config, Override),
     NewConfig.
 
--spec new(project_dir(), build_config(), build_config()) -> build_config().
+-spec new(string(), config(), config()) -> config().
 new(ProjectDir, Config, Override) ->
     Flavor = get_build_flavor(Config, Override),
-    NewConfig0 = merge_build_configs(apply_flavors(Config, Flavor), Override),
-    BuildConfigDict = get_build_config(ProjectDir),
+    NewConfig0 = merge_configs(apply_flavors(Config, Flavor), Override),
+    BuildConfigDict = get_config(ProjectDir),
     NewConfig = merge_config(NewConfig0, dict:to_list(BuildConfigDict), ""),
     BuildRoot = filename:join([ProjectDir, get_value(NewConfig, "build_dir",
                                                         "_build")]),
@@ -182,17 +165,16 @@ new(ProjectDir, Config, Override) ->
 %% @doc
 %%  Merges the build config. The second config always overrides the first
 %% @end
--spec merge_build_configs(build_config(), build_config()) -> build_config().
-merge_build_configs(Config1, Config2) ->
+-spec merge_configs(config(), config()) -> config().
+merge_configs(Config1, Config2) ->
     dict:merge(fun(_Key, _Value1, Value2) ->
 		       Value2
 	       end, Config1, Config2).
-%%--------------------------------------------------------------------
+
 %% @doc
 %%  Return the flavor for the current build attempt
 %% @end
-%%--------------------------------------------------------------------
--spec get_build_flavor(build_config(), build_config()) -> string().
+-spec get_build_flavor(config(), config()) -> string().
 get_build_flavor(Config, Override) ->
    case get_value(Override, "build.flavor", undefined) of
        undefined ->
@@ -201,12 +183,10 @@ get_build_flavor(Config, Override) ->
            Value
    end.
 
-%%--------------------------------------------------------------------
 %% @doc
 %%  Apply flavor changes to the config file.
 %% @end
-%%--------------------------------------------------------------------
--spec apply_flavors(build_config(), build_config()) -> build_config().
+-spec apply_flavors(config(), config()) -> config().
 apply_flavors(Config, Flavor) ->
     FilterFun = fun([$f, $l, $a, $v, $o, $r, $s, $. | Rest], Value, NConfig) ->
                         case lists:prefix(Flavor, Rest) of
@@ -223,38 +203,30 @@ apply_flavors(Config, Flavor) ->
     dict:fold(FilterFun, Config, Config).
 
 
-%%-------------------------------------------------------------------
 %% @doc
 %%   Find the build config under _build.cfg or sinan.cfg
-%%
 %% @end
-%% @private
-%%------------------------------------------------------------------
--spec get_build_config(project_dir()) -> build_config().
-get_build_config(ProjectDir) ->
+-spec get_config(string()) -> config().
+get_config(ProjectDir) ->
     Config1 = filename:join([ProjectDir, "_build.cfg"]),
     Config2 = filename:join([ProjectDir, "sinan.cfg"]),
     case sin_utils:file_exists(Config1) of
 	true ->
-	    process_build_config(ProjectDir, Config1);
+	    process_config(ProjectDir, Config1);
 	false ->
 	    case sin_utils:file_exists(Config2) of
 		true ->
-		    process_build_config(ProjectDir, Config2);
+		    process_config(ProjectDir, Config2);
 		false ->
 		    throw(no_config_file)
 	    end
     end.
 
-%%-------------------------------------------------------------------
 %% @doc
 %%   Read in the build config/parse and send to the config process.
-%%
 %% @end
-%% @private
-%%-------------------------------------------------------------------
--spec process_build_config(project_dir(), build_config()) -> build_config().
-process_build_config(ProjectDir, BuildConfig) ->
+-spec process_config(string(), config()) -> config().
+process_config(ProjectDir, BuildConfig) ->
     DefaultData =
         sin_config_parser:parse_config_file(filename:join([code:priv_dir(sinan),
                                                            "default_build"])),
@@ -269,13 +241,11 @@ process_build_config(ProjectDir, BuildConfig) ->
     sin_discover:discover(ProjectDir, NewConfig2).
 
 
-%%--------------------------------------------------------------------
 %% @doc
 %%  Take the parsed config data and push it into the actual
 %%  config.
 %% @end
-%%--------------------------------------------------------------------
--spec merge_config(build_config(), JSONData::any(), term()) -> build_config().
+-spec merge_config(config(), JSONData::any(), term()) -> config().
 merge_config(Config, {obj, Data}, CurrentName) ->
     merge_config(Config, Data, CurrentName);
 merge_config(Config, [{Key, {obj, Data}} | Rest], "") ->
@@ -294,11 +264,9 @@ merge_config(Config, [], _) ->
     Config.
 
 
-%%--------------------------------------------------------------------
 %% @doc
 %%  take a list of binaries and convert it to a list of lists.
 %% @end
-%%--------------------------------------------------------------------
 -spec convert_list(Target::list(), Acc::list()) -> list().
 convert_list([H | T], Acc) when is_binary(H) ->
     convert_list(T, [binary_to_list(H) | Acc]);
@@ -307,13 +275,11 @@ convert_list([H | T], Acc) ->
 convert_list([], Acc) ->
     lists:reverse(Acc).
 
-%%--------------------------------------------------------------------
 %% @doc
 %%  Convert any values taken from the config from a binary to a list.
 %%  ktuo treats lists a binaries but we would rather use lists in the
 %%  system.
 %% @end
-%%--------------------------------------------------------------------
 -spec convert_value(Value::any()) -> any().
 convert_value(Value) when is_list(Value) ->
     convert_list(Value, []);
@@ -325,7 +291,7 @@ convert_value(Value) ->
 %% @doc
 %%  Parse pairs of keys and values into a build config form
 %% @end
--spec parse_args(list(), build_config()) -> build_config().
+-spec parse_args(list(), config()) -> config().
 parse_args([Key, Value | Rest], Dict) ->
     parse_args(Rest, dict:store(strip_key(Key, []), Value, Dict));
 parse_args([], Dict) ->

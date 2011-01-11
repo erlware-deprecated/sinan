@@ -283,7 +283,7 @@ get_project_release_name(BuildRef) ->
 %% @doc
 %%  Get the project name from the config.
 %% @end
--spec get_project_name(sin_build_config:build_config()) -> string().
+-spec get_project_name(sin_build_config:config()) -> string().
 get_project_name(BuildRef) ->
     case sin_build_config:get_value(BuildRef, "project.name") of
 	undefined ->
