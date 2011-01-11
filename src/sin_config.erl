@@ -29,7 +29,7 @@
 %%% @end
 %%% Created : 30 Oct 2006 by Eric Merritt <ericbmerritt@gmail.com>
 %%%----------------------------------------------------------------------------
--module(sin_build_config).
+-module(sin_config).
 
 -include_lib("eunit/include/eunit.hrl").
 -include("internal.hrl").
@@ -101,16 +101,15 @@ get_seed(ProjectDir) when is_list(ProjectDir) ->
 %%  Add a key to the config.
 %% @end
 -spec store(config(), key(), value()) -> config().
-store(BuildConfig, Key, Value) ->
-    dict:store(Key, Value, BuildConfig).
-
+store(Config, Key, Value) ->
+    dict:store(Key, Value, Config).
 
 %% @doc
 %%  Get a value from the config.
 %% @end
 -spec get_value(config(), key()) -> value() | undefined.
-get_value(BuildConfig, Key) ->
-    case dict:find(Key, BuildConfig) of
+get_value(Config, Key) ->
+    case dict:find(Key, Config) of
 	error ->
 	    undefined;
 	{ok, Value} when is_binary(Value) ->
@@ -125,8 +124,8 @@ get_value(BuildConfig, Key) ->
 %%  returns the requested default instead of just undefined.
 %% @end
 -spec get_value(config(), key(), value()) -> value().
-get_value(BuildConfig, Key, DefaultValue) ->
-    case get_value(BuildConfig, Key) of
+get_value(Config, Key, DefaultValue) ->
+    case get_value(Config, Key) of
 	undefined ->
             DefaultValue;
 	Value ->
@@ -137,15 +136,15 @@ get_value(BuildConfig, Key, DefaultValue) ->
 %%  Delete a value from the config.
 %% @end
 -spec delete(config(), key()) -> config().
-delete(BuildConfig, Key) ->
-    dict:erase(Key, BuildConfig).
+delete(Config, Key) ->
+    dict:erase(Key, Config).
 
 %% @doc
 %%  Get the complete config as key,value pairs
 %% @end
 -spec get_pairs(config()) -> [{key(), value()}].
-get_pairs(BuildConfig) ->
-	      dict:to_list(BuildConfig).
+get_pairs(Config) ->
+	      dict:to_list(Config).
 
 
 -spec apply_flavor(config()) -> config().
@@ -286,17 +285,17 @@ new_0_test() ->
     ?assertMatch(0, dict:size(Config)).
 
 new_1_test() ->
-    TestBuildConfigFile = filename:join(["test_data",
-					 "sin_build_config",
+    TestConfigFile = filename:join(["test_data",
+					 "sin_config",
 					 "test_config.cfg"]),
-    NonExistantBuildConfigFile = filename:join(["test_data",
-						"sin_build_config",
+    NonExistantConfigFile = filename:join(["test_data",
+						"sin_config",
 						"doesnt_exist.cfg"]),
-    Config = new(TestBuildConfigFile),
+    Config = new(TestConfigFile),
     ?assertMatch("test", get_value(Config, "project.name")),
     ?assertMatch("0.0.0.1", get_value(Config, "project.vsn")),
     ?assertException(throw, invalid_config_file,
-		     new(NonExistantBuildConfigFile)).
+		     new(NonExistantConfigFile)).
 
 
 

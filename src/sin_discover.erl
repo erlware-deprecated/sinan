@@ -46,10 +46,12 @@
 %% @doc
 %%  Run the discover task.
 %% @end
--spec discover(ProjectDir::string(), Config::sin_build_config:build_config()) ->
-    UpdatedConfig::sin_build_config:config().
-discover(ProjectDir, Config) ->
-    {ok, BuildDir} = dict:find("build_dir", Config),
+-spec discover(StartDir::string()) ->
+    Config::sin_config:config().
+discover(StartDir) ->
+    Config = sin_config:new(),
+    ProjectDir = find_project_root(StartDir),
+    BuildDir = "tmp",
     AppDirs = look_for_app_dirs(Config, BuildDir, ProjectDir),
     build_app_info(Config, AppDirs, []).
 
@@ -61,8 +63,10 @@ discover(ProjectDir, Config) ->
 %%   Given a list of app dirs retrieves the application names.
 %%
 %% @end
--spec build_app_info(Config::sin_build_config:build_config(), List::list(), Acc::list()) ->
-    Config::sin_build_config:build_config().
+-spec build_app_info(Config::sin_config:config(),
+		     List::list(),
+		     Acc::list()) ->
+    Config::sin_config:config().
 build_app_info(Config, [H|T], Acc) ->
     AppName = filename:basename(H),
     AppFile = filename:join([H, "ebin", string:concat(AppName, ".app")]),
@@ -91,7 +95,7 @@ build_app_info(Config, [], Acc) ->
 %%  nicely.
 %% @end
 -spec process_details(BaseKey::string(), List::list(), Config::dict()) ->
-    NewConfig::sin_build_config:build_config().
+    NewConfig::sin_config:config().
 process_details(BaseName, [{Key, Value} | T], Config) when is_atom(Key) ->
     process_details(BaseName, T, dict:store(BaseName ++ atom_to_list(Key),
                                             Value, Config));
@@ -106,8 +110,10 @@ process_details(_, [], Config) ->
 %%  finds one it stops recursing and adds the directory to the list
 %%  to return.
 %% @end
--spec look_for_app_dirs(Config::sin_build_config:build_config(),
-			BuildDir::string(), ProjectDir::string()) -> AppDirs::[string()].
+-spec look_for_app_dirs(Config::sin_config:config(),
+			BuildDir::string(),
+			ProjectDir::string()) ->
+    AppDirs::[string()].
 look_for_app_dirs(Config, BuildDir, ProjectDir) ->
     Ignorables = [BuildDir] ++ case dict:find("ignore_dirs", Config) of
 				   {ok, Value} -> Value;
@@ -138,7 +144,7 @@ look_for_app_dirs(Config, BuildDir, Parent, Sub, Ignorables, Acc) ->
 %%  Process the app dir to see if it is an application directory.
 %%
 %% @end
--spec process_app_dir(Config::sin_build_config:build_config(),
+-spec process_app_dir(Config::sin_config:config(),
 		      BuildDir::string(), Parent::string(), Sub::string(),
 		      Ignorables::[string()], Acc::list()) -> ListOfDirs::[string()].
 process_app_dir(Config, BuildDir, Parent, Sub, Ignorables, Acc) ->

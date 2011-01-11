@@ -79,9 +79,9 @@ do_task(BuildRef) ->
 %% @end
 %%--------------------------------------------------------------------
 shell(BuildRef) ->
-    ProjectApps = sin_build_config:get_value(BuildRef, "project.apps"),
-    ProjectRepoApps = sin_build_config:get_value(BuildRef, "project.repoapps"),
-    Repo = sin_build_config:get_value(BuildRef, "project.repository"),
+    ProjectApps = sin_config:get_value(BuildRef, "project.apps"),
+    ProjectRepoApps = sin_config:get_value(BuildRef, "project.repoapps"),
+    Repo = sin_config:get_value(BuildRef, "project.repository"),
     make_shell(BuildRef, ProjectApps, ProjectRepoApps, Repo).
 
 
@@ -96,7 +96,7 @@ shell(BuildRef) ->
 %% @end
 %%--------------------------------------------------------------------
 make_shell(BuildRef, ProjectApps, ProjectRepoApps, Repo) ->
-    BuildDir = sin_build_config:get_value(BuildRef, "build.dir"),
+    BuildDir = sin_config:get_value(BuildRef, "build.dir"),
     AppDir = filename:join([BuildDir, "apps"]),
     setup_paths(AppDir, ProjectApps),
     setup_paths(Repo, ProjectRepoApps),

@@ -11,7 +11,7 @@
 	     sin_task,
 	     sin_task_gen,
 	     sin_topo,
-	     sin_build_config,
+	     sin_config,
 	     sin_resolver,
 	     sin_task_build,
 	     sin_task_help,
