@@ -57,7 +57,7 @@
 %% @doc
 %%  run the specified task
 %% @end
--spec do_task(task_name(), string(), sin_build_config:build_config()) -> ok.
+-spec do_task(task_name(), string(), sin_build_config:config()) -> ok.
 do_task(Task, StartDir, Override) ->
     try
 	TaskDesc = sin_task:get_task(Task),
@@ -75,7 +75,7 @@ do_task(Task, StartDir, Override) ->
 %% @doc
 %%  run the specified task with a full project dir
 %% @end
--spec do_task_full(string(), sin_build_config:build_config(), task_name()) -> ok.
+-spec do_task_full(string(), sin_build_config:config(), task_name()) -> ok.
 do_task_full(StartDir, Override, Task) when is_atom(Task) ->
     try
         ProjectRoot = sin_utils:find_project_root(StartDir),
@@ -173,7 +173,7 @@ start() ->
 %% @doc
 %% run the task including all task dependencies
 %% @end
--spec run_task(task_name(), string(), sin_build_config:build_config()) -> ok.
+-spec run_task(task_name(), string(), sin_build_config:config()) -> ok.
 run_task(Task, ProjectDir, BuildConfig) ->
     try
        Tasks = sin_task:get_task_list(Task),
