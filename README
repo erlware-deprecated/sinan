@@ -1,1 +1,0 @@
-At the moment releases of sinan are specific to an erlang release. You should make sure that the version of erlang you are using matchs the version that sinan was compiled for. Right now that version is R11B-4. This will change after the alpha period is over.
