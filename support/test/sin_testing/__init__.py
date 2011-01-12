@@ -10,6 +10,7 @@ import unittest
 import exceptions
 import tempfile
 import sys
+import json
 
 class TestError(exceptions.Exception):
     """Raised when a test fails """
@@ -29,17 +30,34 @@ class LoggerWriter(object):
         self
 
 def spawn(command):
-    print("spawning %s" % command)
     child = pexpect.spawn(command)
     child.logfile_read = LoggerWriter()
     return child
+
+def get_build_root_path(project_dir):
+    config = os.path.join(project_dir, "sinan.cfg")
+
+    if not os.path.exists(config):
+        raise TestError("unable to load sinan.cfg")
+
+    with open(config, "r") as f:
+        data = json.loads("{" + f.read() + "}")
+        vsn = data[u'project'][u'vsn']
+        return os.path.join(project_dir,
+                            "_build",
+                            "development",
+                            "apps",
+                            "sinan-" + vsn,
+                            "ebin")
 
 def sinan(command):
     def check_accepts(f):
         def new_f(*args, **kwds):
             print("Running Command %s in %s" % (command, os.getcwd()))
-            child = spawn("sinan %s" % command)
             self = args[0]
+            child = spawn("erl -noshell -pa %s -s sinan main "
+                          "-s init stop -extra %s" %
+                          (get_build_root_path(self.project_dir), command))
             res = f(self, child, *(args[1:]), **kwds)
             print("Finished %s successfully" % command)
             return res
@@ -73,11 +91,17 @@ def run_tests(class_obj):
 
 
 class SmokeTest(unittest.TestCase):
+    def get_project_root(self, cwd):
+        current = os.path.abspath(cwd)
+        return os.path.join(os.sep, *(current.split(os.sep)[:-2]))
+
 
     def setUp(self):
         self.smokedir = tempfile.mkdtemp(prefix='smoke_test_')
 
         self.current_dir = os.getcwd()
+        self.project_dir = self.get_project_root(self.current_dir)
+
         sys.path.append(self.current_dir)
 
         os.chdir(self.smokedir)
@@ -177,7 +201,6 @@ class SmokeTest(unittest.TestCase):
         child.expect(pexpect.EOF)
 
         build_dir = os.path.join(os.getcwd(), "_build/development/apps/")
-
         self.assertTrue(os.path.isdir(build_dir))
 
         for n in appdesc.app_names:

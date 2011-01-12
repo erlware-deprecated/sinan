@@ -145,10 +145,10 @@ sinan decorator
 ~~~~~~~~~~~~~~~
 
 The sinan decorator allows you to declare that your function runs a
-specific sinan task. The decorator spawns the sinan command and passes
-that information to the function that is being decorated. For example,
-lets we want to execute a test that needs to run sinan gen. We could
-simply do it as follows.
+specific sinan task. The decorator spawns the sinan currently in
+development passes the spawned process to the function that is being
+decorated. For example, the following code lets we want to execute a
+test that needs to run sinan gen. We could simply do it as follows.
 
 [source,python]
 ----------------------------------------------------------------------
