@@ -13,8 +13,35 @@ testing above UnitTesting and they should not be confused.
 
 The ReleaseTesting system is built in python and based around python's
 pexpect module. This is very similar to expect and used in a similar
-way. The link:<linx to pexpect>[pexpect module] is well documented and
+way. The http://www.noah.org/wiki/pexpect[pexpect module] is well documented and
 you should look to that documentation for details on using pexpect.
+
+There are a few things you need to run the release testing
+framework. You will need the following.
+
+- http://www.noah.org/wiki/pexpect[pexpect]
+- http://somethingaboutorange.com/mrl/projects/nose/1.0.0/[nose]
+
+To run the tests simple do the following in <sinan-root>/support/test.
+
+[source,sh]
+----------------------------------------------------------------------
+  nosetests -s ./tests
+----------------------------------------------------------------------
+
+You may also run individual tests by running the following command.
+
+[source,sh]
+----------------------------------------------------------------------
+  nosetests -s ./tests/<test-file>.py
+----------------------------------------------------------------------
+
+This can be very helpful during development.
+
+Unfortunately at the moment its important that you run the tests from
+the test directory. Later on we might expand this to be a bit more
+flexable.
+
 
 Why Python?
 -----------
