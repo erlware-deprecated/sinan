@@ -20,7 +20,7 @@ ERLWARE_PATH = "/usr/local/lib/erlang"
 
 ERLC = "erlc +debug_info "
 
-VERSION = "0.21.0.0"
+VERSION = "0.22.0.0"
 
 
 ERLWARE_APPS = ["tools-2.6.5.1",
