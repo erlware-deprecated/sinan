@@ -42,6 +42,7 @@
 	 parse_args/1,
 	 parse_args/2,
          get_seed/1,
+	 store/2,
          store/3,
          get_value/2,
          get_value/3,
@@ -103,6 +104,16 @@ get_seed(ProjectDir) when is_list(ProjectDir) ->
 -spec store(config(), key(), value()) -> config().
 store(Config, Key, Value) ->
     dict:store(Key, Value, Config).
+
+%% @doc
+%% Store a list of key value pairs into the config
+%% @end
+-spec store(config(), KeyValuePairs::[{string(), term()}]) ->
+    config().
+store(Config, KeyValuePairs) when is_list(KeyValuePairs) ->
+    lists:foldl(fun ({Key, Value}, Dict) ->
+			dict:store(Key, Value, Dict)
+		end, Config, KeyValuePairs).
 
 %% @doc
 %%  Get a value from the config.
