@@ -115,7 +115,14 @@ get_project_information(Env) ->
             {project_name, Name},
             {project_dir, Dir},
 	    {erts_version, ErtsVersion} | Env],
-    get_application_names(Env2).
+
+    case ewl_talk:ask_default("Is this a single application project",
+			      boolean, "n") of
+	false ->
+	    get_application_names([{single_app_project, false} | Env2]);
+	true ->
+	    build_out_skeleton([{single_app_project, true} | Env2])
+    end.
 
 
 %% @doc
@@ -131,7 +138,7 @@ get_application_names(Env) ->
     get_application_names(Env, ewl_talk:ask("app"), []).
 
 -spec get_application_names(env(), [string()], []) -> [Names::string()].
-get_application_names(Env, [], Acc) ->
+get_application_names(Env, no_data, Acc) ->
     Env2 = [{apps, Acc} | Env],
     build_out_project(Env2);
 get_application_names(Env, App, Acc) ->
@@ -171,87 +178,95 @@ build_out_skeleton(Env) ->
 %% @end
 -spec build_out_applications(env()) -> ok.
 build_out_applications(Env) ->
-    Apps = get_env(apps, Env),
-    build_out_applications(Env, Apps).
+    case get_env(single_app_project, Env) of
+	false ->
+	    Apps = get_env(apps, Env),
+	    build_out_applications(Env, Apps);
+	true ->
+	    ProjDir = get_env(project_dir, Env),
+	    ProjVsn = get_env(project_version, Env),
+	    ProjName = get_env(project_name, Env),
+	    build_out_application(Env, ProjDir, ProjName, ProjVsn),
+	    build_out_build_config(Env)
+    end.
 
 -spec build_out_applications(env(), AppNames::[string()]) -> ok.
 build_out_applications(Env, [AppName | T]) ->
     ProjDir = get_env(project_dir, Env),
     AppDir = filename:join([ProjDir, "lib", AppName]),
-    case filelib:is_dir(AppDir) of
-        false ->
-            make_dir(AppDir),
-            make_dir(filename:join(AppDir, "doc")),
-            make_dir(filename:join(AppDir, "ebin")),
-            make_dir(filename:join(AppDir, "include")),
-            AppSrc = make_dir(filename:join(AppDir, "src")),
-            build_out_otp(Env, AppSrc, AppName),
-            build_out_applications(Env, T);
-       true ->
-            ok
-    end;
+    build_out_application(Env, AppDir, AppName, "0.1.0"),
+    build_out_applications(Env, T);
 build_out_applications(Env, []) ->
     build_out_build_config(Env).
 
 
 %% @doc
+%% build out all the things required by an application
+%% @end
+-spec build_out_application(env(), AppDir::string(),
+			    AppName::string(), AppVsn::string()) -> ok.
+build_out_application(Env, AppDir, AppName, AppVsn) ->
+    EbinDir = make_dir(filename:join(AppDir, "ebin")),
+    AppSrc = make_dir(filename:join(AppDir, "src")),
+    make_dir(filename:join(AppDir, "include")),
+    make_dir(filename:join(AppDir, "doc")),
+    build_out_super(Env, AppSrc, AppName),
+    build_out_app_src(Env, EbinDir, AppName, AppVsn),
+    build_out_otp(Env, AppSrc, AppName),
+    build_out_app_doc(Env, EbinDir, AppName).
+
+%% @doc
 %% Builds out the supervisor for the app.
 %% @end
 -spec build_out_super(env(), AppSrc::string(), AppName::string()) -> ok.
-build_out_super(Env, AppSrc, App) ->
-    FileName = filename:join(AppSrc, App ++ "_sup.erl"),
+build_out_super(Env, AppSrc, AppName) ->
+    FileName = filename:join(AppSrc, AppName ++ "_sup.erl"),
     case filelib:is_file(FileName) of
         true ->
             ok;
         false ->
-            sin_skel:supervisor(Env, FileName, App),
-            build_out_app_src(Env, App)
+            sin_skel:supervisor(Env, FileName, AppName)
     end.
 
 %% @doc
 %% Builds out the app descriptor for the app.
 %% @end
--spec build_out_app_src(env(), App::string()) -> ok.
-build_out_app_src(Env, App) ->
-    ProjDir = get_env(project_dir, Env),
-    AppEbin = filename:join([ProjDir, "lib", App, "ebin"]),
-    FileName = filename:join(AppEbin, App ++ ".app"),
+-spec build_out_app_src(env(), EbinDir::string(),
+			AppName::string(), AppVsn::string()) -> ok.
+build_out_app_src(Env, EbinDir, AppName, AppVsn) ->
+    FileName = filename:join(EbinDir, AppName ++ ".app"),
     case filelib:is_file(FileName) of
         true ->
             ok;
         false ->
-            sin_skel:app_info(Env, FileName, App),
-	    build_out_app_doc(Env, App)
+	    sin_skel:app_info(Env, FileName, AppName, AppVsn)
     end.
 
 %% @doc
 %% Builds out the overview.edoc for the app.
 %% @end
--spec build_out_app_doc(env(), App::string()) -> ok.
-build_out_app_doc(Env, App) ->
-    ProjDir = get_env(project_dir, Env),
-    AppEbin = filename:join([ProjDir, "lib", App, "doc"]),
-    FileName = filename:join(AppEbin, "overview.edoc"),
+-spec build_out_app_doc(env(), EbinDir::string(), AppName::string()) -> ok.
+build_out_app_doc(Env, EbinDir, AppName) ->
+    FileName = filename:join(EbinDir, "overview.edoc"),
     case filelib:is_file(FileName) of
         true ->
             ok;
         false ->
-            sin_skel:edoc_overview(Env, FileName, App)
+            sin_skel:edoc_overview(Env, FileName, AppName)
     end.
 
 
 %% @doc
 %% Build out the top level otp parts of the application.
 %% @end
--spec build_out_otp(env(), AppSrc::string(), App::string()) -> ok.
-build_out_otp(Env, AppSrc, App) ->
-    FileName = filename:join(AppSrc, App ++ "_app.erl"),
+-spec build_out_otp(env(), AppSrc::string(), AppName::string()) -> ok.
+build_out_otp(Env, AppSrc, AppName) ->
+    FileName = filename:join(AppSrc, AppName ++ "_app.erl"),
     case filelib:is_file(FileName) of
         true ->
-            build_out_super(Env, AppSrc, App);
+	    ok;
         false ->
-            sin_skel:application(Env, FileName, App),
-            build_out_super(Env, AppSrc, App)
+            sin_skel:application(Env, FileName, AppName)
     end.
 
 
@@ -259,17 +274,24 @@ build_out_otp(Env, AppSrc, App) ->
 %%  Builds the build config dir in the root of the project.
 %% @end
 build_out_build_config(Env) ->
-    ProjectDir = get_env(project_dir, Env),
-    ProjectName = get_env(project_name, Env),
-    ConfName = filename:join([ProjectDir, "sinan.cfg"]),
-    ErlwareFile =
-	filename:join([ProjectDir,  "bin", "erlware_release_start_helper"]),
-    BinFile = filename:join([ProjectDir,  "bin", ProjectName]),
-    ConfigFile = filename:join([ProjectDir,  "config", "sys.config"]),
-    sin_skel:build_config(Env, ConfName),
-    sin_skel:bin(Env, BinFile),
-    sin_skel:bin_support(Env, ErlwareFile),
-    sin_skel:sysconfig(Env, ConfigFile),
+    case ewl_talk:ask_default("Would you like a build config?",
+			      boolean, "y") of
+	true ->
+	    ProjectDir = get_env(project_dir, Env),
+	    ProjectName = get_env(project_name, Env),
+	    ConfName = filename:join([ProjectDir, "sinan.cfg"]),
+	    ErlwareFile =
+		filename:join([ProjectDir,  "bin",
+			       "erlware_release_start_helper"]),
+	    BinFile = filename:join([ProjectDir,  "bin", ProjectName]),
+	    ConfigFile = filename:join([ProjectDir,  "config", "sys.config"]),
+	    sin_skel:build_config(Env, ConfName),
+	    sin_skel:bin(Env, BinFile),
+	    sin_skel:bin_support(Env, ErlwareFile),
+	    sin_skel:sysconfig(Env, ConfigFile);
+	false ->
+	    ok
+    end,
     all_done().
 
 %% @doc

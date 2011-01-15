@@ -29,7 +29,7 @@
 
 %%% API
 -export([application/3, supervisor/3,
-         app_info/3, edoc_overview/3,
+         app_info/4, edoc_overview/3,
 	 build_config/2,
 	 sysconfig/2,
 	 bin_support/2,
@@ -50,7 +50,7 @@
 %% @end
 -spec application(env(), FileName::string(), AppName::string()) -> ok.
 application(Env, FileName, AppName) ->
-    write_template("application", [{app_name, AppName} | Env], FileName).
+    write_template("application", [{app_name, AppName} |  Env], FileName).
 
 %% @doc
 %%    Writes out a generic supervisor to the filename provided.
@@ -62,10 +62,10 @@ supervisor(Env, FileName, AppName) ->
 %% @doc
 %%    Writes out a generic application to the filename provided.
 %% @end
--spec app_info(env(), FileName::string(), AppName::string()) -> ok.
-app_info(Env, FileName, AppName) ->
-    write_template("dotapp", [{app_name, AppName} | Env], FileName).
-
+-spec app_info(env(), FileName::string(), AppName::string(), AppVsn::string()) -> ok.
+app_info(Env, FileName, AppName, AppVsn) ->
+    write_template("dotapp", [{app_name, AppName},
+			      {app_vsn, AppVsn}| Env], FileName).
 %% @doc
 %%    Writes out a overview.edoc to the filename provided.
 %% @end

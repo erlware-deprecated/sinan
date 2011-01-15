@@ -1,128 +1,486 @@
-Introduction
-------------
+// -*- mode: doc -*-
 
-Sinan Projects
---------------
+Getting Started Guide
+=====================
+:Author: Eric Merritt ericbmerritt@gmail.com
+:website: http://wwww.erlware.org
 
-A project is a convienience tool used in developement and a way to
-group applications that you are working on together that will be part
-of the same release. Physically a project should be group of
-applications under a single file hierarchy. Applications can be spread
-out under this file heirarchy in any way you, the developer, would
-like.
+What is Sinan
+-------------
 
-Sinan recognizes two types of projects Single-App projects and
-Multi-App projects. For the most part these are treated the same, but
-there are some minor differences. The differences are in how sinan
-gets the information it needs for running its tasks. Sinan needs two
-bits of additional information to be able to run all of its commands
-on a project. Those are the project name and the project version. For
-Single-App projects it simple uses the name and version of the
-application that is part of the project, getting that information from
-the *.app file in the ebin directory. For the larger, Multi-App
-project there is no way for sinan to extrapolate this information,
-there for you must provide it on the command line. The way of
-gathering this information is the big difference between single-app
-and multi-app projects.  To make a bit more sense of things, lets look
-at some examples
+Sinan is a build tool designed to build SinanProjects and
+OTPApplications, Releases and Applications. Sinan leverages the
+metadata artifacts provided by OTP to do a good job building, testing,
+releasing, etc with very little or no additional input from the
+developer.
 
+Quick start
+-----------
 
-.Single-App Project
-[source,txt]
----------------------------------------------------------------------
-my_app
-    |- ebin
-    |- include
-    |- priv
-    |- src
----------------------------------------------------------------------
+Lets start by generate a project with a single application. Sinan has
+the gen task and this allows you to generate a buildable skeleton for
+your new project. It wont do much, but it will give you an idea of how
+sinan works.
 
-As you can see, this is a normal OTP Application. You just change
-directory to the root and build and everything should happen as you
-expect.
+Lets call our new project foo. On the command line type the following
+code.
 
-.Bad Multi-App Project
-[source,txt]
----------------------------------------------------------------------
-my_project
-    |- bin
-    |- some_strange_app_dir
-              |- app1
-              |- app2
-              |- app3
-    |- some_other_app_dir
-              |- app4
-    |- app5
-    |- app6
----------------------------------------------------------------------
+Generating the project
+~~~~~~~~~~~~~~~~~~~~~~
 
-Sinan will find and build all of the apps, 1 - 6, in this project
-without a problem. Sinan doesn't care how you organize your apps as
-long as they are under the same heirarchy sinan will build them. That
-said, you probably don't want to organize your project this way. Its
-much better to be consistant and its even better to be consistant with
-the conventions in the Erlang world. In the Erlang world its much,
-much more common to have all of your applications under a lib dir in
-your project and all of your non-otp dirs at the same level as your
-lib. Lets take our previous example and make it consistant with this
-standard.
-
-.Good Multi-App Project
-[source,txt]
----------------------------------------------------------------------
-my_project
-    |- bin
-    |- lib
-        |- app1
-        |- app2
-        |- app3
-        |- app4
-        |- app5
-        |- app6
-    |- docs
-    |- other_stuff
----------------------------------------------------------------------
-
-Again, Sinan will happily build this project, but its layed out more
-consistantly both with what you will probably do in the future and
-what other folks with OTP projects tend to do. In the end its up to
-you and what works for your project and development style, but we
-recommend that you start with this.
-
-Defining a Project
-~~~~~~~~~~~~~~~~~~
-
-In general you don't actually have to do anything to define a
-project. Just run the sinan command that you would like to run in the
-root of your project. If its a one app project that is all you ever need
-to do, Sinan will pick up the project name and the project version
-from the applications *.app metadata file. However, if you are in a
-multi-app project there is no easy way for sinan to find this
-information. To get around this problem you must provide the
-project name and version on the command line when you build in the
-root of a multi-app project. You can do this as follows.
-
+.Generate the foo project
 [source,sh]
----------------------------------------------------------------------
-sinan -p my_project -n 0.1.0.0
----------------------------------------------------------------------
+----------------------------------------------------------------------
+  $> sinan gen foo
+----------------------------------------------------------------------
 
-That will give sinan the information that it needs to do the task
-correctly.
+This will take you through a series of quetions about yourself and the
+project. I have provided a series of answers here, that illustrate how
+to answer these questions.
 
-Always having to change directory up to the project root to run a
-command can be a bit of a pain though. There are two ways to get
-around this, the first and easiest way is to simply have already done
-at least one command in the project root already. Sinan will look for
-it's _build output directory and use the directory that contains that
-_build derectory as the project root. That tends to workout quite
-well if you have already built once before. However, another way is to
-provide a sinan.cfg file in your project root. If the sinan.cfg exists
-sinan will find it and use that as the project root, from which it
-will look for your OTP applications. If you do decide to use a project
-config, you can put your project name and version number there. Then
-you will no longer need to specify the project name and version on the
-command line when you build multi-project applications. See the
-section on the project config to get more information on what you can
-put in your project config file.
+.Answering the generated questions
+[source,txt]
+----------------------------------------------------------------------
+ starting: gen
+ Please specify your name
+ your name> Eric Merritt
+ Please specify your email address
+ your email> ericbmerritt@gmail.com
+ Please specify the copyright holder
+ copyright holder ("Eric Merritt")> Erlware, LLC
+ Please specify version of your project
+ project version> 0.11.0
+ Please specify the ERTS version ("5.8.2")>
+ Is this a single application project ("n")> y
+ /Users/emerritt/tmp/foo/doc created ok.
+ /Users/emerritt/tmp/foo/bin created ok.
+ /Users/emerritt/tmp/foo/config created ok.
+ /Users/emerritt/tmp/foo/ebin created ok.
+ /Users/emerritt/tmp/foo/src created ok.
+ /Users/emerritt/tmp/foo/include created ok.
+ /Users/emerritt/tmp/foo/doc exists ok.
+ Would you like a build config? ("y")> n
+ Project was created, you should be good to go!
+----------------------------------------------------------------------
 
+In this example we are going to generate a project with only one OTP
+application. The gen system needs to know a bit of information about
+you, your name, who is going to hold the copyright, the project
+version etc. For now, leave the erts version as is, you can do that by
+just hitting enter after the promyt. This is a very simple project so
+we don't need a build config either. Just enter 'n' after that
+request.
+
+Building our new project
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Now we have a project. Take a look and poke around. It should look
+something like this
+
+.The generated project
+[source,txt]
+----------------------------------------------------------------------
+foo
+ |-- bin
+ |-- config
+ |-- doc
+ |-- ebin
+ |    |-- foo.app
+ |    `-- overview.edoc
+ |-- include
+ `-- src
+      |-- foo_app.erl
+      `-- foo_sup.erl
+----------------------------------------------------------------------
+
+As your project grows you will have more source files, documentation
+etc. Thats to be expected. but lets get onto the more fun things. Lets
+build the project.
+
+.Build with sinan
+[source,sh]
+----------------------------------------------------------------------
+  $> cd <my foo directory>
+  $> sinan build
+----------------------------------------------------------------------
+
+cd into the top level of the project and run sinan build. This first
+time its important that you do it from the top level.
+
+.The built project
+[source,txt]
+----------------------------------------------------------------------
+foo
+ |-- _build
+ |   `-- development
+ |       |-- apps
+ |       |   `-- foo-0.11.0
+ |       |       |-- bin
+ |       |       |-- config
+ |       |       |-- doc
+ |       |       |-- ebin
+ |       |       |   |-- foo.app
+ |       |       |   |-- foo_app.beam
+ |       |       |   |-- foo_sup.beam
+ |       |       |   `-- overview.edoc
+ |       |       |-- include
+ |       |       `-- src
+ |       |           |-- foo_app.erl
+ |       |           `-- foo_sup.erl
+ |       |-- info
+ |       |   |-- deps
+ |       |   `-- repoapps
+ |       `-- sig
+ |           |-- dep
+ |           |   `-- _Users_emerritt_tmp_foo_ebin_foo.app.sig
+ |           `-- erldeps
+ |               |-- _Users_emerritt_tmp_foo_src_foo_app.erl.sig
+ |               `-- _Users_emerritt_tmp_foo_src_foo_sup.erl.sig
+ |-- bin
+ |-- config
+ |-- doc
+ |-- ebin
+ |   |-- foo.app
+ |   `-- overview.edoc
+ |-- include
+ `-- src
+     |-- foo_app.erl
+     `-- foo_sup.erl
+----------------------------------------------------------------------
+
+One thing to notice here immediately is that there is a new directory
+called +_build+. Sinan never, ever touches your the source files in
+your root directory. It creates a version of the directory under build
+and does all of its changes there.
+
+For the most part you can ignore the +info+ and +sig+ directories. The
+ones of interest to us right now is the app directory. If you look
+there you will see that we have a fully deployable version of our app,
+with the version number postpended just like erlang wants. We have all
+of our source built into ebin and the source in src (OTP applications
+are almost always distributed with source).
+
+Thats the build comand, but sinan can do a bunch more. Lets explore
+some of the other commands.
+
+Testing the project
+~~~~~~~~~~~~~~~~~~~
+
+Sinan has the ability to run eunit tests in a project and
+automatically generates code coverage reports for those tests. Lets
+add a test to the application behavior (foo_app.erl) file and run our
+new tests. Currently the app file looks as follows.
+
+.The current Application Behavior (foo_app.erl) file
+[source,erlang]
+----------------------------------------------------------------------
+ %%%----------------------------------------------------------------
+ %%% @author Eric Merritt <ericbmerritt@gmail.com>
+ %%% @doc
+ %%%
+ %%% @end
+ %%% @copyright 2011 Erlware, LLC
+ %%%----------------------------------------------------------------,
+ -module(foo_app).
+
+ -behaviour(application).
+
+ %% Application callbacks
+ -export([start/2, stop/1]).
+
+ %%%===================================================================
+ %%% Application callbacks
+ %%%===================================================================
+
+ %% @private
+ -spec start(normal | {takeover, node()} | {failover, node()},
+             any()) -> {ok, pid()} | {ok, pid(), State::any()} |
+                       {error, Reason::any()}.
+ start(_StartType, _StartArgs) ->
+     case foo_sup:start_link() of
+         {ok, Pid} ->
+             {ok, Pid};
+         Error ->
+             Error
+     end.
+
+ %% @private
+ -spec stop(State::any()) -> ok.
+ stop(_State) ->
+     ok.
+
+ %%%===================================================================
+ %%% Internal functions
+ %%%===================================================================
+----------------------------------------------------------------------
+
+For now we are just going to add a test section and a single test that
+doesn't do much that is very interesting.
+
+First we need to import the eunit header (don't worry sinan makes sure
+its avaibale). Then we can add a test section right below the internal
+functions section.
+
+.Adding the test
+[source,erlang]
+----------------------------------------------------------------------
+ %%%----------------------------------------------------------------
+ %%% @author Eric Merritt <ericbmerritt@gmail.com>
+ %%% @doc
+ %%%
+ %%% @end
+ %%% @copyright 2011 Erlware, LLC
+ %%%----------------------------------------------------------------,
+ -module(foo_app).
+
+ -behaviour(application).
+
+ %% Application callbacks
+ -export([start/2, stop/1]).
+
+ -include_lib("eunit/include/eunit.hrl").
+
+ %%%===================================================================
+ %%% Application callbacks
+ %%%===================================================================
+
+ %% @private
+ -spec start(normal | {takeover, node()} | {failover, node()},
+             any()) -> {ok, pid()} | {ok, pid(), State::any()} |
+                       {error, Reason::any()}.
+ start(_StartType, _StartArgs) ->
+     case foo_sup:start_link() of
+         {ok, Pid} ->
+             {ok, Pid};
+         Error ->
+             Error
+     end.
+
+ %% @private
+ -spec stop(State::any()) -> ok.
+ stop(_State) ->
+     ok.
+
+ %%%===================================================================
+ %%% Internal functions
+ %%%===================================================================
+
+ %%%===================================================================
+ %%% Tests
+ %%%===================================================================
+ something_test() ->
+    ?assertMatch(foo, foo).
+----------------------------------------------------------------------
+
+Notice the +include_lib+ belowe the +export+ and the new function
++something_test+ in the tests section. Now that we have built once you
+can be anywhere under the build dir and sinan will know how to find
+everything.
+
+.Running sinan test
+[source,sh]
+----------------------------------------------------------------------
+  $> sinan test
+ starting: build
+ Building /Users/emerritt/tmp/foo/src/foo_app.erl
+ starting: test
+ Testing foo
+ foo_app:  Test passed.
+ foo_sup:  There were no tests to run.
+----------------------------------------------------------------------
+
+We can see that we had a test in foo_app and that our test passed with
+no problems. Sinan has added somethings to the +_build+ area to give
+us some more information about things like code coverage and test
+results.
+
+.Test task output
+[source,txt]
+----------------------------------------------------------------------
+ |-- _build
+ |   `-- development
+ |       |-- docs
+ |       |   `-- coverage
+ |       |       `-- foo
+ |       |           |-- coverage_index.html
+ |       |           |-- foo_app.html
+ |       |           |-- foo_sup.html
+ |       |           `-- index.html
+----------------------------------------------------------------------
+
+Everything that was in build is still there. I have cut out all the
+stuff you have already seen so we can focus on the test output. When
+sinan runs test code it also outputs code coverage reports. Those code
+coverage reports go into the <bulid-area>/docs/coverage
+folder. +coverage_index.html+ is the place you want to go look with
+your browser to see these coverage reports.
+
+Creating an OTP release
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Creating a release for OTP manually can be a pain in the butt. Sinan,
+however, makes it trivial. We just need to run the sinan rel task to
+get all of the rel, build, and script artifacts.
+
+Lets do that now
+
+.Running the sinan release task
+[source,sh]
+----------------------------------------------------------------------
+ $> sinan release
+ starting: depends
+ starting: build
+ starting: release
+----------------------------------------------------------------------
+
+There isn't much to look at in the output of the release task, but
+there are some new interesting things in the +_build+ area. Lets take
+a look at that.
+
+.Generated release information
+[source,txt]
+----------------------------------------------------------------------
+ |-- _build
+ |   `-- development
+ |       |-- releases
+ |       |   `-- foo-0.11.0
+ |       |       |-- foo.boot
+ |       |       |-- foo.rel
+ |       |       |-- foo.script
+ |       |       `-- sys.config
+----------------------------------------------------------------------
+
+Once again everything that was there remains there, I have just cut
+down the example to new items. Sinan has generated all of the release
+artifacts for your new project by looking in your OTP lib dir. In fact
+it has also generated the release files as well.
+
+The *.rel file is by far the most interesting. Lets take a look at
+what sinan generated.
+
+.Generated release information
+[source,erlang]
+----------------------------------------------------------------------
+ {release,{"foo","0.11.0"},
+          {erts,"5.8.2"},
+          [{eunit,"2.1.6"},
+           {foo,"0.11.0"},
+           {kernel,"2.14.2"},
+           {stdlib,"1.17.2"}]}.
+----------------------------------------------------------------------
+
+This is a good, fully expanded release file with all the current
+dependencies, and with those dependencies resolved.
+
+Finially, we want to distribute this wonderful project to other
+folks. Of course, OTP provides the framework, but sinan knows how to
+do the work for you. Lets look at that.
+
+Creating an OTP distribution
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The dist task is much like the release task. It doesn't have much
+output but it does create artifacts in +_build+ that we care
+about. Lets run dist now and see what happens.
+
+.Running the sinan dist task
+[source,sh]
+----------------------------------------------------------------------
+ $> sinan dist
+ starting: depends
+ starting: build
+ starting: release
+ starting: dist
+----------------------------------------------------------------------
+
+As you can see, not much output, but the real interesting stuff is in
+the +_build+ directory.
+
+.The dist task output
+[source,txt]
+----------------------------------------------------------------------
+|-- _build
+|   `-- development
+|       `-- tar
+|           `-- foo-0.11.0.tar.gz
+----------------------------------------------------------------------
+
+You can see that we have a tarball now that contains the a fully
+deployable distribution of the project.
+
+Lets look at the distribution tarball. I have left off the application
+dir contents in the interests of berevity.
+
+.The distribution tarball contents
+[source,txt]
+----------------------------------------------------------------------
+`-- foo-0.11.0
+    |-- bin
+    |-- lib
+    |   |-- eunit-2.1.6
+    |   |-- foo-0.11.0
+    |   |-- kernel-2.14.2
+    |   `-- stdlib-1.17.2
+    `-- releases
+        `-- foo-0.11.0
+            |-- foo.boot
+            |-- foo.rel
+            `-- foo.script
+----------------------------------------------------------------------
+
+This is a normal OTP distribution tarball with all of the dependencies included.
+
+Sinan has a few more commands and things can get much more complex if
+you need them to be. If you need further help you can always run the
+sinan help command.
+
+.The sinan help command
+[source,txt]
+----------------------------------------------------------------------
+ $> sinan help
+starting: help
+depends
+   Analyzes all of the dependencies in the project and pulls down
+   those that arn't curently available locally
+
+version
+   Provides sinan server version information
+
+test
+   Runs all of the existing eunit unit tests in the project
+
+shell
+   Starts an erlang shell with all of the correct paths preset so the
+   developer can noodle with the code to his hearts content
+
+release
+   Creates the *.rel, *.boot and *.script into the
+   <build-area>/realeases/<vsn> directory. It also builds up a release
+   tar bal into the <build-area>/tar/ directory
+
+help
+   Provides help information for the available tasks
+
+gen
+   Generates a buildable default project layout
+
+doc
+   Runs edoc across all sources in the project and outputs it into the
+   build area
+
+dist
+   Creates an tarball of the distribution including release
+   information. Check documentation for the dist task for
+   configuration information
+
+clean
+   Removes the build area and everything underneath
+
+build
+   Compiles all of the compilable files in the project
+
+----------------------------------------------------------------------
+
+don't rely on the output here too much, go ahead and run help for
+yourself. The output changes and (hopefully) becomes more useful over
+time.

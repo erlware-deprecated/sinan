@@ -150,6 +150,8 @@ class SmokeTest(unittest.TestCase):
         child.sendline(appdesc.project_version)
         child.expect('Please specify the ERTS version \(".*"\)> ')
         child.sendline()
+        child.expect('Is this a single application project \("n"\)> ')
+        child.sendline()
         child.expect("app> ")
         child.sendline(appdesc.app_names[0])
         for n in appdesc.app_names[1:]:
@@ -158,7 +160,8 @@ class SmokeTest(unittest.TestCase):
 
         child.expect('app \(""\)> ')
         child.sendline()
-
+        child.expect('\("y"\)> ')
+        child.sendline()
         child.expect("Project was created, you should be good to go!")
         child.expect(pexpect.EOF)
         return appdesc
