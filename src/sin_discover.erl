@@ -334,7 +334,8 @@ look_for_app_dirs(Config, BuildDir, ProjectDir) ->
 look_for_app_dirs(_, BuildDir, _Parent, BuildDir, _Ignore, Acc) ->
     Acc;
 look_for_app_dirs(Config, BuildDir, Parent, Sub, Ignorables, Acc) ->
-    case sin_utils:is_dir_ignorable(Sub, Ignorables) of
+    case sin_utils:is_dir_ignorable(Sub, Ignorables) or
+	sin_utils:is_dir_ignorable(filename:join([Parent, Sub]), Ignorables) of
         true ->
             Acc;
         false ->
