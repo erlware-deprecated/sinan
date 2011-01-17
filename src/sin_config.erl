@@ -1,38 +1,11 @@
-%% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
-%%%-------------------------------------------------------------------
-%%% Copyright (c) 2006-2010 Eric Merritt
-%%%
-%%% Permission is hereby granted, free of charge, to any
-%%% person obtaining a copy of this software and associated
-%%% documentation files (the "Software"), to deal in the
-%%% Software without restriction, including without limitation
-%%% the rights to use, copy, modify, merge, publish, distribute,
-%%% sublicense, and/or sell copies of the Software, and to permit
-%%% persons to whom the Software is furnished to do so, subject to
-%%% the following conditions:
-%%%
-%%% The above copyright notice and this permission notice shall
-%%% be included in all copies or substantial portions of the Software.
-%%%
-%%% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-%%% EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-%%% OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-%%% NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-%%% HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-%%% WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-%%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-%%% OTHER DEALINGS IN THE SOFTWARE.
 %%%---------------------------------------------------------------------------
 %%% @author Eric Merritt <ericbmerritt@gmail.com>
 %%% @doc
-%%%  Represents a build config
+%%%  An abstract storage and management piece for config related key value
+%%%  pairs.
 %%% @end
-%%% Created : 30 Oct 2006 by Eric Merritt <ericbmerritt@gmail.com>
 %%%----------------------------------------------------------------------------
 -module(sin_config).
-
--include_lib("eunit/include/eunit.hrl").
--include("internal.hrl").
 
 %% API
 -export([new/0,
@@ -49,10 +22,12 @@
 	 get_pairs/1,
          delete/2]).
 
-
 -export_type([key/0,
 	      value/0,
 	      config/0]).
+
+-include_lib("eunit/include/eunit.hrl").
+-include("internal.hrl").
 
 %%====================================================================
 %% Types
@@ -61,20 +36,17 @@
 -type value() :: term().
 -opaque config() :: any().
 
-
 %%====================================================================
 %% API
 %%====================================================================
 %% @doc
 %% Create a new empty config
-%% @end
 -spec new() -> config().
 new() ->
     dict:new().
 
 %% @doc
 %% Create a new config from a config file
-%% @end
 -spec new(ConfigFile::string()) -> config().
 new(ConfigFile) when is_list(ConfigFile)->
     case sin_utils:file_exists(ConfigFile) of
@@ -86,28 +58,24 @@ new(ConfigFile) when is_list(ConfigFile)->
 
 %% @doc
 %%  Parse the command line args into a spec that can be overridden.
-%% @end
 -spec parse_args(list()) -> config().
 parse_args(ArgList) when is_list(ArgList) ->
     parse_args(ArgList, dict:new()).
 
 %% @doc
 %%  Get a preexisting seed from the the seed config.
-%% @end
 -spec get_seed(string()) -> config().
 get_seed(ProjectDir) when is_list(ProjectDir) ->
     new(ProjectDir).
 
 %% @doc
 %%  Add a key to the config.
-%% @end
 -spec store(config(), key(), value()) -> config().
 store(Config, Key, Value) ->
     dict:store(Key, Value, Config).
 
 %% @doc
 %% Store a list of key value pairs into the config
-%% @end
 -spec store(config(), KeyValuePairs::[{string(), term()}]) ->
     config().
 store(Config, KeyValuePairs) when is_list(KeyValuePairs) ->
@@ -117,7 +85,6 @@ store(Config, KeyValuePairs) when is_list(KeyValuePairs) ->
 
 %% @doc
 %%  Get a value from the config.
-%% @end
 -spec get_value(config(), key()) -> value() | undefined.
 get_value(Config, Key) ->
     case dict:find(Key, Config) of
@@ -133,7 +100,6 @@ get_value(Config, Key) ->
 %% @doc
 %%  Attempts to get the specified key. If the key doesn't exist it
 %%  returns the requested default instead of just undefined.
-%% @end
 -spec get_value(config(), key(), value()) -> value().
 get_value(Config, Key, DefaultValue) ->
     case get_value(Config, Key) of
@@ -145,19 +111,18 @@ get_value(Config, Key, DefaultValue) ->
 
 %% @doc
 %%  Delete a value from the config.
-%% @end
 -spec delete(config(), key()) -> config().
 delete(Config, Key) ->
     dict:erase(Key, Config).
 
 %% @doc
 %%  Get the complete config as key,value pairs
-%% @end
 -spec get_pairs(config()) -> [{key(), value()}].
 get_pairs(Config) ->
 	      dict:to_list(Config).
 
-
+%% @doc
+%% Apply the build flavor overrides to the system
 -spec apply_flavor(config()) -> config().
 apply_flavor(Config0) ->
     Flavor = get_build_flavor(Config0),
@@ -167,7 +132,6 @@ apply_flavor(Config0) ->
 
 %% @doc
 %%  Merges the build config. The second config always overrides the first
-%% @end
 -spec merge_configs(config(), config()) -> config().
 merge_configs(Config1, Config2) ->
     dict:merge(fun(_Key, _Value1, Value2) ->
@@ -180,7 +144,6 @@ merge_configs(Config1, Config2) ->
 %%====================================================================
 %% @doc
 %% Convert a text file to a fully parsed config object
-%% @end
 -spec parse_config_file(ConfigFile::string()) ->
     config().
 parse_config_file(ConfigFile) ->
@@ -188,18 +151,14 @@ parse_config_file(ConfigFile) ->
 			sin_config_parser:parse_config_file(ConfigFile),
 			"").
 
-%%--------------------------------------------------------------------
 %% @doc
 %%  Return the flavor for the current build attempt
-%% @end
-%%--------------------------------------------------------------------
 -spec get_build_flavor(config()) -> string().
 get_build_flavor(Config) ->
     get_value(Config, "build.flavor", "development").
 
 %% @doc
 %%  Apply flavor changes to the config file.
-%% @end
 -spec apply_flavors(config(), config()) -> config().
 apply_flavors(Config, Flavor) ->
     FilterFun = fun([$f, $l, $a, $v, $o, $r, $s, $. | Rest], Value, NConfig) ->
@@ -221,7 +180,6 @@ apply_flavors(Config, Flavor) ->
 %% @doc
 %%  Take the parsed config data and push it into the actual
 %%  config.
-%% @end
 -spec convert_parsed_data(config(), JSONData::any(), term()) -> config().
 convert_parsed_data(Config, {obj, Data}, CurrentName) ->
     convert_parsed_data(Config, Data, CurrentName);
@@ -245,7 +203,6 @@ convert_parsed_data(Config, [], _) ->
 
 %% @doc
 %%  take a list of binaries and convert it to a list of lists.
-%% @end
 -spec convert_list(Target::list(), Acc::list()) -> list().
 convert_list([H | T], Acc) when is_binary(H) ->
     convert_list(T, [binary_to_list(H) | Acc]);
@@ -258,7 +215,6 @@ convert_list([], Acc) ->
 %%  Convert any values taken from the config from a binary to a list.
 %%  ktuo treats lists a binaries but we would rather use lists in the
 %%  system.
-%% @end
 -spec convert_value(Value::any()) -> any().
 convert_value(Value) when is_list(Value) ->
     convert_list(Value, []);
@@ -269,7 +225,6 @@ convert_value(Value) ->
 
 %% @doc
 %%  Parse pairs of keys and values into a build config form
-%% @end
 -spec parse_args(list(), config()) -> config().
 parse_args([Key, Value | Rest], Dict) ->
     parse_args(Rest, dict:store(strip_key(Key, []), Value, Dict));
@@ -280,7 +235,6 @@ parse_args(_, _Dict) ->
 
 %% @doc
 %%  strip out the : and replace it with .
-%% @end
 -spec strip_key(string(), list()) -> string().
 strip_key([$: | Rest], Acc) ->
     strip_key(Rest, [$. | Acc]);
@@ -288,6 +242,7 @@ strip_key([H | Rest], Acc) ->
     strip_key(Rest, [H | Acc]);
 strip_key([], Acc) ->
     lists:reverse(Acc).
+
 %%====================================================================
 %%% Tests
 %%====================================================================
@@ -307,8 +262,3 @@ new_1_test() ->
     ?assertMatch("0.0.0.1", get_value(Config, "project.vsn")),
     ?assertException(throw, invalid_config_file,
 		     new(NonExistantConfigFile)).
-
-
-
-
-
