@@ -179,7 +179,6 @@ class SmokeTest(unittest.TestCase):
                                 ["bin", "erlware_release_start_helper"],
                                 ["config", "sys.config"],
                                 "sinan.cfg")
-
         for n in a.app_names:
             ppath = os.path.join(projdir, "lib", n)
 
