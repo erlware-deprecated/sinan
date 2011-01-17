@@ -226,6 +226,10 @@ convert_value(Value) ->
 %% @doc
 %%  Parse pairs of keys and values into a build config form
 -spec parse_args(list(), config()) -> config().
+parse_args([Value], Dict) ->
+    % A single value on the system becomes commandline.arg and
+    % accessable to other parts of the build.
+    dict:store("command_line.arg", Value, Dict);
 parse_args([Key, Value | Rest], Dict) ->
     parse_args(Rest, dict:store(strip_key(Key, []), Value, Dict));
 parse_args([], Dict) ->
@@ -262,3 +266,17 @@ new_1_test() ->
     ?assertMatch("0.0.0.1", get_value(Config, "project.vsn")),
     ?assertException(throw, invalid_config_file,
 		     new(NonExistantConfigFile)).
+
+parse_args_test() ->
+    Config = parse_args(["Key", "Value"], new()),
+    Config2 = parse_args(["Key", "Value", "CmdValue"], new()),
+    Config3 = parse_args(["CmdValue"], new()),
+    ?assertMatch("Value", get_value(Config, "Key")),
+    ?assertMatch("Value", get_value(Config2, "Key")),
+    ?assertMatch("CmdValue", get_value(Config2, "command_line.arg")),
+    ?assertMatch("CmdValue", get_value(Config3, "command_line.arg")),
+    ?assertMatch(undefined, get_value(Config3, "Key")).
+
+
+
+
