@@ -10,7 +10,6 @@ mkdir -p $CONFIGDIR
 REL_NAME=sinan
 REL_VSN=0.22.1.1
 ERTS_VSN=5.8.2
-INVOCATION_SUFFIX=" -run sinan main -run init stop "
 ###########################################
 
 PROG=$0
@@ -34,5 +33,10 @@ export LD_LIBRARY_PATH=$PREFIX/erts-$ERTS_VSN/lib
 
 REL_DIR=$PREFIX/releases/$REL_NAME-$REL_VSN
 
+if [ $# -eq 1 ] && [ $1 = "shell" ]; then
+    INVOCATION_SUFFIX=" -run sinan main "
+else
+    INVOCATION_SUFFIX=" -noshell -run sinan main -run init stop "
+fi
 
-$BINDIR/erlexec -noshell -config $CONFIGFILE -boot $REL_DIR/$REL_NAME $INVOCATION_SUFFIX -extra "$@"
+$BINDIR/erlexec -config $CONFIGFILE -boot $REL_DIR/$REL_NAME $INVOCATION_SUFFIX -extra "$@"
