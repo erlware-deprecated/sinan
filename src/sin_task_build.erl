@@ -487,11 +487,11 @@ build_file(BuildRef, File, ".yrl", Options, Target) ->
     case needs_building(BuildRef, File, ".yrl", Target, ".beam") of
         true ->
             ErlFile = filename:basename(File, ".yrl"),
-	    AppDir = filename:dirname(Target),
-	    ErlTarget = filename:join([AppDir,"src"]),
+            AppDir = filename:dirname(Target),
+            ErlTarget = filename:join([AppDir,"src"]),
             ErlName = filename:join([ErlTarget,
                                      lists:flatten([ErlFile, ".erl"])]),
-	    ewl_talk:say("Building ~s", [File]),
+            ewl_talk:say("Building ~s", [File]),
             case yecc:file(File, [{parserfile, ErlName} |
                                   strip_options(Options)]) of
                 {ok, _ModuleName} ->
@@ -501,11 +501,11 @@ build_file(BuildRef, File, ".yrl", Options, Target) ->
                     build_file(BuildRef, ErlName, ".erl",
                                Options, Target);
                 {ok, _ModuleName, Warnings} ->
-		    ewl_talk:say(gather_fail_info(Warnings, "warning")),
+                    ewl_talk:say(gather_fail_info(Warnings, "warning")),
                     ok;
                 {error, Errors, Warnings} ->
-		    ewl_talk:say(lists:flatten([gather_fail_info(Errors, "error"),
-						gather_fail_info(Warnings, "warning")])),
+                    ewl_talk:say(lists:flatten([gather_fail_info(Errors, "error"),
+                                                gather_fail_info(Warnings, "warning")])),
                     error
             end;
         false ->
@@ -536,11 +536,11 @@ build_asn1(BuildRef, File, Ext, Options, Target) ->
                                      lists:flatten([ErlFile, ".erl"])]),
             ewl_talk:say("Building ~s", [File]),
             case asn1ct:compile(File, [{outdir, ErlTarget}, noobj] ++
-                                       strip_options(Options)) of
+                                strip_options(Options)) of
                 ok ->
                     build_file(BuildRef, ErlName, ".erl", Options, Target);
                 {error, Errors} ->
-		    ewl_talk:say(gather_fail_info(Errors, "error")),
+                    ewl_talk:say(gather_fail_info(Errors, "error")),
                     error
             end;
         false ->
@@ -620,19 +620,19 @@ needs_building(_, FileName, Ext, TargetDir, TargetExt) ->
 check_module_deps(BuildRef, FileName) ->
     BuildDir = sin_config:get_value(BuildRef, "build.dir"),
     case sin_sig:get_sig_info(?SIGNS, BuildDir, FileName) of
-	undefined ->
-	    false;
-	Terms ->
-	    lists:foldl(fun({Include, Ts}, Acc) ->
-				case file:read_file_info(Include) of
-				    {ok, TargetInfo} when TargetInfo#file_info.mtime > Ts ->
-					true;
-				    _ ->
-					Acc
-				end
-			end,
-			false,
-			Terms)
+        undefined ->
+            false;
+        Terms ->
+            lists:foldl(fun({Include, Ts}, Acc) ->
+                                case file:read_file_info(Include) of
+                                    {ok, TargetInfo} when TargetInfo#file_info.mtime > Ts ->
+                                        true;
+                                    _ ->
+                                        Acc
+                                end
+                        end,
+                        false,
+                        Terms)
     end.
 
 
@@ -676,16 +676,16 @@ gather_fail_info(ListOfProblems, Type) ->
 gather_fail_info(File, ListOfProblems, Acc, WoE) ->
     lists:foldr(
       fun ({Line, Type, Detail}, Acc1) when is_atom(Line) ->
-	      [lists:flatten([File, $:, atom_to_list(Line),
-			      $:, WoE, $:, Type:format_error(Detail),
-			      $\n]) | Acc1];
-	  ({Line, Type, Detail}, Acc1) when is_integer(Line) ->
-	      [lists:flatten([File, $:, integer_to_list(Line),
-			      $:, WoE, $:, Type:format_error(Detail),
-			      $\n]) | Acc1];
-	  ({Type, Detail}, Acc1) ->
-	      [lists:flatten([File, ":noline:", WoE, $:,
-			      Type:format_error(Detail), $\n]) | Acc1]
+              [lists:flatten([File, $:, atom_to_list(Line),
+                              $:, WoE, $:, Type:format_error(Detail),
+                              $\n]) | Acc1];
+          ({Line, Type, Detail}, Acc1) when is_integer(Line) ->
+              [lists:flatten([File, $:, integer_to_list(Line),
+                              $:, WoE, $:, Type:format_error(Detail),
+                              $\n]) | Acc1];
+          ({Type, Detail}, Acc1) ->
+              [lists:flatten([File, ":noline:", WoE, $:,
+                              Type:format_error(Detail), $\n]) | Acc1]
       end, Acc, ListOfProblems).
 
 
@@ -699,23 +699,23 @@ gather_fail_info(File, ListOfProblems, Acc, WoE) ->
 get_hrl_files(File, Includes) ->
     {ok, Forms} = epp:parse_file(File, Includes,[]),
     HrlFiles = lists:foldl(fun({attribute, _ , file, {Include, _}}, Acc) ->
-				   case File of
-				       Include ->
-					   Acc;
-				       _ ->
-					   [Include | Acc]
-				   end;
-			      (_, Acc) ->
-				   Acc
-			   end,
-			   [],
-			   Forms),
+                                   case File of
+                                       Include ->
+                                           Acc;
+                                       _ ->
+                                           [Include | Acc]
+                                   end;
+                              (_, Acc) ->
+                                   Acc
+                           end,
+                           [],
+                           Forms),
     lists:foldl(fun(Hrl, Acc) ->
-			{ok, FileInfo} =  file:read_file_info(Hrl),
-			[{Hrl, FileInfo#file_info.mtime} | Acc]
-		end,
-		[],
-		HrlFiles).
+                        {ok, FileInfo} =  file:read_file_info(Hrl),
+                        [{Hrl, FileInfo#file_info.mtime} | Acc]
+                end,
+                [],
+                HrlFiles).
 
 %%-------------------------------------------------------------------
 %% @doc
@@ -727,12 +727,12 @@ get_hrl_files(File, Includes) ->
 save_module_dependencies(BuildRef, File, Options) ->
     BuildDir = sin_config:get_value(BuildRef, "build.dir"),
     IncludeDirs = lists:reverse(lists:foldl(fun({i, Include}, Acc) ->
-						    [Include | Acc];
-					       (_, Acc) ->
-						    Acc
-					    end,
-					    [],
-					    Options)),
+                                                    [Include | Acc];
+                                               (_, Acc) ->
+                                                    Acc
+                                            end,
+                                            [],
+                                            Options)),
     sin_sig:save_sig_info(?SIGNS, BuildDir, File, get_hrl_files(File, IncludeDirs)).
 
 
@@ -753,7 +753,7 @@ reorder_app_test() ->
                 {zapp3, "vsn", {[], []}, "path"}],
     NewList2 = reorder_apps_according_to_deps(AppList2),
     ?assertMatch(['NONE',"zapp2","app3","app2","zapp1","app1",
-		  "zapp3"], NewList2).
+                  "zapp3"], NewList2).
 
 
 
