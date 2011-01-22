@@ -699,8 +699,10 @@ gather_fail_info(File, ListOfProblems, Acc, WoE) ->
 get_hrl_files(File, Includes) ->
     {ok, Forms} = epp:parse_file(File, Includes,[]),
     HrlFiles = lists:foldl(fun({attribute, _ , file, {Include, _}}, Acc) ->
-                                   case File of
-                                       Include ->
+                                   case Include of
+                                       File ->
+                                           Acc;
+                                       [] ->
                                            Acc;
                                        _ ->
                                            [Include | Acc]
