@@ -156,7 +156,6 @@ start() ->
     application:start(syntax_tools),
     application:start(edoc),
     application:start(sasl),
-    application:start(ibrowse),
     application:start(eunit),
     application:start(ktuo),
     application:start(ewlib),

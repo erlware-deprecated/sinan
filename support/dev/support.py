@@ -31,7 +31,6 @@ ERLWARE_APPS = ["tools-2.6.5.1",
                 "ewrepo-0.19.2.0",
                 "kernel-2.13.5",
                 "sasl-2.1.9",
-                "ibrowse-1.4",
                 "getopt-0.3.0",
                 "sgte-0.7.1",
                 "asn1-1.6.13"]
