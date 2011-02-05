@@ -12,7 +12,7 @@ class BuildError(Exception):
     def __str__(self):
         return repr(self.value)
 
-ERTS_VERSION = "5.7.4"
+ERTS_VERSION = "5.8.2"
 
 BUILD_PATH = "_build/development/apps/%s/ebin"
 
@@ -20,7 +20,7 @@ ERLWARE_PATH = "/usr/local/lib/erlang"
 
 ERLC = "erlc +debug_info "
 
-VERSION = "0.22.0.0"
+VERSION = "0.22.1.3"
 
 
 ERLWARE_APPS = ["tools-2.6.5.1",
