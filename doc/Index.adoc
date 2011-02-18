@@ -484,3 +484,10 @@ build
 don't rely on the output here too much, go ahead and run help for
 yourself. The output changes and (hopefully) becomes more useful over
 time.
+
+Other Helpful Tasks
+~~~~~~~~~~~~~~~~~~~
+
+There are quite a few other tasks that it is useful to be aware of.
+
+- The XrefTask: A task that runs the xref tool

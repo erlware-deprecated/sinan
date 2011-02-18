@@ -242,13 +242,16 @@ build_app(BuildRef, Env, AppName, Args) ->
       AppBuildDir, AppDir, "", [BuildDir | Ignorables]),
     code:add_patha(Target),
     Modules = gather_modules(BuildRef3, AppName, SrcDir),
+    BuildRef4 = sin_config:store(BuildRef3, "apps." ++ AppName ++ ".module_detail",
+				 Modules),
+
     NModules = lists:map(fun({File, _AbsName, Ext}) ->
-                                 build_file(BuildRef3, SrcDir, File, Ext,
+                                 build_file(BuildRef4, SrcDir, File, Ext,
                                             Options, Target)
                          end, Modules),
     check_for_errors(NModules),
     code:set_path(ExistingPaths),
-    BuildRef3.
+    BuildRef4.
 
 event_compile_args(BuildRef, Options) ->
 	case sin_config:get_value(BuildRef, "task.build.print_args", undefined) of
