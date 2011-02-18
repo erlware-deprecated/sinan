@@ -53,7 +53,8 @@ get_tasks() ->
      sin_task_doc:description(),
      sin_task_dist:description(),
      sin_task_clean:description(),
-     sin_task_build:description()].
+     sin_task_build:description(),
+     sin_task_xref:description()].
 
 behaviour_info(callbacks) ->
     [{description, 0}, {do_task, 1}];

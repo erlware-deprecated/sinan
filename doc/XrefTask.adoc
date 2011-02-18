@@ -1,0 +1,24 @@
+// -*- mode:doc -*-
+The Xref Task
+=============
+Eric Merritt <ericbmerritt@gmail.com>
+
+
+The Xref task runs the http://www.erlang.org/doc/man/xref.html[Xref
+tool] (amazingly enough). The easiest way by far to understand what
+the Xref task does is to read the documentation and the manual page
+for that tool.
+
+In a nut shell it provides a specific set of errors and and warnings
+about things the erlang compiler generally does not warn about. These
+warnings include things like calling functions that do not exist, and
+functions that are defined but never used. At its most basic it is a
+cross referencing tool.
+
+You may run the tool as follows.
+
+[source,sh]
+----------------------------------------------------------------------
+$ sinan xref
+----------------------------------------------------------------------
+
