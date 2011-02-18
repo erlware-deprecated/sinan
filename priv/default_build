@@ -7,21 +7,10 @@ ignore_apps : [],
 
 default_flavor: development,
 
-flavors : {
-
-   development : {
-      build : {
+tasks : {
+ build : {
             compile_args : "+debug_info -W1"
      }
-   },
-
-   release : {
-      build : {
-           compile_args : "-DNOTEST=1 -W1"
-      }
-   }
-
-
 },
 
 
