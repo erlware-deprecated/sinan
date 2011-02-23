@@ -1,33 +1,10 @@
-%% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
-%%%-------------------------------------------------------------------
-%%% Copyright (c) 2006-2010 Eric Merritt
-%%%
-%%% Permission is hereby granted, free of charge, to any
-%%% person obtaining a copy of this software and associated
-%%% documentation files (the "Software"), to deal in the
-%%% Software without restriction, including without limitation
-%%% the rights to use, copy, modify, merge, publish, distribute,
-%%% sublicense, and/or sell copies of the Software, and to permit
-%%% persons to whom the Software is furnished to do so, subject to
-%%% the following conditions:
-%%%
-%%% The above copyright notice and this permission notice shall
-%%% be included in all copies or substantial portions of the Software.
-%%%
-%%% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-%%% EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-%%% OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-%%% NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-%%% HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-%%% WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-%%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-%%% OTHER DEALINGS IN THE SOFTWARE.
+%% -*- mode: Erlang; fill-column: 80; comment-column: 75; -*-
 %%%---------------------------------------------------------------------------
 %%% @author Eric Merritt
 %%% @doc
 %%%   Starts a shell with the correct code paths.
 %%% @end
-%%% @copyright (C) 2006-2010 Erlware
+%%% @copyright (C) 2006-2011 Erlware
 %%%---------------------------------------------------------------------------
 -module(sin_task_shell).
 
@@ -37,7 +14,7 @@
 -include("internal.hrl").
 
 %% API
--export([description/0, do_task/1, shell/1]).
+-export([description/0, do_task/1]).
 
 -define(TASK, shell).
 -define(DEPS, [build]).
@@ -45,12 +22,8 @@
 %%====================================================================
 %% API
 %%====================================================================
-%%%--------------------------------------------------------------------
-%% @doc
-%% Starts the server
-%% @spec start() -> ok
-%% @end
-%%--------------------------------------------------------------------
+%% @doc return a description of this task
+-spec description() -> sin_task:task_description().
 description() ->
     Desc = "Starts an erlang shell with all of the correct "
         "paths preset so the developer can noodle with the "
@@ -62,39 +35,21 @@ description() ->
 	  desc = Desc,
 	  opts = []}.
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Do the task defined in this module.
-%% @spec (BuildRef) -> ok
-%% @end
-%%--------------------------------------------------------------------
+%% @doc Run the shell command.
+-spec do_task(sin_config:config()) -> sin_config:config().
 do_task(BuildRef) ->
-    shell(BuildRef).
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%%  Run the shell command.
-%% @spec (BuildRef) -> ok
-%% @end
-%%--------------------------------------------------------------------
-shell(BuildRef) ->
     ProjectApps = sin_config:get_value(BuildRef, "project.apps"),
     ProjectRepoApps = sin_config:get_value(BuildRef, "project.repoapps"),
     Repo = sin_config:get_value(BuildRef, "project.repository"),
     make_shell(BuildRef, ProjectApps, ProjectRepoApps, Repo).
 
-
-
 %%====================================================================
 %%% Internal functions
 %%====================================================================
-%%--------------------------------------------------------------------
-%% @doc
-%%  Go through and actually start the shell.
-%% @spec (BuildRef, ProjectApps, ProjectRepoApps, Repo) -> ok
-%% @end
-%%--------------------------------------------------------------------
+
+%% @doc Go through and actually start the shell.
+-spec make_shell(sin_config:config(), string(), [string()], string()) ->
+    sin_config:config().
 make_shell(BuildRef, ProjectApps, ProjectRepoApps, Repo) ->
     BuildDir = sin_config:get_value(BuildRef, "build.dir"),
     AppDir = filename:join([BuildDir, "apps"]),
@@ -103,13 +58,8 @@ make_shell(BuildRef, ProjectApps, ProjectRepoApps, Repo) ->
     shell:server(false, false),
     BuildRef.
 
-
-%%--------------------------------------------------------------------
-%% @doc
-%%  Send events for all the paths in the list.
-%% @spec (BuildRef, AppDir, DirList) -> Paths
-%% @end
-%%--------------------------------------------------------------------
+%% @doc gather a list of paths from the app and add them to the code path
+-spec setup_paths(string(), [AppInfo::term()]) -> ok.
 setup_paths(RepoDir, [{AppName, Vsn, _, _} | T]) ->
     setup_path(RepoDir, AppName, Vsn),
     setup_paths(RepoDir, T);
@@ -122,13 +72,8 @@ setup_paths(RepoDir, [{AppName, Vsn} | T]) ->
 setup_paths(_, []) ->
     ok.
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Send out the requisite events for a specific piece of the
-%%  application.
-%% @spec (RepoDir, AppName, Vsn) -> ok
-%% @end
-%%--------------------------------------------------------------------
+%% @doc add the specified app to the code path
+-spec setup_path(string(), atom() | string(), string()) -> ok.
 setup_path(RepoDir, AppName, Vsn) ->
     NAppName = case is_atom(AppName) of
                    true ->

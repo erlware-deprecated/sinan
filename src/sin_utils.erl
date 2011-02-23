@@ -1,32 +1,10 @@
-%% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
-%%%-------------------------------------------------------------------
-%%% Copyright (c) 2006, 2007 Erlware
-%%%
-%%% Permission is hereby granted, free of charge, to any
-%%% person obtaining a copy of this software and associated
-%%% documentation files (the "Software"), to deal in the
-%%% Software without restriction, including without limitation
-%%% the rights to use, copy, modify, merge, publish, distribute,
-%%% sublicense, and/or sell copies of the Software, and to permit
-%%% persons to whom the Software is furnished to do so, subject to
-%%% the following conditions:
-%%%
-%%% The above copyright notice and this permission notice shall
-%%% be included in all copies or substantial portions of the Software.
-%%%
-%%% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-%%% EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-%%% OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-%%% NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-%%% HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-%%% WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-%%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-%%% OTHER DEALINGS IN THE SOFTWARE.
+%% -*- mode: Erlang; fill-column: 80; comment-column: 75; -*-
 %%%---------------------------------------------------------------------------
 %%% @author Eric Merritt
 %%% @doc
 %%%  A group of utility functions for project automation.
 %%% @end
+%%% @copyright 2006 - 2011 Erlware
 %%%---------------------------------------------------------------------------
 -module(sin_utils).
 
@@ -50,9 +28,8 @@
 %%====================================================================
 %% API
 %%====================================================================
-%% @doc
-%%  Trivially convert a value to a boolean
-%% @end
+
+%% @doc Trivially convert a value to a boolean
 -spec to_bool(any()) -> boolean().
 to_bool(true) ->
     true;
@@ -63,9 +40,7 @@ to_bool("true") ->
 to_bool(_) ->
     false.
 
-%% @doc
-%%  Delete the directory and all of its sub directories.
-%% @end
+%% @doc Delete the directory and all of its sub directories.
 %% @private
 -spec delete_dir(Dir::string()) -> ok.
 delete_dir(Dir) ->
@@ -88,9 +63,7 @@ delete_dir(Dir) ->
 	    ok
     end.
 
-%% @doc
-%%  Get the ignore dirs
-%% @end
+%% @doc Get the ignore dirs
 -spec get_ignore_dirs(sin_config:config()) -> IgnoreDirs::[string()].
 get_ignore_dirs(BuildConfig) ->
     BuildDir = sin_config:get_value(BuildConfig,
@@ -99,9 +72,7 @@ get_ignore_dirs(BuildConfig) ->
 					    "ignore_dirs", []),
     [BuildDir | IgnoreDirs].
 
-%% @doc
-%%  Check to see if a file exists.
-%% @end
+%% @doc Check to see if a file exists.
 -spec file_exists(FileName::string()) -> boolean().
 file_exists(FileName) ->
     case file:read_file_info(FileName) of
@@ -113,10 +84,8 @@ file_exists(FileName) ->
 	    true
     end.
 
-%% @doc
-%%  Copies the specified directory down to the build
-%%  dir on a file by file basis. It only copies if the file has .
-%% @end
+%% @doc Copies the specified directory down to the build dir on a file by file
+%% basis. It only copies if the file has .
 -spec copy_dir(BuilderDir::string(),
 	       TargetDir::string()) -> ok.
 copy_dir(BuildDir, TargetDir) ->
@@ -159,19 +128,15 @@ copy_dir(BuildDir, TargetDir, SubDir, Ignorables) ->
 			[], Files)
     end.
 
-%% @doc
-%%  Remove the specified code paths from the system code paths.
-%% @end
+%% @doc Remove the specified code paths from the system code paths.
 -spec remove_code_paths(Paths::[string()]) -> ok.
 remove_code_paths([Path | T]) ->
     code:del_path(Path), remove_code_paths(T);
 remove_code_paths([]) ->
     ok.
 
-%% @doc
-%%  Return wether the directory is in the list of ignorables. If it
-%%  is then return true, otherwise return false.
-%% @end
+%% @doc Return wether the directory is in the list of ignorables. If it is then
+%%  return true, otherwise return false.
 -spec is_dir_ignorable(Directory::string(), ListOfIgnores::[string()]) ->
     boolean().
 is_dir_ignorable(Sub, [Ignore | Rest]) ->
@@ -187,10 +152,8 @@ is_dir_ignorable(_Sub, []) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
-%% @doc
-%%  Copies the file specified by file to the target specified by
-%%  ifile.
-%% @end
+
+%% @doc Copies the file specified by file to the target specified by ifile.
 -spec copy_file(Target::string(), IFile::string(), File::string()) -> ok.
 copy_file(_Target, [$. | _], _File) ->
 	     ok;
@@ -214,9 +177,7 @@ copy_file(Target, IFile, File) ->
 	    ok
     end.
 
-%% @doc
-%%  Check to see if the file is a symlink.
-%% @end
+%% @doc Check to see if the file is a symlink.
 -spec is_symlink(FileName::string()) -> boolean.
 is_symlink(FileName) ->
     case catch file:read_link_info(FileName) of
@@ -226,10 +187,8 @@ is_symlink(FileName) ->
 	    false
     end.
 
-%% @doc
-%%  Check the directory against the possible ignores to see if the
-%%  prefix matches.
-%% @end
+%% @doc Check the directory against the possible ignores to see if the prefix
+%%  matches.
 -spec ignore_dir(Directory::string(), PossibleIgnorePrefix::[string()]) ->
     boolean().
 ignore_dir([Char | SubRest], [Char | IgRest]) ->
@@ -239,9 +198,7 @@ ignore_dir(_Sub, []) ->
 ignore_dir(_Sub, _Ignorable) ->
     false.
 
-%% @doc
-%%  If any dirs in the list are ignorable ignore it
-%% @end
+%% @doc If any dirs in the list are ignorable ignore it
 -spec are_dirs_ignorable(ListOfDirs::[string()], Igs::[string()]) -> boolean().
 are_dirs_ignorable([Dir | RestOfDirs], Igs) ->
     case is_dir_ignorable(Dir, Igs) of
@@ -254,9 +211,7 @@ are_dirs_ignorable([], _Igs) ->
     false.
 
 
-%% @doc
-%% convert a list body to a string
-%% @end
+%% @doc convert a list body to a string
 -spec listify_list_body(I::term(), Acc::list()) -> list().
 listify_list_body([H | T], []) ->
     listify_list_body(T, term_to_list(H));
@@ -265,9 +220,7 @@ listify_list_body([H | T], Acc) ->
 listify_list_body([], Acc) ->
     Acc.
 
-%% @doc
-%%  Convert an arbitrary term to a list
-%% @end
+%% @doc Convert an arbitrary term to a list
 -spec term_to_list(I::term()) -> list().
 term_to_list(I) when is_integer(I) ->
     integer_to_list(I);
@@ -301,9 +254,7 @@ is_string(XY) when is_list(XY) ->
 is_string(_) ->
     false.
 
-%% @doc
-%%  Get an enviroment variable, throw error if unavailable.
-%% @end
+%% @doc Get an enviroment variable, throw error if unavailable.
 -spec get_application_env(atom()) -> term().
 get_application_env(Key) ->
     case application:get_env(sinan, Key) of
@@ -316,6 +267,8 @@ get_application_env(Key) ->
 			  [Key])
     end.
 
+-spec check_not_circular(string(), string(), string()) ->
+    ok.
 check_not_circular(Target, Source, SubDir) ->
     case filename:split(Source) ++ SubDir ==
 	filename:split(Target) of

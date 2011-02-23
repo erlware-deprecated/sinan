@@ -1,6 +1,7 @@
+%% -*- mode: Erlang; fill-column: 80; comment-column: 75; -*-
 %%%-------------------------------------------------------------------
 %%% @author Eric Merritt <ericbmerritt@gmail.com>
-%%% @copyright (C) 2006 - 2010, Eric Merritt
+%%% @copyright (C) 2006 - 2011, Eric Merritt
 %%% @doc
 %%%  Provides task sorting and manipulation support to the sinan.
 %%% @end
@@ -20,18 +21,21 @@
 %%====================================================================
 %%% Types
 %%====================================================================
+
 -type task_description() :: record(task).
 -type task_name() :: atom().
-
 
 %%====================================================================
 %%% API Functions
 %%====================================================================
+
+%% @doc get a specific task description
 -spec get_task(task_name()) -> [task_name()].
 get_task(TaskName) ->
     Tasks = get_tasks(),
     get_task(TaskName, Tasks).
 
+%% @doc get a dependency ordered list of tasks from the system.
 -spec get_task_list(task_name()) -> [task_name()].
 get_task_list(TaskName) ->
     Tasks = get_tasks(),
@@ -41,6 +45,7 @@ get_task_list(TaskName) ->
 	      end,
 	      process_deps(RootTask, Tasks)).
 
+%% @doc get a list of all tasks in the system
 -spec get_tasks() -> [record(task)].
 get_tasks() ->
     [sin_task_depends:description(),
@@ -56,6 +61,7 @@ get_tasks() ->
      sin_task_build:description(),
      sin_task_xref:description()].
 
+%% @doc define the behaviour for tasks.
 behaviour_info(callbacks) ->
     [{description, 0}, {do_task, 1}];
 behaviour_info(_) ->
@@ -64,6 +70,7 @@ behaviour_info(_) ->
 %%====================================================================
 %%% Internal functions
 %%====================================================================
+
 -spec get_task(task_name(), [task_description()]) -> task_description().
 get_task(TaskName, [Task = #task{name = TaskName} | _]) ->
     Task;
@@ -74,7 +81,8 @@ get_task(TaskName, _) ->
 
 process_deps(Task, Tasks) ->
     {DepChain, _, _} = process_deps(Task, Tasks, []),
-    ['NONE' | Rest] = reorder_tasks(lists:flatten([{'NONE', Task#task.name} | DepChain])),
+    ['NONE' | Rest] =
+	reorder_tasks(lists:flatten([{'NONE', Task#task.name} | DepChain])),
     Rest.
 
 process_deps(Task, Tasks, Seen) ->
@@ -86,7 +94,8 @@ process_deps(Task, Tasks, Seen) ->
 	    DepList = lists:map(fun(Dep) ->
 					{Dep, Task#task.name}
 				end, Deps),
-	    {NewDeps, _, NewSeen} = lists:foldl(fun process_dep/2, {[], Tasks, Seen}, Deps),
+	    {NewDeps, _, NewSeen} = lists:foldl(fun process_dep/2,
+						{[], Tasks, Seen}, Deps),
 	    {[DepList | NewDeps], Tasks, NewSeen}
     end.
 
@@ -95,16 +104,7 @@ process_dep(TaskName, {Deps, Tasks, Seen}) ->
     {NewDeps, _, NewSeen} = process_deps(Task, Tasks, [TaskName | Seen]),
     {[Deps | NewDeps], Tasks, NewSeen}.
 
-
-%%--------------------------------------------------------------------
-%% @doc
-%%  Reorder the tasks according to thier dependency set.
-%%
-%% @spec reorder_tasks(OTaskList::Tasks) -> TaskList::Tasks
-%%   Tasks = [{Task::task_name(), TaskDep::task_name()}]
-%% @end
-%% @private
-%%--------------------------------------------------------------------
+%% @doc Reorder the tasks according to thier dependency set.
 reorder_tasks(OTaskList) ->
     case sin_topo:sort(OTaskList) of
         {ok, TaskList} ->

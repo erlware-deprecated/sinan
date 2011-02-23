@@ -1,27 +1,4 @@
-%% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
-%%%-------------------------------------------------------------------
-%%% Copyright (c) 2008-2010 Erlware
-%%%
-%%% Permission is hereby granted, free of charge, to any
-%%% person obtaining a copy of this software and associated
-%%% documentation files (the "Software"), to deal in the
-%%% Software without restriction, including without limitation
-%%% the rights to use, copy, modify, merge, publish, distribute,
-%%% sublicense, and/or sell copies of the Software, and to permit
-%%% persons to whom the Software is furnished to do so, subject to
-%%% the following conditions:
-%%%
-%%% The above copyright notice and this permission notice shall
-%%% be included in all copies or substantial portions of the Software.
-%%%
-%%% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-%%% EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-%%% OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-%%% NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-%%% HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-%%% WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-%%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-%%% OTHER DEALINGS IN THE SOFTWARE.
+%% -*- mode: Erlang; fill-column: 80; comment-column: 75; -*-
 %%%---------------------------------------------------------------------------
 %%% @copyright 2008 Anders Nygren
 %%% @author Anders Nygren <anders.nygren@gmail.com>
@@ -42,14 +19,11 @@
 %%====================================================================
 %% API
 %%====================================================================
-%%--------------------------------------------------------------------
-%% @spec rel(LibDir::string(), ExtraApps, ExcludeApps) -> Res
-%% ExtraApps = [atom()]
-%% ExcludeApps = [atom()]
-%% @doc Find all applications and their versions that have to be
-%% included in a release.
-%% @end
-%%--------------------------------------------------------------------
+
+%% @doc Find all applications and their versions that have to be included in a
+%% release.
+-spec rel(LibDir::string(), ExtraApps::[atom()],
+	  ExcludeApps::[atom()]) -> list().
 rel(LibDir, ExtraApps, Exclude) ->
     MyApps = find_apps(LibDir),
     AppsInPath = lists:foldl(fun (D, Acc) ->
@@ -67,7 +41,6 @@ rel(LibDir, ExtraApps, Exclude) ->
     InitApps = MyApps++Extras,
     lists:sort(app_deps(InitApps, Exclude)).
 
-
 app_deps(InitApps, Exclude) ->
     As = [read_app_file(App, EbinDir) || {App, EbinDir} <- InitApps],
     Acc= [{App, Vsn} || {app, App, Vsn, _Modules} <-As],
@@ -83,13 +56,8 @@ app_deps(Apps, Exclude, Done) ->
 	      Deps1 ++ Acc
       end, Done, Apps).
 
-%%--------------------------------------------------------------------
-%% @spec app(App::atom()) -> Result
-%% Result = [{App::atom(), Vsn::string()}]
-%% @doc Find all applications and their versions that an application
-%% depends on.
-%% @end
-%%--------------------------------------------------------------------
+%% @doc Find all applications and their versions that an application depends on.
+-spec app(App::atom()) -> Result::[{App::atom(), Vsn::string()}].
 app(App) when is_atom(App) ->
     [D] = find(".", "^"++atom_to_list(App)++".app$"),
     Dir = filename:dirname(D),
@@ -126,7 +94,6 @@ read_app_file(App, Dir) ->
     {value, {modules, Modules}} = lists:keysearch(modules, 1, Attrs),
     {app, App, Vsn, Modules}.
 
-%%====================================================================
 get_deps(Module) ->
     {ok,{_,[{imports,Is}]}} = beam_lib:chunks(code:which(Module),[imports]),
     lists:usort([Mod || {Mod, _Fun, _Ar} <- Is]).

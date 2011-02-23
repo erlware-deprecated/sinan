@@ -1,35 +1,12 @@
-%% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
+%% -*- mode: Erlang; fill-column: 80; comment-column: 75; -*-
 %%%-------------------------------------------------------------------
-%%% Copyright (c) 2006-2010 Erlware
-%%%
-%%% Permission is hereby granted, free of charge, to any
-%%% person obtaining a copy of this software and associated
-%%% documentation files (the "Software"), to deal in the
-%%% Software without restriction, including without limitation
-%%% the rights to use, copy, modify, merge, publish, distribute,
-%%% sublicense, and/or sell copies of the Software, and to permit
-%%% persons to whom the Software is furnished to do so, subject to
-%%% the following conditions:
-%%%
-%%% The above copyright notice and this permission notice shall
-%%% be included in all copies or substantial portions of the Software.
-%%%
-%%% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-%%% EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-%%% OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-%%% NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-%%% HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-%%% WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-%%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-%%% OTHER DEALINGS IN THE SOFTWARE.
 %%%---------------------------------------------------------------------------
 %%% @author Eric Merritt <ericbmerritt@gmail.com>
 %%% @doc
 %%%   Runs the 'test' function on all modules in an application
 %%%   if that function exits.
 %%% @end
-%%% @copyright (C) 2007-2010 Erlware
-%%% Created : 16 Oct 2006 by Eric Merritt
+%%% @copyright (C) 2007-2011 Erlware
 %%%---------------------------------------------------------------------------
 -module(sin_task_test).
 
@@ -38,21 +15,17 @@
 -include("internal.hrl").
 
 %% API
--export([description/0, do_task/1, test/1]).
+-export([description/0, do_task/1]).
 
 -define(TASK, test).
 -define(DEPS, [build]).
 
-
 %%====================================================================
 %% API
 %%====================================================================
-%%--------------------------------------------------------------------
-%% @doc
-%% Starts the server
-%% @spec () -> ok
-%% @end
-%%--------------------------------------------------------------------
+
+%% @doc provides a description of this task
+-spec description() ->  sin_task:task_description().
 description() ->
     Desc = "Runs all of the existing eunit unit tests in the project",
     #task{name = ?TASK,
@@ -62,23 +35,8 @@ description() ->
 	  desc = Desc,
 	  opts = []}.
 
-
-%%--------------------------------------------------------------------
-%% @doc
-%%  dO the task defined in this module.
-%% @spec (BuildRef) -> ok
-%% @end
-%%--------------------------------------------------------------------
+%% @doc run all tests for all modules in the system
 do_task(BuildRef) ->
-    test(BuildRef).
-
-%%--------------------------------------------------------------------
-%% @doc
-%%  Run the application tests.
-%% @spec test(BuildRef) -> ok
-%% @end
-%%--------------------------------------------------------------------
-test(BuildRef) ->
     case sin_config:get_value(BuildRef, "eunit") of
         "disabled" ->
 	    ewl_talk:say("Unit testing is disabled for this project. "
@@ -98,13 +56,10 @@ test(BuildRef) ->
 %%====================================================================
 %%% Internal functions
 %%====================================================================
-%%--------------------------------------------------------------------
-%% @doc
-%%   Run tests for all the applications specified.
-%% @spec (BuildRef, AppList) -> ok
-%% @end
+
+%% @doc Run tests for all the applications specified.
 %% @private
-%%--------------------------------------------------------------------
+-spec test_apps(sin_config:config(), [string()]) -> ok.
 test_apps(BuildRef, [AppName | T]) ->
     io:format("Testing ~s~n", [AppName]),
     Modules = sin_config:get_value(BuildRef,
@@ -121,14 +76,10 @@ test_apps(BuildRef, [AppName | T]) ->
 test_apps(_, []) ->
     ok.
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Prepare for running the tests. This mostly means seting up the
-%%  coverage tools.
-%% @spec (BuildRef, AppName, Modules) -> ok
-%% @end
+%% @doc Prepare for running the tests. This mostly means seting up the
+%% coverage tools.
 %% @private
-%%--------------------------------------------------------------------
+-spec prepare_for_tests(sin_config:config(), string(), [atom()]) -> ok.
 prepare_for_tests(BuildRef, AppName, Modules) ->
     BuildDir = sin_config:get_value(BuildRef, "build.dir"),
     DocDir = filename:join([BuildDir, "docs", "coverage", AppName]),
@@ -142,15 +93,12 @@ prepare_for_tests(BuildRef, AppName, Modules) ->
     output_coverage_index(DocDir, AppName, CoverageFiles),
     sin_utils:remove_code_paths(Paths).
 
-
-%%--------------------------------------------------------------------
-%% @doc
-%%  Output coverage information to make accessing the files a
-%%  bit easier.
-%% @spec (DocDir, AppName, CoverageFiles) -> ok
-%% @end
-%% @private
-%%--------------------------------------------------------------------
+%% @doc Output coverage information to make accessing the coverage files a bit
+%%  easier.
+%%@private
+-spec output_coverage_index(string(), string(),
+			    [{Name::string(), Module::atom()}]) ->
+    ok.
 output_coverage_index(_DocDir, _AppName, []) ->
     % no coverage files created
     ok;
@@ -190,14 +138,10 @@ output_coverage_index(DocDir, AppName, CoverageFiles=[{Name, _Module} | _T]) ->
     file:write_file(IndexFile, list_to_binary(Frame), [write]),
     file:write_file(CList, list_to_binary(CoverageIndex), [write]).
 
-
-%%--------------------------------------------------------------------
 %% @doc
 %%  Render the list of modules into a deep list of links.
-%% @spec (FileList, Acc) -> DeepListOfLinks
-%% @end
 %% @private
-%%--------------------------------------------------------------------
+-spec make_index([{string(), atom()}], list()) -> list().
 make_index([{File, Module} | T], Acc) ->
     Acc2 = ["<LI><A href=\"", File, "\" target=\"bodyarea\">", atom_to_list(Module),
             "</A></LI>" | Acc],
@@ -205,14 +149,9 @@ make_index([{File, Module} | T], Acc) ->
 make_index([], Acc) ->
     Acc.
 
-
-%%--------------------------------------------------------------------
-%% @doc
-%%  Instrument all of the modules for code coverage checks.
-%% @spec (BuildRef, Modules) -> ok
-%% @end
+%% @doc Instrument all of the modules for code coverage checks.
 %% @private
-%%--------------------------------------------------------------------
+-spec setup_code_coverage(sin_config:config(), [atom()]) -> ok.
 setup_code_coverage(BuildRef, [Module | T]) ->
     case cover:compile_beam(Module) of
         {error, _} ->
@@ -224,13 +163,10 @@ setup_code_coverage(BuildRef, [Module | T]) ->
 setup_code_coverage(_, []) ->
     ok.
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Take the analysis from test running and output it to an html file.
-%% @spec (BuildRef, DocDir, Modules, Acc) -> ListOModules
-%% @end
-%% @private
-%%--------------------------------------------------------------------
+%% @doc Take the analysis from test running and output it to an html file.
+%%  @private
+-spec output_code_coverage(sin_config:config(), string(), [atom()], list()) ->
+    list().
 output_code_coverage(BuildRef, DocDir, [Module | T], Acc) ->
     File = lists:flatten([atom_to_list(Module), ".html"]),
     OutFile = filename:join([DocDir, File]),
@@ -244,15 +180,10 @@ output_code_coverage(BuildRef, DocDir, [Module | T], Acc) ->
     end;
 output_code_coverage(_, _DocDir, [], Acc) ->
     Acc.
-%%--------------------------------------------------------------------
-%% @doc
-%%   Run tests for each module that has a test/0 function
-%% @spec (Modules) -> ok
-%% @end
-%% @private
-%%--------------------------------------------------------------------
+
+%% @doc Run tests for each module that has a test/0 function @private
+-spec run_module_tests([atom()]) -> ok.
 run_module_tests([Module | T]) ->
-    io:format("~p:",[Module]),
     eunit:test(Module),
     run_module_tests(T);
 run_module_tests([]) ->

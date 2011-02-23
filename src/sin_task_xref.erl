@@ -14,7 +14,7 @@
 -include("internal.hrl").
 
 %% API
--export([description/0, do_task/1, xref/1]).
+-export([description/0, do_task/1]).
 
 -define(TASK, xref).
 -define(DEPS, [build]).
@@ -23,6 +23,7 @@
 %% API
 %%====================================================================
 %% @doc provide a description for this task
+-spec description() -> sin_task:task_description().
 description() ->
     Desc = "Runs xref on the project, to detect problems",
     #task{name = ?TASK,
@@ -33,13 +34,9 @@ description() ->
 	  opts = []}.
 
 %% @doc do the xref task
-do_task(BuildRef) ->
-    xref(BuildRef).
-
-%% @doc run xref on all the applications in this project
--spec xref(sin_build_config:config()) ->
+-spec do_task(sin_build_config:config()) ->
     sin_build_config:config().
-xref(BuildRef) ->
+do_task(BuildRef) ->
     ServerName = get_a_uniquish_name(),
     ExistingPaths = code:get_path(),
     xref:start(ServerName),

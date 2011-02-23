@@ -1,35 +1,12 @@
 %% -*- mode: Erlang; fill-column: 80; comment-column: 75; -*-
 %%%-------------------------------------------------------------------
-%%% Permission is hereby granted, free of charge, to any
-%%% person obtaining a copy of this software and associated
-%%% documentation files (the "Software"), to deal in the
-%%% Software without restriction, including without limitation
-%%% the rights to use, copy, modify, merge, publish, distribute,
-%%% sublicense, and/or sell copies of the Software, and to permit
-%%% persons to whom the Software is furnished to do so, subject to
-%%% the following conditions:
-%%%
-%%% The above copyright notice and this permission notice shall
-%%% be included in all copies or substantial portions of the Software.
-%%%
-%%% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-%%% EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-%%% OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-%%% NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-%%% HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-%%% WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-%%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-%%% OTHER DEALINGS IN THE SOFTWARE.
-%%%---------------------------------------------------------------------------
 %%% @author Eric Merritt <ericbmerritt@gmail.com>
 %%% @doc
 %%%  The module provides a simple api for the sinan system.
 %%%  Two possible arguments may be passed in. The start dir that should
 %%%  be somewhere inside a project and a list of args for the system.
-%%%
 %%% @end
-%%% @copyright (C) 2007-2010 Erlware
-%%% Created :  8 Dec 2007 by Eric Merritt <ericbmerritt@gmail.com>
+%%% @copyright (C) 2007-2011 Erlware
 %%%-------------------------------------------------------------------
 -module(sinan).
 
@@ -40,7 +17,7 @@
          start/0]).
 
 -export_type([args/0,
-	     task_name/0]).
+	      task_name/0]).
 
 -include_lib("eunit/include/eunit.hrl").
 -include("internal.hrl").
@@ -55,9 +32,8 @@
 %%====================================================================
 %% API
 %%====================================================================
-%% @doc
-%%  run the specified task
-%% @end
+
+%% @doc run the specified task
 -spec do_task(task_name(), string(), sin_config:config()) -> ok.
 do_task(Task, StartDir, Override) ->
     try
@@ -73,9 +49,7 @@ do_task(Task, StartDir, Override) ->
             ewl_talk:say("Task not found ~s.", [TaskName])
     end.
 
-%% @doc
-%%  run the specified task with a full project dir
-%% @end
+%% @doc run the specified task with a full project dir
 -spec do_task_full(string(), sin_config:config(), task_name()) -> ok.
 do_task_full(StartDir, Override, Task) when is_atom(Task) ->
     try
@@ -95,20 +69,20 @@ do_task_full(StartDir, Override, Task) when is_atom(Task) ->
 	    ewl_talk:say("~s", [Description])
     end.
 
-%% @doc
-%%  run the specified task, without expecting a build config and
-%% what not.
-%% @end
+%% @doc run the specified task, without expecting a build config and what not.
 -spec do_task_bare(string(), task_name(), args()) -> ok.
 do_task_bare(StartDir, Config, Task) when is_atom(Task) ->
     run_task(Task, StartDir, Config).
 
-
+%% @doc do the full run of sinan as required by the command line args
+-spec main() -> sin_config:config() | ok.
 main() ->
     Args = init:get_plain_arguments(),
     main(Args).
 
-
+%% @doc do a full run of sinan with arbitrary args that may be parsed like
+%% command line args
+-spec main([string()]) -> sin_config:config().
 main(Args) ->
     case getopt:parse(option_spec_list(), Args) of
         {ok, {Options, NonOptArgs}} ->
@@ -121,6 +95,7 @@ main(Args) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
+-spec do_build(term(), [string()]) -> sin_config:config().
 do_build(Options, [Target | Rest]) ->
     do_task(list_to_atom(Target),
 	    find_start_dir(Rest),
@@ -128,14 +103,19 @@ do_build(Options, [Target | Rest]) ->
 do_build(Options, []) ->
     do_build(Options, ["build"]).
 
+-spec usage() -> ok.
 usage() ->
     usage(option_spec_list()).
 
+-spec usage(term()) -> ok.
 usage(OptSpecList) ->
     getopt:usage(OptSpecList, "", "[var1=val1 ...] [command1 ...]",
-                 [{"var=value", "Variables that will affect the compilation (e.g. debug=1)"},
-                  {"command",   "Commands that will be executed by erlb (e.g. compile)"}]).
+                 [{"var=value",
+		   "Variables that will affect the compilation (e.g. debug=1)"},
+                  {"command",
+		   "Commands that will be executed by erlb (e.g. compile)"}]).
 
+-spec option_spec_list() -> list().
 option_spec_list() ->
     [{verbose, $v, "verbose", {boolean, false},
       "Be verbose about what gets done"},
@@ -145,10 +125,8 @@ option_spec_list() ->
 
 
 
-%% @doc
-%%  Allows sinan to be easily started from the shell. This is a
-%%  helper function thats mostly just useful in development.
-%% @end
+%% @doc Allows sinan to be easily started from the shell. This is a helper
+%%  function thats mostly just useful in development.
 -spec start() -> ok.
 start() ->
     application:start(tools),
@@ -172,9 +150,7 @@ start() ->
     application:start(sinan).
 
 
-%% @doc
-%% run the task including all task dependencies
-%% @end
+%% @doc run the task including all task dependencies
 -spec run_task(task_name(), string(), sin_config:config()) -> ok.
 run_task(Task, ProjectDir, BuildConfig) ->
     try
@@ -203,9 +179,7 @@ run_task(Task, ProjectDir, BuildConfig) ->
     end.
 
 
-%% @doc
-%%  parse the start dir out of the args passed in.
-%% @end
+%% @doc parse the start dir out of the args passed in.
 -spec find_start_dir(args()) -> string().
 find_start_dir({obj, Data}) ->
     find_start_dir(Data);
@@ -224,9 +198,7 @@ find_start_dir(Data) ->
 	    Dir
     end.
 
-%% @doc
-%% Setup all configuration overrides from the command line
-%% @end
+%% @doc Setup all configuration overrides from the command line
 -spec setup_config_overrides(Options::term(), term()) ->
     sin_config:config().
 setup_config_overrides(Options, Args) ->
@@ -237,14 +209,12 @@ setup_config_overrides(Options, Args) ->
 			  {version, "project.vsn"}]).
 
 
-%% @doc
-%% This pushes the values given in the args (if they exist) into the override
-%% config under the name specified in key.
+%% @doc This pushes the values given in the args (if they exist) into the
+%% override config under the name specified in key.
 %%
 %% For example the name/key mapping expects an atom for the name that matches
-%% the atom specified in the release and a string as the key. The string is
-%% used as the key to push into the config
-%% @end
+%% the atom specified in the release and a string as the key. The string is used
+%% as the key to push into the config
 -spec push_values_if_exist(sin_config:config(), term(), [{atom(), string()}]) ->
     sin_config:config().
 push_values_if_exist(Config, Options, [{Name, Key} | Rest]) ->

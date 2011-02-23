@@ -1,33 +1,10 @@
-%% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
-%%%-------------------------------------------------------------------
-%%% Copyright (c) 2007-2010 Erlware
-%%%
-%%% Permission is hereby granted, free of charge, to any
-%%% person obtaining a copy of this software and associated
-%%% documentation files (the "Software"), to deal in the
-%%% Software without restriction, including without limitation
-%%% the rights to use, copy, modify, merge, publish, distribute,
-%%% sublicense, and/or sell copies of the Software, and to permit
-%%% persons to whom the Software is furnished to do so, subject to
-%%% the following conditions:
-%%%
-%%% The above copyright notice and this permission notice shall
-%%% be included in all copies or substantial portions of the Software.
-%%%
-%%% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-%%% EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-%%% OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-%%% NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-%%% HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-%%% WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-%%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-%%% OTHER DEALINGS IN THE SOFTWARE.
+%% -*- mode: Erlang; fill-column: 80; comment-column: 75; -*-
 %%%---------------------------------------------------------------------------
 %%% @author Eric Merritt
 %%% @doc
 %%%  Supports building individual erl files in an application
 %%% @end
-%%% @copyright (C) 2007-2010 Erlware
+%%% @copyright (C) 2007-2011 Erlware
 %%%--------------------------------------------------------------------------
 -module(sin_task_build).
 
@@ -37,10 +14,8 @@
 -include_lib("eunit/include/eunit.hrl").
 -include("internal.hrl").
 
-
 %% API
--export([description/0, do_task/1, build/1]).
-
+-export([description/0, do_task/1]).
 
 -record(env,  {project_dir,
                build_dir,
@@ -53,17 +28,12 @@
 -define(TASK, build).
 -define(DEPS, [depends]).
 
-
-
 %%====================================================================
 %% API
 %%====================================================================
-%%--------------------------------------------------------------------
-%% @doc
-%% Starts the server
-%% @spec () -> ok
-%% @end
-%%--------------------------------------------------------------------
+
+%% @doc return a description of this task to the caller
+-spec description() -> sin_task:task_description().
 description() ->
     Desc = "Compiles all of the compilable files in the project",
     #task{name = ?TASK,
@@ -73,23 +43,9 @@ description() ->
 	  desc = Desc,
 	  opts = []}.
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Do the task defined in this module.
-%% @spec do_task(BuildRef) -> ok
-%% @end
-%%--------------------------------------------------------------------
+%% @doc run the build task.
+-spec do_task(sin_config:config()) -> sin_config:config().
 do_task(BuildRef) ->
-    build(BuildRef).
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%%  run the build task.
-%% @spec (BuildRef) -> ok
-%% @end
-%%--------------------------------------------------------------------
-build(BuildRef) ->
     ensure_build_dir(BuildRef),
     Apps = sin_config:get_value(BuildRef, "project.allapps"),
     NApps = reorder_apps_according_to_deps(Apps),
@@ -98,18 +54,13 @@ build(BuildRef) ->
     NArgs = sin_build_arg_parser:compile_build_args(RawArgs),
     build_apps(BuildRef, NApps, NArgs).
 
-
 %%====================================================================
 %%% Internal functions
 %%====================================================================
-%%--------------------------------------------------------------------
-%% @doc
-%%  Given a list of apps and dependencies creates an ordered build
-%%  list for the apps.
-%% @spec (AllApps) -> OrderedBuildList
-%% @end
-%% @private
-%%--------------------------------------------------------------------
+
+%% @doc Given a list of apps and dependencies creates an ordered build list for
+%% the apps.
+-spec reorder_apps_according_to_deps([AppInfo::term()]) -> list().
 reorder_apps_according_to_deps(AllApps) ->
     ReOrdered = lists:foldr(
                   fun ({App, _, {Deps, IncDeps}, _}, Acc) ->
@@ -131,14 +82,8 @@ reorder_apps_according_to_deps(AllApps) ->
                           [CycleList])
     end.
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Map the lists of dependencies for 'App' into a pairs for the
-%%  topo sort.
-%% @spec (App, Deps, AllApps) -> NAcc
-%% @end
-%% @private
-%%--------------------------------------------------------------------
+%% @doc Map the lists of dependencies for 'App' into a pairs for the topo sort.
+-spec map_deps(atom(), list(), list()) -> list().
 map_deps(App, Deps, AllApps) ->
  	 lists:foldr(fun (DApp, Acc) ->
  			     case lists:keymember(DApp, 1, AllApps) of
@@ -149,26 +94,15 @@ map_deps(App, Deps, AllApps) ->
  			     end
  		     end, [], Deps).
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Change an atom to a list of the argument is an atom, otherwise
-%%  just return the arg.
-%% @spec (Atom) -> List
-%% @end
-%% @private
-%%--------------------------------------------------------------------
+%% @doc Change an atom to a list of the argument is an atom, otherwise just
+%% return the arg.
+-spec to_list(atom()) -> string().
 to_list(Atom) when is_atom(Atom) ->
     atom_to_list(Atom);
 to_list(Atom) when is_list(Atom) ->
     Atom.
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Build the apps in the list.
-%% @spec (BuildRef, Apps, Args) -> ok
-%% @end
-%% @private
-%%--------------------------------------------------------------------
+%% @doc Build the apps in the list.
 build_apps(BuildRef, Apps, Args) ->
     AppList = sin_config:get_value(BuildRef, "project.allapps"),
     AllDeps = sin_config:get_value(BuildRef, "project.alldeps"),
@@ -185,16 +119,7 @@ build_apps(BuildRef, Apps, Args) ->
                               deps=AllDeps},
                Apps, Args).
 
-
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%%  build the apps as they come up in the list.
-%% @spec (BuildRef, BuildSupInfo, AppList, Args) -> ok
-%% @end
-%% @private
-%%--------------------------------------------------------------------
+%% @doc build the apps as they come up in the list.
 build_apps(BuildRef, BuildSupInfo, AppList, Args) ->
     lists:foldl(fun ('NONE', BuildRef2) ->
 			% We ignore an app type of none, its a remnent
@@ -204,13 +129,7 @@ build_apps(BuildRef, BuildSupInfo, AppList, Args) ->
 			build_app(BuildRef2, BuildSupInfo, App, Args)
                   end, BuildRef, AppList).
 
-%%-------------------------------------------------------------------
-%% @doc
-%%  Build an individual otp application.
-%% @spec (BuildRef, Env, AppName, Args) -> ok
-%% @end
-%% @private
-%%-------------------------------------------------------------------
+%% @doc Build an individual otp application.
 build_app(BuildRef, Env, AppName, Args) ->
     AppVsn = sin_config:get_value(BuildRef, "apps." ++ AppName ++ ".vsn"),
     AppDir = sin_config:get_value(BuildRef, "apps." ++ AppName
@@ -263,12 +182,7 @@ event_compile_args(BuildRef, Options) ->
 		ewl_talk:say("Compile args:~n~p", [Options])
          end.
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Check the module list for errors throw an exceptions.
-%% @spec (ModuleList) -> ok
-%% @end
-%%--------------------------------------------------------------------
+%% @doc Check the module list for errors throw an exceptions.
 check_for_errors(ModuleList) ->
     case lists:member({sinan, error}, ModuleList) of
 	true ->
@@ -277,13 +191,7 @@ check_for_errors(ModuleList) ->
 	    ok
     end.
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Gather code paths and includes from the dependency list.
-%% @spec (BuildRef, Env, AppName) -> {Paths, Includes}
-%% @end
-%% @private
-%%--------------------------------------------------------------------
+%% @doc Gather code paths and includes from the dependency list.
 setup_code_path(BuildRef, Env, AppName) ->
     AtomApp = list_to_atom(AppName),
     case get_app_from_list(AtomApp, Env#env.app_list) of
@@ -296,14 +204,7 @@ setup_code_path(BuildRef, Env, AppName) ->
             extract_info_from_deps(BuildRef, Deps++IncDeps, element(1,Env#env.deps), [], [], [])
 	end.
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Gather path and include information from the dep list.
-%% @spec (BuildRef, AppList, AppList, Marked,
-%%                       Acc, IAcc) -> {Paths, Includes}
-%% @end
-%% @private
-%%--------------------------------------------------------------------
+%% @doc Gather path and include information from the dep list.
 extract_info_from_deps(BuildRef, [AppName | T], AppList, Marked, Acc, IAcc) ->
     case lists:member(AppName, Marked) of
         false ->
@@ -329,13 +230,7 @@ extract_info_from_deps(BuildRef, [AppName | T], AppList, Marked, Acc, IAcc) ->
 extract_info_from_deps(_, [], _, _, Acc, IAcc) ->
     {Acc, IAcc}.
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Get the app from the app list.
-%% @spec (App, AppList) -> Entry | not_in_list
-%% @end
-%% @private
-%%--------------------------------------------------------------------
+%% @doc Get the app from the app list.
 get_app_from_list(App, AppList) ->
     case lists:keysearch(App, 1, AppList) of
         {value, Entry} ->
@@ -344,13 +239,7 @@ get_app_from_list(App, AppList) ->
             not_in_list
     end.
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Gather the list of modules that currently may need to be built.
-%% @spec (BuildRef, AppName, SrcDir) -> ModuleList
-%% @end
-%% @private
-%%--------------------------------------------------------------------
+%% @doc Gather the list of modules that currently may need to be built.
 gather_modules(BuildRef, AppName, SrcDir) ->
     ModuleList = sin_config:get_value(BuildRef,
                                  "apps." ++ AppName ++ ".modules"),
@@ -365,24 +254,13 @@ gather_modules(BuildRef, AppName, SrcDir) ->
     reorder_list(ModuleList,
                  filter_file_list(FileList, ModuleList)).
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Extract the module name from the file name.
-%% @spec (File) -> ModuleName
-%% @end
-%% @private
-%%--------------------------------------------------------------------
+
+%% @doc Extract the module name from the file name.
 module_name(File) ->
     list_to_atom(filename:rootname(filename:basename(File))).
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Reorder the list according to whats in the *.app. This will
-%% allow intra application compile time dependencies.
-%% @spec (BuildRef, ModList, FileList) -> NewList
-%% @end
-%% @private
-%%--------------------------------------------------------------------
+%% @doc Reorder the list according to whats in the *.app. This will allow intra
+%% application compile time dependencies.
 reorder_list(ModList, FileList) ->
     Res = lists:foldr(
 	    fun (Mod, {Acc,OkFlag}) ->
@@ -402,13 +280,7 @@ reorder_list(ModList, FileList) ->
 	    ?SIN_RAISE(build_errors)
     end.
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Get the entry specified by name from the list in module list.
-%% @spec (ModuleName, FileList) -> Entry | not_in_list
-%% @end
-%% @private
-%%--------------------------------------------------------------------
+%% @doc Get the entry specified by name from the list in module list.
 get_file_list(ModuleName, FileList) ->
     case lists:keysearch(ModuleName, 2, FileList) of
 	{value, Entry} ->
@@ -417,14 +289,7 @@ get_file_list(ModuleName, FileList) ->
 	    not_in_list
     end.
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Filter the list of files keeping those that are in the
-%%  module list.
-%% @spec (BuildRef, FileList, ModuleList) -> NewFileList
-%% @end
-%% @private
-%%--------------------------------------------------------------------
+%% @doc Filter the list of files keeping those that are in the module list.
 filter_file_list(FileList, ModuleList) ->
     lists:foldr(
       fun ({File, AbsName, _}=Entry, Acc) ->
@@ -439,24 +304,12 @@ filter_file_list(FileList, ModuleList) ->
 	      end
       end, [], FileList).
 
-%%-------------------------------------------------------------------
-%% @doc
-%%    Build the file specfied by its arguments
-%% @spec (BuildDir, SrcDir, File, Ext, Options, Target) -> ok
-%% @end
-%% @private
-%%-------------------------------------------------------------------
+%% @doc Build the file specfied by its arguments
 build_file(BuildRef, SrcDir, File, Ext, Options, Target) ->
     FileName = filename:join([SrcDir, File]),
     build_file(BuildRef, FileName, Ext, Options, Target).
 
-%%-------------------------------------------------------------------
-%% @doc
-%%   Do the actual compilation on the file.
-%% @spec (BuildRef, File, Ext, Options, Target) -> ErrInfo
-%% @end
-%% @private
-%%-------------------------------------------------------------------
+%% @doc Do the actual compilation on the file.
 build_file(BuildRef, File, ".erl", Options, Target) ->
    case needs_building(BuildRef, File, ".erl", Target, ".beam") of
        true ->
@@ -522,13 +375,7 @@ build_file(_BuildRef, File, _, _Options, _Target) ->
     ewl_talk:say("Got file ~s with an extention I do not know how to build. "
 		 "Ignoring!",  [File]).
 
-%%-------------------------------------------------------------------
-%% @doc
-%%   Do the actual compilation on the .asn1/.asn file.
-%% @spec (BuildRef, File, Ext, Options, Target) -> ErrInfo
-%% @end
-%% @private
-%%-------------------------------------------------------------------
+%% @doc Do the actual compilation on the .asn1/.asn file.
 build_asn1(BuildRef, File, Ext, Options, Target) ->
     case needs_building(BuildRef, File, Ext, Target, ".beam") of
         true ->
@@ -550,13 +397,7 @@ build_asn1(BuildRef, File, Ext, Options, Target) ->
             ok
     end.
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Strip options for the yecc. Otherwise we get a bad arg error.
-%%
-%% @spec (Opts) -> Res
-%% @end
-%%--------------------------------------------------------------------
+%% @doc Strip options for the yecc. Otherwise we get a bad arg error.
 strip_options(Opts) ->
     lists:foldr(
       fun (Opt = {parserfile, _}, Acc) ->
@@ -577,29 +418,16 @@ strip_options(Opts) ->
 	      Acc
       end, [], Opts).
 
-%%--------------------------------------------------------------------
-%% @doc
-%%   Check to see if the file needs building. If it does run the
-%%   passed in build fin. If thats successful then update the sig.
-%% @spec (FileName, Ext, TargetDir, TargetExt)
-%%   -> true | false
-%% @end
-%%--------------------------------------------------------------------
+%% @doc Check to see if the file needs building. If it does run the passed in
+%% build fin. If thats successful then update the sig.
 base_needs_building(FileName, Ext, TargetDir, TargetExt) ->
     Name = filename:basename(FileName, Ext),
     NewFile = lists:flatten([Name, TargetExt]),
     TFileName = filename:join([TargetDir, NewFile]),
     sin_sig:target_changed(FileName, TFileName).
 
-
-%%--------------------------------------------------------------------
-%% @doc
-%%   Check to see if the file needs building. If it does run the
-%%   passed in build fin. If thats successful then update the sig.
-%% @spec (BuildRef, FileName, Ext, TargetDir, TargetExt)
-%%   -> true | false
-%% @end
-%%--------------------------------------------------------------------
+%% @doc Check to see if the file needs building. If it does run the passed in
+%% build fin. If thats successful then update the sig.
 needs_building(BuildRef, FileName, ".erl", TargetDir, TargetExt) ->
     case base_needs_building(FileName, ".erl", TargetDir, TargetExt) of
 	false ->
@@ -610,16 +438,8 @@ needs_building(BuildRef, FileName, ".erl", TargetDir, TargetExt) ->
 needs_building(_, FileName, Ext, TargetDir, TargetExt) ->
     base_needs_building(FileName, Ext, TargetDir, TargetExt).
 
-
-%%--------------------------------------------------------------------
-%% @doc
-%%   Check to see if any of the dependencies on a file have changed. If
-%%   they have then return true, otherwise false.
-%%
-%% @spec (BuildRef, FileName) -> true | false
-%% @end
-%%--------------------------------------------------------------------
-
+%% @doc Check to see if any of the dependencies on a file have changed. If they
+%% have then return true, otherwise false.
 check_module_deps(BuildRef, FileName) ->
     BuildDir = sin_config:get_value(BuildRef, "build.dir"),
     case sin_sig:get_sig_info(?SIGNS, BuildDir, FileName) of
@@ -638,44 +458,20 @@ check_module_deps(BuildRef, FileName) ->
                         Terms)
     end.
 
-
-
-%%--------------------------------------------------------------------
-%%
-%% @doc
-%%  Ensure that the build dir exists and is ready to accept files.
-%% @spec (BuildRef) -> ok
-%% @end
-%% @private
-%%--------------------------------------------------------------------
+%% @doc Ensure that the build dir exists and is ready to accept files.
 ensure_build_dir(BuildRef) ->
     BuildDir = sin_config:get_value(BuildRef, "build.dir"),
     AppsDir = lists:flatten([BuildDir, "apps", "tmp"]),
     filelib:ensure_dir(AppsDir).
 
-
-
-%%-------------------------------------------------------------------
-%% @spec (ListOfProblems, Type) -> Acc2
-%% @doc
-%%   Gather up all the errors and warnings for output.
-%% @end
-%% @private
-%%-------------------------------------------------------------------
+%% @doc Gather up all the errors and warnings for output.
 gather_fail_info(ListOfProblems, Type) ->
     R = lists:foldr(fun ({File, Problems}, Acc) ->
 			    gather_fail_info(File, Problems, Acc, Type)
 		    end, [], ListOfProblems),
     lists:reverse(R).
 
-%%-------------------------------------------------------------------
-%% @doc
-%%  Actual get the failer detail information and add it to the
-%%  accumulator.
-%% @spec (File, ListOfProblems, Acc, WoE) -> Acc2
-%% @end
-%% @private
-%%-------------------------------------------------------------------
+%% @doc Actual get the failer detail information and add it to the accumulator.
 gather_fail_info(File, ListOfProblems, Acc, WoE) ->
     lists:foldr(
       fun ({Line, Type, Detail}, Acc1) when is_atom(Line) ->
@@ -691,14 +487,7 @@ gather_fail_info(File, ListOfProblems, Acc, WoE) ->
                               Type:format_error(Detail), $\n]) | Acc1]
       end, Acc, ListOfProblems).
 
-
-%%-------------------------------------------------------------------
-%% @doc
-%%  Get the list of processed included files from the specified *.erl
-%% @spec (File, Includes) -> [{Include, Ts}]
-%% @end
-%% @private
-%%-------------------------------------------------------------------
+%% @doc Get the list of processed included files from the specified *.erl
 get_hrl_files(File, Includes) ->
     {ok, Forms} = epp:parse_file(File, Includes,[]),
     HrlFiles = lists:foldl(fun({attribute, _ , file, {Include, _}}, Acc) ->
@@ -722,13 +511,7 @@ get_hrl_files(File, Includes) ->
                 [],
                 HrlFiles).
 
-%%-------------------------------------------------------------------
-%% @doc
-%%  Find and save eh module dependencies for a specific module.
-%% @spec (BuildRef, File, Options) -> ok.
-%% @end
-%% @private
-%%-------------------------------------------------------------------
+%% @doc Find and save eh module dependencies for a specific module.
 save_module_dependencies(BuildRef, File, Options) ->
     BuildDir = sin_config:get_value(BuildRef, "build.dir"),
     IncludeDirs = lists:reverse(lists:foldl(fun({i, Include}, Acc) ->
@@ -739,7 +522,6 @@ save_module_dependencies(BuildRef, File, Options) ->
                                             [],
                                             Options)),
     sin_sig:save_sig_info(?SIGNS, BuildDir, File, get_hrl_files(File, IncludeDirs)).
-
 
 %%====================================================================
 %% Tests

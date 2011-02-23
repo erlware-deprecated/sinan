@@ -1,5 +1,7 @@
+%% -*- mode: Erlang; fill-column: 80; comment-column: 75; -*-
 %%%---------------------------------------------------------------------------
 %%% @author Eric Merritt <ericbmerritt@gmail.com>
+%%% @copyright 2006, 2011 Erlware
 %%% @doc
 %%%  An abstract storage and management piece for config related key value
 %%%  pairs.
@@ -32,6 +34,7 @@
 %%====================================================================
 %% Types
 %%====================================================================
+
 -type key() :: term().
 -type value() :: term().
 -opaque config() :: any().
@@ -39,14 +42,13 @@
 %%====================================================================
 %% API
 %%====================================================================
-%% @doc
-%% Create a new empty config
+
+%% @doc Create a new empty config
 -spec new() -> config().
 new() ->
     dict:new().
 
-%% @doc
-%% Create a new config from a config file
+%% @doc Create a new config from a config file
 -spec new(ConfigFile::string()) -> config().
 new(ConfigFile) when is_list(ConfigFile)->
     case sin_utils:file_exists(ConfigFile) of
@@ -56,26 +58,23 @@ new(ConfigFile) when is_list(ConfigFile)->
 	    throw(invalid_config_file)
     end.
 
-%% @doc
-%%  Parse the command line args into a spec that can be overridden.
+%% @doc Parse the command line args into a spec that can be
+%% overridden.
 -spec parse_args(list()) -> config().
 parse_args(ArgList) when is_list(ArgList) ->
     parse_args(ArgList, dict:new()).
 
-%% @doc
-%%  Get a preexisting seed from the the seed config.
+%% @doc Get a preexisting seed from the the seed config.
 -spec get_seed(string()) -> config().
 get_seed(ProjectDir) when is_list(ProjectDir) ->
     new(ProjectDir).
 
-%% @doc
-%%  Add a key to the config.
+%% @doc Add a key to the config.
 -spec store(config(), key(), value()) -> config().
 store(Config, Key, Value) ->
     dict:store(Key, Value, Config).
 
-%% @doc
-%% Store a list of key value pairs into the config
+%% @doc Store a list of key value pairs into the config
 -spec store(config(), KeyValuePairs::[{string(), term()}]) ->
     config().
 store(Config, KeyValuePairs) when is_list(KeyValuePairs) ->
@@ -83,8 +82,7 @@ store(Config, KeyValuePairs) when is_list(KeyValuePairs) ->
 			dict:store(Key, Value, Dict)
 		end, Config, KeyValuePairs).
 
-%% @doc
-%%  Get a value from the config.
+%% @doc Get a value from the config.
 -spec get_value(config(), key()) -> value() | undefined.
 get_value(Config, Key) ->
     case dict:find(Key, Config) of
@@ -96,10 +94,8 @@ get_value(Config, Key) ->
 	    Value
     end.
 
-
-%% @doc
-%%  Attempts to get the specified key. If the key doesn't exist it
-%%  returns the requested default instead of just undefined.
+%% @doc Attempts to get the specified key. If the key doesn't exist it
+%% returns the requested default instead of just undefined.
 -spec get_value(config(), key(), value()) -> value().
 get_value(Config, Key, DefaultValue) ->
     case get_value(Config, Key) of
@@ -109,20 +105,17 @@ get_value(Config, Key, DefaultValue) ->
 	    Value
     end.
 
-%% @doc
-%%  Delete a value from the config.
+%% @doc Delete a value from the config.
 -spec delete(config(), key()) -> config().
 delete(Config, Key) ->
     dict:erase(Key, Config).
 
-%% @doc
-%%  Get the complete config as key,value pairs
+%% @doc Get the complete config as key,value pairs
 -spec get_pairs(config()) -> [{key(), value()}].
 get_pairs(Config) ->
 	      dict:to_list(Config).
 
-%% @doc
-%% Apply the build flavor overrides to the system
+%% @doc Apply the build flavor overrides to the system
 -spec apply_flavor(config()) -> config().
 apply_flavor(Config0) ->
     Flavor = get_build_flavor(Config0),
@@ -130,8 +123,8 @@ apply_flavor(Config0) ->
     apply_flavors(Config1, Flavor).
 
 
-%% @doc
-%%  Merges the build config. The second config always overrides the first
+%% @doc Merges the build config. The second config always overrides
+%% the first
 -spec merge_configs(config(), config()) -> config().
 merge_configs(Config1, Config2) ->
     dict:merge(fun(_Key, _Value1, Value2) ->
@@ -142,8 +135,8 @@ merge_configs(Config1, Config2) ->
 %%====================================================================
 %% Internal Functions
 %%====================================================================
-%% @doc
-%% Convert a text file to a fully parsed config object
+
+%% @doc Convert a text file to a fully parsed config object
 -spec parse_config_file(ConfigFile::string()) ->
     config().
 parse_config_file(ConfigFile) ->
@@ -151,14 +144,12 @@ parse_config_file(ConfigFile) ->
 			sin_config_parser:parse_config_file(ConfigFile),
 			"").
 
-%% @doc
-%%  Return the flavor for the current build attempt
+%% @doc Return the flavor for the current build attempt
 -spec get_build_flavor(config()) -> string().
 get_build_flavor(Config) ->
     get_value(Config, "build.flavor", "development").
 
-%% @doc
-%%  Apply flavor changes to the config file.
+%% @doc Apply flavor changes to the config file.
 -spec apply_flavors(config(), config()) -> config().
 apply_flavors(Config, Flavor) ->
     FilterFun = fun([$f, $l, $a, $v, $o, $r, $s, $. | Rest], Value, NConfig) ->
@@ -175,11 +166,8 @@ apply_flavors(Config, Flavor) ->
                 end,
     dict:fold(FilterFun, Config, Config).
 
-
-
-%% @doc
-%%  Take the parsed config data and push it into the actual
-%%  config.
+%% @doc Take the parsed config data and push it into the actual
+%% config.
 -spec convert_parsed_data(config(), JSONData::any(), term()) -> config().
 convert_parsed_data(Config, {obj, Data}, CurrentName) ->
     convert_parsed_data(Config, Data, CurrentName);
@@ -200,9 +188,7 @@ convert_parsed_data(Config, [{Key, Value} | Rest], CurrentName) ->
 convert_parsed_data(Config, [], _) ->
     Config.
 
-
-%% @doc
-%%  take a list of binaries and convert it to a list of lists.
+%% @doc take a list of binaries and convert it to a list of lists.
 -spec convert_list(Target::list(), Acc::list()) -> list().
 convert_list([H | T], Acc) when is_binary(H) ->
     convert_list(T, [binary_to_list(H) | Acc]);
@@ -211,10 +197,9 @@ convert_list([H | T], Acc) ->
 convert_list([], Acc) ->
     lists:reverse(Acc).
 
-%% @doc
-%%  Convert any values taken from the config from a binary to a list.
-%%  ktuo treats lists a binaries but we would rather use lists in the
-%%  system.
+%% @doc Convert any values taken from the config from a binary to a
+%% list.  ktuo treats lists a binaries but we would rather use lists
+%% in the system.
 -spec convert_value(Value::any()) -> any().
 convert_value(Value) when is_list(Value) ->
     convert_list(Value, []);
@@ -223,8 +208,7 @@ convert_value(Value) when is_binary(Value) ->
 convert_value(Value) ->
     Value.
 
-%% @doc
-%%  Parse pairs of keys and values into a build config form
+%% @doc Parse pairs of keys and values into a build config form
 -spec parse_args(list(), config()) -> config().
 parse_args([Value], Dict) ->
     % A single value on the system becomes commandline.arg and
@@ -237,8 +221,7 @@ parse_args([], Dict) ->
 parse_args(_, _Dict) ->
     ?SIN_RAISE_D(sinan_arg_exception, "Problem parsing config args").
 
-%% @doc
-%%  strip out the : and replace it with .
+%% @doc strip out the : and replace it with .
 -spec strip_key(string(), list()) -> string().
 strip_key([$: | Rest], Acc) ->
     strip_key(Rest, [$. | Acc]);
@@ -276,7 +259,3 @@ parse_args_test() ->
     ?assertMatch("CmdValue", get_value(Config2, "command_line.arg")),
     ?assertMatch("CmdValue", get_value(Config3, "command_line.arg")),
     ?assertMatch(undefined, get_value(Config3, "Key")).
-
-
-
-

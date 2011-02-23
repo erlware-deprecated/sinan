@@ -1,39 +1,15 @@
-%% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
-%%%-------------------------------------------------------------------
-%%% Copyright (c) 2006-2010 Erlware
-%%%
-%%% Permission is hereby granted, free of charge, to any
-%%% person obtaining a copy of this software and associated
-%%% documentation files (the "Software"), to deal in the
-%%% Software without restriction, including without limitation
-%%% the rights to use, copy, modify, merge, publish, distribute,
-%%% sublicense, and/or sell copies of the Software, and to permit
-%%% persons to whom the Software is furnished to do so, subject to
-%%% the following conditions:
-%%%
-%%% The above copyright notice and this permission notice shall
-%%% be included in all copies or substantial portions of the Software.
-%%%
-%%% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-%%% EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-%%% OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-%%% NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-%%% HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-%%% WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-%%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-%%% OTHER DEALINGS IN THE SOFTWARE.
+%% -*- mode: Erlang; fill-column: 80; comment-column: 75; -*-
 %%%---------------------------------------------------------------------------
 %%% @author Eric Merritt
 %%% @doc
 %%%  Checks to see if a file has been changed.
 %%% @end
-%%% @copyright (C) 2007-2010 Erlware
+%%% @copyright (C) 2007-2011 Erlware
 %%%--------------------------------------------------------------------------
 -module(sin_sig).
 
 -include_lib("kernel/include/file.hrl").
 -include_lib("eunit/include/eunit.hrl").
-
 
 %% API
 -export([save_sig_info/4,
@@ -45,24 +21,17 @@
 %%====================================================================
 %% API
 %%====================================================================
-%%--------------------------------------------------------------------
-%% @doc
-%%  Take a term and put it in the correct place in the sig area.
-%% @spec (NS, BuildDir, File, Terms) -> true | false
-%% @end
-%%--------------------------------------------------------------------
+
+%% @doc Take a term and put it in the correct place in the sig area.
+-spec save_sig_info(string(), string(), string(), Data::term()) -> boolean().
 save_sig_info(NS, BuildDir, File, Terms) ->
     Target = make_filename(File, []),
     SIG = filename:join([BuildDir, "sig", NS, Target]),
     filelib:ensure_dir(filename:join([BuildDir, "sig", NS, "tmp"])),
     file:write_file(SIG,io_lib:fwrite("~p.\n",[Terms])).
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Take a predefined sig term file and return the values in that file.
-%% @spec (NS, BuildDir, File) -> true | false
-%% @end
-%%--------------------------------------------------------------------
+%% @doc Take a predefined sig term file and return the values in that file.
+-spec get_sig_info(string(), string(), string()) -> boolean().
 get_sig_info(NS, BuildDir, File) ->
     Target = make_filename(File, []),
     SIG = filename:join([BuildDir, "sig", NS, Target]),
@@ -73,15 +42,9 @@ get_sig_info(NS, BuildDir, File) ->
 	    undefined
     end.
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Check to see if the file has been changed. The build dir should
-%%  be the fully qualified path to the projects top level build
-%%  directory.
-%%
-%% @spec (NS, BuildDir, File) -> true | false
-%% @end
-%%--------------------------------------------------------------------
+%% @doc Check to see if the file has been changed. The build dir should be the
+%% fully qualified path to the%% projects top level build directory.
+-spec changed(string(), string(), string()) -> boolean().
 changed(NS, BuildDir, File) ->
     Target = make_filename(File, []),
     SIG = filename:join([BuildDir, "sig", NS, Target]),
@@ -107,13 +70,8 @@ changed(NS, BuildDir, File) ->
             false
     end.
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Check to see if the file has changed in comparison to another
-%%  file.
-%% @spec (StartFile, TargetFile) -> true | false
-%% @end
-%%--------------------------------------------------------------------
+%% @doc Check to see if the file has changed in comparison to another file.
+-spec target_changed(StartFile::string(), TargetFile::string()) -> boolean().
 target_changed(StartFile, TargetFile) ->
     case {file:read_file_info(TargetFile), file:read_file_info(StartFile)} of
         {_, {error, enoent}} ->
@@ -130,14 +88,9 @@ target_changed(StartFile, TargetFile) ->
             true
     end.
 
-
-%%--------------------------------------------------------------------
-%% @doc
-%%  Update the signature for file. Build dir should be the build
-%% fully qualified build directory of the system.
-%% @spec (NS, BuildDir, File) -> ok
-%% @end
-%%--------------------------------------------------------------------
+%% @doc Update the signature for file. Build dir should be the build fully
+%% qualified build directory of the system.
+-spec update(string(), string(), string()) -> ok.
 update(NS, BuildDir, File) ->
     Target = make_filename(File, []),
     SIG = filename:join([BuildDir, "sig", NS, Target]),
@@ -154,14 +107,8 @@ update(NS, BuildDir, File) ->
 %% Internal functions
 %%====================================================================
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  convert the directory/filename into something that can be
-%%  a verified filename.
-%% @spec make_filename(Name, Acc) -> Filename::string()
-%% @end
-%% @private
-%%--------------------------------------------------------------------
+%% @doc convert the directory/filename into something that can be a verified
+%% filename.
 make_filename([$/ | T], Acc) ->
     make_filename(T, [$_ | Acc]);
 make_filename([$\\ | T], Acc) ->
@@ -173,10 +120,10 @@ make_filename([H | T], Acc) ->
 make_filename([], Acc) ->
     lists:reverse([$g, $i, $s, $. | Acc]).
 
-
 %%====================================================================
 %% Tests
 %%====================================================================
+
 make_filename_test() ->
     ?assertMatch("C___Windows_test_allac.sig",
                  make_filename("C:\\Windows\\test\\allac", [])),

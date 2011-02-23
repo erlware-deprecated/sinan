@@ -1,11 +1,11 @@
+%% -*- mode: Erlang; fill-column: 80; comment-column: 75; -*-
 %%%-------------------------------------------------------------------
-%%% @author Eric Merritt <cyberlync@gmail.com>
-%%% @copyright (C) 2009, Eric Merritt
+%%% @author Eric Merritt <ericbmerritt@gmail.com>
+%%% @copyright (C) 2009-2011 Eric Merritt
 %%% @doc
 %%%  Provides a means of correctly creating eta pre/post task hooks
 %%%  and executing those hooks that exist.
 %%% @end
-%%% Created : 30 May 2009 by Eric Merritt <cyberlync@gmail.com>
 %%%-------------------------------------------------------------------
 -module(sin_hooks).
 
@@ -20,12 +20,9 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
-%%--------------------------------------------------------------------
-%% @doc
-%%  Creats a function that can be used to run build hooks in the system.
-%% @spec (ProjectRoot::string()) -> function()
-%% @end
-%%--------------------------------------------------------------------
+
+%% @doc Creats a function that can be used to run build hooks in the system.
+-spec get_hooks_function(ProjectRoot::string()) -> function().
 get_hooks_function(ProjectRoot) ->
     HooksDir = filename:join([ProjectRoot, "_hooks"]),
     case sin_utils:file_exists(HooksDir) of
@@ -38,24 +35,17 @@ get_hooks_function(ProjectRoot) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-%%--------------------------------------------------------------------
-%% @doc
-%%  Generate a function that can be run pre and post task
-%% @spec (HooksDir::string()) -> function()
-%% @end
-%%--------------------------------------------------------------------
+
+%% @doc Generate a function that can be run pre and post task
+-spec gen_build_hooks_function(HooksDir::string()) -> function().
 gen_build_hooks_function(HooksDir) ->
     fun(Type, Task, BuildConfig) ->
 	    do_hook(Type, Task, BuildConfig, HooksDir)
     end.
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Setup to run the hook and run it if it exists.
-%% @spec (Type::atom(), Task::atom(), BuildConfig::string(),
-%%        HooksDir::string()) -> ok
-%% @end
-%%--------------------------------------------------------------------
+%% @doc Setup to run the hook and run it if it exists.
+-spec do_hook(Type::atom(), Task::atom(), BuildConfig::string(),
+	      HooksDir::string()) -> ok.
 do_hook(Type, Task, BuildConfig, HooksDir) when is_atom(Task) ->
     HookName = atom_to_list(Type) ++ "_" ++ atom_to_list(Task),
     HookPath = filename:join(HooksDir, HookName),
@@ -66,46 +56,32 @@ do_hook(Type, Task, BuildConfig, HooksDir) when is_atom(Task) ->
 	    ok
     end.
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Setup the execution environment and run the hook.
-%% @spec (HookPath::list(), BuildConfig::list(), HookName::atom()) -> ok
-%% @end
-%%--------------------------------------------------------------------
+%% @doc Setup the execution environment and run the hook.
+-spec run_hook(HookPath::list(), BuildConfig::list(), HookName::atom()) -> ok.
 run_hook(HookPath, BuildConfig, HookName) ->
     Env = sin_config:get_pairs(BuildConfig),
     command(HookPath, stringify(Env, []), BuildConfig, HookName).
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Take a list of key value pairs and convert them to string
-%%  based key value pairs.
-%% @spec (PairList::list(), Acc::list()) -> list()
-%% @end
-%%--------------------------------------------------------------------
+%% @doc Take a list of key value pairs and convert them to string based key
+%% value pairs.
+-spec stringify(PairList::list(), Acc::list()) -> list().
 stringify([{Key, Value} | Rest], Acc) ->
     stringify(Rest, [{Key, lists:flatten(sin_utils:term_to_list(Value))} | Acc]);
 stringify([], Acc) ->
     Acc.
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Given a command an an environment run that command with the environment
-%% @spec (Command::list(), Env::list(), BuildConfig::list(), HookName::atom()) -> list()
-%% @end
-%%--------------------------------------------------------------------
+%% @doc Given a command an an environment run that command with the environment
+-spec command(Command::list(), Env::list(),
+	      BuildConfig::list(), HookName::atom()) -> list().
 command(Cmd, Env, BuildConfig, HookName) ->
     Opt =  [{env, Env}, stream, exit_status, use_stdio,
 	    stderr_to_stdout, in, eof],
     P = open_port({spawn, Cmd}, Opt),
     get_data(P, BuildConfig, HookName, []).
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Event results only at newline boundries.
-%% @spec (BuildConfig::list(), HookName::atom(), Line::list(), Acc::list()) -> list()
-%% @end
-%%--------------------------------------------------------------------
+%% @doc Event results only at newline boundries.
+-spec event_newline(BuildConfig::list(), HookName::atom(),
+		    Line::list(), Acc::list()) -> list().
 event_newline(BuildConfig, HookName, [?NEWLINE | T], Acc) ->
     ewl_talk:say(lists:reverse(Acc)),
     event_newline(BuildConfig, HookName, T, []);
@@ -117,12 +93,9 @@ event_newline(BuildConfig, HookName, [H | T], Acc) ->
 event_newline(_BuildConfig, _HookName, [], Acc) ->
     lists:reverse(Acc).
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Recieve the data from the port and exit when complete.
-%% @spec (P::port(), BuildConfig::list(), HookName::atom(), Acc::list()) -> list()
-%% @end
-%%--------------------------------------------------------------------
+%% @doc Recieve the data from the port and exit when complete.
+-spec get_data(P::port(), BuildConfig::list(),
+	       HookName::atom(), Acc::list()) -> list().
 get_data(P, BuildConfig, HookName, Acc) ->
     receive
 	{P, {data, D}} ->

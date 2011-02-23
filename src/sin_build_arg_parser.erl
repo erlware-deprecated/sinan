@@ -1,35 +1,11 @@
-%% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
-%%%-------------------------------------------------------------------
-%%% Copyright (c) 2007-2010 Erlware
-%%%
-%%% Permission is hereby granted, free of charge, to any
-%%% person obtaining a copy of this software and associated
-%%% documentation files (the "Software"), to deal in the
-%%% Software without restriction, including without limitation
-%%% the rights to use, copy, modify, merge, publish, distribute,
-%%% sublicense, and/or sell copies of the Software, and to permit
-%%% persons to whom the Software is furnished to do so, subject to
-%%% the following conditions:
-%%%
-%%% The above copyright notice and this permission notice shall
-%%% be included in all copies or substantial portions of the Software.
-%%%
-%%% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-%%% EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-%%% OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-%%% NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-%%% HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-%%% WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-%%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-%%% OTHER DEALINGS IN THE SOFTWARE.
+%% -*- mode: Erlang; fill-column: 80; comment-column: 75; -*-
 %%%---------------------------------------------------------------------------
 %%% @author Eric Merritt <ericbmerritt@gmail.com>
 %%% @doc
 %%%  Supports generating 'compile' args from a string using standard
 %%%  erlc arguments.
 %%% @end
-%%% @copyright (C) 2007-2010 Erlware
-%%% Created :  5 Apr 2007 by Eric Merritt <ericbmerritt@gmail.com>
+%%% @copyright (C) 2007-2011 Erlware
 %%%-------------------------------------------------------------------
 -module(sin_build_arg_parser).
 
@@ -41,12 +17,9 @@
 %%====================================================================
 %% API
 %%====================================================================
-%%--------------------------------------------------------------------
-%% @doc
-%%  Compile build args into terms the compiler understands.
-%% @spec (String) -> CompileOpts
-%% @end
-%%--------------------------------------------------------------------
+
+%% @doc Compile build args into terms the compiler understands.
+-spec compile_build_args(string()) -> CompileOpts::term().
 compile_build_args([]) ->
     [];
 compile_build_args(ArgString) ->
@@ -55,12 +28,7 @@ compile_build_args(ArgString) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
-%%--------------------------------------------------------------------
-%% @doc
-%%
-%% @spec (String, Acc) -> ok
-%% @end
-%%--------------------------------------------------------------------
+
 compile_build_args([$+ | T], Acc) ->
     parse_term(T, [], Acc);
 compile_build_args([$\ | T], Acc) ->
@@ -93,12 +61,7 @@ compile_build_args([_ | _], _Acc) ->
 compile_build_args([], Acc) ->
     Acc.
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  eat space until you get a non space character.
-%% @spec (Stream, Acc, Handler) -> Opts
-%% @end
-%%--------------------------------------------------------------------
+%% @doc eat space until you get a non space character.
 eat_space([$\ | T], Acc, Handler) ->
     eat_space(T, Acc, Handler);
 eat_space([$\r | T], Acc, Handler) ->
@@ -112,13 +75,7 @@ eat_space([$\t | T], Acc, Handler) ->
 eat_space(Stream, Acc, Handler) ->
     Handler(Stream, [], Acc).
 
-
-%%--------------------------------------------------------------------
-%% @doc
-%%  Parse out the define.
-%% @spec (String, LAcc, Acc) -> ParseOpts
-%% @end
-%%--------------------------------------------------------------------
+%% @doc Parse out the define.
 parse_define([$\ | T], LAcc, Acc) ->
     compile_build_args(T, [{d, list_to_atom(lists:reverse(LAcc))} | Acc]);
 parse_define([$\r | T], LAcc, Acc) ->
@@ -142,13 +99,7 @@ parse_define([], [], _Acc) ->
 parse_define([], LAcc, Acc) ->
     [{d, list_to_atom(lists:reverse(LAcc))} | Acc].
 
-
-%%--------------------------------------------------------------------
-%% @doc
-%%  Parse an include directive out.
-%% @spec (String, Acc) -> ParsedOpts
-%% @end
-%%--------------------------------------------------------------------
+%% @doc Parse an include directive out.
 parse_define_value([$\" | T], _LAcc) ->
    {Dir, NewT, _} =  ktuo_parse_utils:stringish_body($\", T, [], 0, 0),
    {binary_to_list(Dir), NewT};
@@ -169,13 +120,7 @@ parse_define_value([], []) ->
 parse_define_value([], LAcc) ->
     {lists:reverse(LAcc), []}.
 
-
-%%--------------------------------------------------------------------
-%% @doc
-%%  Parse an include directive out.
-%% @spec (String, LAcc, Acc) -> ParsedOpts
-%% @end
-%%--------------------------------------------------------------------
+%% @doc Parse an include directive out.
 parse_include([$\" | T], _LAcc, Acc) ->
    {Dir, NewT, _} =  ktuo_parse_utils:stringish_body($\", T, [], 0, 0),
    compile_build_args(NewT, [{i, lists:reverse(binary_to_list(Dir))} | Acc]);
@@ -196,13 +141,7 @@ parse_include([], [], _Acc) ->
 parse_include([], LAcc, Acc) ->
     [{i, lists:reverse(LAcc)} | Acc].
 
-
-%%--------------------------------------------------------------------
-%% @doc
-%%  Parse a strait term.
-%% @spec (ParseString, LAcc, Acc) -> ParsedOpts
-%% @end
-%%--------------------------------------------------------------------
+%% @doc Parse a strait term.
 parse_term([$\ | T], LAcc, Acc) ->
     compile_build_args(T, [list_to_atom(lists:reverse(LAcc)) | Acc]);
 parse_term([$\r | T], LAcc, Acc) ->

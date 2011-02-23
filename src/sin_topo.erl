@@ -1,7 +1,7 @@
-%% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
+%% -*- mode: Erlang; fill-column: 80; comment-column: 75; -*-
 %%%-------------------------------------------------------------------
 %%% @author Joe Armstrong
-%%  @author Eric Merritt
+%%% @author Eric Merritt
 %%% @doc
 %%%  This is a pretty simple topological sort for erlang. It
 %%%  was originally written for ermake by Joe Armstrong back in '98.
@@ -22,29 +22,30 @@
 -include_lib("eunit/include/eunit.hrl").
 
 -export([sort/1]).
+-export_type([pair/2]).
+
+%%====================================================================
+%% Exported Types
+%%====================================================================
+
+-type pair(T1, T2) :: {T1, T2}.
 
 %%====================================================================
 %% API
 %%====================================================================
-%%--------------------------------------------------------------------
-%% @doc
-%%  Do a topological sort on the list of pairs.
-%% @spec (Pairs) -> {ok, L1} | {cycle, Pairs}
-%% @end
-%%--------------------------------------------------------------------
+
+%% @doc Do a topological sort on the list of pairs.
+-spec sort([pair(T1, T2)]) -> {ok, [pair(T1, T2)]} | {cycle, [pair(T1, T2)]}.
 sort(Pairs) ->
     iterate(Pairs, [], all(Pairs)).
 
 %%====================================================================
 %% Internal Functions
 %%====================================================================
-%%--------------------------------------------------------------------
-%% @doc
-%%  Iterate over the system.
-%% @spec (L1, L2, All) -> {ok, L3}
-%% @end
-%% @private
-%%--------------------------------------------------------------------
+
+%% @doc Iterate over the system.  @private
+-spec iterate([pair(T1, T2)], [pair(T1, T2)], [pair(T1, T2)]) ->
+    {ok, [pair(T1, T2)]}.
 iterate([], L, All) ->
     {ok, remove_duplicates(L ++ subtract(All, L))};
 iterate(Pairs, L, All) ->
@@ -62,25 +63,16 @@ lhs(L) ->
 rhs(L) ->
     lists:map(fun({_,Y}) -> Y end, L).
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  all the elements in L1 which are not in L2
-%% @spec (L1, L2) -> L3
-%% @end
+%% @doc all the elements in L1 which are not in L2
 %% @private
-%%--------------------------------------------------------------------
+-spec subtract([pair(T1, T2)], [pair(T1, T2)]) -> [pair(T1, T2)].
 subtract(L1, L2) ->
     lists:filter(fun(X) ->
                          not lists:member(X, L2)
                  end, L1).
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  remove dups from the list.
-%% @spec (List1) -> List2
-%% @end
-%% @private
-%%--------------------------------------------------------------------
+%% @doc remove dups from the list.  @private
+-spec remove_duplicates([pair(T1, T2)]) -> [pair(T1, T2)].
 remove_duplicates([H|T]) ->
   case lists:member(H, T) of
       true  ->
@@ -91,16 +83,13 @@ remove_duplicates([H|T]) ->
 remove_duplicates([]) ->
     [].
 
-%%-------------------------------------------------------------------
 %% @doc
 %%   removes all pairs from L2 where the first element
 %%   of each pair is a member of L1
 %%
 %%   L2' L1 = [X] L2 = [{X,Y}].
-%% @spec (L1, L2) -> L3
-%% @end
 %% @private
-%%-------------------------------------------------------------------
+-spec remove_pairs([pair(T1, T2)], [pair(T1, T2)]) -> [pair(T1, T2)].
 remove_pairs(L1, L2) ->
     lists:filter(fun({X,_Y}) ->
                          not lists:member(X, L1)

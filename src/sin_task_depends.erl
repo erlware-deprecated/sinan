@@ -1,34 +1,11 @@
-%% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
-%%%-------------------------------------------------------------------
-%%% Copyright (c) 2007-2010 Erlware
-%%%
-%%% Permission is hereby granted, free of charge, to any
-%%% person obtaining a copy of this software and associated
-%%% documentation files (the "Software"), to deal in the
-%%% Software without restriction, including without limitation
-%%% the rights to use, copy, modify, merge, publish, distribute,
-%%% sublicense, and/or sell copies of the Software, and to permit
-%%% persons to whom the Software is furnished to do so, subject to
-%%% the following conditions:
-%%%
-%%% The above copyright notice and this permission notice shall
-%%% be included in all copies or substantial portions of the Software.
-%%%
-%%% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-%%% EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-%%% OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-%%% NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-%%% HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-%%% WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-%%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-%%% OTHER DEALINGS IN THE SOFTWARE.
+%% -*- mode: Erlang; fill-column: 80; comment-column: 75; -*-
 %%%---------------------------------------------------------------------------
 %%% @author Eric Merritt
 %%% @doc
 %%%  Checks the dependencies in the system. Pulls down latest dependencies if
 %%% required.
 %%% @end
-%%% @copyright (C) 2007-2010 Erlware
+%%% @copyright (C) 2007-2011 Erlware
 %%%---------------------------------------------------------------------------
 -module(sin_task_depends).
 
@@ -38,8 +15,7 @@
 
 %% API
 -export([description/0,
-	 do_task/1,
-	 depends/1]).
+	 do_task/1]).
 
 -define(TASK, depends).
 -define(DEPS, []).
@@ -47,12 +23,9 @@
 %%====================================================================
 %% API
 %%====================================================================
-%%--------------------------------------------------------------------
-%% @doc
-%% Starts the server
-%% @spec () -> ok
-%% @end
-%%--------------------------------------------------------------------
+
+%% @doc provide a description of the system for the caller
+-spec description() -> sin_task:task_description().
 description() ->
     Desc = "Analyzes all of the dependencies in the project "
         "and pulls down those that arn't curently available "
@@ -64,24 +37,9 @@ description() ->
 	  desc = Desc,
 	  opts = []}.
 
-
-%%--------------------------------------------------------------------
-%% @doc
-%%  Do the task defined in this module.
-%% @spec (BuildRef) -> ok
-%% @end
-%%--------------------------------------------------------------------
+%% @doc gather all the dependencies for the system
+-spec do_task(sin_config:config()) -> sin_config:config().
 do_task(BuildRef) ->
-    depends(BuildRef).
-
-%%--------------------------------------------------------------------
-%% @doc
-%%  Run the depends task.
-%%
-%% @spec (BuildRef) -> ok
-%% @end
-%%--------------------------------------------------------------------
-depends(BuildRef) ->
     BuildDir = sin_config:get_value(BuildRef, "build.dir"),
     AppBDir = filename:join([BuildDir, "apps"]),
     Release = sin_config:get_value(BuildRef, "-r"),
@@ -94,7 +52,8 @@ depends(BuildRef) ->
             ProjectApps =
 		gather_project_apps(BuildRef, AppBDir,
 				    sin_config:get_value(BuildRef,
-							       "releases."++Release++".apps"))
+							 "releases." ++ Release ++
+							 ".apps"))
     end,
 
     BuildRef2 =
@@ -148,24 +107,15 @@ depends(BuildRef) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
-%%--------------------------------------------------------------------
-%% @doc
-%%  Check for per project dependencies
-%% @spec (LibDir, ErtsVersion, AppInfo, Acc) ->
-%%                              [{Deps, Vsn, NDeps, Location}]
-%% @end
-%%--------------------------------------------------------------------
-% check_project_dependencies(LibDir,
-%                            ErtsVersion,
-%                            ProjectApps,
-%                            AllProjectApps,
-%                            Acc) ->
-%     check_project_dependencies(LibDir, ErtsVersion, ProjectApps,
-%                                ProjectApps, Acc).
 
+%% @doc Check for per project dependencies
+-spec check_project_dependencies(string(), string(), [AppInfo::tuple()],
+				 [AppInfo::tuple()],
+				 term()) -> term().
 check_project_dependencies(LibDir,
                            ErtsVersion,
-                           [App = {_Name, _Vsn, {Deps, IncDeps}, _} | ProjectApps],
+                           [App = {_Name, _Vsn, {Deps, IncDeps}, _} |
+			    ProjectApps],
                            AllProjectApps,
                            {Acc1, IncAcc1}) ->
     Acc2 = resolve_project_dependencies(LibDir,
@@ -249,7 +199,6 @@ resolve_project_dependencies2(LibDir,
 resolve_project_dependencies2(_, _, [], _, Acc) ->
     Acc.
 
-
 resolve_package_information(LibDir, Name, Version) ->
     {Deps, IncDeps} = sin_resolver:package_dependencies(LibDir,
                                                         Name,
@@ -267,33 +216,29 @@ already_resolved(Dep, [_ | Rest]) ->
 already_resolved(_, []) ->
     false.
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Get list of dependencies excluding project apps.
-%% @spec (ProjectApps, AllDeps) -> RepoApps
-%% @end
-%%--------------------------------------------------------------------
+%% @doc Get list of dependencies excluding project apps.
+-spec get_repo_apps(list(), list()) -> list().
 get_repo_apps(ProjectApps, AllDeps) ->
     get_repo_apps(ProjectApps, AllDeps, []).
 
+-spec get_repo_apps(list(), list(), list()) -> list().
 get_repo_apps(ProjectApps, [Dep | Deps], Acc) ->
     case is_project_app(Dep, ProjectApps) of
-        true ->  get_repo_apps(ProjectApps, Deps, Acc);
-        false -> get_repo_apps(ProjectApps, Deps, [Dep | Acc])
+        true ->
+	    get_repo_apps(ProjectApps, Deps, Acc);
+        false ->
+	    get_repo_apps(ProjectApps, Deps, [Dep | Acc])
     end;
 get_repo_apps(_ProjectApps, [], Acc) ->
     Acc.
 
+%% @doc check to see if it is a project app or a repo app
+-spec is_project_app(AppInfo::tuple(), list()) -> boolean().
 is_project_app({Name, _Deps, _Version, _Location}, ProjectApps) ->
     lists:keymember(Name, 1, ProjectApps).
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Saves the list of dependencies for later use.
-%% @spec (BuildRef, Deps) -> ok
-%% @end
-%% @private
-%%--------------------------------------------------------------------
+%% @doc Saves the list of dependencies for later use.
+-spec save_deps(sin_config:config(), term()) -> ok.
 save_deps(BuildRef, Deps) ->
     BuildDir = sin_config:get_value(BuildRef, "build.dir"),
     filelib:ensure_dir(filename:join([BuildDir, "info", "tmp"])),
@@ -311,12 +256,8 @@ save_deps(BuildRef, Deps) ->
     end,
     save_repo_apps(BuildRef, BuildDir).
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Saves the list of repo apps to info.
-%% @spec (BuildRef, BuildDir) -> ok
-%% @end
-%%--------------------------------------------------------------------
+%% @doc Saves the list of repo apps to info.
+-spec save_repo_apps(sin_config:config(), string()) -> ok.
 save_repo_apps(BuildRef, BuildDir) ->
     Apps = sin_config:get_value(BuildRef, "project.repoapps"),
     Repsf = filename:join([BuildDir, "info", "repoapps"]),
@@ -331,14 +272,8 @@ save_repo_apps(BuildRef, BuildDir) ->
             file:close(IoDev)
     end.
 
-%%-------------------------------------------------------------------
-%% @doc
-%%   Roll through the list of project apps and gather the app
-%%   name and version number.
-%% @spec (BuildRef, AppBuildDir) -> ListOfAppVsn
-%% @end
-%% @private
-%%-------------------------------------------------------------------
+%% @doc Roll through the list of project apps and gather the app name and version number.
+-spec gather_project_apps(sin_config:config(), string()) -> list().
 gather_project_apps(BuildRef, AppBDir) ->
     gather_project_apps(BuildRef,
                         AppBDir,
@@ -395,15 +330,9 @@ gather_project_apps(BuildRef, AppBDir, [AppName | T], Acc, ProjectApps) ->
 gather_project_apps(_, _, [], Acc, _) ->
     Acc.
 
-
-%%--------------------------------------------------------------------
-%% @doc
-%%  Check to see if this is a project app, but don't include it if its
-%%  already been processed
-%% @spec (AppName, ProcessedApps, ProjectApps) -> true | false
-%% @end
-%% @private
-%%--------------------------------------------------------------------
+%% @doc Check to see if this is a project app, but don't include it if its
+%% already been processed
+-spec add_to_project_app_list(string(), list(), list()) -> boolean().
 add_to_project_app_list(AppName, ProccessedApps, ProjectApps) ->
     case lists:keymember(AppName, 1, ProccessedApps) of
 	true ->
@@ -412,26 +341,15 @@ add_to_project_app_list(AppName, ProccessedApps, ProjectApps) ->
 	    lists:member(AppName, ProjectApps)
     end.
 
-
-%%--------------------------------------------------------------------
-%% @doc
-%%  Update the sigs for all of the 'verifiable' apps.
-%% @spec (BuildRef) -> ok
-%% @end
-%% @private
-%%--------------------------------------------------------------------
+%% @doc Update the sigs for all of the 'verifiable' apps.
+-spec update_sigs(sin_config:config()) -> ok.
 update_sigs(BuildRef) ->
     BuildDir = sin_config:get_value(BuildRef, "build.dir"),
     update_app_sigs(BuildRef, BuildDir,
                     sin_config:get_value(BuildRef, "project.applist")).
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Update the signatures for each of the *.app files in the AppList.
-%% @spec (BuildRef, BuildDir, AppList) -> ok
-%% @end
-%% @private
-%%--------------------------------------------------------------------
+%% @doc Update the signatures for each of the *.app files in the AppList.
+-spec update_app_sigs(sin_config:config(), string(), list()) -> ok.
 update_app_sigs(BuildRef, BuildDir, [H | T]) ->
     App = sin_config:get_value(BuildRef, "apps." ++ H ++ ".dotapp"),
     sin_sig:update("dep", BuildDir, App),
@@ -450,7 +368,6 @@ process_release(RootDir, BuildFlavor,
 	    Deps = sin_release:get_deps(RelFile),
 	    {ok, process_deps(LibDir, Deps, ProjectApps, [])}
     end.
-
 
 process_deps(LibDir, [{Name, Vsn} | Rest], ProjectApps, Acc) ->
     case lists:keymember(Name, 1, ProjectApps) of

@@ -44,9 +44,8 @@
 %%====================================================================
 %% API
 %%====================================================================
-%% @doc
-%%  Run the discover task.
-%% @end
+
+%% @doc Run the discover task.
 -spec discover(StartDir::string(),
 	       Override::sin_config:config()) ->
     Config::sin_config:config().
@@ -63,12 +62,11 @@ discover(StartDir, Override) ->
 %%====================================================================
 %%% Internal functions
 %%====================================================================
-%% @doc
-%% This trys to find the build config if it can. If the config
-%% is found it is parsed in the normal way and returned to the user.
-%% however, if it is not found then the system attempts to unuit the build
-%% config from the project properties.
-%% @end
+
+%% @doc This trys to find the build config if it can. If the config is found it
+%% is parsed in the normal way and returned to the user.  however, if it is not
+%% found then the system attempts to unuit the build config from the project
+%% properties.
 -spec find_config(ProjectDir::string(),
 		  Override::sin_config:config()) -> sin_config:config().
 find_config(ProjectDir, Override) ->
@@ -79,10 +77,7 @@ find_config(ProjectDir, Override) ->
 	    Config
     end.
 
-%% @doc
-%% Take a raw config and merge it with the default
-%% config information
-%% @end
+%% @doc Take a raw config and merge it with the default config information
 -spec process_raw_config(ProjectDir::string(),
 			 Config::sin_config:config(),
 			 Override::sin_config:config()) ->
@@ -104,13 +99,10 @@ process_raw_config(ProjectDir, Config, Override) ->
     % The override overrides everything
     sin_config:merge_configs(Config1, Override).
 
-%% @doc
-%%  If this is a single app project
-%%  then the config is generated from the app name and version combined
-%%  with the usual default config information. If this is not a single
-%%  app project then a build config cannot be intuited and an exception
-%%  is thrown.
-%% @end
+%% @doc If this is a single app project then the config is generated from the
+%% app name and version combined with the usual default config information. If
+%% this is not a single app project then a build config cannot be intuited and
+%% an exception is thrown.
 -spec intuit_build_config(ProjectDir::string(),
 			  Override::sin_config:override()) ->
     sin_config:config().
@@ -128,10 +120,8 @@ intuit_build_config(ProjectDir, Override) ->
 	    build_out_intuited_config(AppName, Rest)
     end.
 
-%% @doc
-%%  Given information from the app dir that was found, create a new
-%% full populated correct build config.
-%% @end
+%% @doc Given information from the app dir that was found, create a new full
+%% populated correct build config.
 -spec build_out_intuited_config(AppName::string(), Rest::[{atom(), term()}]) ->
     sin_config:config().
 build_out_intuited_config(AppName, Rest) ->
@@ -140,11 +130,8 @@ build_out_intuited_config(AppName, Rest) ->
 		     [{"project.name", AppName},
 		      {"project.vsn", ProjectVsn}]).
 
-%% @doc
-%% The override is command line override values that are provided
-%% by the user. If the user provides a project name and version
-%% we can use that
-%% @doc
+%% @doc The override is command line override values that are provided by the
+%% user. If the user provides a project name and version we can use that
 -spec intuit_from_override(Override::sin_config:config()) ->
     sin_config:config().
 intuit_from_override(Override) ->
@@ -164,11 +151,9 @@ intuit_from_override(Override) ->
 		     [{"project.name",Name},
 		      {"project.vsn", Version}]).
 
-%% @doc
-%% Attempt to read the build configs into the system. If the config exists
-%% read it in and return it. Otherwise try the next one. If no configs
-%% are found then return no_build_config
-%% @end
+%% @doc Attempt to read the build configs into the system. If the config exists
+%% read it in and return it. Otherwise try the next one. If no configs are found
+%% then return no_build_config
 -spec read_configs(ProjectDir::string(), PossibleBuildConfigs::[string()]) ->
     sin_config:config().
 read_configs(ProjectDir, [PossibleConfig | Rest]) ->
@@ -181,12 +166,9 @@ read_configs(ProjectDir, [PossibleConfig | Rest]) ->
 read_configs(_ProjectDir, []) ->
     no_build_config.
 
-%% @doc
-%% Find the root of the project. The project root may be marked
-%% by a _build dir, a build config (sinan.cfg, _build.cfg). If
-%% none of those are found then just return the directory we
-%% started with.
-%% @doc
+%% @doc Find the root of the project. The project root may be marked by a _build
+%% dir, a build config (sinan.cfg, _build.cfg). If none of those are found then
+%% just return the directory we started with.
 -spec find_project_root(Dir::string()) -> string().
 find_project_root(Dir) ->
     try
@@ -198,12 +180,10 @@ find_project_root(Dir) ->
 	    Dir
     end.
 
-%% @doc
-%% Find the project root given a list of markers. We look for these markers
-%% starting in the base dir and then working our way up to the parent dirs. If we
-%% hit the top of the directory structure without finding anything we
-%% throw an exception.
-%% @end
+%% @doc Find the project root given a list of markers. We look for these markers
+%% starting in the base dir and then working our way up to the parent dirs. If
+%% we hit the top of the directory structure without finding anything we throw
+%% an exception.
 -spec find_project_root_by_markers(Dir::string(),
 				   RootMarkers::[string()]) -> string().
 find_project_root_by_markers(Dir, RootMarkers) ->
@@ -214,9 +194,7 @@ find_project_root_by_markers(Dir, RootMarkers) ->
 	    find_project_root_by_markers(parent_dir(Dir), RootMarkers)
     end.
 
-%% @doc
-%% Check to see if the root marker exists in the directory specified.
-%% @end
+%% @doc Check to see if the root marker exists in the directory specified.
 -spec root_marker_exists(Dir::string(), RootMarkers::string()) ->
     boolean().
 root_marker_exists(Dir, [RootMarker | Rest]) ->
@@ -229,29 +207,20 @@ root_marker_exists(Dir, [RootMarker | Rest]) ->
 root_marker_exists(_Dir, []) ->
     false.
 
-%% @doc
-%% Given a single root marker and a directory return a boolean
-%% indicating if the root marker exists in that file.
-%% @end
+%% @doc Given a single root marker and a directory return a boolean indicating
+%% if the root marker exists in that file.
 -spec has_root_marker(Dir::string(), RootMarker::string()) ->
     boolean().
 has_root_marker(Dir, RootMarker) ->
     sin_utils:file_exists(filename:join(Dir, RootMarker)).
 
-
-
-%% @doc
-%%  Given a directory returns the name of the parent directory.
-%% @end
+%% @doc Given a directory returns the name of the parent directory.
 -spec parent_dir(Filename::string()) -> DirName::string().
 parent_dir(Filename) ->
     parent_dir(filename:split(Filename), []).
 
-%% @doc
-%%  Given list of directories, splits the list and returns all
-%% dirs but the last as a path.
-%% @spec (List::list(), Acc::list()) -> DirName.
-%% @end
+%% @doc Given list of directories, splits the list and returns all dirs but the
+%%  last as a path.
 parent_dir([_H], []) ->
     throw(no_parent_dir);
 parent_dir([], []) ->
@@ -261,10 +230,7 @@ parent_dir([_H], Acc) ->
 parent_dir([H | T], Acc) ->
     parent_dir(T, [H | Acc]).
 
-
-%% @doc
-%%   Given a list of app dirs retrieves the application names.
-%% @end
+%% @doc Given a list of app dirs retrieves the application names.
 -spec build_app_info(Config::sin_config:config(),
 		     List::list(),
 		     Acc::list()) ->
@@ -292,10 +258,7 @@ build_app_info(Config, [H|T], Acc) ->
 build_app_info(Config, [], Acc) ->
     dict:store("project.applist", Acc, Config).
 
-%% @doc
-%%  Convert the details list to something that fits into the config
-%%  nicely.
-%% @end
+%% @doc Convert the details list to something that fits into the config nicely.
 -spec process_details(BaseKey::string(), List::list(), Config::dict()) ->
     NewConfig::sin_config:config().
 process_details(BaseName, [{Key, Value} | T], Config) when is_atom(Key) ->
@@ -306,12 +269,9 @@ process_details(BaseName, [{Key, Value} | T], Config) when is_list(Key)->
 process_details(_, [], Config) ->
     Config.
 
-%% @doc
-%%  Roles through subdirectories of the build directory looking
-%%  for directories that have a src and an ebin subdir. When it
-%%  finds one it stops recursing and adds the directory to the list
-%%  to return.
-%% @end
+%% @doc Roles through subdirectories of the build directory looking for
+%% directories that have a src and an ebin subdir. When it finds one it stops
+%% recursing and adds the directory to the list to return.
 -spec look_for_app_dirs(Config::sin_config:config(),
 			BuildDir::string(),
 			ProjectDir::string()) ->
@@ -342,10 +302,7 @@ look_for_app_dirs(Config, BuildDir, Parent, Sub, Ignorables, Acc) ->
             process_app_dir(Config, BuildDir, Parent, Sub, Ignorables, Acc)
     end.
 
-%% @doc
-%%  Process the app dir to see if it is an application directory.
-%%
-%% @end
+%% @doc Process the app dir to see if it is an application directory.
 -spec process_app_dir(Config::sin_config:config(),
 		      BuildDir::string(), Parent::string(), Sub::string(),
 		      Ignorables::[string()], Acc::list()) ->
@@ -377,11 +334,8 @@ process_app_dir(Config, BuildDir, Parent, Sub, Ignorables, Acc) ->
             Acc
     end.
 
-%% @doc
-%%  Given a directory checks of the name is src or ebin, compares
-%%  against its state and returns an indicator if the parent is a
-%%  app dir.
-%% @end
+%% @doc Given a directory checks of the name is src or ebin, compares against
+%%  its state and returns an indicator if the parent is a app dir.
 -spec process_dirs(File::string(), FinateState::string(), src | ebin) ->
     src | ebin.
 process_dirs(File, F, ebin) ->
@@ -423,7 +377,6 @@ find_project_root_test() ->
 
     ?assertMatch(ProjectRoot, find_project_root(DirStart)),
     ?assertMatch("/tmp", find_project_root("/tmp")).
-
 
 find_project_root_by_markers_test() ->
     ProjectRoot = filename:join(["test_data",
@@ -482,7 +435,6 @@ build_out_intuited_config_test() ->
     ?assertMatch("test_proj", sin_config:get_value(Config, "project.name")),
     ?assertMatch("0.2.0", sin_config:get_value(Config, "project.vsn")).
 
-
 intuit_build_config_test() ->
     ProjectDir = filename:join(["test_data", "sin_discover",
 				"intuit_build_config",
@@ -500,8 +452,6 @@ intuit_build_config_test() ->
     OConfig = intuit_build_config(BadProjectDir, Override),
     ?assertMatch("fobachu", sin_config:get_value(OConfig, "project.name")),
     ?assertMatch("0.1.0", sin_config:get_value(OConfig, "project.vsn")).
-
-
 
 process_raw_config_test() ->
     ProjectDir = filename:join(["test_data", "sin_discover",

@@ -1,29 +1,11 @@
-%% -*- mode: Erlang; fill-column: 79; comment-column: 70; -*-
-%%%---------------------------------------------------------------------------
-%%% Permission is hereby granted, free of charge, to any person obtaining a
-%%% copy of this software and associated documentation files (the "Software"),
-%%% to deal in the Software without restriction, including without limitation
-%%% the rights to use, copy, modify, merge, publish, distribute, sublicense,
-%%% and/or sell copies of the Software, and to permit persons to whom the
-%%% Software is furnished to do so, subject to the following conditions:
-%%%
-%%% The above copyright notice and this permission notice shall be included in
-%%% all copies or substantial portions of the Software.
-%%%
-%%% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-%%% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-%%% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-%%% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-%%% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-%%% FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-%%% DEALINGS IN THE SOFTWARE.
+%% -*- mode: Erlang; fill-column: 80; comment-column: 75; -*-
 %%%---------------------------------------------------------------------------
 %%% @author Eric Merritt <ericbmerritt@gmail.com>
 %%% @doc
 %%%  Provides utitlities to generate an polar complient otp/erlang
 %%%  project
 %%% @end
-%%% @copyright (C) 2007-2010 Erlware
+%%% @copyright (C) 2007-2011 Erlware
 %%%---------------------------------------------------------------------------
 -module(sin_task_gen).
 
@@ -42,14 +24,14 @@
 %%============================================================================
 %% Types
 %%============================================================================
+
 -type env() :: [{Key::atom(), Value::term()}].
 
 %%============================================================================
 %% API
 %%============================================================================
-%% @doc
-%% describe this task to the system.
-%% @end
+
+%% @doc describe this task to the system.
 -spec description() -> ok.
 description() ->
     Desc = "Generates a buildable default project layout ",
@@ -60,31 +42,24 @@ description() ->
 	  desc = Desc,
 	  opts = []}.
 
-%% @doc
-%%  Do the generation of an erlang project
-%% @end
+%% @doc Do the generation of an erlang project
 -spec do_task(sin_config:config()) -> ok.
 do_task(Config) ->
     gen(Config).
 
-
-%% @doc
-%%  Kicks off the generation process. Handles the individual steps
-%%  in new project generation.
-%% @end
+%% @doc Kicks off the generation process. Handles the individual steps in new
+%%  project generation.
 -spec gen(sin_config:config()) -> ok.
 gen(Config) ->
     {{Year, _, _}, {_, _, _}} = erlang:localtime(),
     get_user_information(Config, [{year, integer_to_list(Year)}]).
 
-
 %%============================================================================
 %% Internal functions
 %%============================================================================
-%% @doc
-%%    Queries the user for various information that we need to generate the
-%%    project
-%% @end
+
+%% @doc Queries the user for various information that we need to generate the
+%% project
 -spec get_user_information(sin_config:config(), env()) -> ok.
 get_user_information(Config, Env) ->
     ewl_talk:say("Please specify your name "),
@@ -97,9 +72,7 @@ get_user_information(Config, Env) ->
            {copyright_holder, CopyHolder} | Env],
     get_project_information(Config, Env2).
 
-
-%% @doc Get the project name, either from the command line
-%% or from the user.
+%% @doc Get the project name, either from the command line or from the user.
 -spec get_project_name(sin_config:config()) -> string().
 get_project_name(Config) ->
     case sin_config:get_value(Config, "command_line.arg") of
@@ -110,10 +83,7 @@ get_project_name(Config) ->
 	    Value
     end.
 
-
-%% @doc
-%% Queries the user for the name of this project
-%% @end
+%% @doc Queries the user for the name of this project
 -spec get_project_information(sin_config:config(), env()) -> ok.
 get_project_information(Config, Env) ->
     {ok, CDir} = file:get_cwd(),
@@ -137,11 +107,8 @@ get_project_information(Config, Env) ->
     end,
     Config.
 
-
-%% @doc
-%%  Queries the user for a list of application names. The user can choose to
-%%  skip this part.
-%% @end
+%% @doc Queries the user for a list of application names. The user can choose
+%% to skip this part.
 -spec get_application_names(env()) -> ok.
 get_application_names(Env) ->
     ewl_talk:say("Please specify the names of the OTP apps"
@@ -164,19 +131,15 @@ get_application_names(Env, App, Acc) ->
 	     end,
     get_application_names(Env, ewl_talk:ask_default("app", ""), NewAcc).
 
-%% @doc
-%% Build out the project directory structure
-%% @end
+%% @doc Build out the project directory structure
 -spec build_out_project(env()) -> ok.
 build_out_project(Env) ->
     ProjDir = get_env(project_dir, Env),
     make_dir(ProjDir),
     build_out_skeleton(Env).
 
-%% @doc
-%%  Given the project directory builds out the various directories
-%%  required for an application.
-%% @end
+%% @doc Given the project directory builds out the various directories required
+%% for an application.
 -spec build_out_skeleton(env()) -> ok.
 build_out_skeleton(Env) ->
     ProjDir = get_env(project_dir, Env),
@@ -185,10 +148,8 @@ build_out_skeleton(Env) ->
     make_dir(filename:join(ProjDir, "config")),
     build_out_applications(Env).
 
-%% @doc
-%%  Given the project directory and a list of application names, builds
-%%  out the application directory structure.
-%% @end
+%% @doc Given the project directory and a list of application names, builds out
+%% the application directory structure.
 -spec build_out_applications(env()) -> ok.
 build_out_applications(Env) ->
     case get_env(single_app_project, Env) of
@@ -212,10 +173,7 @@ build_out_applications(Env, [AppName | T]) ->
 build_out_applications(Env, []) ->
     build_out_build_config(Env).
 
-
-%% @doc
-%% build out all the things required by an application
-%% @end
+%% @doc build out all the things required by an application
 -spec build_out_application(env(), AppDir::string(),
 			    AppName::string(), AppVsn::string()) -> ok.
 build_out_application(Env, AppDir, AppName, AppVsn) ->
@@ -228,9 +186,7 @@ build_out_application(Env, AppDir, AppName, AppVsn) ->
     build_out_otp(Env, AppSrc, AppName),
     build_out_app_doc(Env, EbinDir, AppName).
 
-%% @doc
-%% Builds out the supervisor for the app.
-%% @end
+%% @doc Builds out the supervisor for the app.
 -spec build_out_super(env(), AppSrc::string(), AppName::string()) -> ok.
 build_out_super(Env, AppSrc, AppName) ->
     FileName = filename:join(AppSrc, AppName ++ "_sup.erl"),
@@ -241,9 +197,7 @@ build_out_super(Env, AppSrc, AppName) ->
             sin_skel:supervisor(Env, FileName, AppName)
     end.
 
-%% @doc
-%% Builds out the app descriptor for the app.
-%% @end
+%% @doc Builds out the app descriptor for the app.
 -spec build_out_app_src(env(), EbinDir::string(),
 			AppName::string(), AppVsn::string()) -> ok.
 build_out_app_src(Env, EbinDir, AppName, AppVsn) ->
@@ -255,9 +209,7 @@ build_out_app_src(Env, EbinDir, AppName, AppVsn) ->
 	    sin_skel:app_info(Env, FileName, AppName, AppVsn)
     end.
 
-%% @doc
-%% Builds out the overview.edoc for the app.
-%% @end
+%% @doc Builds out the overview.edoc for the app.
 -spec build_out_app_doc(env(), EbinDir::string(), AppName::string()) -> ok.
 build_out_app_doc(Env, EbinDir, AppName) ->
     FileName = filename:join(EbinDir, "overview.edoc"),
@@ -268,10 +220,7 @@ build_out_app_doc(Env, EbinDir, AppName) ->
             sin_skel:edoc_overview(Env, FileName, AppName)
     end.
 
-
-%% @doc
-%% Build out the top level otp parts of the application.
-%% @end
+%% @doc Build out the top level otp parts of the application.
 -spec build_out_otp(env(), AppSrc::string(), AppName::string()) -> ok.
 build_out_otp(Env, AppSrc, AppName) ->
     FileName = filename:join(AppSrc, AppName ++ "_app.erl"),
@@ -282,10 +231,7 @@ build_out_otp(Env, AppSrc, AppName) ->
             sin_skel:application(Env, FileName, AppName)
     end.
 
-
-%% @doc
-%%  Builds the build config dir in the root of the project.
-%% @end
+%% @doc Builds the build config dir in the root of the project.
 build_out_build_config(Env) ->
     case ewl_talk:ask_default("Would you like a build config?",
 			      boolean, "y") of
@@ -307,37 +253,25 @@ build_out_build_config(Env) ->
     end,
     all_done().
 
-%% @doc
-%%  Prints out a nice error message if everything was ok.
-%% @end
+%% @doc Prints out a nice error message if everything was ok.
 -spec all_done() -> ok.
 all_done() ->
     ewl_talk:say("Project was created, you should be good to go!").
 
-
-%% @doc
-%% Helper function that makes the specified directory and all parent
+%% @doc Helper function that makes the specified directory and all parent
 %% directories.
-%% @end
 -spec make_dir(DirName::string()) -> ok.
 make_dir(DirName) ->
     filelib:ensure_dir(DirName),
     is_made(DirName, file:make_dir(DirName)),
     DirName.
 
-%% @doc
-%% Helper function that makes sure a directory is made by testing
-%% the output of file:make_dir().
-%% @end
--spec is_made(DirName::string(), {error, eexist} | ok) -> ok.
-is_made(DirName, {error, eexist})->
-    ewl_talk:say("~s exists ok.", [DirName]);
+%% @doc Helper function that makes sure a directory is made by testing the
+%% output of file:make_dir().
 is_made(DirName, ok) ->
    ewl_talk:say("~s created ok.", [DirName]).
 
-%% @doc
-%%  Get the value from the environment.
-%% @end
+%% @doc Get the value from the environment.
 -spec get_env(Key::string(), env()) -> ok.
 get_env(Name, Env) ->
     {value, {Name, Value}} = lists:keysearch(Name, 1, Env),

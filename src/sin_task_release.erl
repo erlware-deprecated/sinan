@@ -1,33 +1,10 @@
-%% -*- mode: Erlang; fill-column: 132; comment-column: 118; -*-
-%%%-------------------------------------------------------------------
-%%% Copyright (c) 2006-2010 Eric Merritt
-%%%
-%%% Permission is hereby granted, free of charge, to any
-%%% person obtaining a copy of this software and associated
-%%% documentation files (the "Software"), to deal in the
-%%% Software without restriction, including without limitation
-%%% the rights to use, copy, modify, merge, publish, distribute,
-%%% sublicense, and/or sell copies of the Software, and to permit
-%%% persons to whom the Software is furnished to do so, subject to
-%%% the following conditions:
-%%%
-%%% The above copyright notice and this permission notice shall
-%%% be included in all copies or substantial portions of the Software.
-%%%
-%%% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-%%% EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-%%% OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-%%% NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-%%% HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-%%% WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-%%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-%%% OTHER DEALINGS IN THE SOFTWARE.
+%% -*- mode: Erlang; fill-column: 80; comment-column: 75; -*-
 %%%---------------------------------------------------------------------------
 %%% @author Eric Merritt
 %%% @doc
 %%%   Builds the *.script and *.boot from the project rel file.
 %%% @end
-%%% @copyright (C) 2006-2010 Erlware
+%%% @copyright (C) 2006-2011 Erlware
 %%%---------------------------------------------------------------------------
 -module(sin_task_release).
 
@@ -36,7 +13,7 @@
 -include("internal.hrl").
 
 %% API
--export([description/0, do_task/1, release/1]).
+-export([description/0, do_task/1]).
 
 -define(TASK, release).
 -define(DEPS, [build]).
@@ -44,13 +21,9 @@
 %%====================================================================
 %% API
 %%====================================================================
-%%--------------------------------------------------------------------
-%% @spec start() -> ok
-%%
-%% @doc
-%% Starts the server
-%% @end
-%%--------------------------------------------------------------------
+
+%% @doc describes this task to the system
+-spec description() -> sin_task:task_description().
 description() ->
     Desc = "Creates the *.rel, *.boot and *.script into the "
         "<build-area>/realeases/<vsn> directory. It also "
@@ -63,23 +36,9 @@ description() ->
 	  desc = Desc,
 	  opts = []}.
 
-
-%%--------------------------------------------------------------------
-%% @doc
-%%  Do the task defined in this module.
-%% @spec (BuildRef) -> ok
-%% @end
-%%--------------------------------------------------------------------
+%% @doc create an otp release
+-spec do_task(sin_config:config()) -> sin_config:config().
 do_task(BuildRef) ->
-    release(BuildRef).
-
-%%--------------------------------------------------------------------
-%% @doc
-%%  Run the release tasks.
-%% @spec (BuildRef) -> ok
-%% @end
-%%--------------------------------------------------------------------
-release(BuildRef) ->
     BuildDir = sin_config:get_value(BuildRef, "build.dir"),
     {ReleaseName, Version} =
 	case sin_config:get_value(BuildRef, "-r") of
@@ -97,13 +56,10 @@ release(BuildRef) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
-%%--------------------------------------------------------------------
-%% @doc
-%%  Generate release information from info available in the project.
-%% @spec (BuildRef, BuildDir, Name, Version) -> Release
-%% @end
-%% @private
-%%--------------------------------------------------------------------
+
+%% @doc Generate release information from info available in the project.
+-spec generate_rel_file(sin_config:config(), string(), string(), string()) ->
+    {ReleaseFile::string(), ReleaseInfo::term()}.
 generate_rel_file(BuildRef, BuildDir, Name, Version) ->
     BuildFlavor = sin_config:get_value(BuildRef, "build.flavor"),
     {ProjectName, ProjectVsn} =
@@ -113,7 +69,8 @@ generate_rel_file(BuildRef, BuildDir, Name, Version) ->
 					    "project.name"),
 		 sin_config:get_value(BuildRef, "project.vsn")};
 	    ReleaseName ->
-		{ReleaseName, sin_config:get_value(BuildRef, "releases."++ ReleaseName ++".vsn")}
+		{ReleaseName, sin_config:get_value(BuildRef, "releases."++
+						   ReleaseName ++".vsn")}
 	end,
 
     RootDir = sin_config:get_value(BuildRef, "project.dir"),
@@ -124,12 +81,14 @@ generate_rel_file(BuildRef, BuildDir, Name, Version) ->
 
             Erts = get_erts_info(),
 
-            Deps = process_deps(BuildRef,
-                                element(1,sin_config:get_value(BuildRef,
-                                                                     "project.deps")), []),
-            Deps2 = process_deps(BuildRef,
-                                element(2,sin_config:get_value(BuildRef,
-                                                                     "project.deps")), []),
+            Deps =
+		process_deps(BuildRef,
+			     element(1,sin_config:get_value(BuildRef,
+							    "project.deps")), []),
+            Deps2 =
+		process_deps(BuildRef,
+			     element(2,sin_config:get_value(BuildRef,
+							    "project.deps")), []),
 
             Deps3 = lists:map(fun({App, AppVersion}) ->
                                       {App, AppVersion, load}
@@ -144,16 +103,8 @@ generate_rel_file(BuildRef, BuildDir, Name, Version) ->
     {save_release(BuildDir, Name, Version, Release),
      Release}.
 
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%%  return project version or throw(no_project_version)
-%% area.
-%% @spec (BuildRef) -> Version
-%% @end
-%% @private
-%%--------------------------------------------------------------------
+%% @doc return project version or throw(no_project_version)
+-spec project_version(sin_config:config()) -> Vsn::string().
 project_version(BuildRef) ->
     case sin_config:get_value(BuildRef, "project.vsn") of
         undefined ->
@@ -164,14 +115,8 @@ project_version(BuildRef) ->
             Vsn
     end.
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  return project name or throw(no_project_version)
-%% area.
-%% @spec (BuildRef) -> Name
-%% @end
-%% @private
-%%--------------------------------------------------------------------
+%% @doc return project name or throw(no_project_version) area.
+-spec project_name(sin_config:config()) -> Name::string().
 project_name(BuildRef) ->
     case sin_config:get_value(BuildRef, "project.name") of
         undefined ->
@@ -182,14 +127,10 @@ project_name(BuildRef) ->
             Nm
     end.
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Process the dependencies into a format useful for the rel depends
-%% area.
-%% @spec (BuildRef, Deps, Acc) -> AppList
-%% @end
-%% @private
-%%--------------------------------------------------------------------
+%% @doc Process the dependencies into a format useful for the rel depends area.
+-spec process_deps(sin_config:config(),
+		   [AppInfo::tuple()], [AppInfo::tuple()]) ->
+    [AppInfo::tuple()].
 process_deps(BuildRef, [{App, Vsn, _, _} | T], Acc) ->
     NewApp = stringify(App),
     case {sin_config:get_value(BuildRef,
@@ -212,26 +153,17 @@ process_deps(BuildRef, [{App, Vsn, _, _} | T], Acc) ->
 process_deps(_BuildRef, [], Acc) ->
     Acc.
 
-
-%%--------------------------------------------------------------------
-%% @doc
-%%  Process the optional include list into a list of atoms.
-%% @spec (IncList, Acc) -> NewList
-%% @end
-%%--------------------------------------------------------------------
+%% @doc Process the optional include list into a list of atoms.
+-spec process_inc_list([string()], [atom()]) ->
+    [atom()].
 process_inc_list([H | T], Acc) ->
     process_inc_list(T, [list_to_atom(H) | Acc]);
 process_inc_list([], Acc) ->
     Acc.
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Save the release terms to a releases file for later use by
-%%  the system.
-%% @spec (BuildDir, BuildDir, Name, Version, RelInfo) -> Location
-%% @end
-%% @private
-%%--------------------------------------------------------------------
+%% @doc Save the release terms to a releases file for later use by the system.
+-spec save_release(sin_config:config(), string(), string(), term()) ->
+    {Location::string(), RelBase::string()}.
 save_release(BuildDir, Name, Version, RelInfo) ->
     Location = filename:join([BuildDir, "releases", Name ++ "-" ++ Version]),
     filelib:ensure_dir(filename:join([Location, "tmp"])),
@@ -249,23 +181,14 @@ save_release(BuildDir, Name, Version, RelInfo) ->
     end,
     {Location, Relbase}.
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Get the system erts version.
-%% @spec () -> ErtsVersion
-%% @end
-%% @private
-%%--------------------------------------------------------------------
+%% @doc Get the system erts version.
+-spec get_erts_info() -> ErtsVersion::string().
 get_erts_info() ->
     erlang:system_info(version).
 
-%%-------------------------------------------------------------------
-%% @doc
-%%  Gather up the path information and make the boot/script files.
-%% @spec (BuildRef, TargetFile) -> ok
-%% @end
-%% @private
-%%-------------------------------------------------------------------
+%% @doc Gather up the path information and make the boot/script files.
+-spec make_boot_script(sin_config:config(), {{string(), string()}, term()}) ->
+    ok.
 make_boot_script(BuildRef, {{Location, File}, {release, {Name, _}, _, _}}) ->
     Options = [{path, [Location | get_code_paths(BuildRef)]},
                no_module_tests, silent],
@@ -285,12 +208,10 @@ make_boot_script(BuildRef, {{Location, File}, {release, {Name, _}, _, _}}) ->
     end.
 
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  copy config/sys.config or generate one to releases/VSN/sys.config
-%% @spec (BuildRef, BuildDir, Version) -> ok
-%% @end
-%%--------------------------------------------------------------------
+%% @doc copy config/sys.config or generate one to releases/VSN/sys.config
+-spec copy_or_generate_sys_config_file(sin_config:config(),
+				       string(), string(), string()) ->
+    ok.
 copy_or_generate_sys_config_file(BuildRef, BuildDir, Name, Version) ->
     RelSysConfPath = filename:join([BuildDir, "releases", Name ++ "-" ++
                                     Version, "sys.config"]),
@@ -307,12 +228,8 @@ copy_or_generate_sys_config_file(BuildRef, BuildDir, Name, Version) ->
             end
     end.
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  write a generic sys.config to the path RelSysConfPath
-%% @spec (RelSysConfPath) -> ok
-%% @end
-%%--------------------------------------------------------------------
+%% @doc write a generic sys.config to the path RelSysConfPath
+-spec generate_sys_config_file(string()) -> ok.
 generate_sys_config_file(RelSysConfPath) ->
     {ok, Fd} = file:open(RelSysConfPath, [write]),
     io:format(Fd,
@@ -329,13 +246,8 @@ generate_sys_config_file(RelSysConfPath) ->
 
 
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Generates the correct set of code paths for the system.
-%% @spec (BuildRef) -> Paths
-%% @end
-%% @private
-%%--------------------------------------------------------------------
+%% @doc Generates the correct set of code paths for the system.
+-spec get_code_paths(sin_config:config()) -> sin_config:config().
 get_code_paths(BuildRef) ->
     ProjApps = sin_config:get_value(BuildRef, "project.apps"),
     ProjPaths = lists:merge(
@@ -351,12 +263,8 @@ get_code_paths(BuildRef) ->
                   end, sin_config:get_value(BuildRef, "project.repoapps")),
     lists:merge([ProjPaths, RepoPaths]).
 
-%%--------------------------------------------------------------------
-%% @doc
-%%  Convert the value to a string if it is an atom
-%% @spec (Value) -> NewValue
-%% @end
-%%--------------------------------------------------------------------
+%% @doc Convert the value to a string if it is an atom
+-spec stringify(string() | atom()) -> string().
 stringify(Value) when is_list(Value) ->
     Value;
 stringify(Value) when is_atom(Value) ->
