@@ -55,8 +55,10 @@ def sinan(command):
         def new_f(*args, **kwds):
             print("Running Command %s in %s" % (command, os.getcwd()))
             self = args[0]
-            child = spawn("erl -noshell -pa %s -s sinan main "
-                          "-s init stop -extra %s" %
+            child = spawn("erl -noshell -pa %s "
+                          " -s sin_app manual_start"
+                          " -s sinan main"
+                          " -extra %s" %
                           (get_build_root_path(self.project_dir), command))
             res = f(self, child, *(args[1:]), **kwds)
             print("Finished %s successfully" % command)

@@ -76,6 +76,7 @@ do_task(BuildRef) ->
                     ok;
                 _ ->
                     AllDeps = none,
+		    sin_error_store:signal_error(),
                     ?SIN_RAISE_DA(unable_to_resolve,
                                   "Unable to resolve dependencies", [])
             end
@@ -92,6 +93,7 @@ do_task(BuildRef) ->
                     ok;
                 _ ->
                     AllDeps2 = none,
+		    sin_error_store:signal_error(),
                     ?SIN_RAISE_DA(unable_to_resolve,
                                   "Unable to resolve dependencies", [])
             end
@@ -184,6 +186,7 @@ resolve_project_dependencies2(LibDir,
                 case sin_resolver:package_versions(LibDir,
                                                    Dep) of
                     [] ->
+			sin_error_store:signal_error(),
                         ?SIN_RAISE_DA(unable_to_find_dependency,
                                       "Couldn't find dependency ~s.",
                                       [Dep]);
@@ -245,6 +248,7 @@ save_deps(BuildRef, Deps) ->
     Depsf = filename:join([BuildDir, "info", "deps"]),
     case file:open(Depsf, write) of
         {error, _} ->
+	    sin_error_store:signal_error(),
             ?SIN_RAISE_DA(unable_to_write_dep_info,
                           "Couldn't open ~s for writing. Unable to "
                           "write dependency information",
@@ -263,6 +267,7 @@ save_repo_apps(BuildRef, BuildDir) ->
     Repsf = filename:join([BuildDir, "info", "repoapps"]),
     case file:open(Repsf, write) of
         {error, _} ->
+	    sin_error_store:signal_error(),
             ?SIN_RAISE_DA(unable_to_write_dep_info,
                           "Couldn't open ~s for writing. Unable to "
                           "write dependency information",

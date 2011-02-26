@@ -58,6 +58,7 @@ run_docs(BuildRef, [{AppName, _, _, Path} | T]) ->
 			 [{dir, DocDir}])
     catch
 	throw:Error ->
+	    sin_error_store:signal_error(),
 	    ?SIN_RAISE(Error)
     end,
     run_docs(BuildRef, T);

@@ -34,9 +34,9 @@ export LD_LIBRARY_PATH=$PREFIX/erts-$ERTS_VSN/lib
 REL_DIR=$PREFIX/releases/$REL_NAME-$REL_VSN
 
 if [ $# -eq 1 ] && [ $1 = "shell" ]; then
-    INVOCATION_SUFFIX=" -run sinan main "
+    INVOCATION_SUFFIX=" -run sinan run_sinan "
 else
-    INVOCATION_SUFFIX=" -noshell -run sinan main -run init stop "
+    INVOCATION_SUFFIX=" -noshell -run sinan main "
 fi
 
 $BINDIR/erlexec -config $CONFIGFILE -boot $REL_DIR/$REL_NAME $INVOCATION_SUFFIX -extra "$@"

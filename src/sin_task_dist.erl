@@ -109,6 +109,7 @@ add_defaults(ProjectDir, TopLevel) ->
 create_tar_file(FileName, TarContents) ->
     case erl_tar:open(FileName, [compressed, write]) of
         {error, _} ->
+	    sin_error_store:signal_error(),
 	    ewl_talk:say("Unable to open tar file ~s, unable to build "
 			 "distribution.", [FileName]),
             throw(unable_to_build_dist);

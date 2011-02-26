@@ -92,6 +92,7 @@ xref_app(BuildRef, ServerName, AppName) ->
 	{ok, _AppNameVsn} ->
 	    ok;
 	{error, Module, Reason} ->
+	    sin_error_store:signal_error(),
 	    ewl_talk:say(Module:format_error(Reason)),
 	    fail
     end.
@@ -105,6 +106,7 @@ xref_app(BuildRef, ServerName, AppName) ->
 		  {ok, [term()]}) ->
     ok.
 notify_user(_, _, {error, Module, Reason}) ->
+    sin_error_store:signal_error(),
     ewl_talk:say(Module:format_error(Reason));
 notify_user(ModuleInfo, Analysis, {ok, AnswerList}) ->
     lists:foreach(fun(Answer) ->

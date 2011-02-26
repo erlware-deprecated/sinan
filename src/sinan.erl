@@ -12,7 +12,8 @@
 
 %% API
 -export([main/0,
-	 main/1,
+	 run_sinan/0,
+	 run_sinan/1,
          do_task/3,
          start/0]).
 
@@ -46,6 +47,7 @@ do_task(Task, StartDir, Override) ->
 	end
     catch
         {task_not_found, TaskName} ->
+	    sin_error_store:signal_error(),
             ewl_talk:say("Task not found ~s.", [TaskName])
     end.
 
@@ -58,14 +60,19 @@ do_task_full(StartDir, Override, Task) when is_atom(Task) ->
 	run_task(Task, ProjectRoot, Config)
     catch
         no_build_config ->
+	    sin_error_store:signal_error(),
             ewl_talk:say("No build config found.");
         {unable_to_create_canonical, {_, _,Desc}}  ->
+	    sin_error_store:signal_error(),
 	    ewl_talk:say("Error discovering project layout: ~s", Desc);
 	{sin_excep, Problem}  ->
+	    sin_error_store:signal_error(),
 	    ewl_talk:say("build problem ~s", [Problem]);
 	{sin_excep, _, {Description, EArgs}}  ->
+	    sin_error_store:signal_error(),
 	    ewl_talk:say(Description, EArgs);
     	{sin_excep, _, Description}  ->
+	    sin_error_store:signal_error(),
 	    ewl_talk:say("~s", [Description])
     end.
 
@@ -74,16 +81,28 @@ do_task_full(StartDir, Override, Task) when is_atom(Task) ->
 do_task_bare(StartDir, Config, Task) when is_atom(Task) ->
     run_task(Task, StartDir, Config).
 
-%% @doc do the full run of sinan as required by the command line args
+%% @doc do the full run of sinan as required by the command line args, halt the
+%% system when the run is complete.
 -spec main() -> sin_config:config() | ok.
 main() ->
+    run_sinan(),
+    case sin_error_store:has_errors() of
+	ErrCount when ErrCount =< 0 ->
+	    init:stop();
+	_ ->
+	    init:stop(101)
+    end.
+
+%% @doc do the full run of sinan as required by the command line args
+-spec run_sinan() -> sin_config:config() | ok.
+run_sinan() ->
     Args = init:get_plain_arguments(),
-    main(Args).
+    run_sinan(Args).
 
 %% @doc do a full run of sinan with arbitrary args that may be parsed like
 %% command line args
--spec main([string()]) -> sin_config:config().
-main(Args) ->
+-spec run_sinan([string()]) -> sin_config:config().
+run_sinan(Args) ->
     case getopt:parse(option_spec_list(), Args) of
         {ok, {Options, NonOptArgs}} ->
 	    do_build(Options, NonOptArgs);
@@ -92,9 +111,12 @@ main(Args) ->
             usage()
     end.
 
+
 %%====================================================================
 %% Internal functions
 %%====================================================================
+
+
 -spec do_build(term(), [string()]) -> sin_config:config().
 do_build(Options, [Target | Rest]) ->
     do_task(list_to_atom(Target),

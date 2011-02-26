@@ -13,7 +13,9 @@
 -export([get_task/1,
 	 get_task_list/1,
 	 get_tasks/0,
-	 behaviour_info/1]).
+	 behaviour_info/1,
+	 signal_error/0,
+	 has_errors/0]).
 
 -export_type([task_description/0,
 	      task_name/0]).
@@ -60,6 +62,16 @@ get_tasks() ->
      sin_task_clean:description(),
      sin_task_build:description(),
      sin_task_xref:description()].
+
+%% @doc signal that an error has occured in the system
+-spec signal_error() -> ok.
+signal_error() ->
+    sin_error_store:signal_error().
+
+%% @doc check to see if the system has errors
+-spec has_errors() -> ok.
+has_errors() ->
+    sin_error_store:has_errors().
 
 %% @doc define the behaviour for tasks.
 behaviour_info(callbacks) ->

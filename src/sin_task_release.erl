@@ -171,6 +171,7 @@ save_release(BuildDir, Name, Version, RelInfo) ->
     Relf = lists:flatten([Relbase, ".rel"]),
     case file:open(Relf, write) of
         {error, _} ->
+	    sin_error_store:signal_error(),
 	    ewl_talk:say("Couldn't open ~s for writing. Unable to "
 			 "write release information",
 			 [Relf]),
@@ -196,13 +197,16 @@ make_boot_script(BuildRef, {{Location, File}, {release, {Name, _}, _, _}}) ->
         ok ->
 	    ok;
         error ->
+	    sin_error_store:signal_error(),
             ?SIN_RAISE(release_script_generation_error);
         {ok, _, []} ->
 	    ok;
         {ok,Module,Warnings} ->
+	    sin_error_store:signal_error(),
             ?SIN_RAISE_DA(release_script_generation_error,
                           "~s~n", [Module:format_warning(Warnings)]);
         {error,Module,Error} ->
+	    sin_error_store:signal_error(),
             ?SIN_RAISE_DA(release_script_generation_error,
                           "~s~n", [Module:format_error(Error)])
     end.

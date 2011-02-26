@@ -27,12 +27,17 @@
 	     sinan,
 	     sin_discover,
 	     sin_sup,
+	     sin_app,
 	     sin_task_dist,
 	     sin_task_test,
-	     sin_task_xref]},
+	     sin_task_xref,
+	     sin_error_store]},
   {registered, [sin_sup]},
   {applications, [kernel, stdlib, compiler,
                   edoc, syntax_tools,
                   ktuo, ewrepo, ewlib, tools,
                   xmerl, mnesia, sgte,
-		  parsetools, asn1, getopt]}]}.
+		  parsetools, asn1, getopt]},
+
+  {mod, {sin_app, []}},
+  {start_phases, []}]}.

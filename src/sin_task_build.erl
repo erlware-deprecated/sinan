@@ -76,6 +76,7 @@ reorder_apps_according_to_deps(AllApps) ->
         {ok, DepList} ->
             DepList;
         {cycle, CycleList} ->
+	    sin_error_store:signal_error(),
             ?SIN_RAISE_DA(cycles_detected,
                           "A cycle was detected in the dependency graph "
                           " I don't know how to build cycles. ~p",
@@ -186,6 +187,7 @@ event_compile_args(BuildRef, Options) ->
 check_for_errors(ModuleList) ->
     case lists:member({sinan, error}, ModuleList) of
 	true ->
+	    sin_error_store:signal_error(),
 	    ?SIN_RAISE(build_errors);
 	false ->
 	    ok
@@ -196,6 +198,7 @@ setup_code_path(BuildRef, Env, AppName) ->
     AtomApp = list_to_atom(AppName),
     case get_app_from_list(AtomApp, Env#env.app_list) of
         not_in_list ->
+	    sin_error_store:signal_error(),
             ?SIN_RAISE_DA(app_name_not_in_list,
                           "App ~s is not in the list of project apps. "
                           "This shouldn't happen!!",
@@ -210,6 +213,7 @@ extract_info_from_deps(BuildRef, [AppName | T], AppList, Marked, Acc, IAcc) ->
         false ->
             case get_app_from_list(AppName, AppList) of
                 not_in_list ->
+		    sin_error_store:signal_error(),
                     ?SIN_RAISE_DA(app_name_not_in_list,
                                   "App ~s is not in the list of project apps. "
                                   "This shouldn't happen!!!",
@@ -277,6 +281,7 @@ reorder_list(ModList, FileList) ->
 	{Acc, ok} ->
 	    lists:reverse(Acc);
 	{_, not_ok} ->
+	    sin_error_store:signal_error(),
 	    ?SIN_RAISE(build_errors)
     end.
 
