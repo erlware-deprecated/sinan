@@ -61,7 +61,7 @@ do_task(BuildRef) ->
 %% @private
 -spec test_apps(sin_config:config(), [string()], [[atom()]]) -> ok.
 test_apps(BuildRef, [AppName | T], Acc) ->
-    io:format("Testing ~s~n", [AppName]),
+    io:format("testing app ~s~n", [AppName]),
     Modules = sin_config:get_value(BuildRef,
                               "apps." ++ AppName ++ ".modules"),
     case Modules == undefined orelse length(Modules) =< 0 of
@@ -78,7 +78,6 @@ test_apps(_, [], Modules) ->
 
 %% @doc Prepare for running the tests. This mostly means seting up the
 %% coverage tools.
-%% @private
 -spec prepare_for_tests(sin_config:config(), string(), [atom()]) -> ok.
 prepare_for_tests(BuildRef, AppName, Modules) ->
     BuildDir = sin_config:get_value(BuildRef, "build.dir"),
@@ -95,8 +94,7 @@ prepare_for_tests(BuildRef, AppName, Modules) ->
 
 
 %% @doc Output coverage information to make accessing the coverage files a bit
-%%  easier.
-%%@private
+%% easier.
 -spec output_coverage_index(string(), string(),
 			    [{Name::string(), Module::atom()}]) ->
     ok.
@@ -115,12 +113,14 @@ output_coverage_index(DocDir, AppName, CoverageFiles=[{Name, _Module} | _T]) ->
              "    <FRAME name=\"bodyarea\" src=\"", Name, "\">\n"
              "    <NOFRAMES>\n"
              "      <P>This frameset document contains:\n"
-             "        <A href=\"coverage_index.html\">Index of coverage reports</A>\n"
+             "        <A href=\"coverage_index.html\">Index of coverage"
+	     " reports</A>\n"
              "      </P>\n"
              "    </NOFRAMES>\n"
              "</FRAMESET>\n"
              "</HTML>\n"],
-    CoverageIndex = ["<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\"\n"
+    CoverageIndex = ["<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 "
+		     "Transitional//EN\"\n"
                      "   \"http://www.w3.org/TR/html4/loose.dtd\">\n"
                      "<HTML>\n"
                      "<HEAD>\n"
@@ -139,19 +139,17 @@ output_coverage_index(DocDir, AppName, CoverageFiles=[{Name, _Module} | _T]) ->
     file:write_file(IndexFile, list_to_binary(Frame), [write]),
     file:write_file(CList, list_to_binary(CoverageIndex), [write]).
 
-%% @doc
-%%  Render the list of modules into a deep list of links.
-%% @private
+%% @doc Render the list of modules into a deep list of links.
 -spec make_index([{string(), atom()}], list()) -> list().
 make_index([{File, Module} | T], Acc) ->
-    Acc2 = ["<LI><A href=\"", File, "\" target=\"bodyarea\">", atom_to_list(Module),
+    Acc2 = ["<LI><A href=\"", File, "\" target=\"bodyarea\">",
+	    atom_to_list(Module),
             "</A></LI>" | Acc],
     make_index(T, Acc2);
 make_index([], Acc) ->
     Acc.
 
 %% @doc Instrument all of the modules for code coverage checks.
-%% @private
 -spec setup_code_coverage([atom()]) -> ok.
 setup_code_coverage(Modules) ->
     lists:foreach(
@@ -168,7 +166,6 @@ setup_code_coverage(Modules) ->
       Modules).
 
 %% @doc Take the analysis from test running and output it to an html file.
-%%  @private
 -spec output_code_coverage(sin_config:config(), string(), [atom()], list()) ->
     list().
 output_code_coverage(BuildRef, DocDir, [Module | T], Acc) ->
@@ -186,7 +183,7 @@ output_code_coverage(BuildRef, DocDir, [Module | T], Acc) ->
 output_code_coverage(_, _DocDir, [], Acc) ->
     Acc.
 
-%% @doc Run tests for each module that has a test/0 function @private
+%% @doc Run tests for each module that has a test/0 function
 -spec run_module_tests([atom()], [number()]) -> ok.
 run_module_tests([Module | T], Acc) ->
     eunit:test(Module),
