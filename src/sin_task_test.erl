@@ -186,9 +186,15 @@ output_code_coverage(_, _DocDir, [], Acc) ->
 %% @doc Run tests for each module that has a test/0 function
 -spec run_module_tests([atom()], [number()]) -> ok.
 run_module_tests([Module | T], Acc) ->
-    eunit:test(Module),
-    Percentage = print_code_coverage(Module),
-    run_module_tests(T, [Percentage | Acc] );
+    case has_tests(Module) of
+	true ->
+	    ewl_talk:say("testing ~p", [Module]),
+	    eunit:test(Module),
+	    Percentage = print_code_coverage(Module),
+	    run_module_tests(T, [Percentage | Acc] );
+	false ->
+	    run_module_tests(T, [0.0 | Acc] )
+    end;
 run_module_tests([], Percentages) ->
     Percentages.
 
@@ -240,6 +246,7 @@ get_aggregate_percentage(Terms) ->
 	    Coverage / Count
     end.
 
+
 %% @doc print the total code coverage for the project
 -spec print_overall_percentage([number()]) -> ok.
 print_overall_percentage(Modules) ->
@@ -257,3 +264,21 @@ print_overall_percentage(Modules) ->
 -spec to_percentage(float()) -> float().
 to_percentage(Value) ->
     Value * 100.
+
+%% @doc check to see if this module has eunit tests
+-spec has_tests(atom()) -> boolean().
+has_tests(Module) ->
+    ModInfo = Module:module_info(),
+    case lists:keyfind(exports, 1, ModInfo) of
+	false ->
+	    false;
+	{exports, ExportList}  ->
+	    case lists:keyfind(test, 1, ExportList) of
+		false ->
+		    false;
+		{test, 0} ->
+		    true;
+		_ ->
+		    false
+	    end
+    end.
