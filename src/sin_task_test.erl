@@ -48,7 +48,7 @@ do_task(BuildRef) ->
                                      atom_to_list(App)
                              end, sin_config:get_value(BuildRef,
                                                   "project.apps")),
-            test_apps(BuildRef, Apps)
+                print_overall_percentage(test_apps(BuildRef, Apps, []))
     end,
     BuildRef.
 
@@ -59,8 +59,8 @@ do_task(BuildRef) ->
 
 %% @doc Run tests for all the applications specified.
 %% @private
--spec test_apps(sin_config:config(), [string()]) -> ok.
-test_apps(BuildRef, [AppName | T]) ->
+-spec test_apps(sin_config:config(), [string()], [[atom()]]) -> ok.
+test_apps(BuildRef, [AppName | T], Acc) ->
     io:format("Testing ~s~n", [AppName]),
     Modules = sin_config:get_value(BuildRef,
                               "apps." ++ AppName ++ ".modules"),
@@ -72,9 +72,9 @@ test_apps(BuildRef, [AppName | T]) ->
         false ->
             prepare_for_tests(BuildRef, AppName, Modules)
     end,
-    test_apps(BuildRef, T);
-test_apps(_, []) ->
-    ok.
+    test_apps(BuildRef, T, [Modules | Acc]);
+test_apps(_, [], Modules) ->
+    Modules.
 
 %% @doc Prepare for running the tests. This mostly means seting up the
 %% coverage tools.
@@ -87,11 +87,12 @@ prepare_for_tests(BuildRef, AppName, Modules) ->
     Paths = sin_config:get_value(BuildRef,
                                        "apps." ++ AppName ++ ".code_paths"),
     code:add_pathsa(Paths),
-    setup_code_coverage(BuildRef, Modules),
-    run_module_tests(Modules),
+    setup_code_coverage(Modules),
+    run_module_tests(Modules, []),
     CoverageFiles = output_code_coverage(BuildRef, DocDir, Modules, []),
     output_coverage_index(DocDir, AppName, CoverageFiles),
     sin_utils:remove_code_paths(Paths).
+
 
 %% @doc Output coverage information to make accessing the coverage files a bit
 %%  easier.
@@ -151,17 +152,20 @@ make_index([], Acc) ->
 
 %% @doc Instrument all of the modules for code coverage checks.
 %% @private
--spec setup_code_coverage(sin_config:config(), [atom()]) -> ok.
-setup_code_coverage(BuildRef, [Module | T]) ->
-    case cover:compile_beam(Module) of
-        {error, _} ->
-            ewl_talk:say("Couldn't add code coverage to ~w", [Module]);
-        _ ->
-            ok
-    end,
-    setup_code_coverage(BuildRef, T);
-setup_code_coverage(_, []) ->
-    ok.
+-spec setup_code_coverage([atom()]) -> ok.
+setup_code_coverage(Modules) ->
+    lists:foreach(
+      fun(Module) ->
+	      case cover:compile_beam(Module) of
+		  {error, Reason} ->
+		      ewl_talk:say("Couldn't add code coverage to ~w "
+				   "because ~p",
+				   [Module, Reason]);
+		  _ ->
+		      ok
+	      end
+      end,
+      Modules).
 
 %% @doc Take the analysis from test running and output it to an html file.
 %%  @private
@@ -173,18 +177,86 @@ output_code_coverage(BuildRef, DocDir, [Module | T], Acc) ->
     case cover:analyse_to_file(Module, OutFile, [html]) of
         {ok, _} ->
             output_code_coverage(BuildRef, DocDir, T, [{File, Module} | Acc]);
-        {error, _} ->
-	    ewl_talk:say("Unable to write coverage information for ~w",
-			 [Module]),
+        {error, Reason} ->
+	    ewl_talk:say("Unable to write coverage information for "
+			 "~w because ~p",
+			 [Module, Reason]),
             output_code_coverage(BuildRef, DocDir, T, Acc)
     end;
 output_code_coverage(_, _DocDir, [], Acc) ->
     Acc.
 
 %% @doc Run tests for each module that has a test/0 function @private
--spec run_module_tests([atom()]) -> ok.
-run_module_tests([Module | T]) ->
+-spec run_module_tests([atom()], [number()]) -> ok.
+run_module_tests([Module | T], Acc) ->
     eunit:test(Module),
-    run_module_tests(T);
-run_module_tests([]) ->
-    ok.
+    Percentage = print_code_coverage(Module),
+    run_module_tests(T, [Percentage | Acc] );
+run_module_tests([], Percentages) ->
+    Percentages.
+
+%% @doc inform the user what the code coverage percentage is for this module and
+%% return the result to the caller.
+-spec print_code_coverage(atom()) -> float().
+print_code_coverage(Module) ->
+    ewl_talk:say("~p coverage percentage ~.2f%",
+		 [Module,
+		  to_percentage(get_code_coverage(Module))]).
+
+
+%% @doc get the code coverage amount for the specified module
+-spec get_code_coverage(atom()) -> float().
+get_code_coverage(Module) ->
+    case cover:analyze(Module) of
+	{ok, {Module, Calls}} when is_integer(Calls) ->
+	    0.0;
+	{ok, {Module, {Cov, NoCov}}} ->
+	    Percentage = Cov / (Cov + NoCov),
+	    Percentage;
+	{ok, Terms} when is_list(Terms)  ->
+	    Percentage = get_aggregate_percentage(Terms),
+	    Percentage;
+	{error, _} ->
+	    0.0
+    end.
+
+
+%% @doc given a list of results from cover, print the code coverage percentage.
+-spec get_aggregate_percentage([term()]) -> float().
+get_aggregate_percentage(Terms) ->
+    {Coverage, Count} =
+	lists:foldl(fun({_, {Cov, _NoCov}}, {Coverage, Count})
+		       when Cov == 0 ->
+			    {Coverage, Count + 1};
+		       ({_, {Cov, NoCov}}, {Coverage, Count}) ->
+			    Percentage = (Cov / (Cov + NoCov)) + Coverage,
+			    {Percentage, Count + 1};
+		       (_, {Coverage, Count}) ->
+			    {Coverage, Count + 1}
+		    end,
+		    {0, 0},
+		    Terms),
+    case Coverage of
+	0 ->
+	    0.0;
+	_ ->
+	    Coverage / Count
+    end.
+
+%% @doc print the total code coverage for the project
+-spec print_overall_percentage([number()]) -> ok.
+print_overall_percentage(Modules) ->
+    {Percentages, Count} =
+	lists:foldl(fun(Module, {Coverage, Count}) ->
+			    {Coverage + get_code_coverage(Module),
+			     Count + 1}
+		    end,
+		    {0, 0},
+		    lists:flatten(Modules)),
+    ewl_talk:say("Overall run coverage ~.2f%",
+		 [to_percentage(Percentages / Count)]).
+
+%% @doc convert the value to a percentage
+-spec to_percentage(float()) -> float().
+to_percentage(Value) ->
+    Value * 100.
