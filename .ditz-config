@@ -1,0 +1,6 @@
+--- !ditz.rubyforge.org,2008-03-06/config 
+name: Eric Merritt
+email: ericbmerritt@gmail.com
+issue_dir: .ditz
+use_editor_if_possible: true
+paginate: auto
