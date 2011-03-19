@@ -25,14 +25,15 @@
 %% @doc describes this task to the system
 -spec description() -> sin_task:task_description().
 description() ->
-    Desc = "Creates the *.rel, *.boot and *.script into the "
-        "<build-area>/realeases/<vsn> directory. It also "
-        "builds up a release tar bal into the "
-        "<build-area>/tar/ directory",
+    Desc = "Creates the *.rel, *.boot and *.script into the \n"
+	"<build-area>/realeases/<vsn> directory. It also builds up a \n"
+	"release tar bal into the <build-area>/tar/ directory",
     #task{name = ?TASK,
 	  task_impl = ?MODULE,
 	  bare = false,
 	  deps = ?DEPS,
+	  example = "release",
+	  short_desc = "Creates an otp release for the system",
 	  desc = Desc,
 	  opts = []}.
 

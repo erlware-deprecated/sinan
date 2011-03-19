@@ -40,6 +40,8 @@ description() ->
 	  task_impl = ?MODULE,
 	  bare = false,
 	  deps = ?DEPS,
+	  example = "build",
+	  short_desc = "compiles the files in the project",
 	  desc = Desc,
 	  opts = []}.
 

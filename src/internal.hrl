@@ -43,4 +43,6 @@
 		bare :: boolean(),         % Indicates whether a build config is needed
                 deps :: [atom()],          % The list of dependencies
                 desc :: string(),          % The description for the task
+		short_desc :: string(),    % A one line short description of the task
+		example :: string(),       % An example of the task usage
                 opts :: list()}).          % The list of options that the task requires/understands

@@ -128,7 +128,7 @@ usage() ->
 
 -spec usage(term()) -> ok.
 usage(OptSpecList) ->
-    getopt:usage(OptSpecList, "", "[var1=val1 ...] [command1 ...]",
+    getopt:usage(OptSpecList, "", "[command] [option1 option2]....",
                  [{"var=value",
 		   "Variables that will affect the compilation (e.g. debug=1)"},
                   {"command",

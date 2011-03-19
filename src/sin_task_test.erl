@@ -27,12 +27,15 @@
 %% @doc provides a description of this task
 -spec description() ->  sin_task:task_description().
 description() ->
-    Desc = "Runs all of the existing eunit unit tests in the project",
+    Desc = "Runs all eunit tests available in the project. Currently this \n"
+	"task only supports eunit",
     #task{name = ?TASK,
 	  task_impl = ?MODULE,
 	  bare = false,
 	  deps = ?DEPS,
+	  example = "test",
 	  desc = Desc,
+	  short_desc = "Runs all of the existing eunit unit tests in the project",
 	  opts = []}.
 
 %% @doc run all tests for all modules in the system

@@ -24,11 +24,13 @@
 %% @doc provides a description for this task
 -spec description() -> sin_task:task_description().
 description() ->
-    Desc = "Provides sinan server version information",
+    Desc = "Simple prints out the current version of sinan",
     #task{name = ?TASK,
 	  task_impl = ?MODULE,
 	  bare = true,
 	  deps = ?DEPS,
+	  example = "version",
+	  short_desc = "Provides sinan version information",
 	  desc = Desc,
 	  opts = []}.
 

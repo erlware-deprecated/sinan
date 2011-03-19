@@ -29,6 +29,8 @@ description() ->
 	  task_impl = ?MODULE,
 	  bare = true,
 	  deps = ?DEPS,
+	  example = "erts",
+	  short_desc = Desc,
 	  desc = Desc,
 	  opts = []}.
 

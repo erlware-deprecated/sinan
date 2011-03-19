@@ -25,12 +25,18 @@
 %% @doc provide a description for this task
 -spec description() -> sin_task:task_description().
 description() ->
-    Desc = "Runs xref on the project, to detect problems",
+
+    Desc = "Runs the erlang xref task on all code in the project. It outputs \n"
+	"several different sections corresponding to the information available\n"
+	"from xref",
+
     #task{name = ?TASK,
 	  task_impl = ?MODULE,
 	  bare = false,
 	  deps = ?DEPS,
 	  desc = Desc,
+	  short_desc = "Runs xref on the project, to detect problems",
+	  example = "xref",
 	  opts = []}.
 
 %% @doc do the xref task

@@ -25,14 +25,16 @@
 %% @doc return a description of this task
 -spec description() -> sin_task:task_description().
 description() ->
-    Desc = "Starts an erlang shell with all of the correct "
-        "paths preset so the developer can noodle with the "
+    Desc = "Starts an erlang shell with all of the correct \n"
+        "paths preset so the developer can noodle with the \n"
         "code to his hearts content",
     #task{name = ?TASK,
 	  task_impl = ?MODULE,
 	  bare = false,
 	  deps = ?DEPS,
+	  example = "shell",
 	  desc = Desc,
+	  short_desc = "Provides an erlang repl on the project",
 	  opts = []}.
 
 %% @doc Run the shell command.

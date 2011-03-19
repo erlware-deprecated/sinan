@@ -6,7 +6,7 @@ class TestHelp(st.SmokeTest):
 
     @st.sinan("help")
     def test_help(self, child):
-        child.expect("Compiles all of the compilable files in the project")
+        child.expect("for more information run 'sinan help <command>'")
         child.expect(pexpect.EOF)
 
 if __name__ == '__main__':

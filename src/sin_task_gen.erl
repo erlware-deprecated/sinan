@@ -39,6 +39,8 @@ description() ->
 	  task_impl = ?MODULE,
 	  bare = true,
 	  deps = ?DEPS,
+	  example = "gen",
+	  short_desc = Desc,
 	  desc = Desc,
 	  opts = []}.
 

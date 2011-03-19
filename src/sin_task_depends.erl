@@ -27,12 +27,13 @@
 %% @doc provide a description of the system for the caller
 -spec description() -> sin_task:task_description().
 description() ->
-    Desc = "Analyzes all of the dependencies in the project "
-        "and pulls down those that arn't curently available "
-        "locally",
+    Desc = "Analyzes all of the dependencies in the project and provides that \n "
+	"information to other tasks.",
     #task{name = ?TASK,
 	  task_impl = ?MODULE,
 	  bare = false,
+	  example = "depends",
+	  short_desc = "dependency resolution for the project",
 	  deps = ?DEPS,
 	  desc = Desc,
 	  opts = []}.

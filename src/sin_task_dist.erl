@@ -28,13 +28,15 @@
 %% @doc provides a description of the sytem, for help and other reasons
 -spec description() -> sin_task:task_description().
 description() ->
-    Desc = "Creates an tarball of the distribution including "
-        "release information. Check documentation for the "
-        "dist task for configuration information ",
+    Desc = "Creates an tarball of the distribution including release \n"
+	"information. Check documentation for the dist task for configuration \n"
+	"information ",
     #task{name = ?TASK,
 	  task_impl = ?MODULE,
 	  bare = false,
 	  deps = ?DEPS,
+	  example = "dist",
+	  short_desc = "Provides a standard erlang distribution tarball",
 	  desc = Desc,
 	  opts = []}.
 

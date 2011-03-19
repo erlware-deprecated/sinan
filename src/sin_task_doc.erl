@@ -25,12 +25,14 @@
 %% @doc return a description of this task for callers
 -spec description() -> sin_task:task_description().
 description() ->
-    Desc = "Runs edoc across all sources in the project and "
+    Desc = "Runs edoc across all sources in the project and \n"
         "outputs it into the build area",
     #task{name = ?TASK,
 	  task_impl = ?MODULE,
 	  bare = false,
 	  deps = ?DEPS,
+	  example = "doc",
+	  short_desc = "Genarates edoc documentation for the project",
 	  desc = Desc,
 	  opts = []}.
 
