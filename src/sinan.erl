@@ -14,8 +14,7 @@
 -export([main/0,
 	 run_sinan/0,
 	 run_sinan/1,
-         do_task/3,
-         start/0]).
+         do_task/3]).
 
 -export_type([args/0,
 	      task_name/0]).
@@ -111,11 +110,9 @@ run_sinan(Args) ->
             usage()
     end.
 
-
 %%====================================================================
 %% Internal functions
 %%====================================================================
-
 
 -spec do_build(term(), [string()]) -> sin_config:config().
 do_build(Options, [Target | Rest]) ->
@@ -145,33 +142,6 @@ option_spec_list() ->
      {project, $p, "project", string, "the name of the project"},
      {version, $n, "nversion", string, "the version of the project"}].
 
-
-
-%% @doc Allows sinan to be easily started from the shell. This is a helper
-%%  function thats mostly just useful in development.
--spec start() -> ok.
-start() ->
-    application:start(tools),
-    application:start(compiler),
-    application:start(syntax_tools),
-    application:start(edoc),
-    application:start(sasl),
-    application:start(eunit),
-    application:start(ktuo),
-    application:start(ewlib),
-    application:start(ewrepo),
-    application:start(gs),
-    application:start(hipe),
-    application:start(xmerl),
-    application:start(mnesia),
-    application:start(dialyzer),
-    application:start(sgte),
-    application:start(parsetools),
-    application:start(asn1),
-    application:start(getopt),
-    application:start(sinan).
-
-
 %% @doc run the task including all task dependencies
 -spec run_task(task_name(), string(), sin_config:config()) -> ok.
 run_task(Task, ProjectDir, BuildConfig) ->
@@ -179,27 +149,29 @@ run_task(Task, ProjectDir, BuildConfig) ->
        Tasks = sin_task:get_task_list(Task),
        case sin_hooks:get_hooks_function(ProjectDir) of
 	   no_hooks ->
-	       lists:foldl(fun(TaskDesc, NewConfig) ->
-				   ewl_talk:say("starting: ~p",
-						TaskDesc#task.name),
-				   NewNewConfig =
-				       (TaskDesc#task.task_impl):do_task(NewConfig),
-				   NewNewConfig
-			   end, BuildConfig, Tasks);
+	       lists:foldl(
+		 fun(TaskDesc, NewConfig) ->
+			 ewl_talk:say("starting: ~p",
+				      TaskDesc#task.name),
+			 NewNewConfig =
+			     (TaskDesc#task.task_impl):do_task(NewConfig),
+			 NewNewConfig
+		 end, BuildConfig, Tasks);
 	   HooksFun ->
-	       lists:foldl(fun(TaskDesc, NewConfig) ->
-				   ewl_talk:say("starting: ~p", TaskDesc#task.name),
-				   HooksFun(pre, Task, NewConfig),
-				   NewNewConfig = (TaskDesc#task.task_impl):do_task(NewConfig),
-				   HooksFun(post, Task, NewNewConfig),
-				NewNewConfig
-			   end, BuildConfig, Tasks)
+	       lists:foldl(
+		 fun(TaskDesc, NewConfig) ->
+			 ewl_talk:say("starting: ~p", TaskDesc#task.name),
+			 HooksFun(pre, Task, NewConfig),
+			 NewNewConfig =
+			     (TaskDesc#task.task_impl):do_task(NewConfig),
+			 HooksFun(post, Task, NewNewConfig),
+			 NewNewConfig
+		 end, BuildConfig, Tasks)
        end
     catch
 	throw:{task_not_found, Task} ->
 	    sin_talk:say("Unknown task ~p", [Task])
     end.
-
 
 %% @doc parse the start dir out of the args passed in.
 -spec find_start_dir(args()) -> string().
@@ -229,7 +201,6 @@ setup_config_overrides(Options, Args) ->
 			 [{release, "-r"},
 			  {project, "project.name"},
 			  {version, "project.vsn"}]).
-
 
 %% @doc This pushes the values given in the args (if they exist) into the
 %% override config under the name specified in key.
@@ -263,4 +234,3 @@ push_values_if_exist_test() ->
     ?assertMatch("baz", sin_config:get_value(Config, "monsefu")),
     ?assertMatch(333, sin_config:get_value(Config, "chiclayo")),
     ?assertMatch(undefined, sin_config:get_value(Config, "noid")).
-
