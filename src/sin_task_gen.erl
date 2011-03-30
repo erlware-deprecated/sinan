@@ -271,6 +271,8 @@ make_dir(DirName) ->
 %% @doc Helper function that makes sure a directory is made by testing the
 %% output of file:make_dir().
 is_made(DirName, ok) ->
+   ewl_talk:say("~s created ok.", [DirName]);
+is_made(DirName, {error, eexist}) ->
    ewl_talk:say("~s created ok.", [DirName]).
 
 %% @doc Get the value from the environment.
