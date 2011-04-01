@@ -142,19 +142,11 @@ build_app(BuildRef, Env, AppName, Args) ->
     BuildRef2 = sin_config:store(BuildRef, "apps." ++ AppName ++ ".builddir",
 				       AppBuildDir),
     Target = filename:join([AppBuildDir, "ebin"]),
-    TargetSrcDir = filename:join([AppBuildDir, "src"]),
-    SrcDir = filename:join([AppDir, "src"]),
     ExistingPaths = code:get_path(),
     {EbinPaths, Includes} = setup_code_path(BuildRef2, Env, AppName),
     BuildRef3 = sin_config:store(BuildRef2, "apps." ++ AppName ++ ".code_paths",
                    [Target | EbinPaths]),
-    Options = Args ++ [{outdir, Target}, strict_record_tests,
-                       return_errors, return_warnings,
-                       {i, filename:join([AppDir, "include"])},
-                       % Search directory with .hrl files
-                       % generated from .asn1 files.
-                       {i, TargetSrcDir} | Includes],
-    event_compile_args(BuildRef3, Options),
+
     Ignorables = sin_config:get_value(BuildRef3, "ignore_dirs", []),
 
     % Ignore the build dir when copying or we will create a deep monster in a
@@ -163,17 +155,45 @@ build_app(BuildRef, Env, AppName, Args) ->
     sin_utils:copy_dir(
       AppBuildDir, AppDir, "", [BuildDir | Ignorables]),
     code:add_patha(Target),
-    Modules = gather_modules(BuildRef3, AppName, SrcDir),
-    BuildRef4 = sin_config:store(BuildRef3, "apps." ++ AppName ++ ".module_detail",
+    Modules = build_src_dirs(["test", "src"], BuildRef3, AppName, Includes,
+			     Args, AppDir, AppBuildDir, Target, []),
+    code:set_path(ExistingPaths),
+    BuildRef4 = sin_config:store(BuildRef3, "apps." ++ AppName ++
+				 ".module_detail",
 				 Modules),
 
-    NModules = lists:map(fun({File, _AbsName, Ext}) ->
-                                 build_file(BuildRef4, SrcDir, File, Ext,
-                                            Options, Target)
-                         end, Modules),
-    check_for_errors(NModules),
-    code:set_path(ExistingPaths),
     BuildRef4.
+
+build_src_dirs([ISrcDir | Dirs], BuildRef, AppName, Includes,
+	       Args, AppDir, AppBuildDir, Target,
+	       Acc) ->
+    SrcDir = filename:join([AppDir, ISrcDir]),
+    case filelib:is_dir(SrcDir) of
+	true ->
+	    TargetSrcDir = filename:join([AppBuildDir, ISrcDir]),
+	    Options = Args ++ [{outdir, Target}, strict_record_tests,
+			       return_errors, return_warnings,
+			       {i, filename:join([AppDir, "include"])},
+			       % Search directory with .hrl files
+			       % generated from .asn1 files.
+			       {i, TargetSrcDir} | Includes],
+	    event_compile_args(BuildRef, Options),
+	    Modules = gather_modules(BuildRef, AppName, SrcDir),
+
+	    NModules = lists:map(fun({File, _AbsName, Ext}) ->
+					 build_file(BuildRef, SrcDir, File, Ext,
+						    Options, Target)
+				 end, Modules),
+	    check_for_errors(NModules),
+	    build_src_dirs(Dirs, BuildRef, AppName, Includes, Args,
+			   AppDir, AppBuildDir, Target, Acc ++ NModules);
+	false ->
+	    build_src_dirs(Dirs, BuildRef, AppName, Includes, Args,
+			   AppDir, AppBuildDir, Target, Acc)
+    end;
+build_src_dirs([], _, _, _, _, _, _, _, Acc) ->
+    Acc.
+
 
 event_compile_args(BuildRef, Options) ->
 	case sin_config:get_value(BuildRef, "task.build.print_args", undefined) of
@@ -257,9 +277,7 @@ gather_modules(BuildRef, AppName, SrcDir) ->
                            Ext = filename:extension(File),
                            [{File, module_name(File), Ext} | Acc]
                    end, []),
-    reorder_list(ModuleList,
-                 filter_file_list(FileList, ModuleList)).
-
+    reorder_list(ModuleList, FileList).
 
 %% @doc Extract the module name from the file name.
 module_name(File) ->
@@ -269,23 +287,20 @@ module_name(File) ->
 %% application compile time dependencies.
 reorder_list(ModList, FileList) ->
     Res = lists:foldr(
-	    fun (Mod, {Acc,OkFlag}) ->
+	    fun (Mod, Acc) ->
 		    case get_file_list(Mod, FileList) of
 			not_in_list ->
-			    ewl_talk:say("The module specified by ~w is not "
-					 "on the filesystem!! Not building.", [Mod]),
-			    {Acc, not_ok};
+			    Acc;
 			Entry ->
-			    {[Entry | Acc], OkFlag}
+			    [Entry | Acc]
 		    end
-	    end, {[], ok}, ModList),
-    case Res of
-	{Acc, ok} ->
-	    lists:reverse(Acc);
-	{_, not_ok} ->
-	    sin_error_store:signal_error(),
-	    ?SIN_RAISE(build_errors)
-    end.
+	    end, [], ModList),
+    Res2 = lists:filter(
+	     fun({_File, ModName, _Ext}) ->
+		     not lists:member(ModName, ModList)
+	     end, FileList),
+
+    Res ++ Res2.
 
 %% @doc Get the entry specified by name from the list in module list.
 get_file_list(ModuleName, FileList) ->
@@ -295,21 +310,6 @@ get_file_list(ModuleName, FileList) ->
 	false ->
 	    not_in_list
     end.
-
-%% @doc Filter the list of files keeping those that are in the module list.
-filter_file_list(FileList, ModuleList) ->
-    lists:foldr(
-      fun ({File, AbsName, _}=Entry, Acc) ->
-	      case lists:member(AbsName, ModuleList) of
-		  true ->
-		      [Entry | Acc];
-		  false ->
-		      ewl_talk:say("Module (~w) in file ~s is not in the "
-				   "module list. Removing from build queue.",
-				   [AbsName, File]),
-		      Acc
-	      end
-      end, [], FileList).
 
 %% @doc Build the file specfied by its arguments
 build_file(BuildRef, SrcDir, File, Ext, Options, Target) ->
