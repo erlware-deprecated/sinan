@@ -66,13 +66,14 @@ do_task(BuildRef) ->
     ProjectName = sin_config:get_value(BuildRef2, "project.name"),
     ProjectVsn = sin_config:get_value(BuildRef2, "project.vsn"),
     RootDir = sin_config:get_value(BuildRef2, "project.dir"),
+    LibDir = code:lib_dir(),
 
     case process_release(RootDir, BuildFlavor,
                          ProjectName, ProjectVsn, ProjectApps) of
         {ok, AllDeps} ->
             ok;
         _ ->
-            case do_transitive_resolution(ProjectApps, AllProjectApps) of
+            case do_transitive_resolution(ProjectApps, AllProjectApps, LibDir) of
                 {ok, AllDeps} ->
                     ok;
                 _ ->
@@ -89,7 +90,8 @@ do_task(BuildRef) ->
         {ok, AllDeps2} ->
             ok;
         _ ->
-            case do_transitive_resolution(AllProjectApps, AllProjectApps) of
+            case do_transitive_resolution(AllProjectApps, AllProjectApps,
+					  LibDir) of
                 {ok, AllDeps2} ->
                     ok;
                 _ ->
@@ -103,13 +105,37 @@ do_task(BuildRef) ->
     BuildRef3 = sin_config:store(BuildRef2, "project.deps", AllDeps),
     BuildRef4 = sin_config:store(BuildRef3, "project.alldeps", AllDeps2),
     BuildRef5 = sin_config:store(BuildRef4, "project.repoapps", RepoApps),
-    save_deps(BuildRef5, AllDeps),
-    update_sigs(BuildRef5),
-    BuildRef5.
+    BuildRef6 = sin_config:store(BuildRef5, "project.compile_deps",
+				 gather_compile_time_dependencies([eunit, proper],
+								 LibDir,
+								 [])),
+    save_deps(BuildRef6, AllDeps),
+    update_sigs(BuildRef6),
+    BuildRef6.
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
+gather_compile_time_dependencies([Dep | Rest], LibDir, PackageLocations) ->
+    Version = case sin_resolver:package_versions(LibDir,
+						 Dep) of
+	[] ->
+	    sin_error_store:signal_error(),
+	    ?SIN_RAISE_DA(unable_to_find_dependency,
+			  "Couldn't find dependency ~s.",
+			  [Dep]);
+	[Version1 | _] ->
+	    Version1
+    end,
+
+    Location = sin_resolver:find_package_location(LibDir,
+						  Dep,
+                                                  Version),
+    gather_compile_time_dependencies(Rest, LibDir,
+				     [{Dep, Version, {[], []}, Location} |
+				      PackageLocations]);
+gather_compile_time_dependencies(_, _, PackageLocations) ->
+    PackageLocations.
 
 %% @doc Check for per project dependencies
 -spec check_project_dependencies(string(), string(), [AppInfo::tuple()],
@@ -310,19 +336,10 @@ gather_project_apps(BuildRef, AppBDir, [AppName | T], Acc, ProjectApps) ->
                                               "apps." ++ AppName ++
                                               ".included_applications", []),
 
-    Eunit = case sin_config:get_value(BuildRef, "eunit") of
-                "disable" ->
-                    [];
-                _ ->
-                    [eunit]
-            end,
-
-    NDeps = {OpenDeps ++ Eunit, IncludedDeps},
+    NDeps = {OpenDeps, IncludedDeps},
 
     BuildTarget = lists:flatten([atom_to_list(Name), "-", Vsn]),
     AppPath = filename:join([AppBDir, BuildTarget]),
-
-    sin_config:store(BuildRef, "apps." ++ AppName ++ ".deps", NDeps),
 
     AddToT = lists:foldl(fun(El, LAcc) ->
 			       case add_to_project_app_list(El, Acc,
@@ -393,8 +410,7 @@ process_deps(LibDir, [{Name, Vsn} | Rest], ProjectApps, Acc) ->
 process_deps(_, [], ProjectApps, Acc) ->
     ProjectApps ++ Acc.
 
-do_transitive_resolution(ProjectApps, AllProjectApps) ->
-    LibDir = code:lib_dir(),
+do_transitive_resolution(ProjectApps, AllProjectApps, LibDir) ->
     ErtsVersion = erlang:system_info(version),
     AllDeps = check_project_dependencies(LibDir,
                                          ErtsVersion,

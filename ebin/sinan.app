@@ -35,7 +35,7 @@
 	     sin_error_store]},
   {registered, [sin_sup]},
   {applications, [kernel, stdlib, compiler,
-                  edoc, syntax_tools,
+                  edoc, syntax_tools, eunit, proper,
                   ktuo, ewrepo, ewlib, tools,
                   xmerl, mnesia, sgte,
 		  parsetools, asn1, getopt]},

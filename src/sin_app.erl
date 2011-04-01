@@ -64,6 +64,8 @@ manual_start() ->
 		   parsetools,
 		   asn1,
 		   getopt,
+		   crypto,
+		   proper,
 		   sinan]).
 
 

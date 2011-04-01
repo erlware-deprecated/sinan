@@ -196,7 +196,8 @@ build_src_dirs([], _, _, _, _, _, _, _, Acc) ->
 
 
 event_compile_args(BuildRef, Options) ->
-	case sin_config:get_value(BuildRef, "task.build.print_args", undefined) of
+	case sin_config:get_value(BuildRef,
+				  "task.build.print_args", undefined) of
 	    undefined ->
 	        ok;
 	    true ->
@@ -226,11 +227,25 @@ setup_code_path(BuildRef, Env, AppName) ->
                           "This shouldn't happen!!",
                           [AppName]);
         {_, _, {Deps, IncDeps}, _} ->
-            extract_info_from_deps(BuildRef, Deps++IncDeps, element(1,Env#env.deps), [], [], [])
+            get_compile_time_deps(BuildRef,
+				  extract_info_from_deps(BuildRef,
+							 Deps ++ IncDeps,
+							 element(1, Env#env.deps),
+							 [], [], []))
 	end.
+%% @doc gather up the static compile time dependencies
+get_compile_time_deps(BuildRef, {Acc, IAcc}) ->
+    lists:foldl(fun({_, _, _, Path}, {NA, NIA}) ->
+			Ebin = filename:join([Path, "ebin"]),
+			Include = {i, filename:join([Path, "include"])},
+			{[Ebin | NA], [Include | NIA]}
+		end,
+		{Acc, IAcc},
+		sin_config:get_value(BuildRef, "project.compile_deps")).
 
 %% @doc Gather path and include information from the dep list.
-extract_info_from_deps(BuildRef, [AppName | T], AppList, Marked, Acc, IAcc) ->
+extract_info_from_deps(BuildRef, [AppName | T],
+		       AppList, Marked, Acc, IAcc) ->
     case lists:member(AppName, Marked) of
         false ->
             case get_app_from_list(AppName, AppList) of
@@ -244,7 +259,8 @@ extract_info_from_deps(BuildRef, [AppName | T], AppList, Marked, Acc, IAcc) ->
                     Ebin = filename:join([Path, "ebin"]),
                     Include = {i, filename:join([Path, "include"])},
                     code:add_patha(Ebin),
-                    extract_info_from_deps(BuildRef, T, AppList ++ Deps ++ IncDeps,
+                    extract_info_from_deps(BuildRef, T, AppList ++ Deps ++
+					   IncDeps,
                                            Marked,
                                            [Ebin | Acc],
                                            [Include | IAcc])
@@ -330,8 +346,10 @@ build_file(BuildRef, File, ".erl", Options, Target) ->
 			    ewl_talk:say(gather_fail_info(Warnings, "warning")),
 			    ModuleName;
 			{error, Errors, Warnings} ->
-			    ewl_talk:say(lists:flatten([gather_fail_info(Errors, "error"),
-							gather_fail_info(Warnings, "warning")])),
+			    ewl_talk:say(
+			      lists:flatten([gather_fail_info(Errors, "error"),
+					     gather_fail_info(Warnings,
+							      "warning")])),
 			    {sinan,  error};
 			error ->
 			    ewl_talk:say("Unknown error occured during build"),
@@ -367,8 +385,9 @@ build_file(BuildRef, File, ".yrl", Options, Target) ->
                     ewl_talk:say(gather_fail_info(Warnings, "warning")),
                     ok;
                 {error, Errors, Warnings} ->
-                    ewl_talk:say(lists:flatten([gather_fail_info(Errors, "error"),
-                                                gather_fail_info(Warnings, "warning")])),
+                    ewl_talk:say(
+		      lists:flatten([gather_fail_info(Errors, "error"),
+				     gather_fail_info(Warnings, "warning")])),
                     error
             end;
         false ->
@@ -455,7 +474,8 @@ check_module_deps(BuildRef, FileName) ->
         Terms ->
             lists:foldl(fun({Include, Ts}, Acc) ->
                                 case file:read_file_info(Include) of
-                                    {ok, TargetInfo} when TargetInfo#file_info.mtime > Ts ->
+                                    {ok, TargetInfo}
+				    when TargetInfo#file_info.mtime > Ts ->
                                         true;
                                     _ ->
                                         Acc
@@ -528,7 +548,8 @@ save_module_dependencies(BuildRef, File, Options) ->
                                             end,
                                             [],
                                             Options)),
-    sin_sig:save_sig_info(?SIGNS, BuildDir, File, get_hrl_files(File, IncludeDirs)).
+    sin_sig:save_sig_info(?SIGNS, BuildDir, File,
+			  get_hrl_files(File, IncludeDirs)).
 
 %%====================================================================
 %% Tests
