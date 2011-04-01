@@ -27,8 +27,8 @@
 %% @doc provide a description of the system for the caller
 -spec description() -> sin_task:task_description().
 description() ->
-    Desc = "Analyzes all of the dependencies in the project and provides that \n "
-	"information to other tasks.",
+    Desc = "Analyzes all of the dependencies in the project and provides that"
+	"\n information to other tasks.",
     #task{name = ?TASK,
 	  task_impl = ?MODULE,
 	  bare = false,
@@ -46,16 +46,16 @@ do_task(BuildRef) ->
     Release = sin_config:get_value(BuildRef, "-r"),
     AllProjectApps = gather_project_apps(BuildRef, AppBDir),
 
-    case Release of
-        undefined ->
-            ProjectApps = AllProjectApps;
-        _ ->
-            ProjectApps =
-		gather_project_apps(BuildRef, AppBDir,
-				    sin_config:get_value(BuildRef,
-							 "releases." ++ Release ++
-							 ".apps"))
-    end,
+    ProjectApps = case Release of
+		      undefined ->
+			  AllProjectApps;
+		      _ ->
+			  gather_project_apps(BuildRef, AppBDir,
+					      sin_config:get_value(BuildRef,
+								   "releases."
+								   ++ Release ++
+								   ".apps"))
+		  end,
 
     BuildRef2 =
 	sin_config:store(
@@ -135,7 +135,8 @@ check_project_dependencies(LibDir,
                _ ->
                    resolve_project_dependencies(LibDir, ErtsVersion, IncDeps,
                                                 AllProjectApps,
-                                                merge_deps(App, IncAcc1, IncAcc1))
+                                                merge_deps(App, IncAcc1,
+							   IncAcc1))
            end,
 
     check_project_dependencies(LibDir,
@@ -179,7 +180,8 @@ resolve_project_dependencies2(LibDir,
                               [Dep | Deps], AllProjectApps, Acc) ->
     case lists:keysearch(Dep, 1, AllProjectApps) of
         {value, App={Dep, _Version, NDeps, _Location}} ->
-            resolve_project_dependencies(LibDir, ErtsVersion, Deps ++ element(1,NDeps),
+            resolve_project_dependencies(LibDir, ErtsVersion, Deps ++
+					 element(1,NDeps),
                                          AllProjectApps,
                                          [App | Acc]);
         false ->
@@ -278,7 +280,8 @@ save_repo_apps(BuildRef, BuildDir) ->
             file:close(IoDev)
     end.
 
-%% @doc Roll through the list of project apps and gather the app name and version number.
+%% @doc Roll through the list of project apps and gather the app name and
+%% version number.
 -spec gather_project_apps(sin_config:config(), string()) -> list().
 gather_project_apps(BuildRef, AppBDir) ->
     gather_project_apps(BuildRef,
@@ -293,7 +296,8 @@ gather_project_apps(BuildRef, AppBDir, AppList) ->
 			lists:map(fun(El) ->
 					  list_to_atom(El)
 				  end,
-				  sin_config:get_value(BuildRef, "project.applist"))).
+				  sin_config:get_value(BuildRef,
+						       "project.applist"))).
 
 gather_project_apps(BuildRef, AppBDir, [AppName | T], Acc, ProjectApps) ->
     Vsn = sin_config:get_value(BuildRef, "apps." ++ AppName ++ ".vsn"),
@@ -321,7 +325,8 @@ gather_project_apps(BuildRef, AppBDir, [AppName | T], Acc, ProjectApps) ->
     sin_config:store(BuildRef, "apps." ++ AppName ++ ".deps", NDeps),
 
     AddToT = lists:foldl(fun(El, LAcc) ->
-			       case add_to_project_app_list(El, Acc, ProjectApps) of
+			       case add_to_project_app_list(El, Acc,
+							    ProjectApps) of
 				   true ->
 				       [atom_to_list(El) | LAcc];
 				   false ->
@@ -366,7 +371,8 @@ update_app_sigs(_BuildRef, _BuildDir, []) ->
 process_release(RootDir, BuildFlavor,
 		ProjectName, ProjectVsn, ProjectApps) ->
 
-    case sin_release:get_release(RootDir, BuildFlavor, ProjectName, ProjectVsn) of
+    case sin_release:get_release(RootDir, BuildFlavor,
+				 ProjectName, ProjectVsn) of
 	no_file ->
 	    no_release_file;
 	RelFile ->
