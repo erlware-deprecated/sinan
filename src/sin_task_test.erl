@@ -51,7 +51,8 @@ do_task(BuildRef) ->
                                      atom_to_list(App)
                              end, sin_config:get_value(BuildRef,
                                                   "project.apps")),
-                print_overall_percentage(test_apps(BuildRef, Apps, []))
+	    test_apps(BuildRef, Apps, []),
+	    print_overall_percentage(BuildRef, Apps)
     end,
     BuildRef.
 
@@ -66,7 +67,7 @@ do_task(BuildRef) ->
 test_apps(BuildRef, [AppName | T], Acc) ->
     io:format("testing app ~s~n", [AppName]),
     Modules = sin_config:get_value(BuildRef,
-                              "apps." ++ AppName ++ ".modules"),
+                              "apps." ++ AppName ++ ".all_modules"),
     case Modules == undefined orelse length(Modules) =< 0 of
         true ->
 	    ewl_talk:say("No modules defined for ~s.",
@@ -82,18 +83,19 @@ test_apps(_, [], Modules) ->
 %% @doc Prepare for running the tests. This mostly means seting up the
 %% coverage tools.
 -spec prepare_for_tests(sin_config:config(), string(), [atom()]) -> ok.
-prepare_for_tests(BuildRef, AppName, Modules) ->
+prepare_for_tests(BuildRef, AppName, AllModules) ->
     BuildDir = sin_config:get_value(BuildRef, "build.dir"),
     DocDir = filename:join([BuildDir, "docs", "coverage", AppName]),
     filelib:ensure_dir(filename:join([DocDir, "tmp"])),
     Paths = sin_config:get_value(BuildRef,
                                        "apps." ++ AppName ++ ".code_paths"),
     code:add_pathsa(Paths),
-    setup_code_coverage(Modules),
-    run_module_tests(Modules, []),
+    Modules = setup_code_coverage(BuildRef, AppName),
+    run_module_tests(AllModules, []),
     CoverageFiles = output_code_coverage(BuildRef, DocDir, Modules, []),
     output_coverage_index(DocDir, AppName, CoverageFiles),
-    sin_utils:remove_code_paths(Paths).
+    sin_utils:remove_code_paths(Paths),
+    Modules.
 
 
 %% @doc Output coverage information to make accessing the coverage files a bit
@@ -153,25 +155,28 @@ make_index([], Acc) ->
     Acc.
 
 %% @doc Instrument all of the modules for code coverage checks.
--spec setup_code_coverage([atom()]) -> ok.
-setup_code_coverage(Modules) ->
+-spec setup_code_coverage(sin_config:config(), [atom()]) -> ok.
+setup_code_coverage(BuildRef, AppName) ->
+    Modules = sin_config:get_value(BuildRef,
+                              "apps." ++ AppName ++ ".modules"),
     lists:foreach(
-      fun(Module) ->
+      fun({_, Module, _}) ->
 	      case cover:compile_beam(Module) of
 		  {error, Reason} ->
 		      ewl_talk:say("Couldn't add code coverage to ~w "
 				   "because ~p",
 				   [Module, Reason]);
-		  _ ->
+		  {ok, Module} ->
 		      ok
 	      end
       end,
-      Modules).
+      Modules),
+    Modules.
 
 %% @doc Take the analysis from test running and output it to an html file.
 -spec output_code_coverage(sin_config:config(), string(), [atom()], list()) ->
     list().
-output_code_coverage(BuildRef, DocDir, [Module | T], Acc) ->
+output_code_coverage(BuildRef, DocDir, [{_, Module, _} | T], Acc) ->
     File = lists:flatten([atom_to_list(Module), ".html"]),
     OutFile = filename:join([DocDir, File]),
     case cover:analyse_to_file(Module, OutFile, [html]) of
@@ -188,7 +193,8 @@ output_code_coverage(_, _DocDir, [], Acc) ->
 
 %% @doc Run tests for each module that has a test/0 function
 -spec run_module_tests([atom()], [number()]) -> ok.
-run_module_tests([Module | T], Acc) ->
+run_module_tests([{_, Module, _} | T], Acc) ->
+    proper:module(Module),
     case has_tests(Module) of
 	true ->
 	    ewl_talk:say("testing ~p", [Module]),
@@ -251,15 +257,24 @@ get_aggregate_percentage(Terms) ->
 
 
 %% @doc print the total code coverage for the project
--spec print_overall_percentage([number()]) -> ok.
-print_overall_percentage(Modules) ->
+-spec print_overall_percentage(sin_config:config(), [string()]) -> ok.
+print_overall_percentage(BuildRef, Apps) ->
     {Percentages, Count} =
-	lists:foldl(fun(Module, {Coverage, Count}) ->
-			    {Coverage + get_code_coverage(Module),
-			     Count + 1}
+	lists:foldl(fun(AppName, Acc) ->
+			    Modules = sin_config:get_value(BuildRef,
+							   "apps." ++ AppName
+							   ++ ".all_modules"),
+			    lists:foldl(fun({_, Module, _},
+					    {Coverage, Count}) ->
+						{Coverage +
+						 get_code_coverage(Module),
+						 Count + 1}
+					end,
+					Acc,
+					lists:flatten(Modules))
 		    end,
 		    {0, 0},
-		    lists:flatten(Modules)),
+		    Apps),
     ewl_talk:say("Overall run coverage ~.2f%",
 		 [to_percentage(Percentages / Count)]).
 

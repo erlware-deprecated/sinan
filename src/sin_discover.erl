@@ -167,6 +167,8 @@ read_configs(ProjectDir, [PossibleConfig | Rest]) ->
 	sin_config:new(filename:join([ProjectDir, PossibleConfig]))
     catch
 	throw:{pe, {_, _, {invalid_config_file, _}}} ->
+	    read_configs(ProjectDir, Rest);
+	throw:{pe, {_, _, invalid_config_file}} ->
 	    read_configs(ProjectDir, Rest)
     end;
 read_configs(_ProjectDir, []) ->
@@ -246,10 +248,12 @@ build_app_info(Config, [H|T], Acc) ->
     AppFile = filename:join([H, "ebin", string:concat(AppName, ".app")]),
     case file:consult(AppFile) of
         {ok, [{application, Name, Details}]} ->
-            Config2 = process_details("apps." ++ AppName ++ ".",
-                                      [{"name", Name},
-                                       {"dotapp", AppFile},
-                                       {"basedir", H} | Details], Config),
+            Config2 = source_details(H, AppName,
+			process_details("apps." ++ AppName ++ ".",
+					[{"name", Name},
+					 {"dotapp", AppFile},
+					 {"basedir", H} | Details], Config))
+		,
             build_app_info(Config2,  T, [AppName | Acc]);
         {error, {_, Module, Desc}} ->
             Error = Module:format_error(Desc),
@@ -262,16 +266,31 @@ build_app_info(Config, [H|T], Acc) ->
 		       [AppName, AppFile])
     end;
 build_app_info(Config, [], Acc) ->
-    dict:store("project.applist", Acc, Config).
+    sin_config:store(Config, "project.applist", Acc).
+
+-spec source_details(string(), string(), sin_config:config()) ->
+    sin_config:config().
+source_details(Dir, AppName, Config) ->
+    SrcDir = filename:join([Dir, "src"]),
+    TestDir = filename:join([Dir, "test"]),
+
+    SrcModules = gather_modules(SrcDir),
+    TestModules = gather_modules(TestDir),
+    C1 = sin_config:store(Config,
+			  "apps." ++ AppName ++ ".modules", SrcModules),
+    sin_config:store(C1, "apps." ++ AppName ++ ".all_modules",
+		     SrcModules ++ TestModules).
 
 %% @doc Convert the details list to something that fits into the config nicely.
 -spec process_details(BaseKey::string(), List::list(), Config::dict()) ->
     NewConfig::sin_config:config().
 process_details(BaseName, [{Key, Value} | T], Config) when is_atom(Key) ->
-    process_details(BaseName, T, dict:store(BaseName ++ atom_to_list(Key),
-                                            Value, Config));
+    process_details(BaseName, T, sin_config:store(Config,
+						  BaseName ++ atom_to_list(Key),
+                                            Value));
 process_details(BaseName, [{Key, Value} | T], Config) when is_list(Key)->
-    process_details(BaseName, T, dict:store(BaseName ++ Key, Value, Config));
+    process_details(BaseName, T, sin_config:store(Config, BaseName ++ Key,
+						  Value));
 process_details(_, [], Config) ->
     Config.
 
@@ -368,6 +387,25 @@ process_dirs(File, F, Type)  ->
             Type
     end.
 
+%% @doc Gather the list of modules that currently may need to be built.
+gather_modules(SrcDir) ->
+    case filelib:is_dir(SrcDir) of
+	true ->
+	    filelib:fold_files(SrcDir,
+			       "(.+\.erl|.+\.yrl|.+\.asn1|.+\.asn)$",
+                   true, % Recurse into subdirectories of src
+                   fun(File, Acc) ->
+                           Ext = filename:extension(File),
+                           [{File, module_name(File), Ext} | Acc]
+                   end, []);
+        false ->
+             []
+     end.
+
+%% @doc Extract the module name from the file name.
+module_name(File) ->
+    list_to_atom(filename:rootname(filename:basename(File))).
+
 %%====================================================================
 %% tests
 %%====================================================================
@@ -452,7 +490,7 @@ intuit_build_config_test() ->
     ?assertMatch("test_project", sin_config:get_value(Config, "project.name")),
     ?assertMatch("0.1.1", sin_config:get_value(Config, "project.vsn")),
     ?assertException(throw,
-		     {pe, {_, _, {unable_to_intuit_config, _}}},
+		     {pe, {_, _, unable_to_intuit_config}},
 		     intuit_build_config(BadProjectDir, sin_config:new())),
     Override = sin_config:store(sin_config:new(), [{"project.name", "fobachu"},
 						   {"project.vsn", "0.1.0"}]),

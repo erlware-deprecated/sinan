@@ -161,14 +161,10 @@ build_app(BuildRef, Env, AppName, Args) ->
     sin_utils:copy_dir(
       AppBuildDir, AppDir, "", [BuildDir | Ignorables]),
     code:add_patha(Target),
-    Modules = build_src_dirs(["test", "src"], BuildRef3, AppName, Includes,
-			     Args, AppDir, AppBuildDir, Target, []),
+    build_src_dirs(["test", "src"], BuildRef3, AppName, Includes,
+		   Args, AppDir, AppBuildDir, Target, []),
     code:set_path(ExistingPaths),
-    BuildRef4 = sin_config:store(BuildRef3, "apps." ++ AppName ++
-				 ".module_detail",
-				 Modules),
-
-    BuildRef4.
+    BuildRef3.
 
 build_src_dirs([ISrcDir | Dirs], BuildRef, AppName, Includes,
 	       Args, AppDir, AppBuildDir, Target,
@@ -184,7 +180,7 @@ build_src_dirs([ISrcDir | Dirs], BuildRef, AppName, Includes,
 			       % generated from .asn1 files.
 			       {i, TargetSrcDir} | Includes],
 	    event_compile_args(BuildRef, Options),
-	    Modules = gather_modules(BuildRef, AppName, SrcDir),
+	    Modules = gather_modules(BuildRef, AppName),
 
 	    NModules = lists:map(fun({File, _AbsName, Ext}) ->
 					 build_file(BuildRef, SrcDir, File, Ext,
@@ -288,50 +284,8 @@ get_app_from_list(App, AppList) ->
     end.
 
 %% @doc Gather the list of modules that currently may need to be built.
-gather_modules(BuildRef, AppName, SrcDir) ->
-    ModuleList = sin_config:get_value(BuildRef,
-                                 "apps." ++ AppName ++ ".modules"),
-    FileList =
-        filelib:fold_files(SrcDir,
-                           "(.+\.erl|.+\.yrl|.+\.asn1|.+\.asn)$",
-                   true, % Recurse into subdirectories of src
-                   fun(File, Acc) ->
-                           Ext = filename:extension(File),
-                           [{File, module_name(File), Ext} | Acc]
-                   end, []),
-    reorder_list(ModuleList, FileList).
-
-%% @doc Extract the module name from the file name.
-module_name(File) ->
-    list_to_atom(filename:rootname(filename:basename(File))).
-
-%% @doc Reorder the list according to whats in the *.app. This will allow intra
-%% application compile time dependencies.
-reorder_list(ModList, FileList) ->
-    Res = lists:foldr(
-	    fun (Mod, Acc) ->
-		    case get_file_list(Mod, FileList) of
-			not_in_list ->
-			    Acc;
-			Entry ->
-			    [Entry | Acc]
-		    end
-	    end, [], ModList),
-    Res2 = lists:filter(
-	     fun({_File, ModName, _Ext}) ->
-		     not lists:member(ModName, ModList)
-	     end, FileList),
-
-    Res ++ Res2.
-
-%% @doc Get the entry specified by name from the list in module list.
-get_file_list(ModuleName, FileList) ->
-    case lists:keysearch(ModuleName, 2, FileList) of
-	{value, Entry} ->
-	    Entry;
-	false ->
-	    not_in_list
-    end.
+gather_modules(BuildRef, AppName) ->
+    sin_config:get_value(BuildRef, "apps." ++ AppName ++ ".all_modules").
 
 %% @doc Build the file specfied by its arguments
 build_file(BuildRef, SrcDir, File, Ext, Options, Target) ->
