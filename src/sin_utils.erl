@@ -23,7 +23,8 @@
 	 is_dir_ignorable/2,
 	 remove_code_paths/1,
 	 term_to_list/1,
-	 to_bool/1]).
+	 to_bool/1,
+	 format_exception/1]).
 
 %%====================================================================
 %% API
@@ -79,7 +80,7 @@ file_exists(FileName) ->
 	{error, enoent} ->
 	    false;
 	Error = {error, _} ->
-	    throw(Error);
+	    ?SIN_RAISE({file_access, FileName}, Error);
 	_ ->
 	    true
     end.
@@ -149,6 +150,12 @@ is_dir_ignorable(Sub, [Ignore | Rest]) ->
 is_dir_ignorable(_Sub, []) ->
     false.
 
+%% @doc Format an exception thrown by this module
+-spec format_exception(sin_exceptions:exception()) ->
+    string().
+format_exception(Exception) ->
+    sin_exceptions:format_exception(Exception).
+
 %%====================================================================
 %% Internal functions
 %%====================================================================
@@ -164,11 +171,11 @@ copy_file(Target, IFile, File) ->
 	    ewl_talk:say("File ~s is not does not exist in the "
 		       "file System. This shouldn't happen.",
 			 [File]),
-	    throw(file_not_on_disc);
+	    ?SIN_RAISE({file_not_on_disc, File});
 	unable_to_access ->
 	    ewl_talk:say("File ~s exists but is inaccessable.",
 			 [File]),
-	    throw(file_inaccessable);
+	    ?SIN_RAISE({file_inaccessable, File});
 	true ->
 	    {ok, FileInfo} = file:read_file_info(File),
 	    file:copy(File, NFile),
@@ -261,10 +268,10 @@ get_application_env(Key) ->
 	{ok, Value} ->
 	    Value;
       _ ->
-	    ?SIN_RAISE_DA(variables_not_set,
-			  "Key ~w not set, must be set as application "
-			  "environment variable ",
-			  [Key])
+	    ?SIN_RAISE(variables_not_set,
+		       "Key ~w not set, must be set as application "
+		       "environment variable ",
+		       [Key])
     end.
 
 -spec check_not_circular(string(), string(), string()) ->
@@ -276,7 +283,7 @@ check_not_circular(Target, Source, SubDir) ->
 	    ewl_talk:say("Can't copy a directory to itself (~p "
 			 "to ~p)",
 			 [filename:join([Source | SubDir]), Target]),
-	  throw(circular_recursion);
+	    ?SIN_RAISE(circular_recursion);
 	false ->
 	    ok
     end.
@@ -301,7 +308,7 @@ copy_from_app_test_() ->
 	     BuildDir = filename:join(TargetDir,
 				      "_build/development/apps/app_name"),
 	     {timeout, 2,
-	      ?_assertThrow(circular_recursion,
+	      ?_assertThrow({pe, {_, _, circular_recursion}},
 			    (sin_utils:copy_dir(BuildDir, TargetDir, [],
 						["."])))}
      end}.

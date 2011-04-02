@@ -8,11 +8,13 @@
 -module(sin_resolver).
 
 -include_lib("eunit/include/eunit.hrl").
+-include("internal.hrl").
 
 %% API
 -export([package_versions/2,
          package_dependencies/3,
-	 find_package_location/3]).
+	 find_package_location/3,
+	 format_exception/1]).
 
 %%====================================================================
 %% API
@@ -45,6 +47,11 @@ find_package_location(LibDir, Package, Version) when is_atom(Package) ->
 find_package_location(LibDir, Package, Version) ->
     filename:join([LibDir, Package ++ "-" ++ Version]).
 
+%% @doc Format an exception thrown by this module
+-spec format_exception(sin_exceptions:exception()) ->
+    string().
+format_exception(Exception) ->
+    sin_exceptions:format_exception(Exception).
 %%====================================================================
 %%% Internal functions
 %%====================================================================
@@ -56,7 +63,7 @@ get_version([$- | Rest]) ->
 get_version([_ | Rest]) ->
     get_version(Rest);
 get_version([]) ->
-    throw({error, "Unable to find package version"}).
+    ?SIN_RAISE(unable_to_parse,  ["Unable to find package version"]).
 
 %% @doc Get all the versions for a package, search across all relavent
 %% major/minor versions.
@@ -79,12 +86,14 @@ get_package_versions(Package, LibDir) ->
 get_package_dependencies(Package, Version, LibDir) ->
     DotAppName = lists:flatten([Package, ".app"]),
     AppName = lists:flatten([Package, "-", Version]),
-    case file:consult(filename:join([LibDir,AppName,
-				     "ebin", DotAppName])) of
+    Location = filename:join([LibDir,AppName,
+			      "ebin", DotAppName]),
+    case file:consult(Location) of
 	{ok, [Term]} ->
 	    handle_parse_output(Term);
 	{error, _} ->
-	    throw({error, "Invalid application"})
+	    ?SIN_RAISE({invalid_app_file, Location},
+		       "Invalid application: ~s", [Location])
     end.
 
 %% @doc get the version the deps and the versioned deps from an *.app term.
@@ -93,7 +102,7 @@ get_package_dependencies(Package, Version, LibDir) ->
 handle_parse_output({application, _, Ops}) ->
     {get_deps(Ops), get_ideps(Ops)};
 handle_parse_output(_) ->
-   throw({error, "Invalid dependency info"}).
+   ?SIN_RAISE(invalid_app_data, "Invalid dependency info").
 
 %% @doc Get the list of non-versioned dependencies from the oplist. This is
 %% specifed in the applications entry.

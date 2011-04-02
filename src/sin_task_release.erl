@@ -13,7 +13,7 @@
 -include("internal.hrl").
 
 %% API
--export([description/0, do_task/1]).
+-export([description/0, do_task/1, format_exception/1]).
 
 -define(TASK, release).
 -define(DEPS, [build]).
@@ -53,6 +53,12 @@ do_task(BuildRef) ->
     copy_or_generate_sys_config_file(BuildRef2, BuildDir, ReleaseName, Version),
     make_boot_script(BuildRef2, ReleaseInfo),
     BuildRef2.
+
+%% @doc Format an exception thrown by this module
+-spec format_exception(sin_exceptions:exception()) ->
+    string().
+format_exception(Exception) ->
+    sin_exceptions:format_exception(Exception).
 
 %%====================================================================
 %% Internal functions
@@ -111,7 +117,7 @@ project_version(BuildRef) ->
         undefined ->
 	    ewl_talk:say("No project version defined in build config; "
 			 "aborting!"),
-            throw(no_project_version);
+            ?SIN_RAISE(no_project_version);
         Vsn ->
             Vsn
     end.
@@ -123,7 +129,7 @@ project_name(BuildRef) ->
         undefined ->
 	    ewl_talk:say("No project name defined in build config; "
 			 "aborting!"),
-            throw(no_project_name);
+            ?SIN_RAISE(no_project_name);
         Nm ->
             Nm
     end.
@@ -176,7 +182,7 @@ save_release(BuildDir, Name, Version, RelInfo) ->
 	    ewl_talk:say("Couldn't open ~s for writing. Unable to "
 			 "write release information",
 			 [Relf]),
-            throw(unable_to_write_rel_info);
+            ?SIN_RAISE(unable_to_write_rel_info);
         {ok, IoDev} ->
             io:format(IoDev, "~p.", [RelInfo]),
             file:close(IoDev)
@@ -204,12 +210,12 @@ make_boot_script(BuildRef, {{Location, File}, {release, {Name, _}, _, _}}) ->
 	    ok;
         {ok,Module,Warnings} ->
 	    sin_error_store:signal_error(),
-            ?SIN_RAISE_DA(release_script_generation_error,
-                          "~s~n", [Module:format_warning(Warnings)]);
+            ?SIN_RAISE(release_script_generation_error,
+		       "~s~n", [Module:format_warning(Warnings)]);
         {error,Module,Error} ->
 	    sin_error_store:signal_error(),
-            ?SIN_RAISE_DA(release_script_generation_error,
-                          "~s~n", [Module:format_error(Error)])
+            ?SIN_RAISE(release_script_generation_error,
+		       "~s~n", [Module:format_error(Error)])
     end.
 
 

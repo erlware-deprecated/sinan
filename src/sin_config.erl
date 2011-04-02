@@ -22,7 +22,8 @@
          get_value/2,
          get_value/3,
 	 get_pairs/1,
-         delete/2]).
+         delete/2,
+	 format_exception/1]).
 
 -export_type([key/0,
 	      value/0,
@@ -55,7 +56,9 @@ new(ConfigFile) when is_list(ConfigFile)->
 	true ->
 	    parse_config_file(ConfigFile);
 	false ->
-	    throw(invalid_config_file)
+	    ?SIN_RAISE(invalid_config_file,
+		       "Config File ~s does not exist",
+		       [ConfigFile])
     end.
 
 %% @doc Parse the command line args into a spec that can be
@@ -131,6 +134,11 @@ merge_configs(Config1, Config2) ->
 		       Value2
 	       end, Config1, Config2).
 
+%% @doc Format an exception thrown by this module
+-spec format_exception(sin_exceptions:exception()) ->
+    string().
+format_exception(Exception) ->
+    sin_exceptions:format_exception(Exception).
 
 %%====================================================================
 %% Internal Functions
@@ -219,7 +227,7 @@ parse_args([Key, Value | Rest], Dict) ->
 parse_args([], Dict) ->
     Dict;
 parse_args(_, _Dict) ->
-    ?SIN_RAISE_D(sinan_arg_exception, "Problem parsing config args").
+    ?SIN_RAISE(sinan_arg_exception, "Problem parsing config args").
 
 %% @doc strip out the : and replace it with .
 -spec strip_key(string(), list()) -> string().
@@ -247,8 +255,9 @@ new_1_test() ->
     Config = new(TestConfigFile),
     ?assertMatch("test", get_value(Config, "project.name")),
     ?assertMatch("0.0.0.1", get_value(Config, "project.vsn")),
-    ?assertException(throw, invalid_config_file,
-		     new(NonExistantConfigFile)).
+    ?assertException(throw, {pe, {?MODULE, _,
+				  {invalid_config_file, _}}},
+				  new(NonExistantConfigFile)).
 
 parse_args_test() ->
     Config = parse_args(["Key", "Value"], new()),

@@ -15,7 +15,8 @@
 -include("internal.hrl").
 
 %% API
--export([description/0, do_task/1]).
+-export([description/0, do_task/1,
+	 format_exception/1]).
 
 -record(env,  {project_dir,
                build_dir,
@@ -56,6 +57,11 @@ do_task(BuildRef) ->
     NArgs = sin_build_arg_parser:compile_build_args(RawArgs),
     build_apps(BuildRef, NApps, NArgs).
 
+%% @doc Format an exception thrown by this module
+-spec format_exception(sin_exceptions:exception()) ->
+    string().
+format_exception(Exception) ->
+    sin_exceptions:format_exception(Exception).
 %%====================================================================
 %%% Internal functions
 %%====================================================================
@@ -79,10 +85,10 @@ reorder_apps_according_to_deps(AllApps) ->
             DepList;
         {cycle, CycleList} ->
 	    sin_error_store:signal_error(),
-            ?SIN_RAISE_DA(cycles_detected,
-                          "A cycle was detected in the dependency graph "
-                          " I don't know how to build cycles. ~p",
-                          [CycleList])
+            ?SIN_RAISE(cycles_detected,
+		       "A cycle was detected in the dependency graph "
+		       " I don't know how to build cycles. ~p",
+		       [CycleList])
     end.
 
 %% @doc Map the lists of dependencies for 'App' into a pairs for the topo sort.
@@ -222,10 +228,10 @@ setup_code_path(BuildRef, Env, AppName) ->
     case get_app_from_list(AtomApp, Env#env.app_list) of
         not_in_list ->
 	    sin_error_store:signal_error(),
-            ?SIN_RAISE_DA(app_name_not_in_list,
-                          "App ~s is not in the list of project apps. "
-                          "This shouldn't happen!!",
-                          [AppName]);
+            ?SIN_RAISE(app_name_not_in_list,
+		       "App ~s is not in the list of project apps. "
+		       "This shouldn't happen!!",
+		       [AppName]);
         {_, _, {Deps, IncDeps}, _} ->
             get_compile_time_deps(BuildRef,
 				  extract_info_from_deps(BuildRef,
@@ -251,10 +257,10 @@ extract_info_from_deps(BuildRef, [AppName | T],
             case get_app_from_list(AppName, AppList) of
                 not_in_list ->
 		    sin_error_store:signal_error(),
-                    ?SIN_RAISE_DA(app_name_not_in_list,
-                                  "App ~s is not in the list of project apps. "
-                                  "This shouldn't happen!!!",
-                                  [AppName]);
+                    ?SIN_RAISE(app_name_not_in_list,
+			       "App ~s is not in the list of project apps. "
+			       "This shouldn't happen!!!",
+			       [AppName]);
                 {_, _, {Deps, IncDeps}, Path} ->
                     Ebin = filename:join([Path, "ebin"]),
                     Include = {i, filename:join([Path, "include"])},

@@ -32,6 +32,7 @@
 	     sin_task_test,
 	     sin_task_xref,
 	     sin_task_erts,
+	     sin_exceptions,
 	     sin_error_store]},
   {registered, [sin_sup]},
   {applications, [kernel, stdlib, compiler,

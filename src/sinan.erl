@@ -45,7 +45,7 @@ do_task(Task, StartDir, Override) ->
 		do_task_bare(StartDir, Override, Task)
 	end
     catch
-        {task_not_found, TaskName} ->
+        {pe, {_, _, {task_not_found, TaskName}}} ->
 	    sin_error_store:signal_error(),
             ewl_talk:say("Task not found ~s.", [TaskName])
     end.
@@ -64,15 +64,13 @@ do_task_full(StartDir, Override, Task) when is_atom(Task) ->
         {unable_to_create_canonical, {_, _,Desc}}  ->
 	    sin_error_store:signal_error(),
 	    ewl_talk:say("Error discovering project layout: ~s", Desc);
-	{sin_excep, Problem}  ->
+	Error = {pe, {Module, _, _}} ->
 	    sin_error_store:signal_error(),
-	    ewl_talk:say("build problem ~s", [Problem]);
-	{sin_excep, _, {Description, EArgs}}  ->
+	    ewl_talk:say("build problem ~s", [Module:format_exception(Error)]);
+	Type:Exception ->
 	    sin_error_store:signal_error(),
-	    ewl_talk:say(Description, EArgs);
-    	{sin_excep, _, Description}  ->
-	    sin_error_store:signal_error(),
-	    ewl_talk:say("~s", [Description])
+	    ewl_talk:say("build problem ~p:~p:~p",
+			 [Type, Exception, erlang:get_stacktrace()])
     end.
 
 %% @doc run the specified task, without expecting a build config and what not.

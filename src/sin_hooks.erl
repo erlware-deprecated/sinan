@@ -108,9 +108,9 @@ get_data(P, BuildConfig, HookName, Acc) ->
 		{P, {exit_status, 0}} ->
 		    ok;
 		{P, {exit_status, N}} ->
-		    ?SIN_RAISE_DA(bad_exit_status,
-				  "Hook ~s exited with status ~p",
-				  [HookName, N])
+		    ?SIN_RAISE(bad_exit_status,
+			       "Hook ~s exited with status ~p",
+			       [HookName, N])
 	    end
     end.
 

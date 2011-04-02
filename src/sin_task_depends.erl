@@ -79,8 +79,8 @@ do_task(BuildRef) ->
                 _ ->
                     AllDeps = none,
 		    sin_error_store:signal_error(),
-                    ?SIN_RAISE_DA(unable_to_resolve,
-                                  "Unable to resolve dependencies", [])
+                    ?SIN_RAISE(unable_to_resolve,
+			       "Unable to resolve dependencies", [])
             end
     end,
     RepoApps = get_repo_apps(AllProjectApps, element(1, AllDeps)),
@@ -97,8 +97,8 @@ do_task(BuildRef) ->
                 _ ->
                     AllDeps2 = none,
 		    sin_error_store:signal_error(),
-                    ?SIN_RAISE_DA(unable_to_resolve,
-                                  "Unable to resolve dependencies", [])
+                    ?SIN_RAISE(unable_to_resolve,
+			       "Unable to resolve dependencies", [])
             end
     end,
 
@@ -121,9 +121,9 @@ gather_compile_time_dependencies([Dep | Rest], LibDir, PackageLocations) ->
 						 Dep) of
 	[] ->
 	    sin_error_store:signal_error(),
-	    ?SIN_RAISE_DA(unable_to_find_dependency,
-			  "Couldn't find dependency ~s.",
-			  [Dep]);
+	    ?SIN_RAISE(unable_to_find_dependency,
+		       "Couldn't find dependency ~s.",
+		       [Dep]);
 	[Version1 | _] ->
 	    Version1
     end,
@@ -216,9 +216,9 @@ resolve_project_dependencies2(LibDir,
                                                    Dep) of
                     [] ->
 			sin_error_store:signal_error(),
-                        ?SIN_RAISE_DA(unable_to_find_dependency,
-                                      "Couldn't find dependency ~s.",
-                                      [Dep]);
+                        ?SIN_RAISE(unable_to_find_dependency,
+				   "Couldn't find dependency ~s.",
+				   [Dep]);
                     [Version1 | _] ->
                         Version1
                 end,
@@ -278,10 +278,10 @@ save_deps(BuildRef, Deps) ->
     case file:open(Depsf, write) of
         {error, _} ->
 	    sin_error_store:signal_error(),
-            ?SIN_RAISE_DA(unable_to_write_dep_info,
-                          "Couldn't open ~s for writing. Unable to "
-                          "write dependency information",
-                          [Depsf]);
+            ?SIN_RAISE(unable_to_write_dep_info,
+		       "Couldn't open ~s for writing. Unable to "
+		       "write dependency information",
+		       [Depsf]);
 
         {ok, IoDev} ->
             io:format(IoDev, "~p.", [Deps]),
@@ -297,10 +297,10 @@ save_repo_apps(BuildRef, BuildDir) ->
     case file:open(Repsf, write) of
         {error, _} ->
 	    sin_error_store:signal_error(),
-            ?SIN_RAISE_DA(unable_to_write_dep_info,
-                          "Couldn't open ~s for writing. Unable to "
-                          "write dependency information",
-                          [Repsf]);
+            ?SIN_RAISE(unable_to_write_dep_info,
+		       "Couldn't open ~s for writing. Unable to "
+		       "write dependency information",
+		       [Repsf]);
         {ok, IoDev} ->
             io:format(IoDev, "~p.", [Apps]),
             file:close(IoDev)

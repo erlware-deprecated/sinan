@@ -29,13 +29,14 @@
 %%% @copyright 2007 Erlware
 %%%---------------------------------------------------------------------------
 
--define(SIN_RAISE(Problem), throw({sin_excep, Problem})).
+-define(SIN_RAISE(Problem), throw({pe, {?MODULE, ?LINE, Problem}})).
 
--define(SIN_RAISE_D(Problem, Description),
-        throw({sin_excep, Problem, Description})).
+-define(SIN_RAISE(Problem, Description),
+        throw({pe, {?MODULE, ?LINE, {Problem, Description}}})).
 
--define(SIN_RAISE_DA(Problem, Description, DescArgs),
-        throw({sin_excep, Problem, {Description, DescArgs}})).
+-define(SIN_RAISE(Problem, Description, DescArgs),
+        throw({pe, {?MODULE, ?LINE,
+		    {Problem, io_lib:format(Description, DescArgs)}}})).
 
 
 -record(task,  {name :: atom(),            % The 'user friendly' name of the task
@@ -46,3 +47,4 @@
 		short_desc :: string(),    % A one line short description of the task
 		example :: string(),       % An example of the task usage
                 opts :: list()}).          % The list of options that the task requires/understands
+

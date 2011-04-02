@@ -34,10 +34,9 @@
 -include_lib("eunit/include/eunit.hrl").
 -include("internal.hrl").
 
--compile(export_all).
-
 %% API
--export([discover/2]).
+-export([discover/2,
+	 format_exception/1]).
 
 -define(POSSIBLE_CONFIGS, ["sinan.cfg", "_build.cfg"]).
 
@@ -59,6 +58,12 @@ discover(StartDir, Override) ->
 				ProjectDir),
     build_app_info(Config, AppDirs, []).
 
+
+%% @doc Format an exception thrown by this module
+-spec format_exception(sin_exceptions:exception()) ->
+    string().
+format_exception(Exception) ->
+    sin_exceptions:format_exception(Exception).
 %%====================================================================
 %%% Internal functions
 %%====================================================================
@@ -115,7 +120,8 @@ intuit_build_config(ProjectDir, Override) ->
 	{error, enoent} ->
 	    intuit_from_override(Override);
 	{error, _} ->
-	    throw(unable_to_intuit_config);
+	    ?SIN_RAISE(unable_to_intuit_config,
+		       "Unable to generate a project config");
 	{ok, [{application, _, Rest}]} ->
 	    build_out_intuited_config(AppName, Rest)
     end.
@@ -137,13 +143,13 @@ build_out_intuited_config(AppName, Rest) ->
 intuit_from_override(Override) ->
     Name = case sin_config:get_value(Override, "project.name") of
 	       undefined ->
-		   throw(unable_to_intuit_config);
+		   ?SIN_RAISE(unable_to_intuit_config);
 	       PName ->
 		   PName
 	   end,
     Version = case sin_config:get_value(Override, "project.vsn") of
 	       undefined ->
-		   throw(unable_to_intuit_config);
+		   ?SIN_RAISE(unable_to_intuit_config);
 	       PVsn ->
 		   PVsn
 	   end,
@@ -160,7 +166,7 @@ read_configs(ProjectDir, [PossibleConfig | Rest]) ->
     try
 	sin_config:new(filename:join([ProjectDir, PossibleConfig]))
     catch
-	throw:invalid_config_file ->
+	throw:{pe, {_, _, {invalid_config_file, _}}} ->
 	    read_configs(ProjectDir, Rest)
     end;
 read_configs(_ProjectDir, []) ->
@@ -247,13 +253,13 @@ build_app_info(Config, [H|T], Acc) ->
             build_app_info(Config2,  T, [AppName | Acc]);
         {error, {_, Module, Desc}} ->
             Error = Module:format_error(Desc),
-            throw({error, {invalid_app_file, Error},
-                   io_lib:format("*.app file is invalid for ~s at ~s",
-                    [AppName, AppFile])});
+            ?SIN_RAISE({invalid_app_file, Error},
+		       "*.app file is invalid for ~s at ~s",
+		       [AppName, AppFile]);
         {error, Error} ->
-            throw({error, {no_app_file, Error},
-                   io_lib:format("No *.app file found for ~s at ~s",
-                                 [AppName, AppFile])})
+            ?SIN_RAISE({no_app_file, Error},
+		       "No *.app file found for ~s at ~s",
+		       [AppName, AppFile])
     end;
 build_app_info(Config, [], Acc) ->
     dict:store("project.applist", Acc, Config).
@@ -284,9 +290,9 @@ look_for_app_dirs(Config, BuildDir, ProjectDir) ->
     case look_for_app_dirs(Config, BuildDir, ProjectDir, "",
                            Ignorables, []) of
         [] ->
-            throw({error, no_app_directories,
-                   "Unable to find any application directories."
-                   " aborting now"});
+            ?SIN_RAISE(no_app_directories,
+		       "Unable to find any application directories."
+		       " aborting now");
         Else ->
             Else
     end.
@@ -445,7 +451,8 @@ intuit_build_config_test() ->
     Config = intuit_build_config(ProjectDir, sin_config:new()),
     ?assertMatch("test_project", sin_config:get_value(Config, "project.name")),
     ?assertMatch("0.1.1", sin_config:get_value(Config, "project.vsn")),
-    ?assertException(throw, unable_to_intuit_config,
+    ?assertException(throw,
+		     {pe, {_, _, {unable_to_intuit_config, _}}},
 		     intuit_build_config(BadProjectDir, sin_config:new())),
     Override = sin_config:store(sin_config:new(), [{"project.name", "fobachu"},
 						   {"project.vsn", "0.1.0"}]),

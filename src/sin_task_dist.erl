@@ -16,7 +16,7 @@
 -include("internal.hrl").
 
 %% API
--export([description/0, do_task/1]).
+-export([description/0, do_task/1, format_exception/1]).
 
 -define(TASK, dist).
 -define(DEPS, [release]).
@@ -55,6 +55,11 @@ dist(BuildRef) ->
     make_tar(BuildRef, ProjectDir, ProjectApps, ProjectRepoApps, Repo),
     BuildRef.
 
+%% @doc Format an exception thrown by this module
+-spec format_exception(sin_exceptions:exception()) ->
+    string().
+format_exception(Exception) ->
+    sin_exceptions:format_exception(Exception).
 %%====================================================================
 %%% Internal functions
 %%====================================================================
@@ -114,7 +119,7 @@ create_tar_file(FileName, TarContents) ->
 	    sin_error_store:signal_error(),
 	    ewl_talk:say("Unable to open tar file ~s, unable to build "
 			 "distribution.", [FileName]),
-            throw(unable_to_build_dist);
+            ?SIN_RAISE(unable_to_build_dist);
         {ok, Tar} ->
             lists:foreach(fun({Name, NewName}) ->
                                   erl_tar:add(Tar, Name, NewName,
@@ -200,7 +205,7 @@ get_project_release_name(BuildRef) ->
 		eta_event:task_fault(BuildRef, ?TASK,
 				     "No project version defined in build "
 				     "config  aborting!"),
-		throw(no_project_version);
+		?SIN_RAISE(no_project_version);
 	    Vsn ->
                       Vsn
               end,
@@ -215,7 +220,7 @@ get_project_name(BuildRef) ->
 	    eta_event:task_fault(BuildRef, ?TASK,
 				 "No project name defined in build config "
 				 "aborting!"),
-	    throw(no_project_name);
+	    ?SIN_RAISE(no_project_name);
 	Nm ->
 	    Nm
     end.

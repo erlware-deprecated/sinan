@@ -90,7 +90,7 @@ get_task(TaskName, [Task = #task{name = TaskName} | _]) ->
 get_task(TaskName, [_ | Rest]) ->
     get_task(TaskName, Rest);
 get_task(TaskName, _) ->
-    throw({task_not_found, TaskName}).
+    ?SIN_RAISE({task_not_found, TaskName}).
 
 process_deps(Task, Tasks) ->
     {DepChain, _, _} = process_deps(Task, Tasks, []),
@@ -123,10 +123,9 @@ reorder_tasks(OTaskList) ->
         {ok, TaskList} ->
             TaskList;
         {cycle, _} ->
-            ?SIN_RAISE_D(cycle_fault,
-			 "There was a cycle in the task list. "
-			 "Unable to complete build!"),
-            throw(task_list_cycle)
+            ?SIN_RAISE(cycle_fault,
+		       "There was a cycle in the task list. "
+		       "Unable to complete build!")
     end.
 
 %%====================================================================

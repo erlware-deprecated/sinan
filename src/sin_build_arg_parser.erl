@@ -10,9 +10,11 @@
 -module(sin_build_arg_parser).
 
 -include_lib("eunit/include/eunit.hrl").
+-include("internal.hrl").
 
 %% API
--export([compile_build_args/1]).
+-export([compile_build_args/1,
+	 format_exception/1]).
 
 %%====================================================================
 %% API
@@ -24,6 +26,12 @@ compile_build_args([]) ->
     [];
 compile_build_args(ArgString) ->
     compile_build_args(ArgString, []).
+
+%% @doc Format an exception thrown by this module
+-spec format_exception(sin_exceptions:exception()) ->
+    string().
+format_exception(Exception) ->
+    sin_exceptions:format_exception(Exception).
 
 %%====================================================================
 %% Internal functions
@@ -57,7 +65,7 @@ compile_build_args([$-, $v | T], Acc) ->
 compile_build_args([$-, $s, $m, $p | T], Acc) ->
     compile_build_args(T,  Acc);
 compile_build_args([_ | _], _Acc) ->
-        throw({build_arg_error, "Invalid define"});
+    ?SIN_RAISE(build_arg_error, "Invalid define");
 compile_build_args([], Acc) ->
     Acc.
 
@@ -87,7 +95,7 @@ parse_define([$\n | T], LAcc, Acc) ->
 parse_define([$\t | T], LAcc, Acc) ->
     compile_build_args(T, [{d, list_to_atom(lists:reverse(LAcc))} | Acc]);
 parse_define([$= | _], [], _Acc) ->
-    throw({build_arg_error, "Invalid define"});
+    ?SIN_RAISE(build_arg_error, "Invalid define");
 parse_define([$= | T], LAcc, Acc) ->
     Key = list_to_atom(lists:reverse(LAcc)),
     {Value, NewT} = parse_define_value(T, []),
@@ -95,7 +103,7 @@ parse_define([$= | T], LAcc, Acc) ->
 parse_define([H | T], LAcc, Acc) ->
     parse_define(T, [H | LAcc], Acc);
 parse_define([], [], _Acc) ->
-    throw({build_arg_error, "Invalid define"});
+    ?SIN_RAISE(build_arg_error, "Invalid define");
 parse_define([], LAcc, Acc) ->
     [{d, list_to_atom(lists:reverse(LAcc))} | Acc].
 
@@ -116,7 +124,7 @@ parse_define_value([$\t | T], LAcc) ->
 parse_define_value([H | T], LAcc) ->
     parse_define_value(T, [H | LAcc]);
 parse_define_value([], []) ->
-    throw({build_arg_error, "Unable to parse include"});
+    ?SIN_RAISE(build_arg_error, "Unable to parse include");
 parse_define_value([], LAcc) ->
     {lists:reverse(LAcc), []}.
 
@@ -137,7 +145,7 @@ parse_include([$\t | T], LAcc, Acc) ->
 parse_include([H | T], LAcc, Acc) ->
     parse_include(T, [H | LAcc], Acc);
 parse_include([], [], _Acc) ->
-    throw({build_arg_error, "Unable to parse include"});
+    ?SIN_RAISE(build_arg_error, "Unable to parse include");
 parse_include([], LAcc, Acc) ->
     [{i, lists:reverse(LAcc)} | Acc].
 
@@ -155,7 +163,7 @@ parse_term([$\t | T], LAcc, Acc) ->
 parse_term([H | T], LAcc, Acc) ->
     parse_term(T, [H | LAcc], Acc);
 parse_term([], [], _Acc) ->
-    throw({build_arg_error, "Unable to parse build args"});
+    ?SIN_RAISE(build_arg_error, "Unable to parse build args");
 parse_term([], LAcc, Acc) ->
     [list_to_atom(lists:reverse(LAcc)) | Acc].
 
