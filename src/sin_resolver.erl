@@ -52,6 +52,7 @@ find_package_location(LibDir, Package, Version) ->
     string().
 format_exception(Exception) ->
     sin_exceptions:format_exception(Exception).
+
 %%====================================================================
 %%% Internal functions
 %%====================================================================

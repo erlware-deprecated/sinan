@@ -64,6 +64,7 @@ discover(StartDir, Override) ->
     string().
 format_exception(Exception) ->
     sin_exceptions:format_exception(Exception).
+
 %%====================================================================
 %%% Internal functions
 %%====================================================================

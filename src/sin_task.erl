@@ -15,7 +15,8 @@
 	 get_tasks/0,
 	 behaviour_info/1,
 	 signal_error/0,
-	 has_errors/0]).
+	 has_errors/0,
+	 format_exception/1]).
 
 -export_type([task_description/0,
 	      task_name/0]).
@@ -79,6 +80,12 @@ behaviour_info(callbacks) ->
     [{description, 0}, {do_task, 1}];
 behaviour_info(_) ->
     undefined.
+
+%% @doc Format an exception thrown by this module
+-spec format_exception(sin_exceptions:exception()) ->
+    string().
+format_exception(Exception) ->
+    sin_exceptions:format_exception(Exception).
 
 %%====================================================================
 %%% Internal functions

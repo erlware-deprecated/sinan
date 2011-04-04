@@ -15,7 +15,8 @@
 
 %% API
 -export([description/0,
-	 do_task/1]).
+	 do_task/1,
+	 format_exception/1]).
 
 -define(TASK, depends).
 -define(DEPS, []).
@@ -112,6 +113,12 @@ do_task(BuildRef) ->
     save_deps(BuildRef6, AllDeps),
     update_sigs(BuildRef6),
     BuildRef6.
+
+%% @doc Format an exception thrown by this module
+-spec format_exception(sin_exceptions:exception()) ->
+    string().
+format_exception(Exception) ->
+    sin_exceptions:format_exception(Exception).
 
 %%====================================================================
 %% Internal functions

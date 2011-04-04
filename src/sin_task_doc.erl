@@ -13,7 +13,9 @@
 -include("internal.hrl").
 
 %% API
--export([description/0, do_task/1]).
+-export([description/0,
+	 do_task/1,
+	 format_exception/1]).
 
 -define(TASK, doc).
 -define(DEPS, [build]).
@@ -42,6 +44,12 @@ do_task(BuildRef) ->
     Apps = sin_config:get_value(BuildRef, "project.apps"),
     run_docs(BuildRef, Apps),
     BuildRef.
+
+%% @doc Format an exception thrown by this module
+-spec format_exception(sin_exceptions:exception()) ->
+    string().
+format_exception(Exception) ->
+    sin_exceptions:format_exception(Exception).
 
 %%====================================================================
 %%% Internal functions

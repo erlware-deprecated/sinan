@@ -15,7 +15,8 @@
 -define(CARRIAGE_RETURN, 13).
 
 %% API
--export([get_hooks_function/1]).
+-export([get_hooks_function/1,
+	 format_exception/1]).
 
 %%%===================================================================
 %%% API
@@ -31,6 +32,12 @@ get_hooks_function(ProjectRoot) ->
        true ->
 	    gen_build_hooks_function(HooksDir)
     end.
+
+%% @doc Format an exception thrown by this module
+-spec format_exception(sin_exceptions:exception()) ->
+    string().
+format_exception(Exception) ->
+    sin_exceptions:format_exception(Exception).
 
 %%%===================================================================
 %%% Internal functions
