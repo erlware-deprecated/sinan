@@ -69,39 +69,42 @@ do_task(BuildRef) ->
     RootDir = sin_config:get_value(BuildRef2, "project.dir"),
     LibDir = code:lib_dir(),
 
-    case process_release(RootDir, BuildFlavor,
-                         ProjectName, ProjectVsn, ProjectApps) of
-        {ok, AllDeps} ->
-            ok;
-        _ ->
-            case do_transitive_resolution(ProjectApps, AllProjectApps, LibDir) of
-                {ok, AllDeps} ->
-                    ok;
-                _ ->
-                    AllDeps = none,
-		    sin_error_store:signal_error(),
-                    ?SIN_RAISE(unable_to_resolve,
-			       "Unable to resolve dependencies", [])
-            end
-    end,
+    AllDeps =
+	case process_release(RootDir, BuildFlavor,
+			     ProjectName, ProjectVsn, ProjectApps) of
+	    {ok, AD1} ->
+		AD1;
+	    _ ->
+		case do_transitive_resolution(ProjectApps, AllProjectApps, LibDir) of
+		    {ok, AD1} ->
+			AD1;
+		    _ ->
+
+			sin_error_store:signal_error(),
+			?SIN_RAISE(unable_to_resolve,
+				   "Unable to resolve dependencies", []),
+			none
+		end
+	end,
     RepoApps = get_repo_apps(AllProjectApps, element(1, AllDeps)),
 
-    case process_release(RootDir, BuildFlavor,
-                         ProjectName, ProjectVsn, AllProjectApps) of
-        {ok, AllDeps2} ->
-            ok;
-        _ ->
-            case do_transitive_resolution(AllProjectApps, AllProjectApps,
-					  LibDir) of
-                {ok, AllDeps2} ->
-                    ok;
-                _ ->
-                    AllDeps2 = none,
-		    sin_error_store:signal_error(),
-                    ?SIN_RAISE(unable_to_resolve,
-			       "Unable to resolve dependencies", [])
-            end
-    end,
+    AllDeps2 =
+	case process_release(RootDir, BuildFlavor,
+			     ProjectName, ProjectVsn, AllProjectApps) of
+	    {ok, AD2} ->
+		AD2;
+	    _ ->
+		case do_transitive_resolution(AllProjectApps, AllProjectApps,
+					      LibDir) of
+		    {ok, AD2} ->
+			AD2;
+		    _ ->
+			sin_error_store:signal_error(),
+			?SIN_RAISE(unable_to_resolve,
+				   "Unable to resolve dependencies", []),
+			none
+		end
+	end,
 
     BuildRef3 = sin_config:store(BuildRef2, "project.deps", AllDeps),
     BuildRef4 = sin_config:store(BuildRef3, "project.alldeps", AllDeps2),

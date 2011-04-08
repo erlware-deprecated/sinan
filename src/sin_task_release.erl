@@ -82,33 +82,29 @@ generate_rel_file(BuildRef, BuildDir, Name, Version) ->
 
     RootDir = sin_config:get_value(BuildRef, "project.dir"),
 
-    case sin_release:get_release(RootDir, BuildFlavor, ProjectName,
-                                 ProjectVsn) of
-        no_file ->
+    Release =
+	case sin_release:get_release(RootDir, BuildFlavor, ProjectName,
+				     ProjectVsn) of
+	    no_file ->
+		Erts = get_erts_info(),
+		Deps =
+		    process_deps(BuildRef,
+				 element(1,sin_config:get_value(BuildRef,
+								"project.deps")), []),
+		Deps2 =
+		    process_deps(BuildRef,
+				 element(2,sin_config:get_value(BuildRef,
+								"project.deps")), []),
+		Deps3 = lists:map(fun({App, AppVersion}) ->
+					  {App, AppVersion, load}
+				  end, Deps2),
 
-            Erts = get_erts_info(),
-
-            Deps =
-		process_deps(BuildRef,
-			     element(1,sin_config:get_value(BuildRef,
-							    "project.deps")), []),
-            Deps2 =
-		process_deps(BuildRef,
-			     element(2,sin_config:get_value(BuildRef,
-							    "project.deps")), []),
-
-            Deps3 = lists:map(fun({App, AppVersion}) ->
-                                      {App, AppVersion, load}
-                              end, Deps2),
-
-            Release = {release, {Name, Version}, {erts, Erts},
-                      lists:ukeymerge(1, lists:sort(Deps), lists:sort(Deps3))};
-
-        Release ->
-            ok
-    end,
-    {save_release(BuildDir, Name, Version, Release),
-     Release}.
+		{release, {Name, Version}, {erts, Erts},
+		 lists:ukeymerge(1, lists:sort(Deps), lists:sort(Deps3))};
+	    RelInfo ->
+		RelInfo
+	end,
+    {save_release(BuildDir, Name, Version, Release), Release}.
 
 %% @doc return project version or throw(no_project_version)
 -spec project_version(sin_config:config()) -> Vsn::string().
