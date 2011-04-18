@@ -15,7 +15,11 @@
 -include("internal.hrl").
 
 %% API
--export([description/0, do_task/1,
+-export([description/0,
+	 do_task/1,
+	 gather_fail_info/2,
+	 strip_options/1,
+	 get_target/4,
 	 format_exception/1]).
 
 -record(env,  {project_dir,
@@ -25,7 +29,7 @@
                app_list,
                deps}).
 
--define(SIGNS, "erldeps").
+-define(SIGNS, "moddeps").
 -define(TASK, build).
 -define(DEPS, [depends]).
 
@@ -56,6 +60,45 @@ do_task(BuildRef) ->
                                          "tasks.build.compile_args", ""),
     NArgs = sin_build_arg_parser:compile_build_args(RawArgs),
     build_apps(BuildRef, NApps, NArgs).
+
+%% @doc Gather up all the errors and warnings for output.
+-spec gather_fail_info([term()], string()) ->
+    [string()].
+gather_fail_info(ListOfProblems, Type) ->
+    R = lists:foldr(fun ({File, Problems}, Acc) ->
+			    gather_fail_info(File, Problems, Acc, Type)
+		    end, [], ListOfProblems),
+    lists:reverse(R).
+
+%% @doc Strip options for the yecc. Otherwise we get a bad arg error.
+strip_options(Opts) ->
+    lists:foldr(
+      fun (Opt = {parserfile, _}, Acc) ->
+	      [Opt | Acc];
+	  (Opt = {includefile, _}, Acc) ->
+	      [Opt | Acc];
+	  (Opt = {report_errors, _}, Acc) ->
+	      [Opt | Acc];
+	  (Opt = {report_warnings, _}, Acc) ->
+	      [Opt | Acc];
+	  (Opt = {report, _}, Acc) ->
+	      [Opt | Acc];
+	  (Opt = {return_warnings, _}, Acc) ->
+	      [Opt | Acc];
+	  (Opt = {verbose, _}, Acc) ->
+	      [Opt | Acc];
+	  (_, Acc) ->
+	      Acc
+      end, [], Opts).
+
+
+%% @doc Check to see if the file needs building. If it does run the passed in
+%% build fin. If thats successful then update the sig.
+get_target(FileName, Ext, TargetDir, TargetExt) ->
+    Name = filename:basename(FileName, Ext),
+    NewFile = lists:flatten([Name, TargetExt]),
+    filename:join([TargetDir, NewFile]).
+
 
 %% @doc Format an exception thrown by this module
 -spec format_exception(sin_exceptions:exception()) ->
@@ -120,7 +163,6 @@ build_apps(BuildRef, Apps, Args) ->
     BuildDir = sin_config:get_value(BuildRef, "build.dir"),
     AppBDir = filename:join([BuildDir, "apps"]),
     SigDir = filename:join([BuildDir, "sigs"]),
-
     build_apps(BuildRef, #env{project_dir=ProjectDir,
                               build_dir=BuildDir,
                               apps_build_dir=AppBDir,
@@ -131,16 +173,19 @@ build_apps(BuildRef, Apps, Args) ->
 
 %% @doc build the apps as they come up in the list.
 build_apps(BuildRef, BuildSupInfo, AppList, Args) ->
-    lists:foldl(fun ('NONE', BuildRef2) ->
-			% We ignore an app type of none, its a remnent
-			% of the reorder process.
-			BuildRef2;
-		    (App, BuildRef2) ->
-			build_app(BuildRef2, BuildSupInfo, App, Args)
-                  end, BuildRef, AppList).
+    Cache = dict:new(),
+    {_NewCache, NewBuildRef} =
+	lists:foldl(fun ('NONE', Acc) ->
+			    % We ignore an app type of none, its a remnent
+			    % of the reorder process.
+			    Acc;
+			(App, {Cache2, BuildRef2}) ->
+			    build_app(BuildRef2, Cache2, BuildSupInfo, App, Args)
+		    end, {Cache, BuildRef}, AppList),
+    NewBuildRef.
 
 %% @doc Build an individual otp application.
-build_app(BuildRef, Env, AppName, Args) ->
+build_app(BuildRef, Cache, Env, AppName, Args) ->
     AppVsn = sin_config:get_value(BuildRef, "apps." ++ AppName ++ ".vsn"),
     AppDir = sin_config:get_value(BuildRef, "apps." ++ AppName
                                         ++ ".basedir"),
@@ -149,55 +194,61 @@ build_app(BuildRef, Env, AppName, Args) ->
     BuildRef2 = sin_config:store(BuildRef, "apps." ++ AppName ++ ".builddir",
 				       AppBuildDir),
     Target = filename:join([AppBuildDir, "ebin"]),
-    ExistingPaths = code:get_path(),
-    {EbinPaths, Includes} = setup_code_path(BuildRef2, Env, AppName),
-    BuildRef3 = sin_config:store(BuildRef2, "apps." ++ AppName ++ ".code_paths",
-                   [Target | EbinPaths]),
 
-    Ignorables = sin_config:get_value(BuildRef3, "ignore_dirs", []),
+    Ignorables = sin_config:get_value(BuildRef2, "ignore_dirs", []),
 
     % Ignore the build dir when copying or we will create a deep monster in a
     % few builds
-    BuildDir = sin_config:get_value(BuildRef3, "build_dir"),
-    sin_utils:copy_dir(
-      AppBuildDir, AppDir, "", [BuildDir | Ignorables]),
+    BuildDir = sin_config:get_value(BuildRef2, "build_dir"),
+    sin_utils:copy_dir(AppBuildDir, AppDir, "", [BuildDir | Ignorables]),
+
+
+    {EbinPaths, Includes} = setup_code_path(BuildRef2, Env, AppName),
+
+    ExistingPaths = code:get_path(),
     code:add_patha(Target),
-    build_src_dirs(["test", "src"], BuildRef3, AppName, Includes,
-		   Args, AppDir, AppBuildDir, Target, []),
+    {NewCache, NewFileList} = process_source_files(BuildRef2,
+						    Cache,
+						    Env#env.build_dir,
+						    Target,
+						    Includes,
+						    gather_modules(BuildRef,
+								   AppName)),
+    BuildRef3 = sin_config:store(BuildRef2,
+				 [{"apps." ++ AppName ++ ".code_paths",
+				  [Target | EbinPaths]},
+				  {"apps." ++ AppName ++ ".file_list",
+				   NewFileList}]),
+
+    build_sources(BuildRef3, NewFileList,
+		  Includes, Args, AppDir, Target),
+
+    % Do the source build
     code:set_path(ExistingPaths),
-    BuildRef3.
+    {NewCache, BuildRef3}.
 
-build_src_dirs([ISrcDir | Dirs], BuildRef, AppName, Includes,
-	       Args, AppDir, AppBuildDir, Target,
-	       Acc) ->
-    SrcDir = filename:join([AppDir, ISrcDir]),
-    case filelib:is_dir(SrcDir) of
-	true ->
-	    TargetSrcDir = filename:join([AppBuildDir, ISrcDir]),
-	    Options = Args ++ [{outdir, Target}, strict_record_tests,
-			       return_errors, return_warnings,
-			       {i, filename:join([AppDir, "include"])},
-			       % Search directory with .hrl files
-			       % generated from .asn1 files.
-			       {i, TargetSrcDir} | Includes],
-	    event_compile_args(BuildRef, Options),
-	    Modules = gather_modules(BuildRef, AppName),
+%% @doc go through each source file building with the correct build module.
+-spec build_sources(sin_config:config(), [tuple()], [string()],
+		    list([term()]), string(), string()) ->
+    ok.
+build_sources(BuildRef, FileList, Includes,
+	       Args, AppDir,  Target) ->
 
-	    NModules = lists:map(fun({File, _AbsName, Ext}) ->
-					 build_file(BuildRef, SrcDir, File, Ext,
-						    Options, Target)
-				 end, Modules),
-	    check_for_errors(NModules),
-	    build_src_dirs(Dirs, BuildRef, AppName, Includes, Args,
-			   AppDir, AppBuildDir, Target, Acc ++ NModules);
-	false ->
-	    build_src_dirs(Dirs, BuildRef, AppName, Includes, Args,
-			   AppDir, AppBuildDir, Target, Acc)
-    end;
-build_src_dirs([], _, _, _, _, _, _, _, Acc) ->
-    Acc.
+    lists:map(fun({{File, _, _, _, _}, {changed, _, _, BuildModule}}) ->
+		      Options = Args ++ [{outdir, Target},
+					 strict_record_tests,
+					 return_errors, return_warnings,
+					 {i, filename:join([AppDir, "include"])},
+					 % Search directory with .hrl files
+					 % generated from .asn1 files.
+					 Includes],
+		      event_compile_args(BuildRef, Options),
+		      BuildModule:build_file(BuildRef, File, Options, Target);
+		 (_) ->
+		      []
+	      end, FileList).
 
-
+%% @doc if the right config values is specified event the compile args
 event_compile_args(BuildRef, Options) ->
 	case sin_config:get_value(BuildRef,
 				  "task.build.print_args", undefined) of
@@ -209,15 +260,228 @@ event_compile_args(BuildRef, Options) ->
 		ewl_talk:say("Compile args:~n~p", [Options])
          end.
 
-%% @doc Check the module list for errors throw an exceptions.
-check_for_errors(ModuleList) ->
-    case lists:member({sinan, error}, ModuleList) of
-	true ->
-	    sin_error_store:signal_error(),
-	    ?SIN_RAISE(build_errors);
-	false ->
-	    ok
+%% @doc process dependencies for each source file, the sort the list in build
+%% order.
+process_source_files(BuildRef, Cache, BuildDir, TargetDir,
+		     Includes, FileList) ->
+   {NewCache, TmpNewList} =
+	lists:foldl(fun(FileInfo, {Cache2, Acc}) ->
+			    {Cache3, NewFileInfo} =
+				process_source_file(BuildRef,
+						    Cache2,
+						    FileList,
+						    BuildDir,
+						    TargetDir,
+						    Includes,
+						    FileInfo),
+			    {Cache3, [NewFileInfo | Acc]}
+		    end, {Cache, []}, FileList),
+    {NewCache, topo_sort_file_list(TmpNewList)}.
+
+topo_sort_file_list(FileList) ->
+    {ok, Data} =
+	sin_topo:sort(
+	  lists:flatten(
+	    lists:map(fun({{File, _, _, _, []}, _}) ->
+			      {'NONE', File};
+			 ({{File, _, _, _, Deps}, _}) ->
+			      lists:map(fun({DepFile, _}) ->
+						{DepFile, File}
+					end, Deps)
+		      end,
+		      FileList))),
+    lists:reverse(
+      lists:foldl(fun('NONE', Acc) ->
+			  Acc;
+		     (File, Acc) ->
+			  case ec_lists:find(fun({{LFile, _, _, _, _}, _}) ->
+						     LFile == File
+					     end, FileList) of
+			      error ->
+				  Acc;
+			      {ok, Item} ->
+				  [Item | Acc]
+			  end
+		  end,
+		  [], Data)).
+
+process_source_file(_BuildRef,
+		    Cache,
+		    FileList,
+		    BuildDir,
+		    TargetDir,
+		    Includes,
+		    {File, Module, Ext, AtomExt, TestImplementations}) ->
+    BuildModule = get_build_module(AtomExt),
+    {Changed, {NewCache, {Deps, NewTI, TestedModules}}} =
+	has_changed(BuildDir, TargetDir, Cache, File, Ext, Includes,
+		BuildModule, TestImplementations,
+		FileList),
+    {NewCache, {{File, Module, Ext, AtomExt, Deps},
+		{Changed, NewTI, TestedModules, BuildModule}}}.
+
+has_changed(BuildDir, TargetDir, Cache, File, Ext, Includes,
+	    BuildModule, TestImplementations,
+	    FileList) ->
+        case contents_changed(TargetDir, File, Ext, BuildModule) of
+	    true ->
+		Ret = save_real_dependencies(Cache, BuildDir,
+					     FileList, TestImplementations,
+					     File, Includes),
+		{changed, Ret};
+	    false ->
+		dependencies_have_changed(BuildDir, Cache, FileList,
+					  TestImplementations, File, Includes)
+	end.
+
+dependencies_have_changed(BuildDir, Cache, FileList, TestImplementations,
+			  File, Includes) ->
+        case sin_sig:get_sig_info(?SIGNS, BuildDir, File) of
+	    undefined ->
+		Ret = save_real_dependencies(Cache, BuildDir, FileList,
+					     TestImplementations, File,
+					     Includes),
+		{changed, Ret};
+	    Terms  ->
+		case check_deps_for_change(Terms) of
+		    true ->
+			Ret = save_real_dependencies(Cache, BuildDir, FileList,
+						     TestImplementations, File,
+						     Includes),
+			{changed, Ret};
+		    false ->
+			{not_changed, {Cache, Terms}}
+		end
+	end.
+
+check_deps_for_change({Deps, _, _}) ->
+   check_deps_for_change(Deps);
+check_deps_for_change([{File, TS} | Rest]) ->
+    case file:read_file_info(File) of
+	{ok, TargetInfo}
+	when TargetInfo#file_info.mtime > TS ->
+	    true;
+	_ ->
+	    check_deps_for_change(Rest)
+    end;
+check_deps_for_change([]) ->
+    false.
+
+save_real_dependencies(Cache, BuildDir,
+		       FileList, TestImplementations, File, Includes) ->
+    {NewCache, Dependencies} = resolve_dependencies(Cache, FileList,
+						    TestImplementations,
+						    File,
+						    Includes),
+    sin_sig:save_sig_info(?SIGNS, BuildDir, File, Dependencies),
+    {NewCache,  Dependencies}.
+
+resolve_dependencies(Cache, FileList, TestImplementations,  File, Includes) ->
+    {DepArtifacts, NewTestImplementations, TestedModules} =
+	parse_attribute_dependencies(TestImplementations, File, Includes),
+
+    {NewCache, NewDeps} = realize_dependent_artifacts(Cache, DepArtifacts,
+						     FileList),
+    {NewCache, {NewDeps,
+		NewTestImplementations, TestedModules}}.
+
+realize_dependent_artifacts(Cache, DepArtifacts, FileList) ->
+    lists:foldl(fun({file, File}, {Cache2, Acc}) ->
+		      {Cache3, TS} = get_ts(Cache2, File),
+		       {Cache3, [{File, TS} | Acc]};
+		  ({module, Module}, {Cache2, Acc}) ->
+		       File = realize_module(Module, FileList),
+		       {Cache3, TS} = get_ts(Cache2, File),
+		       {Cache3, [{File, TS} | Acc]}
+	      end, {Cache, []}, DepArtifacts).
+
+get_ts(Cache, File) ->
+    case dict:find({ts, File}, Cache) of
+	{ok, TS} ->
+	    {Cache, TS};
+	error ->
+	    TS = case file:read_file_info(File) of
+		{ok, FileInfo} ->
+			 FileInfo#file_info.mtime;
+		     Error ->
+			 ?SIN_RAISE({error_reading_timestamp, File, Error})
+		 end,
+	    {dict:store({ts, File}, TS, Cache), TS}
     end.
+realize_module(Module, FileList) ->
+    case lists:keyfind(Module, 2, FileList) of
+	{File, Module, _, _, _} ->
+	    File;
+	false ->
+	    %% Its a dependent file then, somewhere in the code path
+	    case code:which(Module) of
+		FileName when is_list(FileName) ->
+		    FileName;
+		_ ->
+		    ?SIN_RAISE({dependent_module_not_found, Module})
+	    end
+    end.
+
+parse_attribute_dependencies(TestImplementations, File, Includes) ->
+    %% Drop off the first attribute, we don't care so much about that, it just
+    %% points to itself.
+    {ok, Forms} =
+	epp:parse_file(File, Includes, []),
+    lists:foldl(fun(Attr, Acc) ->
+			parse_form(File, Attr, Acc)
+		end,
+		{[], TestImplementations, []},
+		Forms).
+
+parse_form(_File, {attribute, _ , file, {[], _}}, Acc) ->
+    Acc;
+parse_form(File, {attribute, _ , file, {File, _}}, Acc) ->
+    Acc;
+parse_form(_File, {attribute, _ , file, {Include, _}},
+	   {Deps, TestImplementations, TestedModules}) ->
+    {[{file, Include} | Deps], TestImplementations, TestedModules};
+parse_form(_File, {attribute, _, compile, {parse_transform, proper_transformer}},
+	   {Deps, TestImplementations, TestedModules}) ->
+    {Deps, [proper | TestImplementations], TestedModules};
+parse_form(_File, {attribute, _, compile, {parse_transform, eunit_autoexport}},
+	   {Deps, TestImplementations, TestedModules}) ->
+    {Deps, [eunit | TestImplementations], TestedModules};
+parse_form(_File, {attribute, _, compile, {parse_transform, Module}},
+	   {Deps, TestImplementations, TestedModules}) ->
+    {[{module, Module} | Deps], TestImplementations, TestedModules};
+parse_form(_File, {attribute, _, behaviour, Module},
+	   {Deps, TestImplementations, TestedModules}) ->
+    {[{module, Module} | Deps], TestImplementations,
+     TestedModules};
+parse_form(_File, {attribute, _, behavior, Module},
+	   {Deps, TestImplementations, TestedModules}) ->
+    {[{module, Module} | Deps], TestImplementations,
+     TestedModules};
+parse_form(_File, {attribute, _, tested_modules, ModList},
+	  {Deps, TestImplementations, TestedModules}) ->
+    {Deps, TestImplementations, ModList ++ TestedModules};
+parse_form(_, _, Acc) ->
+    Acc.
+
+contents_changed(BuildDir, File, Ext, BuildModule) ->
+    TargetFile = BuildModule:get_target(BuildDir, File, Ext),
+    case sin_sig:target_changed(File, TargetFile) of
+	false ->
+	    false;
+	_ ->
+	    true
+    end.
+
+get_build_module('.erl') ->
+    sin_compile_erl;
+get_build_module('.yrl') ->
+    sin_compile_yrl;
+get_build_module('.asn1') ->
+    sin_compile_asn1;
+get_build_module('.asn') ->
+    sin_compile_asn1;
+get_build_module(Ext) ->
+    ?SIN_RAISE({unsupported_file_type, Ext}).
 
 %% @doc Gather code paths and includes from the dependency list.
 setup_code_path(BuildRef, Env, AppName) ->
@@ -288,163 +552,6 @@ get_app_from_list(App, AppList) ->
 gather_modules(BuildRef, AppName) ->
     sin_config:get_value(BuildRef, "apps." ++ AppName ++ ".all_modules").
 
-%% @doc Build the file specfied by its arguments
-build_file(BuildRef, SrcDir, File, Ext, Options, Target) ->
-    FileName = filename:join([SrcDir, File]),
-    build_file(BuildRef, FileName, Ext, Options, Target).
-
-%% @doc Do the actual compilation on the file.
-build_file(BuildRef, File, ".erl", Options, Target) ->
-   case needs_building(BuildRef, File, ".erl", Target, ".beam") of
-       true ->
-	   ewl_talk:say("Building ~s", [File]),
-           Result = case compile:file(File, Options) of
-			{ok, ModuleName} ->
-			    ModuleName;
-			{ok, ModuleName, []} ->
-			    ModuleName;
-			{ok, ModuleName, Warnings} ->
-			    ewl_talk:say(gather_fail_info(Warnings, "warning")),
-			    ModuleName;
-			{error, Errors, Warnings} ->
-			    ewl_talk:say(
-			      lists:flatten([gather_fail_info(Errors, "error"),
-					     gather_fail_info(Warnings,
-							      "warning")])),
-			    {sinan,  error};
-			error ->
-			    ewl_talk:say("Unknown error occured during build"),
-			    {sinan, error}
-		    end,
-	   case Result of
-	       Res when is_atom(Res) ->
-		   save_module_dependencies(BuildRef, File, Options);
-	       _ ->
-		   Result
-	   end;
-       false ->
-           ok
-   end;
-build_file(BuildRef, File, ".yrl", Options, Target) ->
-    case needs_building(BuildRef, File, ".yrl", Target, ".beam") of
-        true ->
-            ErlFile = filename:basename(File, ".yrl"),
-            AppDir = filename:dirname(Target),
-            ErlTarget = filename:join([AppDir,"src"]),
-            ErlName = filename:join([ErlTarget,
-                                     lists:flatten([ErlFile, ".erl"])]),
-            ewl_talk:say("Building ~s", [File]),
-            case yecc:file(File, [{parserfile, ErlName} |
-                                  strip_options(Options)]) of
-                {ok, _ModuleName} ->
-                    build_file(BuildRef, ErlName, ".erl",
-                               Options, Target);
-                {ok, _ModuleName, []} ->
-                    build_file(BuildRef, ErlName, ".erl",
-                               Options, Target);
-                {ok, _ModuleName, Warnings} ->
-                    ewl_talk:say(gather_fail_info(Warnings, "warning")),
-                    ok;
-                {error, Errors, Warnings} ->
-                    ewl_talk:say(
-		      lists:flatten([gather_fail_info(Errors, "error"),
-				     gather_fail_info(Warnings, "warning")])),
-                    error
-            end;
-        false ->
-            ok
-    end;
-build_file(BuildRef, File, Ext=".asn1", Options, Target) ->
-    build_asn1(BuildRef, File, Ext, Options, Target);
-build_file(BuildRef, File, Ext=".asn", Options, Target) ->
-    build_asn1(BuildRef, File, Ext, Options, Target);
-build_file(_BuildRef, File, _, _Options, _Target) ->
-    ewl_talk:say("Got file ~s with an extention I do not know how to build. "
-		 "Ignoring!",  [File]).
-
-%% @doc Do the actual compilation on the .asn1/.asn file.
-build_asn1(BuildRef, File, Ext, Options, Target) ->
-    case needs_building(BuildRef, File, Ext, Target, ".beam") of
-        true ->
-            ErlFile = filename:basename(File, Ext),
-            AppDir = filename:dirname(Target),
-            ErlTarget = filename:join([AppDir,"src"]),
-            ErlName = filename:join([ErlTarget,
-                                     lists:flatten([ErlFile, ".erl"])]),
-            ewl_talk:say("Building ~s", [File]),
-            case asn1ct:compile(File, [{outdir, ErlTarget}, noobj] ++
-                                strip_options(Options)) of
-                ok ->
-                    build_file(BuildRef, ErlName, ".erl", Options, Target);
-                {error, Errors} ->
-                    ewl_talk:say(gather_fail_info(Errors, "error")),
-                    error
-            end;
-        false ->
-            ok
-    end.
-
-%% @doc Strip options for the yecc. Otherwise we get a bad arg error.
-strip_options(Opts) ->
-    lists:foldr(
-      fun (Opt = {parserfile, _}, Acc) ->
-	      [Opt | Acc];
-	  (Opt = {includefile, _}, Acc) ->
-	      [Opt | Acc];
-	  (Opt = {report_errors, _}, Acc) ->
-	      [Opt | Acc];
-	  (Opt = {report_warnings, _}, Acc) ->
-	      [Opt | Acc];
-	  (Opt = {report, _}, Acc) ->
-	      [Opt | Acc];
-	  (Opt = {return_warnings, _}, Acc) ->
-	      [Opt | Acc];
-	  (Opt = {verbose, _}, Acc) ->
-	      [Opt | Acc];
-	  (_, Acc) ->
-	      Acc
-      end, [], Opts).
-
-%% @doc Check to see if the file needs building. If it does run the passed in
-%% build fin. If thats successful then update the sig.
-base_needs_building(FileName, Ext, TargetDir, TargetExt) ->
-    Name = filename:basename(FileName, Ext),
-    NewFile = lists:flatten([Name, TargetExt]),
-    TFileName = filename:join([TargetDir, NewFile]),
-    sin_sig:target_changed(FileName, TFileName).
-
-%% @doc Check to see if the file needs building. If it does run the passed in
-%% build fin. If thats successful then update the sig.
-needs_building(BuildRef, FileName, ".erl", TargetDir, TargetExt) ->
-    case base_needs_building(FileName, ".erl", TargetDir, TargetExt) of
-	false ->
-	    check_module_deps(BuildRef, FileName);
-	_ ->
-	    true
-    end;
-needs_building(_, FileName, Ext, TargetDir, TargetExt) ->
-    base_needs_building(FileName, Ext, TargetDir, TargetExt).
-
-%% @doc Check to see if any of the dependencies on a file have changed. If they
-%% have then return true, otherwise false.
-check_module_deps(BuildRef, FileName) ->
-    BuildDir = sin_config:get_value(BuildRef, "build.dir"),
-    case sin_sig:get_sig_info(?SIGNS, BuildDir, FileName) of
-        undefined ->
-            false;
-        Terms ->
-            lists:foldl(fun({Include, Ts}, Acc) ->
-                                case file:read_file_info(Include) of
-                                    {ok, TargetInfo}
-				    when TargetInfo#file_info.mtime > Ts ->
-                                        true;
-                                    _ ->
-                                        Acc
-                                end
-                        end,
-                        false,
-                        Terms)
-    end.
 
 %% @doc Ensure that the build dir exists and is ready to accept files.
 ensure_build_dir(BuildRef) ->
@@ -452,16 +559,10 @@ ensure_build_dir(BuildRef) ->
     AppsDir = lists:flatten([BuildDir, "apps", "tmp"]),
     filelib:ensure_dir(AppsDir).
 
-%% @doc Gather up all the errors and warnings for output.
-gather_fail_info(ListOfProblems, Type) ->
-    R = lists:foldr(fun ({File, Problems}, Acc) ->
-			    gather_fail_info(File, Problems, Acc, Type)
-		    end, [], ListOfProblems),
-    lists:reverse(R).
 
 %% @doc Actual get the failer detail information and add it to the accumulator.
 gather_fail_info(File, ListOfProblems, Acc, WoE) ->
-    lists:foldr(
+    lists:foldl(
       fun ({Line, Type, Detail}, Acc1) when is_atom(Line) ->
               [lists:flatten([File, $:, atom_to_list(Line),
                               $:, WoE, $:, Type:format_error(Detail),
@@ -474,43 +575,6 @@ gather_fail_info(File, ListOfProblems, Acc, WoE) ->
               [lists:flatten([File, ":noline:", WoE, $:,
                               Type:format_error(Detail), $\n]) | Acc1]
       end, Acc, ListOfProblems).
-
-%% @doc Get the list of processed included files from the specified *.erl
-get_hrl_files(File, Includes) ->
-    {ok, Forms} = epp:parse_file(File, Includes,[]),
-    HrlFiles = lists:foldl(fun({attribute, _ , file, {Include, _}}, Acc) ->
-                                   case Include of
-                                       File ->
-                                           Acc;
-                                       [] ->
-                                           Acc;
-                                       _ ->
-                                           [Include | Acc]
-                                   end;
-                              (_, Acc) ->
-                                   Acc
-                           end,
-                           [],
-                           Forms),
-    lists:foldl(fun(Hrl, Acc) ->
-                        {ok, FileInfo} =  file:read_file_info(Hrl),
-                        [{Hrl, FileInfo#file_info.mtime} | Acc]
-                end,
-                [],
-                HrlFiles).
-
-%% @doc Find and save eh module dependencies for a specific module.
-save_module_dependencies(BuildRef, File, Options) ->
-    BuildDir = sin_config:get_value(BuildRef, "build.dir"),
-    IncludeDirs = lists:reverse(lists:foldl(fun({i, Include}, Acc) ->
-                                                    [Include | Acc];
-                                               (_, Acc) ->
-                                                    Acc
-                                            end,
-                                            [],
-                                            Options)),
-    sin_sig:save_sig_info(?SIGNS, BuildDir, File,
-			  get_hrl_files(File, IncludeDirs)).
 
 %%====================================================================
 %% Tests

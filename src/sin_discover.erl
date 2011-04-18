@@ -397,7 +397,16 @@ gather_modules(SrcDir) ->
                    true, % Recurse into subdirectories of src
                    fun(File, Acc) ->
                            Ext = filename:extension(File),
-                           [{File, module_name(File), Ext} | Acc]
+                           AtomExt = list_to_atom(Ext),
+                           TestImplementations =
+                               case string:str(File, "_SUITE.erl") of
+                                   0 ->
+                                       [];
+                                   _ ->
+                                       [common_test]
+                                end,
+                           [{File, module_name(File), Ext, AtomExt,
+                             TestImplementations} | Acc]
                    end, []);
         false ->
              []

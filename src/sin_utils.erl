@@ -24,7 +24,8 @@
 	 remove_code_paths/1,
 	 term_to_list/1,
 	 to_bool/1,
-	 format_exception/1]).
+	 format_exception/1,
+	 basename/1]).
 
 %%====================================================================
 %% API
@@ -149,6 +150,12 @@ is_dir_ignorable(Sub, [Ignore | Rest]) ->
     end;
 is_dir_ignorable(_Sub, []) ->
     false.
+
+%% Strip the extension off of a base.
+-spec basename(string()) ->
+    string().
+basename(File) ->
+    basename1(lists:reverse(File), []).
 
 %% @doc Format an exception thrown by this module
 -spec format_exception(sin_exceptions:exception()) ->
@@ -288,6 +295,13 @@ check_not_circular(Target, Source, SubDir) ->
 	    ok
     end.
 
+
+basename1([$. | Rest], _Acc) ->
+    Rest;
+basename1([H | Rest], Acc) ->
+    basename1(Rest, [H | Acc]);
+basename1([], Acc) ->
+    lists:reverse(Acc).
 
 %%====================================================================
 %% tests
