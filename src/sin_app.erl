@@ -48,6 +48,7 @@ manual_start() ->
 		  end,
 		  [kernel,
 		   stdlib,
+                   erlware_commons,
 		   compiler,
 		   syntax_tools,
 		   edoc,

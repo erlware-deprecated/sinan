@@ -38,7 +38,7 @@
   {applications, [kernel, stdlib, compiler,
                   edoc, syntax_tools, eunit, proper,
                   ktuo, ewrepo, ewlib, tools,
-                  xmerl, mnesia, sgte,
+                  xmerl, mnesia, sgte, erlware_commons,
 		  parsetools, asn1, getopt]},
 
   {mod, {sin_app, []}},
