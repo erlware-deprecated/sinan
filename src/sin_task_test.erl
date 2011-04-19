@@ -51,7 +51,7 @@ do_task(BuildRef) ->
                                      atom_to_list(App)
                              end, sin_config:get_value(BuildRef,
                                                   "project.apps")),
-	    test_apps(BuildRef, Apps, []),
+	    test_apps(build_all(BuildRef), BuildRef, Apps, []),
 	    print_overall_percentage(BuildRef, Apps)
     end,
     BuildRef.
@@ -61,10 +61,23 @@ do_task(BuildRef) ->
 %%% Internal functions
 %%====================================================================
 
+%% @doc if the command line has an 'all' prespective run all tests instead of
+%% just those that changed
+-spec build_all(sin_config:config()) ->
+    all | changed.
+build_all(BuildRef) ->
+    case sin_config:get_value(BuildRef, "command_line.arg") of
+	"all" ->
+	    all;
+	_ ->
+	    changed
+    end.
+
 %% @doc Run tests for all the applications specified.
 %% @private
--spec test_apps(sin_config:config(), [string()], [[atom()]]) -> ok.
-test_apps(BuildRef, [AppName | T], Acc) ->
+-spec test_apps(all | changed,
+		sin_config:config(), [string()], [[atom()]]) -> ok.
+test_apps(BuildAll, BuildRef, [AppName | T], Acc) ->
     io:format("testing app ~s~n", [AppName]),
     Modules = sin_config:get_value(BuildRef,
                               "apps." ++ AppName ++ ".file_list"),
@@ -74,16 +87,17 @@ test_apps(BuildRef, [AppName | T], Acc) ->
 			 [AppName]),
             ok;
         false ->
-            prepare_for_tests(BuildRef, AppName, Modules)
+            prepare_for_tests(BuildAll, BuildRef, AppName, Modules)
     end,
-    test_apps(BuildRef, T, [Modules | Acc]);
-test_apps(_, [], Modules) ->
+    test_apps(BuildAll, BuildRef, T, [Modules | Acc]);
+test_apps(_, _, [], Modules) ->
     Modules.
 
 %% @doc Prepare for running the tests. This mostly means seting up the
 %% coverage tools.
--spec prepare_for_tests(sin_config:config(), string(), [atom()]) -> ok.
-prepare_for_tests(BuildRef, AppName, AllModules) ->
+-spec prepare_for_tests(all | changed,
+			sin_config:config(), string(), [atom()]) -> ok.
+prepare_for_tests(BuildAll, BuildRef, AppName, AllModules) ->
     BuildDir = sin_config:get_value(BuildRef, "build.dir"),
     DocDir = filename:join([BuildDir, "docs", "coverage", AppName]),
     filelib:ensure_dir(filename:join([DocDir, "tmp"])),
@@ -91,7 +105,7 @@ prepare_for_tests(BuildRef, AppName, AllModules) ->
                                        "apps." ++ AppName ++ ".code_paths"),
     code:add_pathsa(Paths),
     Modules = setup_code_coverage(BuildRef, AppName),
-    run_module_tests(AllModules),
+    run_module_tests(BuildAll, AllModules),
     CoverageFiles = output_code_coverage(BuildRef, DocDir, Modules, []),
     output_coverage_index(DocDir, AppName, CoverageFiles),
     sin_utils:remove_code_paths(Paths),
@@ -192,21 +206,28 @@ output_code_coverage(_, _DocDir, [], Acc) ->
     Acc.
 
 %% @doc Run tests for each module that has a test/0 function
--spec run_module_tests([atom()]) -> ok.
-run_module_tests(AllModules) ->
+-spec run_module_tests(all | changed, [atom()]) -> ok.
+run_module_tests(BuildAll, AllModules) ->
     lists:foreach(
       fun({{_, Module, _, _, _},
 	   {HasChanged, TestImplementations,
 	    TestedModules, _}}) ->
-	      case {lists:member(proper, TestImplementations),
+	      case {BuildAll, lists:member(proper, TestImplementations),
 		    tested_changed(TestedModules, AllModules)} of
-		  {true, true} ->
+		  {all, _, _} ->
+		      proper:module(Module);
+		  {_, true, true} ->
 		      proper:module(Module);
 		  _ ->
 		      ok
 	      end,
-	      case {lists:member(eunit, TestImplementations), HasChanged} of
-		  {true, changed} ->
+	      case {BuildAll,
+		    lists:member(eunit, TestImplementations), HasChanged} of
+		  {all, _, _} ->
+		      ewl_talk:say("testing ~p", [Module]),
+		      eunit:test(Module),
+		      print_code_coverage(Module);
+		  {_, true, changed} ->
 		      ewl_talk:say("testing ~p", [Module]),
 		      eunit:test(Module),
 		      print_code_coverage(Module);
