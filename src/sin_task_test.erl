@@ -67,7 +67,7 @@ do_task(BuildRef) ->
 test_apps(BuildRef, [AppName | T], Acc) ->
     io:format("testing app ~s~n", [AppName]),
     Modules = sin_config:get_value(BuildRef,
-                              "apps." ++ AppName ++ ".all_modules"),
+                              "apps." ++ AppName ++ ".file_list"),
     case Modules == undefined orelse length(Modules) =< 0 of
         true ->
 	    ewl_talk:say("No modules defined for ~s.",
@@ -91,7 +91,7 @@ prepare_for_tests(BuildRef, AppName, AllModules) ->
                                        "apps." ++ AppName ++ ".code_paths"),
     code:add_pathsa(Paths),
     Modules = setup_code_coverage(BuildRef, AppName),
-    run_module_tests(AllModules, []),
+    run_module_tests(AllModules),
     CoverageFiles = output_code_coverage(BuildRef, DocDir, Modules, []),
     output_coverage_index(DocDir, AppName, CoverageFiles),
     sin_utils:remove_code_paths(Paths),
@@ -160,7 +160,7 @@ setup_code_coverage(BuildRef, AppName) ->
     Modules = sin_config:get_value(BuildRef,
                               "apps." ++ AppName ++ ".modules"),
     lists:foreach(
-      fun({_, Module, _}) ->
+      fun({_, Module, _, _, _}) ->
 	      case cover:compile_beam(Module) of
 		  {error, Reason} ->
 		      ewl_talk:say("Couldn't add code coverage to ~w "
@@ -176,7 +176,7 @@ setup_code_coverage(BuildRef, AppName) ->
 %% @doc Take the analysis from test running and output it to an html file.
 -spec output_code_coverage(sin_config:config(), string(), [atom()], list()) ->
     list().
-output_code_coverage(BuildRef, DocDir, [{_, Module, _} | T], Acc) ->
+output_code_coverage(BuildRef, DocDir, [{_, Module, _, _, _} | T], Acc) ->
     File = lists:flatten([atom_to_list(Module), ".html"]),
     OutFile = filename:join([DocDir, File]),
     case cover:analyse_to_file(Module, OutFile, [html]) of
@@ -192,20 +192,55 @@ output_code_coverage(_, _DocDir, [], Acc) ->
     Acc.
 
 %% @doc Run tests for each module that has a test/0 function
--spec run_module_tests([atom()], [number()]) -> ok.
-run_module_tests([{_, Module, _} | T], Acc) ->
-    proper:module(Module),
-    case has_tests(Module) of
-	true ->
-	    ewl_talk:say("testing ~p", [Module]),
-	    eunit:test(Module),
-	    Percentage = print_code_coverage(Module),
-	    run_module_tests(T, [Percentage | Acc] );
-	false ->
-	    run_module_tests(T, [0.0 | Acc] )
-    end;
-run_module_tests([], Percentages) ->
-    Percentages.
+-spec run_module_tests([atom()]) -> ok.
+run_module_tests(AllModules) ->
+    lists:foreach(
+      fun({{_, Module, _, _, _},
+	   {HasChanged, TestImplementations,
+	    TestedModules, _}}) ->
+	      case {lists:member(proper, TestImplementations),
+		    tested_changed(TestedModules, AllModules)} of
+		  {true, true} ->
+		      proper:module(Module);
+		  _ ->
+		      ok
+	      end,
+	      case {lists:member(eunit, TestImplementations), HasChanged} of
+		  {true, changed} ->
+		      ewl_talk:say("testing ~p", [Module]),
+		      eunit:test(Module),
+		      print_code_coverage(Module);
+		  _ ->
+		      ok
+	      end
+      end, AllModules).
+
+
+%% @doc check to see if any of the modules listed in 'TestedModules' have
+%% changed. If so return true, else return false.
+-spec tested_changed([module()], [tuple]) -> boolean().
+tested_changed([], _) ->
+    true;
+tested_changed(TestedModules, All) ->
+    tested_changed1(TestedModules, All).
+
+tested_changed1([TestModule | Rest], FileList) ->
+    case ec_lists:find(fun({{_, TargetModule, _, _, _},
+			    {changed, _, _, _}}) ->
+			       TargetModule == TestModule;
+			  (_) ->
+			       false
+		       end, FileList) of
+	{ok, _} ->
+	    true;
+	_ ->
+	    false
+    end,
+    tested_changed(Rest, FileList);
+tested_changed1([], _) ->
+    false.
+
+
 
 %% @doc inform the user what the code coverage percentage is for this module and
 %% return the result to the caller.
@@ -264,7 +299,7 @@ print_overall_percentage(BuildRef, Apps) ->
 			    Modules = sin_config:get_value(BuildRef,
 							   "apps." ++ AppName
 							   ++ ".all_modules"),
-			    lists:foldl(fun({_, Module, _},
+			    lists:foldl(fun({_, Module, _, _, _},
 					    {Coverage, Count}) ->
 						{Coverage +
 						 get_code_coverage(Module),
@@ -283,20 +318,3 @@ print_overall_percentage(BuildRef, Apps) ->
 to_percentage(Value) ->
     Value * 100.
 
-%% @doc check to see if this module has eunit tests
--spec has_tests(atom()) -> boolean().
-has_tests(Module) ->
-    ModInfo = Module:module_info(),
-    case lists:keyfind(exports, 1, ModInfo) of
-	false ->
-	    false;
-	{exports, ExportList}  ->
-	    case lists:keyfind(test, 1, ExportList) of
-		false ->
-		    false;
-		{test, 0} ->
-		    true;
-		_ ->
-		    false
-	    end
-    end.
