@@ -1,4 +1,4 @@
-VSN=0.28.0
+VSN=1.0.0
 ERLC=/usr/local/bin/erlc
 ERL=/usr/local/bin/erl
 APPDIR= $(abspath ./_build/development/apps/sinan-$(VSN))
