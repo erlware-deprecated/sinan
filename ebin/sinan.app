@@ -2,7 +2,7 @@
 
 {application, sinan,
  [{description, "Build system for erlang"},
-  {vsn, "1.0.0"},
+  {vsn, "1.0.1"},
   {modules, [sin_hooks,
 	     sin_task_doc,
 	     sin_task_version,
@@ -32,7 +32,6 @@
 	     sin_task_test,
 	     sin_task_xref,
 	     sin_task_erts,
-	     sin_compile_asn1,
 	     sin_compile_yrl,
 	     sin_compile_erl,
 	     sin_exceptions,
@@ -40,9 +39,9 @@
   {registered, [sin_sup]},
   {applications, [kernel, stdlib, compiler,
                   edoc, syntax_tools, eunit, proper,
-                  ktuo, ewrepo, ewlib, tools,
+                  ktuo, ewrepo, ewlib, xtools,
                   xmerl, mnesia, sgte, erlware_commons,
-		  parsetools, asn1, getopt]},
+		  parsetools, getopt]},
 
   {mod, {sin_app, []}},
   {start_phases, []}]}.
