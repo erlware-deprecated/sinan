@@ -240,7 +240,6 @@ build_sources(BuildRef, FileList, Includes,
 					 return_errors, return_warnings,
 					 {i, filename:join([AppDir, "include"])},
 					 % Search directory with .hrl files
-					 % generated from .asn1 files.
 					 Includes],
 		      event_compile_args(BuildRef, Options),
 		      BuildModule:build_file(BuildRef, File, Options, Target);
@@ -476,10 +475,6 @@ get_build_module('.erl') ->
     sin_compile_erl;
 get_build_module('.yrl') ->
     sin_compile_yrl;
-get_build_module('.asn1') ->
-    sin_compile_asn1;
-get_build_module('.asn') ->
-    sin_compile_asn1;
 get_build_module(Ext) ->
     ?SIN_RAISE({unsupported_file_type, Ext}).
 
