@@ -57,7 +57,6 @@ make_shell(BuildRef, ProjectApps, ProjectRepoApps, Repo) ->
     AppDir = filename:join([BuildDir, "apps"]),
     setup_paths(AppDir, ProjectApps),
     setup_paths(Repo, ProjectRepoApps),
-    shell:server(false, false),
     BuildRef.
 
 %% @doc gather a list of paths from the app and add them to the code path
