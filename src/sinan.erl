@@ -115,7 +115,7 @@ run_sinan(Args) ->
 -spec do_build(term(), [string()]) -> sin_config:config().
 do_build(Options, [Target | Rest]) ->
     do_task(list_to_atom(Target),
-	    find_start_dir(Rest),
+	    find_start_dir(Options),
 	    setup_config_overrides(Options, Rest));
 do_build(Options, []) ->
     do_build(Options, ["build"]).
@@ -136,6 +136,7 @@ usage(OptSpecList) ->
 option_spec_list() ->
     [{verbose, $v, "verbose", {boolean, false},
       "Be verbose about what gets done"},
+     {start_dir, $s, "start-dir", string, "The search location for the project"},
      {release, $r, "release", string, "the release to build"},
      {project, $p, "project", string, "the name of the project"},
      {version, $n, "nversion", string, "the version of the project"}].
@@ -172,20 +173,12 @@ run_task(Task, ProjectDir, BuildConfig) ->
     end.
 
 %% @doc parse the start dir out of the args passed in.
--spec find_start_dir(args()) -> string().
-find_start_dir({obj, Data}) ->
-    find_start_dir(Data);
-find_start_dir(Data) ->
-    case lists:keysearch("build", 1, Data) of
-         {value, {"build", {obj, Data2}}} ->
-            case lists:keysearch("start_dir", 1,  Data2) of
-                {value, {"start_dir", StartDir}} ->
-                    StartDir;
-                _ ->
-		    {ok, Dir} = file:get_cwd(),
-		    Dir
-            end;
-        _ ->
+-spec find_start_dir(Options::term()) -> string().
+find_start_dir(Options) ->
+    case lists:keysearch(start_dir, 1, Options) of
+         {value, {start_dir, StartDir}} ->
+	    StartDir;
+	_ ->
 	    {ok, Dir} = file:get_cwd(),
 	    Dir
     end.
@@ -197,6 +190,7 @@ setup_config_overrides(Options, Args) ->
     push_values_if_exist(sin_config:parse_args(Args, sin_config:new()),
 			 Options,
 			 [{release, "-r"},
+			  {start_dir, "start_dir"},
 			  {project, "project.name"},
 			  {version, "project.vsn"}]).
 
