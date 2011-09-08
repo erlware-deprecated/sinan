@@ -25,6 +25,7 @@
 	     sin_task_depends,
 	     sin_task_shell,
 	     sinan,
+	     sin_gen,
 	     sin_discover,
 	     sin_sup,
 	     sin_app,

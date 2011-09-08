@@ -7,21 +7,28 @@
 %%%-------------------------------------------------------------------
 -module(sin_testability).
 
--export([given/2, 'when'/2, then/2, step/2]).
+-export([given/3, 'when'/3, then/3]).
 
 % Step definitions for the sample calculator Addition feature.
 
-given([a, generated, project, in, a, different, location, then, the, 'CWD'],
-      _) ->
-    io:format("~p~n", [file:get_cwd()]).
+given([a, generated, project, in, a, different, location, then, the, cwd],
+      _, _) ->
+    {ok, BaseDir} = ewl_file:create_tmp_dir("/tmp"),
+    ProjectName = "foobachoo",
+    {ProjectDir, _} =
+        sin_test_project_gen:single_app_project(BaseDir, ProjectName),
+    {ok, {ProjectDir, ProjectName}}.
 
-'when'([a, build, step, is, run, on, this, project], _) ->
-    ok;
-'when'([a, start, dir, is, passed, to, the, build], _) ->
-    ok.
+'when'([a, build, step, is, run, on, this, project],
+       Ret = {ProjectDir, _}, _) ->
+    sinan:run_sinan(["-s", ProjectDir, "build"]),
+    {ok, Ret};
+'when'([a, start, dir, is, passed, to, the, build], Ret, _) ->
+    %% Nothing really to be done here since the start dir is passed when
+    %% The build is run.
+    {ok, Ret}.
 
 then([sinan, should, build, the, project, in, the, location,
-      specified, by, the, start, dir], _) ->
+      specified, by, the, start, dir], {ProjectDir, ProjectName}, _) ->
+    sin_test_project_gen:validate_single_app_project(ProjectDir, ProjectName),
     ok.
-
-step(_, _) -> undefined.

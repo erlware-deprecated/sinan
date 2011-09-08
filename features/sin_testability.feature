@@ -1,7 +1,7 @@
 Feature: Make sinan more testable
   In order to make it easier to test sinan from sinan
   As an Erlang Developer
-  I want sinan to be able to pass the start directory to the a sinan
+  I want sinan to be able to pass the start directory to a sinan
   call instead of having it inferred.
 
   Scenario: Pass the start dir to a sinan project
