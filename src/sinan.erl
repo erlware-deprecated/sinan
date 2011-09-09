@@ -12,12 +12,12 @@
 
 %% API
 -export([main/0,
-	 run_sinan/0,
-	 run_sinan/1,
+         run_sinan/0,
+         run_sinan/1,
          do_task/3]).
 
 -export_type([args/0,
-	      task_name/0]).
+              task_name/0]).
 
 -include_lib("eunit/include/eunit.hrl").
 -include("internal.hrl").
@@ -82,12 +82,11 @@ do_task_bare(StartDir, Config, Task) when is_atom(Task) ->
 %% system when the run is complete.
 -spec main() -> sin_config:config() | ok.
 main() ->
-    run_sinan(),
-    case sin_error_store:has_errors() of
-	ErrCount when ErrCount =< 0 ->
-	    init:stop();
-	_ ->
-	    init:stop(101)
+    case run_sinan() of
+        {ok, _} ->
+            init:stop();
+        {error, _} ->
+            init:stop(101)
     end.
 
 %% @doc do the full run of sinan as required by the command line args
@@ -102,10 +101,11 @@ run_sinan() ->
 run_sinan(Args) ->
     case getopt:parse(option_spec_list(), Args) of
         {ok, {Options, NonOptArgs}} ->
-	    do_build(Options, NonOptArgs);
-	{error, {Reason, Data}} ->
+            do_build(Options, NonOptArgs);
+        {error, {Reason, Data}} ->
             io:format("Error: ~s ~p~n~n", [Reason, Data]),
-            usage()
+            usage(),
+            {error, failed}
     end.
 
 %%====================================================================
@@ -114,9 +114,15 @@ run_sinan(Args) ->
 
 -spec do_build(term(), [string()]) -> sin_config:config().
 do_build(Options, [Target | Rest]) ->
-    do_task(list_to_atom(Target),
-	    find_start_dir(Options),
-	    setup_config_overrides(Options, Rest));
+    Result = do_task(list_to_atom(Target),
+                     find_start_dir(Options),
+                     setup_config_overrides(Options, Rest)),
+    case sin_error_store:has_errors() of
+        ErrCount when ErrCount =< 0 ->
+            {ok, Result};
+        _ ->
+            {error, Result}
+    end;
 do_build(Options, []) ->
     do_build(Options, ["build"]).
 
