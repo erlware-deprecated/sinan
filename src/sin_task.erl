@@ -11,15 +11,15 @@
 -include("internal.hrl").
 
 -export([get_task/1,
-	 get_task_list/1,
-	 get_tasks/0,
-	 behaviour_info/1,
-	 signal_error/0,
-	 has_errors/0,
-	 format_exception/1]).
+         get_task_list/1,
+         get_tasks/0,
+         behaviour_info/1,
+         signal_error/0,
+         has_errors/0,
+         format_exception/1]).
 
 -export_type([task_description/0,
-	      task_name/0]).
+              task_name/0]).
 
 %%====================================================================
 %%% Types
@@ -44,9 +44,9 @@ get_task_list(TaskName) ->
     Tasks = get_tasks(),
     RootTask = get_task(TaskName, Tasks),
     lists:map(fun(DepTaskName) ->
-		      get_task(DepTaskName, Tasks)
-	      end,
-	      process_deps(RootTask, Tasks)).
+                      get_task(DepTaskName, Tasks)
+              end,
+              process_deps(RootTask, Tasks)).
 
 %% @doc get a list of all tasks in the system
 -spec get_tasks() -> [record(task)].
@@ -102,21 +102,21 @@ get_task(TaskName, _) ->
 process_deps(Task, Tasks) ->
     {DepChain, _, _} = process_deps(Task, Tasks, []),
     ['NONE' | Rest] =
-	reorder_tasks(lists:flatten([{'NONE', Task#task.name} | DepChain])),
+        reorder_tasks(lists:flatten([{'NONE', Task#task.name} | DepChain])),
     Rest.
 
 process_deps(Task, Tasks, Seen) ->
     case lists:member(Task, Seen) of
-	true ->
-	    {[], Tasks, Seen};
-	false ->
-	    Deps = Task#task.deps,
-	    DepList = lists:map(fun(Dep) ->
-					{Dep, Task#task.name}
-				end, Deps),
-	    {NewDeps, _, NewSeen} = lists:foldl(fun process_dep/2,
-						{[], Tasks, Seen}, Deps),
-	    {[DepList | NewDeps], Tasks, NewSeen}
+        true ->
+            {[], Tasks, Seen};
+        false ->
+            Deps = Task#task.deps,
+            DepList = lists:map(fun(Dep) ->
+                                        {Dep, Task#task.name}
+                                end, Deps),
+            {NewDeps, _, NewSeen} = lists:foldl(fun process_dep/2,
+                                                {[], Tasks, Seen}, Deps),
+            {[DepList | NewDeps], Tasks, NewSeen}
     end.
 
 process_dep(TaskName, {Deps, Tasks, Seen}) ->
@@ -131,8 +131,8 @@ reorder_tasks(OTaskList) ->
             TaskList;
         {cycle, _} ->
             ?SIN_RAISE(cycle_fault,
-		       "There was a cycle in the task list. "
-		       "Unable to complete build!")
+                       "There was a cycle in the task list. "
+                       "Unable to complete build!")
     end.
 
 %%====================================================================
