@@ -205,7 +205,6 @@ build_app(BuildRef, Cache, Env, AppName, Args) ->
 
     {EbinPaths, Includes} = setup_code_path(BuildRef2, Env, AppName),
 
-    ExistingPaths = code:get_path(),
     code:add_patha(Target),
     {NewCache, NewFileList} = process_source_files(BuildRef2,
 						    Cache,
@@ -223,8 +222,6 @@ build_app(BuildRef, Cache, Env, AppName, Args) ->
     build_sources(BuildRef3, NewFileList,
 		  Includes, Args, AppDir, Target),
 
-    % Do the source build
-    code:set_path(ExistingPaths),
     {NewCache, BuildRef3}.
 
 %% @doc go through each source file building with the correct build module.
