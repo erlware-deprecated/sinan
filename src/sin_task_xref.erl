@@ -27,17 +27,17 @@
 description() ->
 
     Desc = "Runs the erlang xref task on all code in the project. It outputs \n"
-	"several different sections corresponding to the information available\n"
-	"from xref",
+        "several different sections corresponding to the information available\n"
+        "from xref",
 
     #task{name = ?TASK,
-	  task_impl = ?MODULE,
-	  bare = false,
-	  deps = ?DEPS,
-	  desc = Desc,
-	  short_desc = "Runs xref on the project, to detect problems",
-	  example = "xref",
-	  opts = []}.
+          task_impl = ?MODULE,
+          bare = false,
+          deps = ?DEPS,
+          desc = Desc,
+          short_desc = "Runs xref on the project, to detect problems",
+          example = "xref",
+          opts = []}.
 
 %% @doc do the xref task
 -spec do_task(sin_build_config:config()) ->
@@ -48,28 +48,29 @@ do_task(BuildRef) ->
     xref:start(ServerName),
 
     Apps = lists:map(fun({App, _Vsn, _Deps, _}) ->
-			     atom_to_list(App)
-		     end, sin_config:get_value(BuildRef,
-					       "project.apps")),
+                             atom_to_list(App)
+                     end, sin_config:get_value(BuildRef,
+                                               "project.apps")),
 
     ModuleInfo =
-	lists:flatten(lists:map(fun(App) ->
-					xref_app(BuildRef, ServerName, App),
-					gather_modules(BuildRef, App)
-				end,
-				Apps)),
+        lists:flatten(lists:map(fun(App) ->
+                                        xref_app(BuildRef, ServerName, App),
+                                        gather_modules(BuildRef, App)
+                                end,
+                                Apps)),
 
     lists:foreach(fun({Analysis, Name}) ->
-			  ewl_talk:say("Looking for ~s", [Name]),
-			  notify_user(ModuleInfo, Analysis,
-				      xref:analyze(ServerName, Analysis))
-		  end,
-		  [{undefined_function_calls, "Undefined Function Calls"},
-		   {locals_not_used, "Unused Local Functions"},
-		   {exports_not_used, "Unused Exported Functions"},
-		   {deprecated_function_calls, "Calls to Deprecated Functions"}]),
+                          ewl_talk:say("Looking for ~s", [Name]),
+                          notify_user(BuildRef, ModuleInfo, Analysis,
+                                      xref:analyze(ServerName, Analysis))
+                  end,
+                  [{undefined_function_calls, "Undefined Function Calls"},
+                   {locals_not_used, "Unused Local Functions"},
+                   {exports_not_used, "Unused Exported Functions"},
+                   {deprecated_function_calls, "Calls to Deprecated Functions"}]),
     code:set_path(ExistingPaths),
-    xref:stop(ServerName).
+    xref:stop(ServerName),
+    BuildRef.
 
 %% Get the module detail information from the config
 -spec gather_modules(sin_build_config:config(), AppName::string()) ->
@@ -81,26 +82,25 @@ gather_modules(BuildRef, App) ->
 
 %% @doc add the application to the specified xref system
 -spec xref_app(sin_build_config:config(),
-	       ServerName::atom(), AppName::atom()) ->
+               ServerName::atom(), AppName::atom()) ->
     ok | fail.
 xref_app(BuildRef, ServerName, AppName) ->
     Paths = sin_config:get_value(BuildRef,
-				 "apps." ++ AppName ++ ".code_paths"),
+                                 "apps." ++ AppName ++ ".code_paths"),
 
     code:add_pathsa(Paths),
     xref:set_library_path(ServerName, Paths),
 
     AppDir = sin_config:get_value(BuildRef,
-				  "apps." ++ AppName ++ ".builddir"),
+                                  "apps." ++ AppName ++ ".builddir"),
 
     case xref:add_application(ServerName, AppDir,
-			      [{warnings, true}]) of
-	{ok, _AppNameVsn} ->
-	    ok;
-	{error, Module, Reason} ->
-	    sin_error_store:signal_error(),
-	    ewl_talk:say(Module:format_error(Reason)),
-	    fail
+                              [{warnings, true}]) of
+        {ok, _AppNameVsn} ->
+            ok;
+        Error = {error, Module, Reason} ->
+            ewl_talk:say(Module:format_error(Reason)),
+            ?SIN_RAISE(BuildRef, {Error, Module:format_error(Reason)})
     end.
 
 %%====================================================================
@@ -108,39 +108,40 @@ xref_app(BuildRef, ServerName, AppName) ->
 %%====================================================================
 
 %% @doc print out the appropriate message for the responce
--spec notify_user([term()], atom(), {error, atom(), term()} |
-		  {ok, [term()]}) ->
+-spec notify_user(sin_config:config(),
+                  [term()], atom(), {error, atom(), term()} |
+                  {ok, [term()]}) ->
     ok.
-notify_user(_, _, {error, Module, Reason}) ->
-    sin_error_store:signal_error(),
-    ewl_talk:say(Module:format_error(Reason));
-notify_user(ModuleInfo, Analysis, {ok, AnswerList}) ->
+notify_user(Config, _, _, Error = {error, Module, Reason}) ->
+    ewl_talk:say(Module:format_error(Reason)),
+    ?SIN_RAISE(Config, {Error, Module:format_error(Reason)});
+notify_user(_, ModuleInfo, Analysis, {ok, AnswerList}) ->
     lists:foreach(fun(Answer) ->
-			  display_answer(Analysis, ModuleInfo, Answer)
-		  end, AnswerList).
+                          display_answer(Analysis, ModuleInfo, Answer)
+                  end, AnswerList).
 
 %% @doc print out an answer from the xref system
 -spec display_answer(atom(), [term()], term()) ->
     ok.
 display_answer(exports_not_used, _, MFA) ->
     case is_eunit_test(MFA) of
-	false ->
-	    ewl_talk:say("~s is exported but not used", [format_mfa(MFA)]);
-	true ->
-	    ok
+        false ->
+            ewl_talk:say("~s is exported but not used", [format_mfa(MFA)]);
+        true ->
+            ok
     end;
 display_answer(locals_not_used, _, MFA) ->
     ewl_talk:say("~s is defined but not used", [format_mfa(MFA)]);
 display_answer(undefined_function_calls, ModuleInfo, {Caller, Callee}) ->
     ewl_talk:say("~s:~s calls the undefined function ~s ",
-		 [find_module(ModuleInfo, Caller),
-		  format_mfa(Caller),
-		  format_mfa(Callee)]);
+                 [find_module(ModuleInfo, Caller),
+                  format_mfa(Caller),
+                  format_mfa(Callee)]);
 display_answer(deprecated_function_calls, ModuleInfo, {Caller, Callee}) ->
     ewl_talk:say("~s:~s calls the deprecated function ~s ",
-		 [find_module(ModuleInfo, Caller),
-		  format_mfa(Caller),
-		  format_mfa(Callee)]).
+                 [find_module(ModuleInfo, Caller),
+                  format_mfa(Caller),
+                  format_mfa(Callee)]).
 
 %% @doc return a name that is probably unique for the xref server.
 -spec get_a_uniquish_name() ->
@@ -160,11 +161,11 @@ format_mfa({Module, Function, Arity}) ->
     boolean().
 is_eunit_test({M, F, _A}) ->
     HasTest = case lists:keyfind(exports, 1, M:module_info()) of
-		  {exports, List} ->
-		      lists:member({test, 0}, List);
-		  _ ->
-		      false
-	      end,
+                  {exports, List} ->
+                      lists:member({test, 0}, List);
+                  _ ->
+                      false
+              end,
     HasTest orelse check_test(F, "_test") orelse check_test(F, "_test_").
 
 %% @doc check if this is a test funciotn
@@ -181,8 +182,8 @@ check_test(F, T) ->
     File::string().
 find_module(ModuleInfo, {M, _, _}) ->
     case lists:keyfind(M, 2, ModuleInfo) of
-	{File, M, _} ->
-	    File;
-	_ ->
-	    ""
+        {File, M, _} ->
+            File;
+        _ ->
+            ""
     end.

@@ -27,8 +27,6 @@
              sinan,
              sin_gen,
              sin_discover,
-             sin_sup,
-             sin_app,
              sin_task_cucumber,
              sin_task_dist,
              sin_task_test,
@@ -38,12 +36,10 @@
              sin_compile_erl,
              sin_exceptions,
              sin_error_store]},
-  {registered, [sin_sup]},
+  {registered, []},
   {applications, [kernel, stdlib, compiler,
                   edoc, syntax_tools, eunit, proper,
                   ktuo, ewrepo, ewlib, xtools,
                   xmerl, mnesia, sgte, erlware_commons,
-                  parsetools, getopt]},
-
-  {mod, {sin_app, []}},
-  {start_phases, []}]}.
+                  cucumberl,
+                  parsetools, getopt]}]}.

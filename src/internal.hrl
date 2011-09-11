@@ -29,22 +29,39 @@
 %%% @copyright 2007 Erlware
 %%%---------------------------------------------------------------------------
 
--define(SIN_RAISE(Problem), throw({pe, {?MODULE, ?LINE, Problem}})).
+-define(SIN_RAISE(Config, Problem),
+        throw({pe,
+               sin_config:add_run_error(Config,
+                                        ?MODULE,
+                                        {?MODULE, ?LINE, Problem}),
+               {?MODULE, ?LINE, Problem}})).
 
--define(SIN_RAISE(Problem, Description),
-        throw({pe, {?MODULE, ?LINE, {Problem, Description}}})).
+-define(SIN_RAISE(Config, Problem, Description),
+        throw({pe,
+               sin_config:add_run_error(Config,
+                                        ?MODULE,
+                                        {?MODULE, ?LINE,
+                                         {Problem, Description}}),
+                                        {?MODULE, ?LINE,
+                                         {Problem, Description}}})).
 
--define(SIN_RAISE(Problem, Description, DescArgs),
-        throw({pe, {?MODULE, ?LINE,
-		    {Problem, io_lib:format(Description, DescArgs)}}})).
+-define(SIN_RAISE(Config, Problem, Description, DescArgs),
+        throw({pe,
+               sin_config:add_run_error(Config, ?MODULE,
+                                        {?MODULE, ?LINE,
+                                         {Problem,
+                                          io_lib:format(Description,
+                                                        DescArgs)}}),
+               {?MODULE, ?LINE,
+                {Problem, io_lib:format(Description, DescArgs)}}})).
 
 
 -record(task,  {name :: atom(),            % The 'user friendly' name of the task
                 task_impl :: atom(),       % The implementation of the task, maybe fun or
-		bare :: boolean(),         % Indicates whether a build config is needed
+                bare :: boolean(),         % Indicates whether a build config is needed
                 deps :: [atom()],          % The list of dependencies
                 desc :: string(),          % The description for the task
-		short_desc :: string(),    % A one line short description of the task
-		example :: string(),       % An example of the task usage
+                short_desc :: string(),    % A one line short description of the task
+                example :: string(),       % An example of the task usage
                 opts :: list()}).          % The list of options that the task requires/understands
 

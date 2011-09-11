@@ -29,16 +29,16 @@
 -spec description() -> sin_task:task_description().
 description() ->
     Desc = "Creates an tarball of the distribution including release \n"
-	"information. Check documentation for the dist task for configuration \n"
-	"information ",
+        "information. Check documentation for the dist task for configuration \n"
+        "information ",
     #task{name = ?TASK,
-	  task_impl = ?MODULE,
-	  bare = false,
-	  deps = ?DEPS,
-	  example = "dist",
-	  short_desc = "Provides a standard erlang distribution tarball",
-	  desc = Desc,
-	  opts = []}.
+          task_impl = ?MODULE,
+          bare = false,
+          deps = ?DEPS,
+          example = "dist",
+          short_desc = "Provides a standard erlang distribution tarball",
+          desc = Desc,
+          opts = []}.
 
 %% @doc Build a dist tarball for this project
 -spec do_task(sin_config:config()) -> sin_config:config().
@@ -67,7 +67,7 @@ format_exception(Exception) ->
 
 %% @doc Go through and actually build up the tar file.
 -spec make_tar(sin_config:config(), string(), [term()],
-	       [term()], string()) ->
+               [term()], string()) ->
     sin_config:config().
 make_tar(BuildRef, ProjectDir, ProjectApps, ProjectRepoApps, Repo) ->
     BuildDir = sin_config:get_value(BuildRef, "build.dir"),
@@ -75,33 +75,34 @@ make_tar(BuildRef, ProjectDir, ProjectApps, ProjectRepoApps, Repo) ->
     filelib:ensure_dir(filename:join([TarDir, "tmp"])),
     ProjectName = get_project_release_name(BuildRef),
     ReleaseName =
-	case sin_config:get_value(BuildRef, "-r") of
-	    undefined ->
-		ProjectName;
-	    R ->
-		R ++ "-" ++
-		    sin_config:get_value(BuildRef,
-					       "releases." ++ R ++ ".vsn")
-	end,
+        case sin_config:get_value(BuildRef, "-r") of
+            undefined ->
+                ProjectName;
+            R ->
+                R ++ "-" ++
+                    sin_config:get_value(BuildRef,
+                                               "releases." ++ R ++ ".vsn")
+        end,
     LibDir = filename:join([ProjectName, "lib"]),
     AppDir = filename:join([BuildDir, "apps"]),
     List1 = gather_dirs(LibDir, Repo, ProjectRepoApps, []),
     List2 = gather_dirs(LibDir, AppDir, ProjectApps, List1),
     List3 = List2 ++ copy_additional_dirs(BuildRef, ProjectName, ProjectDir) ++
         get_release_dirs(BuildRef, ProjectName, BuildDir, ProjectDir) ++
-        add_defaults(ProjectDir, ProjectName),
-    create_tar_file(filename:join([TarDir,
-				   lists:flatten([ReleaseName, ".tar.gz"])]),
+        add_defaults(BuildRef, ProjectDir, ProjectName),
+    create_tar_file(BuildRef, filename:join([TarDir,
+                                   lists:flatten([ReleaseName, ".tar.gz"])]),
                     List3).
 
 %% @doc Add default directories/files to list of things to include in the dist.
--spec add_defaults(string(), string()) -> [{string(), string()}].
-add_defaults(ProjectDir, TopLevel) ->
+-spec add_defaults(sin_config:config(),
+                   string(), string()) -> [{string(), string()}].
+add_defaults(Config, ProjectDir, TopLevel) ->
     Control = "control",
     Bin = "bin",
     lists:foldl(fun(Ele, Acc) ->
                         File = filename:join([ProjectDir, Ele]),
-                        case sin_utils:file_exists(File) of
+                        case sin_utils:file_exists(Config, File) of
                             true ->
                                 [{File, filename:join([TopLevel, Ele])} | Acc ];
                             false ->
@@ -112,15 +113,14 @@ add_defaults(ProjectDir, TopLevel) ->
                 [Control, Bin]).
 
 %% @doc Actually create the tar file and write in all of the contents.
--spec create_tar_file(string(), [string()]) ->
+-spec create_tar_file(sin_config:config(), string(), [string()]) ->
     ok.
-create_tar_file(FileName, TarContents) ->
+create_tar_file(BuildRef, FileName, TarContents) ->
     case erl_tar:open(FileName, [compressed, write]) of
-        {error, _} ->
-	    sin_error_store:signal_error(),
-	    ewl_talk:say("Unable to open tar file ~s, unable to build "
-			 "distribution.", [FileName]),
-            ?SIN_RAISE(unable_to_build_dist);
+        Error = {error, _} ->
+            ewl_talk:say("Unable to open tar file ~s, unable to build "
+                         "distribution.", [FileName]),
+            ?SIN_RAISE(BuildRef, {unable_to_build_dist, Error});
         {ok, Tar} ->
             lists:foreach(fun({Name, NewName}) ->
                                   erl_tar:add(Tar, Name, NewName,
@@ -135,39 +135,40 @@ create_tar_file(FileName, TarContents) ->
     [string()].
 copy_additional_dirs(BuildRef, TopLevel, ProjectDir) ->
     NewDirs =
-	case sin_config:get_value(BuildRef, "tasks.dist.include_dirs") of
-	    undefined ->
-		[];
-	    RequiredDirs ->
-		lists:map(fun(Elem) ->
-				  NewElem =
-				      case is_binary(Elem) of
-					  true ->
-					      binary_to_list(Elem);
-					  false ->
-					      Elem
-				      end,
-				  Name = filename:join([ProjectDir, NewElem]),
-				  NewName = filename:join([TopLevel, NewElem]),
-				  {Name, NewName}
-				end,
-			  RequiredDirs)
-	end,
-    hooks_dir(TopLevel, ProjectDir) ++
-	erts_dir(BuildRef, TopLevel) ++
-	NewDirs.
+        case sin_config:get_value(BuildRef, "tasks.dist.include_dirs") of
+            undefined ->
+                [];
+            RequiredDirs ->
+                lists:map(fun(Elem) ->
+                                  NewElem =
+                                      case is_binary(Elem) of
+                                          true ->
+                                              binary_to_list(Elem);
+                                          false ->
+                                              Elem
+                                      end,
+                                  Name = filename:join([ProjectDir, NewElem]),
+                                  NewName = filename:join([TopLevel, NewElem]),
+                                  {Name, NewName}
+                                end,
+                          RequiredDirs)
+        end,
+    hooks_dir(BuildRef, TopLevel, ProjectDir) ++
+        erts_dir(BuildRef, TopLevel) ++
+        NewDirs.
 
 %% @doc Check to see if there are faxien hooks in the hooks dir. If so copy it.
--spec hooks_dir(string(), string()) -> {string(), string()}.
-hooks_dir(TopLevel, ProjectDir) ->
+-spec hooks_dir(sin_config:config(),
+                string(), string()) -> {string(), string()}.
+hooks_dir(Config, TopLevel, ProjectDir) ->
     HooksDir = filename:join([ProjectDir, "_hooks"]),
-    case sin_utils:file_exists(HooksDir) andalso
-	filelib:fold_files(HooksDir, "fax.*\.erl",
-			   false, fun(_,_) -> true end, false) of
-	true ->
-	    [{HooksDir, filename:join([TopLevel, "_hooks"])}];
-	_ ->
-	    []
+    case sin_utils:file_exists(Config, HooksDir) andalso
+        filelib:fold_files(HooksDir, "fax.*\.erl",
+                           false, fun(_,_) -> true end, false) of
+        true ->
+            [{HooksDir, filename:join([TopLevel, "_hooks"])}];
+        _ ->
+            []
     end.
 
 %% @doc If an erts version should be included in the dist include it copy it.
@@ -177,13 +178,13 @@ erts_dir(BuildRef, TopLevel) ->
     ErtsVersion = erlang:system_info(version),
     ErtsToInclude = filename:join([Prefix, "erts-" ++ ErtsVersion]),
     case sin_utils:to_bool(
-	   sin_config:get_value(BuildRef,
-				      "tasks.dist.include_erts")) of
-	true ->
-	    [{ErtsToInclude,
-	      filename:join([TopLevel, "erts-" ++ ErtsVersion])}];
-	_ ->
-	    []
+           sin_config:get_value(BuildRef,
+                                      "tasks.dist.include_erts")) of
+        true ->
+            [{ErtsToInclude,
+              filename:join([TopLevel, "erts-" ++ ErtsVersion])}];
+        _ ->
+            []
     end.
 
 %% @doc Gather up the applications and return a list of {DirName, InTarName}
@@ -201,13 +202,13 @@ gather_dirs(_, _, [], Acc) ->
 -spec get_project_release_name(sin_config:config()) -> string().
 get_project_release_name(BuildRef) ->
     Version =
-	case sin_config:get_value(BuildRef, "project.vsn") of
-	    undefined ->
-		eta_event:task_fault(BuildRef, ?TASK,
-				     "No project version defined in build "
-				     "config  aborting!"),
-		?SIN_RAISE(no_project_version);
-	    Vsn ->
+        case sin_config:get_value(BuildRef, "project.vsn") of
+            undefined ->
+                eta_event:task_fault(BuildRef, ?TASK,
+                                     "No project version defined in build "
+                                     "config  aborting!"),
+                ?SIN_RAISE(BuildRef, no_project_version);
+            Vsn ->
                       Vsn
               end,
     Name = get_project_name(BuildRef),
@@ -217,13 +218,13 @@ get_project_release_name(BuildRef) ->
 -spec get_project_name(sin_config:config()) -> string().
 get_project_name(BuildRef) ->
     case sin_config:get_value(BuildRef, "project.name") of
-	undefined ->
-	    eta_event:task_fault(BuildRef, ?TASK,
-				 "No project name defined in build config "
-				 "aborting!"),
-	    ?SIN_RAISE(no_project_name);
-	Nm ->
-	    Nm
+        undefined ->
+            eta_event:task_fault(BuildRef, ?TASK,
+                                 "No project name defined in build config "
+                                 "aborting!"),
+            ?SIN_RAISE(BuildRef, no_project_name);
+        Nm ->
+            Nm
     end.
 
 %% @doc Get the release information for the system.
@@ -234,7 +235,7 @@ get_release_dirs(BuildRef, ProjectName, BuildDir, ProjectDir) ->
     TargetReleases = filename:join([ProjectName, "releases", ProjectName]),
     Result =
         case sin_config:get_value(BuildRef,
-					"tasks.dist.include_release_info") of
+                                        "tasks.dist.include_release_info") of
             Value when Value == true; Value == undefined ->
                 [{filename:join([SourceReleases,
                                  lists:flatten([Name, ".boot"])]),
@@ -251,18 +252,19 @@ get_release_dirs(BuildRef, ProjectName, BuildDir, ProjectDir) ->
             _ ->
                 []
         end,
-    Result ++ get_config_info(ProjectDir, TargetReleases).
+    Result ++ get_config_info(BuildRef, ProjectDir, TargetReleases).
 
 %% @doc Copy information in config into the releases directory
--spec get_config_info(string(), string) -> [{string(), string()}].
-get_config_info(ProjectDir, TargetReleases) ->
+-spec get_config_info(sin_config:config(),
+                      string(), string) -> [{string(), string()}].
+get_config_info(Config, ProjectDir, TargetReleases) ->
     Target = filename:join([ProjectDir, "config"]),
-    case sin_utils:file_exists(Target) of
+    case sin_utils:file_exists(Config, Target) of
         true ->
             {ok, Files} = file:list_dir(Target),
             lists:foldl(fun(File, Acc) ->
                                 gather_config_info(Target,
-						   TargetReleases, File, Acc)
+                                                   TargetReleases, File, Acc)
                         end,
                         [],
                         Files);

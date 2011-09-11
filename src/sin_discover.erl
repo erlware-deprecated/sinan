@@ -36,7 +36,7 @@
 
 %% API
 -export([discover/2,
-	 format_exception/1]).
+         format_exception/1]).
 
 -define(POSSIBLE_CONFIGS, ["sinan.cfg", "_build.cfg"]).
 
@@ -46,16 +46,16 @@
 
 %% @doc Run the discover task.
 -spec discover(StartDir::string(),
-	       Override::sin_config:config()) ->
+               Override::sin_config:config()) ->
     Config::sin_config:config().
 discover(StartDir, Override) ->
-    ProjectDir = find_project_root(StartDir),
+    ProjectDir = find_project_root(Override, StartDir),
     Config = process_raw_config(ProjectDir,
-				find_config(ProjectDir, Override),
-				Override),
+                                find_config(ProjectDir, Override),
+                                Override),
     AppDirs = look_for_app_dirs(Config,
-				sin_config:get_value(Config, "build.dir"),
-				ProjectDir),
+                                sin_config:get_value(Config, "build.dir"),
+                                ProjectDir),
     build_app_info(Config, AppDirs, []).
 
 
@@ -74,34 +74,34 @@ format_exception(Exception) ->
 %% found then the system attempts to unuit the build config from the project
 %% properties.
 -spec find_config(ProjectDir::string(),
-		  Override::sin_config:config()) -> sin_config:config().
+                  Override::sin_config:config()) -> sin_config:config().
 find_config(ProjectDir, Override) ->
     case read_configs(ProjectDir, ?POSSIBLE_CONFIGS) of
-	no_build_config ->
-	    intuit_build_config(ProjectDir, Override);
-	Config ->
-	    Config
+        no_build_config ->
+            intuit_build_config(ProjectDir, Override);
+        Config ->
+            Config
     end.
 
 %% @doc Take a raw config and merge it with the default config information
 -spec process_raw_config(ProjectDir::string(),
-			 Config::sin_config:config(),
-			 Override::sin_config:config()) ->
+                         Config::sin_config:config(),
+                         Override::sin_config:config()) ->
     sin_config:config().
 process_raw_config(ProjectDir, Config, Override) ->
     DefaultConfig =
         sin_config:new(filename:join([code:priv_dir(sinan),
-				      "default_build"])),
+                                      "default_build"])),
     Config0 = sin_config:apply_flavor(sin_config:merge_configs(DefaultConfig,
-							       Config)),
+                                                               Config)),
     Flavor = sin_config:get_value(Config0, "build.flavor"),
     BuildDir = sin_config:get_value(Config0, "build_dir", "_build"),
     Config1 = sin_config:store(Config0, [{"build.root", filename:join([ProjectDir,
-								       BuildDir])},
-					 {"build.dir", filename:join([ProjectDir,
-								      BuildDir,
-								      Flavor])},
-					 {"project.dir", ProjectDir}]),
+                                                                       BuildDir])},
+                                         {"build.dir", filename:join([ProjectDir,
+                                                                      BuildDir,
+                                                                      Flavor])},
+                                         {"project.dir", ProjectDir}]),
     % The override overrides everything
     sin_config:merge_configs(Config1, Override).
 
@@ -110,21 +110,21 @@ process_raw_config(ProjectDir, Config, Override) ->
 %% this is not a single app project then a build config cannot be intuited and
 %% an exception is thrown.
 -spec intuit_build_config(ProjectDir::string(),
-			  Override::sin_config:override()) ->
+                          Override::sin_config:override()) ->
     sin_config:config().
 intuit_build_config(ProjectDir, Override) ->
     %% App name is always the same as the name of the project dir
     AppName = filename:basename(ProjectDir),
     case file:consult(filename:join([ProjectDir,
-				     "ebin",
-				     AppName ++ ".app"])) of
-	{error, enoent} ->
-	    intuit_from_override(Override);
-	{error, _} ->
-	    ?SIN_RAISE(unable_to_intuit_config,
-		       "Unable to generate a project config");
-	{ok, [{application, _, Rest}]} ->
-	    build_out_intuited_config(AppName, Rest)
+                                     "ebin",
+                                     AppName ++ ".app"])) of
+        {error, enoent} ->
+            intuit_from_override(Override);
+        {error, _} ->
+            ?SIN_RAISE(Override, unable_to_intuit_config,
+                       "Unable to generate a project config");
+        {ok, [{application, _, Rest}]} ->
+            build_out_intuited_config(AppName, Rest)
     end.
 
 %% @doc Given information from the app dir that was found, create a new full
@@ -134,8 +134,8 @@ intuit_build_config(ProjectDir, Override) ->
 build_out_intuited_config(AppName, Rest) ->
    {value, {vsn, ProjectVsn}} = lists:keysearch(vsn, 1, Rest),
     sin_config:store(sin_config:new(),
-		     [{"project.name", AppName},
-		      {"project.vsn", ProjectVsn}]).
+                     [{"project.name", AppName},
+                      {"project.vsn", ProjectVsn}]).
 
 %% @doc The override is command line override values that are provided by the
 %% user. If the user provides a project name and version we can use that
@@ -143,20 +143,20 @@ build_out_intuited_config(AppName, Rest) ->
     sin_config:config().
 intuit_from_override(Override) ->
     Name = case sin_config:get_value(Override, "project.name") of
-	       undefined ->
-		   ?SIN_RAISE(unable_to_intuit_config);
-	       PName ->
-		   PName
-	   end,
+               undefined ->
+                   ?SIN_RAISE(Override, unable_to_intuit_config);
+               PName ->
+                   PName
+           end,
     Version = case sin_config:get_value(Override, "project.vsn") of
-	       undefined ->
-		   ?SIN_RAISE(unable_to_intuit_config);
-	       PVsn ->
-		   PVsn
-	   end,
+               undefined ->
+                   ?SIN_RAISE(Override, unable_to_intuit_config);
+               PVsn ->
+                   PVsn
+           end,
     sin_config:store(sin_config:new(),
-		     [{"project.name",Name},
-		      {"project.vsn", Version}]).
+                     [{"project.name",Name},
+                      {"project.vsn", Version}]).
 
 %% @doc Attempt to read the build configs into the system. If the config exists
 %% read it in and return it. Otherwise try the next one. If no configs are found
@@ -165,12 +165,12 @@ intuit_from_override(Override) ->
     sin_config:config().
 read_configs(ProjectDir, [PossibleConfig | Rest]) ->
     try
-	sin_config:new(filename:join([ProjectDir, PossibleConfig]))
+        sin_config:new(filename:join([ProjectDir, PossibleConfig]))
     catch
-	throw:{pe, {_, _, {invalid_config_file, _}}} ->
-	    read_configs(ProjectDir, Rest);
-	throw:{pe, {_, _, invalid_config_file}} ->
-	    read_configs(ProjectDir, Rest)
+        throw:{pe, _, {_, _, {invalid_config_file, _}}} ->
+            read_configs(ProjectDir, Rest);
+        throw:{pe, _, {_, _, invalid_config_file}} ->
+            read_configs(ProjectDir, Rest)
     end;
 read_configs(_ProjectDir, []) ->
     no_build_config.
@@ -178,50 +178,52 @@ read_configs(_ProjectDir, []) ->
 %% @doc Find the root of the project. The project root may be marked by a _build
 %% dir, a build config (sinan.cfg, _build.cfg). If none of those are found then
 %% just return the directory we started with.
--spec find_project_root(Dir::string()) -> string().
-find_project_root(Dir) ->
+-spec find_project_root(sin_config:config(), Dir::string()) -> string().
+find_project_root(Config, Dir) ->
     try
-	find_project_root_by_markers(Dir, ["_build" | ?POSSIBLE_CONFIGS])
+        find_project_root_by_markers(Config, Dir, ["_build" | ?POSSIBLE_CONFIGS])
     catch
-	throw:no_parent_dir ->
-	    %% If we couldn't find samething to indicate the project root we
-	    %% will use the current directory
-	    Dir
+        throw:no_parent_dir ->
+            %% If we couldn't find samething to indicate the project root we
+            %% will use the current directory
+            Dir
     end.
 
 %% @doc Find the project root given a list of markers. We look for these markers
 %% starting in the base dir and then working our way up to the parent dirs. If
 %% we hit the top of the directory structure without finding anything we throw
 %% an exception.
--spec find_project_root_by_markers(Dir::string(),
-				   RootMarkers::[string()]) -> string().
-find_project_root_by_markers(Dir, RootMarkers) ->
-    case root_marker_exists(Dir, RootMarkers) of
-	true ->
-	    Dir;
-	false ->
-	    find_project_root_by_markers(parent_dir(Dir), RootMarkers)
+-spec find_project_root_by_markers(sin_config:config(), Dir::string(),
+                                   RootMarkers::[string()]) -> string().
+find_project_root_by_markers(Config, Dir, RootMarkers) ->
+    case root_marker_exists(Config, Dir, RootMarkers) of
+        true ->
+            Dir;
+        false ->
+            find_project_root_by_markers(Config, parent_dir(Dir), RootMarkers)
     end.
 
 %% @doc Check to see if the root marker exists in the directory specified.
--spec root_marker_exists(Dir::string(), RootMarkers::string()) ->
+-spec root_marker_exists(sin_config:config(),
+                         Dir::string(), RootMarkers::string()) ->
     boolean().
-root_marker_exists(Dir, [RootMarker | Rest]) ->
-    case has_root_marker(Dir, RootMarker) of
-	true ->
-	    true;
-	false ->
-	    root_marker_exists(Dir, Rest)
+root_marker_exists(Config, Dir, [RootMarker | Rest]) ->
+    case has_root_marker(Config, Dir, RootMarker) of
+        true ->
+            true;
+        false ->
+            root_marker_exists(Config, Dir, Rest)
     end;
-root_marker_exists(_Dir, []) ->
+root_marker_exists(_, _Dir, []) ->
     false.
 
 %% @doc Given a single root marker and a directory return a boolean indicating
 %% if the root marker exists in that file.
--spec has_root_marker(Dir::string(), RootMarker::string()) ->
+-spec has_root_marker(sin_config:config(),
+                      Dir::string(), RootMarker::string()) ->
     boolean().
-has_root_marker(Dir, RootMarker) ->
-    sin_utils:file_exists(filename:join(Dir, RootMarker)).
+has_root_marker(Config, Dir, RootMarker) ->
+    sin_utils:file_exists(Config, filename:join(Dir, RootMarker)).
 
 %% @doc Given a directory returns the name of the parent directory.
 -spec parent_dir(Filename::string()) -> DirName::string().
@@ -241,8 +243,8 @@ parent_dir([H | T], Acc) ->
 
 %% @doc Given a list of app dirs retrieves the application names.
 -spec build_app_info(Config::sin_config:config(),
-		     List::list(),
-		     Acc::list()) ->
+                     List::list(),
+                     Acc::list()) ->
     Config::sin_config:config().
 build_app_info(Config, [H|T], Acc) ->
     AppName = filename:basename(H),
@@ -250,21 +252,21 @@ build_app_info(Config, [H|T], Acc) ->
     case file:consult(AppFile) of
         {ok, [{application, Name, Details}]} ->
             Config2 = source_details(H, AppName,
-			process_details("apps." ++ AppName ++ ".",
-					[{"name", Name},
-					 {"dotapp", AppFile},
-					 {"basedir", H} | Details], Config))
-		,
+                        process_details("apps." ++ AppName ++ ".",
+                                        [{"name", Name},
+                                         {"dotapp", AppFile},
+                                         {"basedir", H} | Details], Config))
+                ,
             build_app_info(Config2,  T, [AppName | Acc]);
         {error, {_, Module, Desc}} ->
             Error = Module:format_error(Desc),
-            ?SIN_RAISE({invalid_app_file, Error},
-		       "*.app file is invalid for ~s at ~s",
-		       [AppName, AppFile]);
+            ?SIN_RAISE(Config, {invalid_app_file, Error},
+                       "*.app file is invalid for ~s at ~s",
+                       [AppName, AppFile]);
         {error, Error} ->
-            ?SIN_RAISE({no_app_file, Error},
-		       "No *.app file found for ~s at ~s",
-		       [AppName, AppFile])
+            ?SIN_RAISE(Config, {no_app_file, Error},
+                       "No *.app file found for ~s at ~s",
+                       [AppName, AppFile])
     end;
 build_app_info(Config, [], Acc) ->
     sin_config:store(Config, "project.applist", Acc).
@@ -278,20 +280,20 @@ source_details(Dir, AppName, Config) ->
     SrcModules = gather_modules(SrcDir),
     TestModules = gather_modules(TestDir),
     C1 = sin_config:store(Config,
-			  "apps." ++ AppName ++ ".modules", SrcModules),
+                          "apps." ++ AppName ++ ".modules", SrcModules),
     sin_config:store(C1, "apps." ++ AppName ++ ".all_modules",
-		     SrcModules ++ TestModules).
+                     SrcModules ++ TestModules).
 
 %% @doc Convert the details list to something that fits into the config nicely.
 -spec process_details(BaseKey::string(), List::list(), Config::dict()) ->
     NewConfig::sin_config:config().
 process_details(BaseName, [{Key, Value} | T], Config) when is_atom(Key) ->
     process_details(BaseName, T, sin_config:store(Config,
-						  BaseName ++ atom_to_list(Key),
+                                                  BaseName ++ atom_to_list(Key),
                                             Value));
 process_details(BaseName, [{Key, Value} | T], Config) when is_list(Key)->
     process_details(BaseName, T, sin_config:store(Config, BaseName ++ Key,
-						  Value));
+                                                  Value));
 process_details(_, [], Config) ->
     Config.
 
@@ -299,20 +301,20 @@ process_details(_, [], Config) ->
 %% directories that have a src and an ebin subdir. When it finds one it stops
 %% recursing and adds the directory to the list to return.
 -spec look_for_app_dirs(Config::sin_config:config(),
-			BuildDir::string(),
-			ProjectDir::string()) ->
+                        BuildDir::string(),
+                        ProjectDir::string()) ->
     AppDirs::[string()].
 look_for_app_dirs(Config, BuildDir, ProjectDir) ->
     Ignorables = [BuildDir] ++ case dict:find("ignore_dirs", Config) of
-				   {ok, Value} -> Value;
-				   _ -> []
-			       end,
+                                   {ok, Value} -> Value;
+                                   _ -> []
+                               end,
     case look_for_app_dirs(Config, BuildDir, ProjectDir, "",
                            Ignorables, []) of
         [] ->
-            ?SIN_RAISE(no_app_directories,
-		       "Unable to find any application directories."
-		       " aborting now");
+            ?SIN_RAISE(Config, no_app_directories,
+                       "Unable to find any application directories."
+                       " aborting now");
         Else ->
             Else
     end.
@@ -321,7 +323,7 @@ look_for_app_dirs(_, BuildDir, _Parent, BuildDir, _Ignore, Acc) ->
     Acc;
 look_for_app_dirs(Config, BuildDir, Parent, Sub, Ignorables, Acc) ->
     case sin_utils:is_dir_ignorable(Sub, Ignorables) or
-	sin_utils:is_dir_ignorable(filename:join([Parent, Sub]), Ignorables) of
+        sin_utils:is_dir_ignorable(filename:join([Parent, Sub]), Ignorables) of
         true ->
             Acc;
         false ->
@@ -330,8 +332,8 @@ look_for_app_dirs(Config, BuildDir, Parent, Sub, Ignorables, Acc) ->
 
 %% @doc Process the app dir to see if it is an application directory.
 -spec process_app_dir(Config::sin_config:config(),
-		      BuildDir::string(), Parent::string(), Sub::string(),
-		      Ignorables::[string()], Acc::list()) ->
+                      BuildDir::string(), Parent::string(), Sub::string(),
+                      Ignorables::[string()], Acc::list()) ->
     ListOfDirs::[string()].
 process_app_dir(Config, BuildDir, Parent, Sub, Ignorables, Acc) ->
     Pwd = filename:join([Parent, Sub]),
@@ -391,9 +393,9 @@ process_dirs(File, F, Type)  ->
 %% @doc Gather the list of modules that currently may need to be built.
 gather_modules(SrcDir) ->
     case filelib:is_dir(SrcDir) of
-	true ->
-	    filelib:fold_files(SrcDir,
-			       "(.+\.erl|.+\.yrl|.+\.asn1|.+\.asn)$",
+        true ->
+            filelib:fold_files(SrcDir,
+                               "(.+\.erl|.+\.yrl|.+\.asn1|.+\.asn)$",
                    true, % Recurse into subdirectories of src
                    fun(File, Acc) ->
                            Ext = filename:extension(File),
@@ -421,106 +423,114 @@ module_name(File) ->
 %%====================================================================
 find_project_root_test() ->
     ProjectRoot = filename:join(["test_data",
-				 "sin_discover",
-				 "find_project_root_by_markers"]),
+                                 "sin_discover",
+                                 "find_project_root_by_markers"]),
 
     DirStart = filename:join(["test_data",
-			      "sin_discover",
-			      "find_project_root_by_markers",
-			      "d1", "d2", "d3", "d4"]),
+                              "sin_discover",
+                              "find_project_root_by_markers",
+                              "d1", "d2", "d3", "d4"]),
 
-    ?assertMatch(ProjectRoot, find_project_root(DirStart)),
-    ?assertMatch("/tmp", find_project_root("/tmp")).
+    ?assertMatch(ProjectRoot, find_project_root(sin_config:new(), DirStart)),
+    ?assertMatch("/tmp", find_project_root(sin_config:new(), "/tmp")).
 
 find_project_root_by_markers_test() ->
     ProjectRoot = filename:join(["test_data",
-				 "sin_discover",
-				 "find_project_root_by_markers"]),
+                                 "sin_discover",
+                                 "find_project_root_by_markers"]),
 
     DirStart = filename:join(["test_data",
-			      "sin_discover",
-			      "find_project_root_by_markers",
-			      "d1", "d2", "d3", "d4"]),
-    ?assertMatch(ProjectRoot, find_project_root_by_markers(DirStart,
-							   ["_build",
-							    "_build.cfg",
-							    "sinan.cfg"])),
+                              "sin_discover",
+                              "find_project_root_by_markers",
+                              "d1", "d2", "d3", "d4"]),
+    ?assertMatch(ProjectRoot, find_project_root_by_markers(sin_config:new(),
+                                                           DirStart,
+                                                           ["_build",
+                                                            "_build.cfg",
+                                                            "sinan.cfg"])),
     ?assertException(throw, no_parent_dir,
-		     find_project_root_by_markers(
-		       "/tmp",
-		       ["somethingthatshouldneverbefound",
-			"somethingelsethatshouldneverbefound"])).
+                     find_project_root_by_markers(sin_config:new(),
+                       "/tmp",
+                       ["somethingthatshouldneverbefound",
+                        "somethingelsethatshouldneverbefound"])).
 
 root_marker_exists_test() ->
     DirT1 = filename:join(["test_data", "sin_discover",
-			   "root_marker_exists", "m1"]),
+                           "root_marker_exists", "m1"]),
     DirT2 = filename:join(["test_data", "sin_discover",
-			   "root_marker_exists", "m2"]),
-    ?assertMatch(true, root_marker_exists(DirT1, ["_build", "_build.cfg",
-						"sinan.cfg"])),
-    ?assertMatch(false, root_marker_exists(DirT2, ["_build", "_build.cfg",
-						   "sinan.cfg"])).
+                           "root_marker_exists", "m2"]),
+    ?assertMatch(true, root_marker_exists(sin_config:new(),
+                                          DirT1, ["_build", "_build.cfg",
+                                                "sinan.cfg"])),
+    ?assertMatch(false, root_marker_exists(sin_config:new(),
+                                           DirT2, ["_build", "_build.cfg",
+                                                   "sinan.cfg"])).
 
 has_root_marker_test() ->
     Dir = filename:join(["test_data", "sin_discover", "has_root_marker"]),
     ?assertMatch(true,
-		has_root_marker(Dir, "_build")),
+                has_root_marker(sin_config:new(),
+                                Dir, "_build")),
     ?assertMatch(true,
-		has_root_marker(Dir, "_build.cfg")),
+                has_root_marker(sin_config:new(),
+                                Dir, "_build.cfg")),
     ?assertMatch(true,
-		has_root_marker(Dir, "sinan.cfg")),
+                has_root_marker(sin_config:new(),
+                                Dir, "sinan.cfg")),
     ?assertMatch(false,
-		has_root_marker(Dir, "foobar")),
+                has_root_marker(sin_config:new(),
+                                Dir, "foobar")),
     ?assertMatch(false,
-		 has_root_marker(Dir, "should_not_be_there")).
+                 has_root_marker(sin_config:new(),
+                                 Dir, "should_not_be_there")).
 
 read_configs_test() ->
     DirGood = filename:join(["test_data", "sin_discover",
-			     "read_configs", "good"]),
+                             "read_configs", "good"]),
     DirBad = filename:join(["test_data", "sin_discover",
-			    "read_configs", "bad"]),
+                            "read_configs", "bad"]),
     ?assertNot(no_build_config == read_configs(DirGood, ?POSSIBLE_CONFIGS)),
     ?assertMatch(no_build_config, read_configs(DirBad, ?POSSIBLE_CONFIGS)).
 
 build_out_intuited_config_test() ->
     Config = build_out_intuited_config("test_proj",
-				       [{modules, [one, two, three]},
-					{vsn, "0.2.0"}]),
+                                       [{modules, [one, two, three]},
+                                        {vsn, "0.2.0"}]),
     ?assertMatch("test_proj", sin_config:get_value(Config, "project.name")),
     ?assertMatch("0.2.0", sin_config:get_value(Config, "project.vsn")).
 
 intuit_build_config_test() ->
     ProjectDir = filename:join(["test_data", "sin_discover",
-				"intuit_build_config",
-				"test_project"]),
+                                "intuit_build_config",
+                                "test_project"]),
     BadProjectDir = filename:join(["test_data", "sin_discover",
-				   "intuit_build_config",
-				   "test_project2"]),
+                                   "intuit_build_config",
+                                   "test_project2"]),
     Config = intuit_build_config(ProjectDir, sin_config:new()),
     ?assertMatch("test_project", sin_config:get_value(Config, "project.name")),
     ?assertMatch("0.1.1", sin_config:get_value(Config, "project.vsn")),
     ?assertException(throw,
-		     {pe, {_, _, unable_to_intuit_config}},
-		     intuit_build_config(BadProjectDir, sin_config:new())),
+                     {pe, _, {_, _, unable_to_intuit_config}},
+                     intuit_build_config(BadProjectDir, sin_config:new())),
     Override = sin_config:store(sin_config:new(), [{"project.name", "fobachu"},
-						   {"project.vsn", "0.1.0"}]),
+                                                   {"project.vsn", "0.1.0"}]),
     OConfig = intuit_build_config(BadProjectDir, Override),
     ?assertMatch("fobachu", sin_config:get_value(OConfig, "project.name")),
     ?assertMatch("0.1.0", sin_config:get_value(OConfig, "project.vsn")).
 
 process_raw_config_test() ->
     ProjectDir = filename:join(["test_data", "sin_discover",
-				"intuit_build_config",
-				"test_project"]),
+                                "intuit_build_config",
+                                "test_project"]),
     BuildRoot = filename:join([ProjectDir,
-			      "_build"]),
+                              "_build"]),
     BuildDir = filename:join([ProjectDir,
-			      "_build",
-			       "development"]),
+                              "_build",
+                               "development"]),
     Config =
-	process_raw_config(ProjectDir,
-			   intuit_build_config(ProjectDir, sin_config:new()),
-			   sin_config:new()),
+        process_raw_config(ProjectDir,
+                           intuit_build_config(ProjectDir, sin_config:new()),
+                           sin_config:new()),
     ?assertMatch(BuildDir, sin_config:get_value(Config, "build.dir")),
 
     ?assertMatch(BuildRoot, sin_config:get_value(Config, "build.root")),
@@ -528,29 +538,29 @@ process_raw_config_test() ->
     ?assertMatch("build", sin_config:get_value(Config, "default_task")),
 
     Override = sin_config:store(sin_config:new(), [{"project.name", "fobachu"},
-						   {"project.vsn", "0.1.0"}]),
+                                                   {"project.vsn", "0.1.0"}]),
     OConfig =
-	process_raw_config(ProjectDir,
-			   intuit_build_config(ProjectDir, sin_config:new()),
-			   Override),
+        process_raw_config(ProjectDir,
+                           intuit_build_config(ProjectDir, sin_config:new()),
+                           Override),
     ?assertMatch("fobachu", sin_config:get_value(OConfig, "project.name")),
     ?assertMatch("0.1.0", sin_config:get_value(OConfig, "project.vsn")).
 
 find_config_test() ->
     IntuitProjectDir = filename:join(["test_data", "sin_discover",
-				      "find_config",
-				      "test_project"]),
+                                      "find_config",
+                                      "test_project"]),
     ConfigProjectDir = filename:join(["test_data", "sin_discover",
-				      "find_config",
-				      "test_project2"]),
+                                      "find_config",
+                                      "test_project2"]),
 
     IntuitConfig = find_config(IntuitProjectDir, sin_config:new()),
     ?assertMatch("test_project", sin_config:get_value(IntuitConfig,
-						      "project.name")),
+                                                      "project.name")),
     ?assertMatch("0.1.1", sin_config:get_value(IntuitConfig, "project.vsn")),
 
     ConfigConfig = find_config(ConfigProjectDir, sin_config:new()),
     ?assertMatch("foobar", sin_config:get_value(ConfigConfig,
-						      "project.name")),
+                                                      "project.name")),
     ?assertMatch("0.0.0.1", sin_config:get_value(ConfigConfig, "project.vsn")).
 

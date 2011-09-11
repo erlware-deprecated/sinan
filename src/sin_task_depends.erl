@@ -15,8 +15,8 @@
 
 %% API
 -export([description/0,
-	 do_task/1,
-	 format_exception/1]).
+         do_task/1,
+         format_exception/1]).
 
 -define(TASK, depends).
 -define(DEPS, []).
@@ -29,15 +29,15 @@
 -spec description() -> sin_task:task_description().
 description() ->
     Desc = "Analyzes all of the dependencies in the project and provides that"
-	"\n information to other tasks.",
+        "\n information to other tasks.",
     #task{name = ?TASK,
-	  task_impl = ?MODULE,
-	  bare = false,
-	  example = "depends",
-	  short_desc = "dependency resolution for the project",
-	  deps = ?DEPS,
-	  desc = Desc,
-	  opts = []}.
+          task_impl = ?MODULE,
+          bare = false,
+          example = "depends",
+          short_desc = "dependency resolution for the project",
+          deps = ?DEPS,
+          desc = Desc,
+          opts = []}.
 
 %% @doc gather all the dependencies for the system
 -spec do_task(sin_config:config()) -> sin_config:config().
@@ -48,20 +48,20 @@ do_task(BuildRef) ->
     AllProjectApps = gather_project_apps(BuildRef, AppBDir),
 
     ProjectApps = case Release of
-		      undefined ->
-			  AllProjectApps;
-		      _ ->
-			  gather_project_apps(BuildRef, AppBDir,
-					      sin_config:get_value(BuildRef,
-								   "releases."
-								   ++ Release ++
-								   ".apps"))
-		  end,
+                      undefined ->
+                          AllProjectApps;
+                      _ ->
+                          gather_project_apps(BuildRef, AppBDir,
+                                              sin_config:get_value(BuildRef,
+                                                                   "releases."
+                                                                   ++ Release ++
+                                                                   ".apps"))
+                  end,
 
     BuildRef2 =
-	sin_config:store(
-	  sin_config:store(BuildRef, "project.allapps", AllProjectApps),
-	  "project.apps", ProjectApps),
+        sin_config:store(
+          sin_config:store(BuildRef, "project.allapps", AllProjectApps),
+          "project.apps", ProjectApps),
 
     BuildFlavor = sin_config:get_value(BuildRef2, "build.flavor"),
     ProjectName = sin_config:get_value(BuildRef2, "project.name"),
@@ -70,49 +70,51 @@ do_task(BuildRef) ->
     LibDir = code:lib_dir(),
 
     AllDeps =
-	case process_release(RootDir, BuildFlavor,
-			     ProjectName, ProjectVsn, ProjectApps) of
-	    {ok, AD1} ->
-		AD1;
-	    _ ->
-		case do_transitive_resolution(ProjectApps, AllProjectApps, LibDir) of
-		    {ok, AD1} ->
-			AD1;
-		    _ ->
+        case process_release(BuildRef2, RootDir, BuildFlavor,
+                             ProjectName, ProjectVsn, ProjectApps) of
+            {ok, AD1} ->
+                AD1;
+            _ ->
+                case do_transitive_resolution(BuildRef2,
+                                              ProjectApps,
+                                              AllProjectApps, LibDir) of
+                    {ok, AD1} ->
+                        AD1;
+                    _ ->
 
-			sin_error_store:signal_error(),
-			?SIN_RAISE(unable_to_resolve,
-				   "Unable to resolve dependencies", []),
-			none
-		end
-	end,
+                        ?SIN_RAISE(BuildRef, unable_to_resolve,
+                                   "Unable to resolve dependencies", []),
+                        none
+                end
+        end,
     RepoApps = get_repo_apps(AllProjectApps, element(1, AllDeps)),
 
     AllDeps2 =
-	case process_release(RootDir, BuildFlavor,
-			     ProjectName, ProjectVsn, AllProjectApps) of
-	    {ok, AD2} ->
-		AD2;
-	    _ ->
-		case do_transitive_resolution(AllProjectApps, AllProjectApps,
-					      LibDir) of
-		    {ok, AD2} ->
-			AD2;
-		    _ ->
-			sin_error_store:signal_error(),
-			?SIN_RAISE(unable_to_resolve,
-				   "Unable to resolve dependencies", []),
-			none
-		end
-	end,
+        case process_release(BuildRef2, RootDir, BuildFlavor,
+                             ProjectName, ProjectVsn, AllProjectApps) of
+            {ok, AD2} ->
+                AD2;
+            _ ->
+                case do_transitive_resolution(BuildRef2,
+                                              AllProjectApps, AllProjectApps,
+                                              LibDir) of
+                    {ok, AD2} ->
+                        AD2;
+                    _ ->
+                        ?SIN_RAISE(BuildRef, unable_to_resolve,
+                                   "Unable to resolve dependencies", []),
+                        none
+                end
+        end,
 
     BuildRef3 = sin_config:store(BuildRef2, "project.deps", AllDeps),
     BuildRef4 = sin_config:store(BuildRef3, "project.alldeps", AllDeps2),
     BuildRef5 = sin_config:store(BuildRef4, "project.repoapps", RepoApps),
     BuildRef6 = sin_config:store(BuildRef5, "project.compile_deps",
-				 gather_compile_time_dependencies([eunit, proper],
-								 LibDir,
-								 [])),
+                                 gather_compile_time_dependencies(BuildRef5,
+                                                                  [eunit, proper],
+                                                                 LibDir,
+                                                                 [])),
     save_deps(BuildRef6, AllDeps),
     update_sigs(BuildRef6),
     BuildRef6.
@@ -126,38 +128,40 @@ format_exception(Exception) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
-gather_compile_time_dependencies([Dep | Rest], LibDir, PackageLocations) ->
-    Version = case sin_resolver:package_versions(LibDir,
-						 Dep) of
-	[] ->
-	    sin_error_store:signal_error(),
-	    ?SIN_RAISE(unable_to_find_dependency,
-		       "Couldn't find dependency ~s.",
-		       [Dep]);
-	[Version1 | _] ->
-	    Version1
+gather_compile_time_dependencies(Config,
+                                 [Dep | Rest], LibDir, PackageLocations) ->
+    Version = case sin_resolver:package_versions(Config,
+                                                 LibDir,
+                                                 Dep) of
+        [] ->
+            ?SIN_RAISE(Config, unable_to_find_dependency,
+                       "Couldn't find dependency ~s.",
+                       [Dep]);
+        [Version1 | _] ->
+            Version1
     end,
 
     Location = sin_resolver:find_package_location(LibDir,
-						  Dep,
+                                                  Dep,
                                                   Version),
-    gather_compile_time_dependencies(Rest, LibDir,
-				     [{Dep, Version, {[], []}, Location} |
-				      PackageLocations]);
-gather_compile_time_dependencies(_, _, PackageLocations) ->
+    gather_compile_time_dependencies(Config, Rest, LibDir,
+                                     [{Dep, Version, {[], []}, Location} |
+                                      PackageLocations]);
+gather_compile_time_dependencies(_, _, _, PackageLocations) ->
     PackageLocations.
 
 %% @doc Check for per project dependencies
--spec check_project_dependencies(string(), string(), [AppInfo::tuple()],
-				 [AppInfo::tuple()],
-				 term()) -> term().
-check_project_dependencies(LibDir,
+-spec check_project_dependencies(sin_config:config(),
+                                 string(), string(), [AppInfo::tuple()],
+                                 [AppInfo::tuple()],
+                                 term()) -> term().
+check_project_dependencies(Config, LibDir,
                            ErtsVersion,
                            [App = {_Name, _Vsn, {Deps, IncDeps}, _} |
-			    ProjectApps],
+                            ProjectApps],
                            AllProjectApps,
                            {Acc1, IncAcc1}) ->
-    Acc2 = resolve_project_dependencies(LibDir,
+    Acc2 = resolve_project_dependencies(Config, LibDir,
                                         ErtsVersion,
                                         Deps,
                                         AllProjectApps,
@@ -169,18 +173,19 @@ check_project_dependencies(LibDir,
                undefined ->
                    [];
                _ ->
-                   resolve_project_dependencies(LibDir, ErtsVersion, IncDeps,
+                   resolve_project_dependencies(Config,
+                                                LibDir, ErtsVersion, IncDeps,
                                                 AllProjectApps,
                                                 merge_deps(App, IncAcc1,
-							   IncAcc1))
+                                                           IncAcc1))
            end,
 
-    check_project_dependencies(LibDir,
+    check_project_dependencies(Config, LibDir,
                                ErtsVersion,
                                ProjectApps,
                                AllProjectApps,
                                {Acc2, Acc3});
-check_project_dependencies(_,
+check_project_dependencies(_, _,
                            _,
                            [],
                            _,
@@ -194,55 +199,57 @@ merge_deps(App,  [_ | Rest], All) ->
 merge_deps(App, [], All) ->
     [App | All].
 
-resolve_project_dependencies(LibDir,
+resolve_project_dependencies(Config, LibDir,
                              ErtsVersion,
                              Deps0 = [Dep | Deps],
                              AllProjectApps, Acc) ->
     case already_resolved(Dep, Acc) of
         false ->
-            resolve_project_dependencies2(LibDir, ErtsVersion, Deps0,
+            resolve_project_dependencies2(Config,
+                                          LibDir, ErtsVersion, Deps0,
                                           AllProjectApps,
                                           Acc);
         true ->
-            resolve_project_dependencies(LibDir, ErtsVersion, Deps,
+            resolve_project_dependencies(Config, LibDir, ErtsVersion, Deps,
                                          AllProjectApps,
                                          Acc)
     end;
-resolve_project_dependencies(_, _, [], _, Acc) ->
+resolve_project_dependencies(_Config, _, _, [], _, Acc) ->
     Acc.
 
-resolve_project_dependencies2(LibDir,
+resolve_project_dependencies2(Config, LibDir,
                               ErtsVersion,
                               [Dep | Deps], AllProjectApps, Acc) ->
     case lists:keysearch(Dep, 1, AllProjectApps) of
         {value, App={Dep, _Version, NDeps, _Location}} ->
-            resolve_project_dependencies(LibDir, ErtsVersion, Deps ++
-					 element(1,NDeps),
+            resolve_project_dependencies(Config, LibDir, ErtsVersion, Deps ++
+                                         element(1,NDeps),
                                          AllProjectApps,
                                          [App | Acc]);
         false ->
             Version =
-                case sin_resolver:package_versions(LibDir,
+                case sin_resolver:package_versions(Config, LibDir,
                                                    Dep) of
                     [] ->
-			sin_error_store:signal_error(),
-                        ?SIN_RAISE(unable_to_find_dependency,
-				   "Couldn't find dependency ~s.",
-				   [Dep]);
+                        ?SIN_RAISE(Config, unable_to_find_dependency,
+                                   "Couldn't find dependency ~s.",
+                                   [Dep]);
                     [Version1 | _] ->
                         Version1
                 end,
             NewEntry = {_, _, {NewDeps, _NewIncDeps}, _} =
-                resolve_package_information(LibDir, Dep, Version),
-            resolve_project_dependencies(LibDir, ErtsVersion, Deps ++ NewDeps,
+                resolve_package_information(Config, LibDir, Dep, Version),
+            resolve_project_dependencies(Config,
+                                         LibDir, ErtsVersion, Deps ++ NewDeps,
                                          AllProjectApps,
                                          [NewEntry | Acc])
     end;
-resolve_project_dependencies2(_, _, [], _, Acc) ->
+resolve_project_dependencies2(_, _, _, [], _, Acc) ->
     Acc.
 
-resolve_package_information(LibDir, Name, Version) ->
-    {Deps, IncDeps} = sin_resolver:package_dependencies(LibDir,
+resolve_package_information(Config, LibDir, Name, Version) ->
+    {Deps, IncDeps} = sin_resolver:package_dependencies(Config,
+                                                        LibDir,
                                                         Name,
                                                         Version),
 
@@ -267,9 +274,9 @@ get_repo_apps(ProjectApps, AllDeps) ->
 get_repo_apps(ProjectApps, [Dep | Deps], Acc) ->
     case is_project_app(Dep, ProjectApps) of
         true ->
-	    get_repo_apps(ProjectApps, Deps, Acc);
+            get_repo_apps(ProjectApps, Deps, Acc);
         false ->
-	    get_repo_apps(ProjectApps, Deps, [Dep | Acc])
+            get_repo_apps(ProjectApps, Deps, [Dep | Acc])
     end;
 get_repo_apps(_ProjectApps, [], Acc) ->
     Acc.
@@ -287,11 +294,10 @@ save_deps(BuildRef, Deps) ->
     Depsf = filename:join([BuildDir, "info", "deps"]),
     case file:open(Depsf, write) of
         {error, _} ->
-	    sin_error_store:signal_error(),
-            ?SIN_RAISE(unable_to_write_dep_info,
-		       "Couldn't open ~s for writing. Unable to "
-		       "write dependency information",
-		       [Depsf]);
+            ?SIN_RAISE(BuildRef, unable_to_write_dep_info,
+                       "Couldn't open ~s for writing. Unable to "
+                       "write dependency information",
+                       [Depsf]);
 
         {ok, IoDev} ->
             io:format(IoDev, "~p.", [Deps]),
@@ -306,11 +312,10 @@ save_repo_apps(BuildRef, BuildDir) ->
     Repsf = filename:join([BuildDir, "info", "repoapps"]),
     case file:open(Repsf, write) of
         {error, _} ->
-	    sin_error_store:signal_error(),
-            ?SIN_RAISE(unable_to_write_dep_info,
-		       "Couldn't open ~s for writing. Unable to "
-		       "write dependency information",
-		       [Repsf]);
+            ?SIN_RAISE(BuildRef, unable_to_write_dep_info,
+                       "Couldn't open ~s for writing. Unable to "
+                       "write dependency information",
+                       [Repsf]);
         {ok, IoDev} ->
             io:format(IoDev, "~p.", [Apps]),
             file:close(IoDev)
@@ -323,17 +328,17 @@ gather_project_apps(BuildRef, AppBDir) ->
     gather_project_apps(BuildRef,
                         AppBDir,
                         sin_config:get_value(BuildRef, "project.applist"), [],
-			sin_config:get_value(BuildRef, "project.applist")).
+                        sin_config:get_value(BuildRef, "project.applist")).
 
 gather_project_apps(BuildRef, AppBDir, AppList) ->
     gather_project_apps(BuildRef,
                         AppBDir,
                         AppList, [],
-			lists:map(fun(El) ->
-					  list_to_atom(El)
-				  end,
-				  sin_config:get_value(BuildRef,
-						       "project.applist"))).
+                        lists:map(fun(El) ->
+                                          list_to_atom(El)
+                                  end,
+                                  sin_config:get_value(BuildRef,
+                                                       "project.applist"))).
 
 gather_project_apps(BuildRef, AppBDir, [AppName | T], Acc, ProjectApps) ->
     Vsn = sin_config:get_value(BuildRef, "apps." ++ AppName ++ ".vsn"),
@@ -352,19 +357,19 @@ gather_project_apps(BuildRef, AppBDir, [AppName | T], Acc, ProjectApps) ->
     AppPath = filename:join([AppBDir, BuildTarget]),
 
     AddToT = lists:foldl(fun(El, LAcc) ->
-			       case add_to_project_app_list(El, Acc,
-							    ProjectApps) of
-				   true ->
-				       [atom_to_list(El) | LAcc];
-				   false ->
-				       LAcc
-			       end
-			 end,
-			 [],
-			 OpenDeps ++ IncludedDeps),
+                               case add_to_project_app_list(El, Acc,
+                                                            ProjectApps) of
+                                   true ->
+                                       [atom_to_list(El) | LAcc];
+                                   false ->
+                                       LAcc
+                               end
+                         end,
+                         [],
+                         OpenDeps ++ IncludedDeps),
 
     gather_project_apps(BuildRef, AppBDir, AddToT ++ T,
-			[{Name, Vsn, NDeps, AppPath} | Acc], ProjectApps);
+                        [{Name, Vsn, NDeps, AppPath} | Acc], ProjectApps);
 gather_project_apps(_, _, [], Acc, _) ->
     Acc.
 
@@ -373,10 +378,10 @@ gather_project_apps(_, _, [], Acc, _) ->
 -spec add_to_project_app_list(string(), list(), list()) -> boolean().
 add_to_project_app_list(AppName, ProccessedApps, ProjectApps) ->
     case lists:keymember(AppName, 1, ProccessedApps) of
-	true ->
-	    false;
-	false ->
-	    lists:member(AppName, ProjectApps)
+        true ->
+            false;
+        false ->
+            lists:member(AppName, ProjectApps)
     end.
 
 %% @doc Update the sigs for all of the 'verifiable' apps.
@@ -395,34 +400,35 @@ update_app_sigs(BuildRef, BuildDir, [H | T]) ->
 update_app_sigs(_BuildRef, _BuildDir, []) ->
     ok.
 
-process_release(RootDir, BuildFlavor,
-		ProjectName, ProjectVsn, ProjectApps) ->
+process_release(Config, RootDir, BuildFlavor,
+                ProjectName, ProjectVsn, ProjectApps) ->
 
     case sin_release:get_release(RootDir, BuildFlavor,
-				 ProjectName, ProjectVsn) of
-	no_file ->
-	    no_release_file;
-	RelFile ->
-	    LibDir = sun_utils:get_application_env(prefix),
-	    Deps = sin_release:get_deps(RelFile),
-	    {ok, process_deps(LibDir, Deps, ProjectApps, [])}
+                                 ProjectName, ProjectVsn) of
+        no_file ->
+            no_release_file;
+        RelFile ->
+            LibDir = sin_utils:get_application_env(Config, prefix),
+            Deps = sin_release:get_deps(RelFile),
+            {ok, process_deps(Config, LibDir, Deps, ProjectApps, [])}
     end.
 
-process_deps(LibDir, [{Name, Vsn} | Rest], ProjectApps, Acc) ->
+process_deps(Config, LibDir, [{Name, Vsn} | Rest], ProjectApps, Acc) ->
     case lists:keymember(Name, 1, ProjectApps) of
-	true ->
-	    process_deps(LibDir, Rest, ProjectApps, Acc);
-	false ->
-	    process_deps(LibDir, Rest,
-			 ProjectApps,
-			 [resolve_package_information(LibDir, Name, Vsn) | Acc])
+        true ->
+            process_deps(Config, LibDir, Rest, ProjectApps, Acc);
+        false ->
+            process_deps(Config, LibDir, Rest,
+                         ProjectApps,
+                         [resolve_package_information(Config, LibDir, Name, Vsn) | Acc])
     end;
-process_deps(_, [], ProjectApps, Acc) ->
+process_deps(_, _, [], ProjectApps, Acc) ->
     ProjectApps ++ Acc.
 
-do_transitive_resolution(ProjectApps, AllProjectApps, LibDir) ->
+do_transitive_resolution(Config, ProjectApps, AllProjectApps, LibDir) ->
     ErtsVersion = erlang:system_info(version),
-    AllDeps = check_project_dependencies(LibDir,
+    AllDeps = check_project_dependencies(Config,
+                                         LibDir,
                                          ErtsVersion,
                                          ProjectApps,
                                          AllProjectApps,

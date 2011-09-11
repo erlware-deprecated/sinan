@@ -56,7 +56,7 @@ def sinan(command):
             print("Running Command %s in %s" % (command, os.getcwd()))
             self = args[0]
             child = spawn("erl -noshell -pa %s "
-                          " -s sin_app manual_start"
+                          " -s sinan manual_start"
                           " -s sinan main"
                           " -extra %s" %
                           (get_build_root_path(self.project_dir), command))

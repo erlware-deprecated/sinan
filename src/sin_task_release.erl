@@ -26,28 +26,28 @@
 -spec description() -> sin_task:task_description().
 description() ->
     Desc = "Creates the *.rel, *.boot and *.script into the \n"
-	"<build-area>/realeases/<vsn> directory. It also builds up a \n"
-	"release tar bal into the <build-area>/tar/ directory",
+        "<build-area>/realeases/<vsn> directory. It also builds up a \n"
+        "release tar bal into the <build-area>/tar/ directory",
     #task{name = ?TASK,
-	  task_impl = ?MODULE,
-	  bare = false,
-	  deps = ?DEPS,
-	  example = "release",
-	  short_desc = "Creates an otp release for the system",
-	  desc = Desc,
-	  opts = []}.
+          task_impl = ?MODULE,
+          bare = false,
+          deps = ?DEPS,
+          example = "release",
+          short_desc = "Creates an otp release for the system",
+          desc = Desc,
+          opts = []}.
 
 %% @doc create an otp release
 -spec do_task(sin_config:config()) -> sin_config:config().
 do_task(BuildRef) ->
     BuildDir = sin_config:get_value(BuildRef, "build.dir"),
     {ReleaseName, Version} =
-	case sin_config:get_value(BuildRef, "-r") of
-	    undefined ->
-		{project_name(BuildRef), project_version(BuildRef)};
-	    R ->
-		{R, sin_config:get_value(BuildRef, "releases." ++ R ++ ".vsn")}
-	end,
+        case sin_config:get_value(BuildRef, "-r") of
+            undefined ->
+                {project_name(BuildRef), project_version(BuildRef)};
+            R ->
+                {R, sin_config:get_value(BuildRef, "releases." ++ R ++ ".vsn")}
+        end,
     ReleaseInfo = generate_rel_file(BuildRef, BuildDir, ReleaseName, Version),
     BuildRef2 = sin_config:store(BuildRef, "project.release_info", ReleaseInfo),
     copy_or_generate_sys_config_file(BuildRef2, BuildDir, ReleaseName, Version),
@@ -70,50 +70,50 @@ format_exception(Exception) ->
 generate_rel_file(BuildRef, BuildDir, Name, Version) ->
     BuildFlavor = sin_config:get_value(BuildRef, "build.flavor"),
     {ProjectName, ProjectVsn} =
-	case sin_config:get_value(BuildRef, "-r") of
-	    undefined ->
-		{sin_config:get_value(BuildRef,
-					    "project.name"),
-		 sin_config:get_value(BuildRef, "project.vsn")};
-	    ReleaseName ->
-		{ReleaseName, sin_config:get_value(BuildRef, "releases."++
-						   ReleaseName ++".vsn")}
-	end,
+        case sin_config:get_value(BuildRef, "-r") of
+            undefined ->
+                {sin_config:get_value(BuildRef,
+                                            "project.name"),
+                 sin_config:get_value(BuildRef, "project.vsn")};
+            ReleaseName ->
+                {ReleaseName, sin_config:get_value(BuildRef, "releases."++
+                                                   ReleaseName ++".vsn")}
+        end,
 
     RootDir = sin_config:get_value(BuildRef, "project.dir"),
 
     Release =
-	case sin_release:get_release(RootDir, BuildFlavor, ProjectName,
-				     ProjectVsn) of
-	    no_file ->
-		Erts = get_erts_info(),
-		Deps =
-		    process_deps(BuildRef,
-				 element(1,sin_config:get_value(BuildRef,
-								"project.deps")), []),
-		Deps2 =
-		    process_deps(BuildRef,
-				 element(2,sin_config:get_value(BuildRef,
-								"project.deps")), []),
-		Deps3 = lists:map(fun({App, AppVersion}) ->
-					  {App, AppVersion, load}
-				  end, Deps2),
+        case sin_release:get_release(RootDir, BuildFlavor, ProjectName,
+                                     ProjectVsn) of
+            no_file ->
+                Erts = get_erts_info(),
+                Deps =
+                    process_deps(BuildRef,
+                                 element(1,sin_config:get_value(BuildRef,
+                                                                "project.deps")), []),
+                Deps2 =
+                    process_deps(BuildRef,
+                                 element(2,sin_config:get_value(BuildRef,
+                                                                "project.deps")), []),
+                Deps3 = lists:map(fun({App, AppVersion}) ->
+                                          {App, AppVersion, load}
+                                  end, Deps2),
 
-		{release, {Name, Version}, {erts, Erts},
-		 lists:ukeymerge(1, lists:sort(Deps), lists:sort(Deps3))};
-	    RelInfo ->
-		RelInfo
-	end,
-    {save_release(BuildDir, Name, Version, Release), Release}.
+                {release, {Name, Version}, {erts, Erts},
+                 lists:ukeymerge(1, lists:sort(Deps), lists:sort(Deps3))};
+            RelInfo ->
+                RelInfo
+        end,
+    {save_release(BuildRef, BuildDir, Name, Version, Release), Release}.
 
 %% @doc return project version or throw(no_project_version)
 -spec project_version(sin_config:config()) -> Vsn::string().
 project_version(BuildRef) ->
     case sin_config:get_value(BuildRef, "project.vsn") of
         undefined ->
-	    ewl_talk:say("No project version defined in build config; "
-			 "aborting!"),
-            ?SIN_RAISE(no_project_version);
+            ewl_talk:say("No project version defined in build config; "
+                         "aborting!"),
+            ?SIN_RAISE(BuildRef, no_project_version);
         Vsn ->
             Vsn
     end.
@@ -123,16 +123,16 @@ project_version(BuildRef) ->
 project_name(BuildRef) ->
     case sin_config:get_value(BuildRef, "project.name") of
         undefined ->
-	    ewl_talk:say("No project name defined in build config; "
-			 "aborting!"),
-            ?SIN_RAISE(no_project_name);
+            ewl_talk:say("No project name defined in build config; "
+                         "aborting!"),
+            ?SIN_RAISE(BuildRef, no_project_name);
         Nm ->
             Nm
     end.
 
 %% @doc Process the dependencies into a format useful for the rel depends area.
 -spec process_deps(sin_config:config(),
-		   [AppInfo::tuple()], [AppInfo::tuple()]) ->
+                   [AppInfo::tuple()], [AppInfo::tuple()]) ->
     [AppInfo::tuple()].
 process_deps(BuildRef, [{App, Vsn, _, _} | T], Acc) ->
     NewApp = stringify(App),
@@ -165,20 +165,21 @@ process_inc_list([], Acc) ->
     Acc.
 
 %% @doc Save the release terms to a releases file for later use by the system.
--spec save_release(sin_config:config(), string(), string(), term()) ->
+-spec save_release(sin_config:config(), string(),
+                   string(), string(), term()) ->
     {Location::string(), RelBase::string()}.
-save_release(BuildDir, Name, Version, RelInfo) ->
+save_release(Config, BuildDir, Name, Version, RelInfo) ->
     Location = filename:join([BuildDir, "releases", Name ++ "-" ++ Version]),
     filelib:ensure_dir(filename:join([Location, "tmp"])),
     Relbase = filename:join([Location, Name]),
     Relf = lists:flatten([Relbase, ".rel"]),
     case file:open(Relf, write) of
         {error, _} ->
-	    sin_error_store:signal_error(),
-	    ewl_talk:say("Couldn't open ~s for writing. Unable to "
-			 "write release information",
-			 [Relf]),
-            ?SIN_RAISE(unable_to_write_rel_info);
+            ewl_talk:say("Couldn't open ~s for writing. Unable to "
+                         "write release information",
+                         [Relf]),
+            ?SIN_RAISE(Config,
+                       unable_to_write_rel_info);
         {ok, IoDev} ->
             io:format(IoDev, "~p.", [RelInfo]),
             file:close(IoDev)
@@ -198,26 +199,23 @@ make_boot_script(BuildRef, {{Location, File}, {release, {Name, _}, _, _}}) ->
                no_module_tests, silent],
     case systools_make:make_script(Name, File, [{outdir, Location} | Options]) of
         ok ->
-	    ok;
+            ok;
         error ->
-	    sin_error_store:signal_error(),
-            ?SIN_RAISE(release_script_generation_error);
+            ?SIN_RAISE(BuildRef, release_script_generation_error);
         {ok, _, []} ->
-	    ok;
+            ok;
         {ok,Module,Warnings} ->
-	    sin_error_store:signal_error(),
-            ?SIN_RAISE(release_script_generation_error,
-		       "~s~n", [Module:format_warning(Warnings)]);
+            ?SIN_RAISE(BuildRef, release_script_generation_error,
+                       "~s~n", [Module:format_warning(Warnings)]);
         {error,Module,Error} ->
-	    sin_error_store:signal_error(),
-            ?SIN_RAISE(release_script_generation_error,
-		       "~s~n", [Module:format_error(Error)])
+            ?SIN_RAISE(BuildRef, release_script_generation_error,
+                       "~s~n", [Module:format_error(Error)])
     end.
 
 
 %% @doc copy config/sys.config or generate one to releases/VSN/sys.config
 -spec copy_or_generate_sys_config_file(sin_config:config(),
-				       string(), string(), string()) ->
+                                       string(), string(), string()) ->
     ok.
 copy_or_generate_sys_config_file(BuildRef, BuildDir, Name, Version) ->
     RelSysConfPath = filename:join([BuildDir, "releases", Name ++ "-" ++

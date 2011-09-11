@@ -11,23 +11,25 @@
 
 %% API
 -export([new/0,
-	 new/1,
-	 apply_flavor/1,
-	 merge_configs/2,
-	 parse_args/1,
-	 parse_args/2,
+         new/1,
+         apply_flavor/1,
+         merge_configs/2,
+         parse_args/1,
+         parse_args/2,
          get_seed/1,
-	 store/2,
+         store/2,
          store/3,
          get_value/2,
          get_value/3,
-	 get_pairs/1,
+         get_pairs/1,
          delete/2,
-	 format_exception/1]).
+         add_run_error/3,
+         get_run_errors/1,
+         format_exception/1]).
 
 -export_type([key/0,
-	      value/0,
-	      config/0]).
+              value/0,
+              config/0]).
 
 -include_lib("eunit/include/eunit.hrl").
 -include("internal.hrl").
@@ -52,13 +54,13 @@ new() ->
 %% @doc Create a new config from a config file
 -spec new(ConfigFile::string()) -> config().
 new(ConfigFile) when is_list(ConfigFile)->
-    case sin_utils:file_exists(ConfigFile) of
-	true ->
-	    parse_config_file(ConfigFile);
-	false ->
-	    ?SIN_RAISE(invalid_config_file,
-		       "Config File ~s does not exist",
-		       [ConfigFile])
+    case sin_utils:file_exists(new(), ConfigFile) of
+        true ->
+            parse_config_file(ConfigFile);
+        false ->
+            ?SIN_RAISE(new(), invalid_config_file,
+                       "Config File ~s does not exist",
+                       [ConfigFile])
     end.
 
 %% @doc Parse the command line args into a spec that can be
@@ -82,19 +84,19 @@ store(Config, Key, Value) ->
     config().
 store(Config, KeyValuePairs) when is_list(KeyValuePairs) ->
     lists:foldl(fun ({Key, Value}, Dict) ->
-			dict:store(Key, Value, Dict)
-		end, Config, KeyValuePairs).
+                        dict:store(Key, Value, Dict)
+                end, Config, KeyValuePairs).
 
 %% @doc Get a value from the config.
 -spec get_value(config(), key()) -> value() | undefined.
 get_value(Config, Key) ->
     case dict:find(Key, Config) of
-	error ->
-	    undefined;
-	{ok, Value} when is_binary(Value) ->
-	    binary_to_list(Value);
-	{ok, Value} ->
-	    Value
+        error ->
+            undefined;
+        {ok, Value} when is_binary(Value) ->
+            binary_to_list(Value);
+        {ok, Value} ->
+            Value
     end.
 
 %% @doc Attempts to get the specified key. If the key doesn't exist it
@@ -102,10 +104,10 @@ get_value(Config, Key) ->
 -spec get_value(config(), key(), value()) -> value().
 get_value(Config, Key, DefaultValue) ->
     case get_value(Config, Key) of
-	undefined ->
+        undefined ->
             DefaultValue;
-	Value ->
-	    Value
+        Value ->
+            Value
     end.
 
 %% @doc Delete a value from the config.
@@ -116,7 +118,7 @@ delete(Config, Key) ->
 %% @doc Get the complete config as key,value pairs
 -spec get_pairs(config()) -> [{key(), value()}].
 get_pairs(Config) ->
-	      dict:to_list(Config).
+              dict:to_list(Config).
 
 %% @doc Apply the build flavor overrides to the system
 -spec apply_flavor(config()) -> config().
@@ -131,8 +133,19 @@ apply_flavor(Config0) ->
 -spec merge_configs(config(), config()) -> config().
 merge_configs(Config1, Config2) ->
     dict:merge(fun(_Key, _Value1, Value2) ->
-		       Value2
-	       end, Config1, Config2).
+                       Value2
+               end, Config1, Config2).
+
+%% @doc Add a run time error occurance to the config
+-spec add_run_error(config(), atom(), term()) -> config().
+add_run_error(Config, Task, Error) ->
+    CurrentErrors = get_value(Config, run_errors, []),
+    store(Config, run_errors, [{Task, Error} | CurrentErrors]).
+
+%% @doc return the list of run errors in the state
+-spec get_run_errors(config()) -> [term()].
+get_run_errors(Config) ->
+    get_value(Config, run_errors, []).
 
 %% @doc Format an exception thrown by this module
 -spec format_exception(sin_exceptions:exception()) ->
@@ -149,8 +162,8 @@ format_exception(Exception) ->
     config().
 parse_config_file(ConfigFile) ->
     convert_parsed_data(new(),
-			sin_config_parser:parse_config_file(ConfigFile),
-			"").
+                        sin_config_parser:parse_config_file(ConfigFile),
+                        "").
 
 %% @doc Return the flavor for the current build attempt
 -spec get_build_flavor(config()) -> string().
@@ -184,14 +197,14 @@ convert_parsed_data(Config, [{Key, {obj, Data}} | Rest], "") ->
     convert_parsed_data(NewConfig, Rest, "");
 convert_parsed_data(Config, [{Key, {obj, Data}} | Rest], CurrentName) ->
     NewConfig = convert_parsed_data(Config, Data, CurrentName ++ "." ++
-			     convert_value(Key)),
+                             convert_value(Key)),
     convert_parsed_data(NewConfig, Rest, CurrentName);
 convert_parsed_data(Config, [{Key, Value} | Rest], "") ->
     NewConfig = dict:store(convert_value(Key), convert_value(Value), Config),
     convert_parsed_data(NewConfig, Rest, "");
 convert_parsed_data(Config, [{Key, Value} | Rest], CurrentName) ->
     NewConfig = dict:store(CurrentName ++ "." ++ convert_value(Key),
-			   convert_value(Value), Config),
+                           convert_value(Value), Config),
     convert_parsed_data(NewConfig, Rest, CurrentName);
 convert_parsed_data(Config, [], _) ->
     Config.
@@ -247,17 +260,17 @@ new_0_test() ->
 
 new_1_test() ->
     TestConfigFile = filename:join(["test_data",
-					 "sin_config",
-					 "test_config.cfg"]),
+                                         "sin_config",
+                                         "test_config.cfg"]),
     NonExistantConfigFile = filename:join(["test_data",
-						"sin_config",
-						"doesnt_exist.cfg"]),
+                                                "sin_config",
+                                                "doesnt_exist.cfg"]),
     Config = new(TestConfigFile),
     ?assertMatch("test", get_value(Config, "project.name")),
     ?assertMatch("0.0.0.1", get_value(Config, "project.vsn")),
-    ?assertException(throw, {pe, {?MODULE, _,
-				  {invalid_config_file, _}}},
-				  new(NonExistantConfigFile)).
+    ?assertException(throw, {pe, _, {?MODULE, _,
+                                     {invalid_config_file, _}}},
+                     new(NonExistantConfigFile)).
 
 parse_args_test() ->
     Config = parse_args(["Key", "Value"], new()),

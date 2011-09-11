@@ -47,7 +47,10 @@ do_task(BuildRef) ->
         true    ->
             ok;
         false   ->
-            sin_error_store:signal_error(),
+            ?SIN_RAISE(BuildRef, {test_failures,
+                                  lists:filter(fun(X) ->
+                                                       X == ok
+                                               end, Outcomes)}),
             ok
     end,
     sin_config:store(BuildRef, "cucumber.features", Features).

@@ -14,8 +14,8 @@
 
 %% API
 -export([description/0,
-	 do_task/1,
-	 format_exception/1]).
+         do_task/1,
+         format_exception/1]).
 
 -define(TASK, doc).
 -define(DEPS, [build]).
@@ -30,13 +30,13 @@ description() ->
     Desc = "Runs edoc across all sources in the project and \n"
         "outputs it into the build area",
     #task{name = ?TASK,
-	  task_impl = ?MODULE,
-	  bare = false,
-	  deps = ?DEPS,
-	  example = "doc",
-	  short_desc = "Genarates edoc documentation for the project",
-	  desc = Desc,
-	  opts = []}.
+          task_impl = ?MODULE,
+          bare = false,
+          deps = ?DEPS,
+          example = "doc",
+          short_desc = "Genarates edoc documentation for the project",
+          desc = Desc,
+          opts = []}.
 
 %% @doc run edoc on all applications
 -spec do_task(sin_config:config()) -> sin_config:config().
@@ -63,13 +63,12 @@ run_docs(BuildRef, [{AppName, _, _, Path} | T]) ->
     filelib:ensure_dir(filename:join([DocDir, "tmp"])),
 
     try
-	edoc:application(AppName,
-			 Path,
-			 [{dir, DocDir}])
+        edoc:application(AppName,
+                         Path,
+                         [{dir, DocDir}])
     catch
-	throw:Error ->
-	    sin_error_store:signal_error(),
-	    ?SIN_RAISE(Error)
+        throw:Error ->
+            ?SIN_RAISE(BuildRef, Error)
     end,
     run_docs(BuildRef, T);
 run_docs(_BuildRef, []) ->

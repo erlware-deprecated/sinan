@@ -10,9 +10,9 @@
 
 %% API
 -export([get_dependencies/2,
-	 build_file/4,
-	 get_target/3,
-	 format_exception/1]).
+         build_file/4,
+         get_target/3,
+         format_exception/1]).
 
 -include("internal.hrl").
 
@@ -30,23 +30,23 @@ build_file(BuildRef, File, Options, Target) ->
     AppDir = filename:dirname(Target),
     ErlTarget = filename:join([AppDir,"src"]),
     ErlName = filename:join([ErlTarget,
-			     lists:flatten([ErlFile, ".erl"])]),
+                             lists:flatten([ErlFile, ".erl"])]),
     ewl_talk:say("Building ~s", [File]),
     case yecc:file(File, [{parserfile, ErlName} |
-			  sin_task_build:strip_options(Options)]) of
-	{ok, _ModuleName} ->
-	    sin_compile_erl:build_file(BuildRef, ErlName, Options, Target);
-	{ok, _ModuleName, []} ->
-	    sin_compile_erl:build_file(BuildRef, ErlName, Options, Target);
-	{ok, _ModuleName, Warnings} ->
-	    ewl_talk:say(sin_task_build:gather_fail_info(Warnings, "warning")),
-	    ?SIN_RAISE({build_error, error_building_yecc, File});
-	{error, Errors, Warnings} ->
-	    ewl_talk:say(
-	      lists:flatten([sin_task_build:gather_fail_info(Errors, "error"),
-			     sin_task_build:gather_fail_info(Warnings,
-							     "warning")])),
-	    ?SIN_RAISE({build_error, error_building_yecc, File})
+                          sin_task_build:strip_options(Options)]) of
+        {ok, _ModuleName} ->
+            sin_compile_erl:build_file(BuildRef, ErlName, Options, Target);
+        {ok, _ModuleName, []} ->
+            sin_compile_erl:build_file(BuildRef, ErlName, Options, Target);
+        {ok, _ModuleName, Warnings} ->
+            ewl_talk:say(sin_task_build:gather_fail_info(Warnings, "warning")),
+            ?SIN_RAISE(BuildRef, {build_error, error_building_yecc, File});
+        {error, Errors, Warnings} ->
+            ewl_talk:say(
+              lists:flatten([sin_task_build:gather_fail_info(Errors, "error"),
+                             sin_task_build:gather_fail_info(Warnings,
+                                                             "warning")])),
+            ?SIN_RAISE(BuildRef, {build_error, error_building_yecc, File})
     end.
 
 %% @doc Format an exception thrown by this module

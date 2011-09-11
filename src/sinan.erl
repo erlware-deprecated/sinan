@@ -14,7 +14,8 @@
 -export([main/0,
          run_sinan/0,
          run_sinan/1,
-         do_task/3]).
+         do_task/3,
+         manual_start/0]).
 
 -export_type([args/0,
               task_name/0]).
@@ -37,7 +38,7 @@
 -spec do_task(task_name(), string(), sin_config:config()) -> ok.
 do_task(Task, StartDir, Override) ->
     try
-        TaskDesc = sin_task:get_task(Task),
+        TaskDesc = sin_task:get_task(Override, Task),
         case TaskDesc#task.bare of
             false ->
                 do_task_full(StartDir, Override, Task);
@@ -45,9 +46,9 @@ do_task(Task, StartDir, Override) ->
                 do_task_bare(StartDir, Override, Task)
         end
     catch
-        {pe, {_, _, {task_not_found, TaskName}}} ->
-            sin_error_store:signal_error(),
-            ewl_talk:say("Task not found ~s.", [TaskName])
+        {pe, Config, {_, _, {task_not_found, TaskName}}} ->
+            ewl_talk:say("Task not found ~s.", [TaskName]),
+            sin_config:add_run_error(Config, Task, task_not_found)
     end.
 
 %% @doc run the specified task with a full project dir
@@ -59,18 +60,18 @@ do_task_full(StartDir, Override, Task) when is_atom(Task) ->
         run_task(Task, ProjectRoot, Config)
     catch
         no_build_config ->
-            sin_error_store:signal_error(),
-            ewl_talk:say("No build config found.");
-        {unable_to_create_canonical, {_, _,Desc}}  ->
-            sin_error_store:signal_error(),
-            ewl_talk:say("Error discovering project layout: ~s", Desc);
-        Error = {pe, {Module, _, _}} ->
-            sin_error_store:signal_error(),
-            ewl_talk:say("build problem ~s", [Module:format_exception(Error)]);
+            ewl_talk:say("No build config found."),
+            sin_config:add_run_error(Override, Task, no_build_config);
+        Error = {unable_to_create_canonical, {_, _,Desc}}  ->
+            ewl_talk:say("Error discovering project layout: ~s", Desc),
+            sin_config:add_run_error(Override, Task, Error);
+        Error = {pe, NewConfig, {Module, _, _}} ->
+            ewl_talk:say("build problem ~s", [Module:format_exception(Error)]),
+            NewConfig;
         Type:Exception ->
-            sin_error_store:signal_error(),
             ewl_talk:say("build problem ~p:~p:~p",
-                         [Type, Exception, erlang:get_stacktrace()])
+                         [Type, Exception, erlang:get_stacktrace()]),
+            sin_config:add_run_error(Override, Task, Exception)
     end.
 
 %% @doc run the specified task, without expecting a build config and what not.
@@ -108,6 +109,43 @@ run_sinan(Args) ->
             {error, failed}
     end.
 
+%%% @doc allow the sinan application to manually start itself
+%%% and all dependencies
+-spec manual_start() -> ok.
+manual_start() ->
+    lists:foreach(fun(App) ->
+                          case application:start(App) of
+                              {error, {already_started, App}} ->
+                                  ok;
+                              ok ->
+                                  ok;
+                              Error ->
+                                  throw(Error)
+                          end
+                  end,
+                  [kernel,
+                   stdlib,
+                   cucumberl,
+                   erlware_commons,
+                   compiler,
+                   syntax_tools,
+                   edoc,
+                   ktuo,
+                   sasl,
+                   ibrowse,
+                   eunit,
+                   ewlib,
+                   ewrepo,
+                   xtools,
+                   xmerl,
+                   mnesia,
+                   sgte,
+                   parsetools,
+                   getopt,
+                   crypto,
+                   proper,
+                   sinan]).
+
 %%====================================================================
 %% Internal functions
 %%====================================================================
@@ -117,8 +155,8 @@ do_build(Options, [Target | Rest]) ->
     Result = do_task(list_to_atom(Target),
                      find_start_dir(Options),
                      setup_config_overrides(Options, Rest)),
-    case sin_error_store:has_errors() of
-        ErrCount when ErrCount =< 0 ->
+    case sin_config:get_run_errors(Result) of
+        [] ->
             {ok, Result};
         _ ->
             {error, Result}
@@ -151,8 +189,8 @@ option_spec_list() ->
 -spec run_task(task_name(), string(), sin_config:config()) -> ok.
 run_task(Task, ProjectDir, BuildConfig) ->
     try
-       Tasks = sin_task:get_task_list(Task),
-       case sin_hooks:get_hooks_function(ProjectDir) of
+       Tasks = sin_task:get_task_list(BuildConfig, Task),
+       case sin_hooks:get_hooks_function(BuildConfig, ProjectDir) of
            no_hooks ->
                lists:foldl(
                  fun(TaskDesc, NewConfig) ->
@@ -218,6 +256,7 @@ push_values_if_exist(Config, Options, [{Name, Key} | Rest]) ->
     end;
 push_values_if_exist(Config, _Options, []) ->
     Config.
+
 
 %%====================================================================
 %% Tests

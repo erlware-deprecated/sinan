@@ -10,12 +10,10 @@
 
 -include("internal.hrl").
 
--export([get_task/1,
-         get_task_list/1,
+-export([get_task/2,
+         get_task_list/2,
          get_tasks/0,
          behaviour_info/1,
-         signal_error/0,
-         has_errors/0,
          format_exception/1]).
 
 -export_type([task_description/0,
@@ -33,20 +31,20 @@
 %%====================================================================
 
 %% @doc get a specific task description
--spec get_task(task_name()) -> [task_name()].
-get_task(TaskName) ->
+-spec get_task(sin_config:config(), task_name()) -> [task_name()].
+get_task(Config, TaskName) ->
     Tasks = get_tasks(),
-    get_task(TaskName, Tasks).
+    get_task(Config, TaskName, Tasks).
 
 %% @doc get a dependency ordered list of tasks from the system.
--spec get_task_list(task_name()) -> [task_name()].
-get_task_list(TaskName) ->
+-spec get_task_list(sin_config:config(), task_name()) -> [task_name()].
+get_task_list(Config, TaskName) ->
     Tasks = get_tasks(),
-    RootTask = get_task(TaskName, Tasks),
+    RootTask = get_task(Config, TaskName, Tasks),
     lists:map(fun(DepTaskName) ->
-                      get_task(DepTaskName, Tasks)
+                      get_task(Config, DepTaskName, Tasks)
               end,
-              process_deps(RootTask, Tasks)).
+              process_deps(Config, RootTask, Tasks)).
 
 %% @doc get a list of all tasks in the system
 -spec get_tasks() -> [record(task)].
@@ -66,16 +64,6 @@ get_tasks() ->
      sin_task_erts:description(),
      sin_task_cucumber:description()].
 
-%% @doc signal that an error has occured in the system
--spec signal_error() -> ok.
-signal_error() ->
-    sin_error_store:signal_error().
-
-%% @doc check to see if the system has errors
--spec has_errors() -> ok.
-has_errors() ->
-    sin_error_store:has_errors().
-
 %% @doc define the behaviour for tasks.
 behaviour_info(callbacks) ->
     [{description, 0}, {do_task, 1}];
@@ -92,21 +80,23 @@ format_exception(Exception) ->
 %%% Internal functions
 %%====================================================================
 
--spec get_task(task_name(), [task_description()]) -> task_description().
-get_task(TaskName, [Task = #task{name = TaskName} | _]) ->
+-spec get_task(sin_config:config(),
+               task_name(), [task_description()]) -> task_description().
+get_task(_Config, TaskName, [Task = #task{name = TaskName} | _]) ->
     Task;
-get_task(TaskName, [_ | Rest]) ->
-    get_task(TaskName, Rest);
-get_task(TaskName, _) ->
-    ?SIN_RAISE({task_not_found, TaskName}).
+get_task(Config, TaskName, [_ | Rest]) ->
+    get_task(Config, TaskName, Rest);
+get_task(Config, TaskName, _) ->
+    ?SIN_RAISE(Config, {task_not_found, TaskName}).
 
-process_deps(Task, Tasks) ->
-    {DepChain, _, _} = process_deps(Task, Tasks, []),
+process_deps(Config, Task, Tasks) ->
+    {DepChain, _, _} = process_deps(Config, Task, Tasks, []),
     ['NONE' | Rest] =
-        reorder_tasks(lists:flatten([{'NONE', Task#task.name} | DepChain])),
+        reorder_tasks(Config,
+                      lists:flatten([{'NONE', Task#task.name} | DepChain])),
     Rest.
 
-process_deps(Task, Tasks, Seen) ->
+process_deps(Config, Task, Tasks, Seen) ->
     case lists:member(Task, Seen) of
         true ->
             {[], Tasks, Seen};
@@ -115,23 +105,27 @@ process_deps(Task, Tasks, Seen) ->
             DepList = lists:map(fun(Dep) ->
                                         {Dep, Task#task.name}
                                 end, Deps),
-            {NewDeps, _, NewSeen} = lists:foldl(fun process_dep/2,
+            {NewDeps, _, NewSeen} =
+                lists:foldl(fun(Arg, Acc) ->
+                                    process_dep(Config, Arg, Acc)
+                            end,
                                                 {[], Tasks, Seen}, Deps),
             {[DepList | NewDeps], Tasks, NewSeen}
     end.
 
-process_dep(TaskName, {Deps, Tasks, Seen}) ->
-    Task = get_task(TaskName, Tasks),
-    {NewDeps, _, NewSeen} = process_deps(Task, Tasks, [TaskName | Seen]),
+process_dep(Config, TaskName, {Deps, Tasks, Seen}) ->
+    Task = get_task(Config, TaskName, Tasks),
+    {NewDeps, _, NewSeen} = process_deps(Config,
+                                         Task, Tasks, [TaskName | Seen]),
     {[Deps | NewDeps], Tasks, NewSeen}.
 
 %% @doc Reorder the tasks according to thier dependency set.
-reorder_tasks(OTaskList) ->
+reorder_tasks(Config, OTaskList) ->
     case sin_topo:sort(OTaskList) of
         {ok, TaskList} ->
             TaskList;
         {cycle, _} ->
-            ?SIN_RAISE(cycle_fault,
+            ?SIN_RAISE(Config, cycle_fault,
                        "There was a cycle in the task list. "
                        "Unable to complete build!")
     end.
