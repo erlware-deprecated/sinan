@@ -39,10 +39,10 @@ test: main
 	erl -pa $(BEAMDIR) -s sinan manual_start -s sinan main -extra -s $(CURDIR) test
 
 run: main
-	$(ERL) -pa $(BEAMDIR) -s sin_app manual_start
+	$(ERL) -pa $(BEAMDIR) -s sinan manual_start
 
 debug: main
-	$(ERL) -pa $(BEAMDIR) -s sin_app manual_start -s debugger start
+	$(ERL) -pa $(BEAMDIR) -s sinan manual_start -s debugger start
 
 clean:
 	rm -rf _build ;
