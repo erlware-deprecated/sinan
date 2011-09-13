@@ -39,14 +39,18 @@ build_file(BuildRef, File, Options, Target) ->
         {ok, _ModuleName, []} ->
             sin_compile_erl:build_file(BuildRef, ErlName, Options, Target);
         {ok, _ModuleName, Warnings} ->
-            ewl_talk:say(sin_task_build:gather_fail_info(Warnings, "warning")),
-            ?SIN_RAISE(BuildRef, {build_error, error_building_yecc, File});
+            NewRef =
+                ?WARN(BuildRef,
+                      sin_task_build:gather_fail_info(Warnings, "warning")),
+            ?SIN_RAISE(NewRef, {build_error, error_building_yecc, File});
         {error, Errors, Warnings} ->
-            ewl_talk:say(
-              lists:flatten([sin_task_build:gather_fail_info(Errors, "error"),
-                             sin_task_build:gather_fail_info(Warnings,
-                                                             "warning")])),
-            ?SIN_RAISE(BuildRef, {build_error, error_building_yecc, File})
+            NewRef =
+                ?WARN(BuildRef,
+                      lists:flatten([sin_task_build:gather_fail_info(Errors,
+                                                                     "error"),
+                                     sin_task_build:gather_fail_info(Warnings,
+                                                                     "warning")])),
+            ?SIN_RAISE(NewRef, {build_error, error_building_yecc, File})
     end.
 
 %% @doc Format an exception thrown by this module

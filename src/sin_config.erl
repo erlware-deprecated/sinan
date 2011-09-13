@@ -25,6 +25,8 @@
          delete/2,
          add_run_error/3,
          get_run_errors/1,
+         add_run_warning/3,
+         get_run_warnings/1,
          format_exception/1]).
 
 -export_type([key/0,
@@ -146,6 +148,17 @@ add_run_error(Config, Task, Error) ->
 -spec get_run_errors(config()) -> [term()].
 get_run_errors(Config) ->
     get_value(Config, run_errors, []).
+
+%% @doc Add a run time warning occurance to the config
+-spec add_run_warning(config(), atom(), term()) -> config().
+add_run_warning(Config, Task, Warning) ->
+    CurrentWarnings = get_value(Config, run_warnings, []),
+    store(Config, run_warnings, [{Task, Warning} | CurrentWarnings]).
+
+%% @doc return the list of run warnings in the state
+-spec get_run_warnings(config()) -> [term()].
+get_run_warnings(Config) ->
+    get_value(Config, run_warnings, []).
 
 %% @doc Format an exception thrown by this module
 -spec format_exception(sin_exceptions:exception()) ->

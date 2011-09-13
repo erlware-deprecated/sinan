@@ -38,23 +38,26 @@ get_dependencies(File, Includes) ->
 
 %% @doc Do the actual compilation on the file.
 -spec build_file(sin_config:config(), string(), [term()], string()) ->
-    [module()].
+                        {module(), sin_config:config()}.
 build_file(BuildRef, File, Options, _Target) ->
     ewl_talk:say("Building ~s", [File]),
     case compile:file(File, Options) of
         {ok, ModuleName} ->
-            ModuleName;
+            {ModuleName, BuildRef};
         {ok, ModuleName, []} ->
-            ModuleName;
+            {ModuleName, BuildRef};
         {ok, ModuleName, Warnings} ->
-            ewl_talk:say(sin_task_build:gather_fail_info(Warnings, "warning")),
-            ModuleName;
+            {ModuleName,
+             ?WARN(BuildRef,
+                  sin_task_build:gather_fail_info(Warnings, "warning"))};
         {error, Errors, Warnings} ->
-            ewl_talk:say(
-              lists:flatten([sin_task_build:gather_fail_info(Errors, "error"),
-                             sin_task_build:gather_fail_info(Warnings,
-                                                             "warning")])),
-            ?SIN_RAISE(BuildRef, {build_error, error_building_erl_file, File});
+            NewRef =
+                ?WARN(BuildRef,
+                  lists:flatten([sin_task_build:gather_fail_info(Errors,
+                                                                 "error"),
+                                 sin_task_build:gather_fail_info(Warnings,
+                                                                 "warning")])),
+            ?SIN_RAISE(NewRef, {build_error, error_building_erl_file, File});
         error ->
             ewl_talk:say("Unknown error occured during build"),
             ?SIN_RAISE(BuildRef, {build_error, error_building_erl_file, File})

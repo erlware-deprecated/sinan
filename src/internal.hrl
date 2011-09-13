@@ -55,6 +55,26 @@
                {?MODULE, ?LINE,
                 {Problem, io_lib:format(Description, DescArgs)}}})).
 
+-define(WARN(Config, Warnings),
+        ((fun() ->
+                  WarnRef =
+                      sin_config:add_run_warning(Config, ?MODULE, Warnings),
+                  ewl_talk:say(Warnings),
+                  WarnRef
+          end)())).
+
+
+-define(WARN(Config, Warnings, Detail),
+        ((fun() ->
+                WarnRef =
+                     sin_config:add_run_warning(Config, ?MODULE,
+                                                io_lib:format(Warnings, Detail)),
+                 ewl_talk:say(Warnings, Detail),
+                 WarnRef
+          end)())).
+
+
+
 
 -record(task,  {name :: atom(),            % The 'user friendly' name of the task
                 task_impl :: atom(),       % The implementation of the task, maybe fun or
