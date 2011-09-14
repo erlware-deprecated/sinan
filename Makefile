@@ -6,6 +6,8 @@ SRCDIR=src
 TESTDIR=test
 COPYDIRS= src test priv
 BEAMDIR=$(APPDIR)/ebin
+SMOKETEST_DIR=$(CURDIR)/support/test
+PYPATH=$(PYTHONPATH):$(SMOKETEST_DIR)
 RSYNC_OPTIONS=-vaz --delete
 
 .SUFFIXES: .erl .beam .yrl
@@ -18,7 +20,7 @@ ERL_TEST_OBJ = $(patsubst test/%.erl,$(BEAMDIR)/%.beam, $(wildcard $(TESTDIR)/*e
 all: main
 
 setup: $(COPYDIRS)
-	for f in $^ ; do        \
+	for f in $^ ; do	\
 		mkdir -p $(APPDIR)/$$f ; \
 		rsync $(RSYNC_OPTIONS) $$f $(APPDIR); \
 	done
@@ -43,6 +45,13 @@ run: main
 
 debug: main
 	$(ERL) -pa $(BEAMDIR) -s sinan manual_start -s debugger start
+
+smoketests: main
+	for f in $(wildcard $(SMOKETEST_DIR)/tests/*.py) ; do	\
+		PYTHONPATH=$(PYPATH) python $$f ; \
+	done
+
+testall : cucumber test smoketests
 
 clean:
 	rm -rf _build ;

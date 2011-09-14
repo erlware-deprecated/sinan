@@ -55,11 +55,13 @@ def sinan(command):
         def new_f(*args, **kwds):
             print("Running Command %s in %s" % (command, os.getcwd()))
             self = args[0]
-            child = spawn("erl -noshell -pa %s "
+            child_cmd = ("erl -noshell -pa %s "
                           " -s sinan manual_start"
                           " -s sinan main"
                           " -extra %s" %
                           (get_build_root_path(self.project_dir), command))
+            print child_cmd
+            child = spawn(child_cmd)
             res = f(self, child, *(args[1:]), **kwds)
             print("Finished %s successfully" % command)
             return res
@@ -94,16 +96,13 @@ def run_tests(class_obj):
 
 class SmokeTest(unittest.TestCase):
     def get_project_root(self, cwd):
-        current = os.path.abspath(cwd)
-        return os.path.join(os.sep, *(current.split(os.sep)[:-2]))
-
+        return os.path.abspath(cwd)
 
     def setUp(self):
         self.smokedir = tempfile.mkdtemp(prefix='smoke_test_')
 
         self.current_dir = os.getcwd()
         self.project_dir = self.get_project_root(self.current_dir)
-
         sys.path.append(self.current_dir)
 
         os.chdir(self.smokedir)
@@ -191,7 +190,8 @@ class SmokeTest(unittest.TestCase):
                                    "doc")
             self.assert_files_exist(ppath,
                                     ["src", n + "_app.erl"],
-                                    ["src", n + "_sup.erl"])
+                                    ["src", n + "_sup.erl"],
+                                    ["src", n + ".app.src"])
 
         return a
 
@@ -262,7 +262,9 @@ class SmokeTest(unittest.TestCase):
         tar_file = os.path.join(os.getcwd(), "_build", "development", "tar",
                                 "%s-%s.tar.gz" %
                                 (appdesc.project_name, appdesc.project_version))
+
         self.assertTrue(os.path.isfile(tar_file))
+
         return appdesc
 
     def do_run(self, appdesc):

@@ -1,4 +1,4 @@
 #!/bin/sh
 
 # run nose in the tests directory
-nosetests -s ./tests
+nosetests -s $1
