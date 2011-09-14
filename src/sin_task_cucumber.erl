@@ -42,16 +42,26 @@ do_task(BuildRef) ->
     ProjectRoot = sin_config:get_value(BuildRef, "project.dir"),
     Features = find_files(filename:join([ProjectRoot, "features"]),
                                         ".*\\.feature\$"),
-    Outcomes = [ run_feature(BuildRef, F) || F <- Features ],
-    case lists:all(fun(X) -> X =:= ok end, Outcomes) of
+
+    Outcomes =
+        case sin_config:get_value(BuildRef, "gen", undefined) of
+            undefined ->
+                [ {F, run_feature(BuildRef, F)} || F <- Features ];
+            Name ->
+                [ {F,
+                   gen_feature(BuildRef, F,
+                               sin_config:get_value(BuildRef, "where"))}
+                  || F <- Features, filename:basename(F, ".feature") == Name]
+        end,
+
+    case lists:all(fun({_F, X}) -> X =:= ok end, Outcomes) of
         true    ->
             ok;
         false   ->
             ?SIN_RAISE(BuildRef, {test_failures,
-                                  lists:filter(fun(X) ->
-                                                       X == ok
-                                               end, Outcomes)}),
-            ok
+                                  lists:filter(fun({_F, X}) ->
+                                                       X =/= ok
+                                               end, Outcomes)})
     end,
     sin_config:store(BuildRef, "cucumber.features", Features).
 
@@ -79,6 +89,14 @@ run_feature(BuildRef, FeatureFile) ->
             ewl_talk:say("No behavior implementation for ~s", [FeatureFile]),
             ?SIN_RAISE(BuildRef, {no_implementation, FeatureFile})
     end.
+
+gen_feature(BuildRef, FeatureFile, TargetApp) ->
+    TargetDir =
+        filename:join(
+          [sin_config:get_value(BuildRef, "apps." ++ TargetApp ++ ".basedir"),
+           "test"]),
+    ok = ewl_file:mkdir_p(TargetDir),
+    ok = cucumberl_gen:gen(FeatureFile, TargetDir).
 
 find_files(Dir, Regex) ->
     filelib:fold_files(Dir, Regex, true, fun(F, Acc) -> [F | Acc] end, []).
