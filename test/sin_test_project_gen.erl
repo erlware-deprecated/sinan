@@ -34,6 +34,10 @@ validate_single_app_project(ProjectDir, ProjectName) ->
     ?assertMatch(true, filelib:is_regular(filename:join([Config, "sys.config"]))),
     Src = filename:join([ProjectDir, "src"]),
     ?assertMatch(true, filelib:is_file(Src)),
+    ?assertMatch(true,
+                 filelib:is_regular(filename:join([Src,
+                                                   ProjectName ++ ".app.src"]))),
+
     ?assertMatch(true, filelib:is_regular(filename:join([Src, ProjectName ++ "_app.erl"]))),
     ?assertMatch(true, filelib:is_regular(filename:join([Src, ProjectName ++ "_sup.erl"]))),
     ?assertMatch(true, filelib:is_file(filename:join([ProjectDir, "include"]))),
@@ -44,7 +48,6 @@ validate_single_app_project(ProjectDir, ProjectName) ->
     ?assertMatch(true, filelib:is_regular(filename:join([Bin, ProjectName]))),
     EBin = filename:join([ProjectDir, "ebin"]),
     ?assertMatch(true, filelib:is_file(EBin)),
-    ?assertMatch(true, filelib:is_regular(filename:join([EBin, ProjectName ++ ".app"]))),
     ?assertMatch(true, filelib:is_regular(filename:join([EBin, "overview.edoc"]))),
     AppDir = filename:join([ProjectDir, "_build", "development", "apps",
                             ProjectName ++ "-0.1.0"]),

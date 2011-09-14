@@ -46,15 +46,15 @@ build_out_skeleton(Env) ->
 -spec build_out_applications(env()) -> ok.
 build_out_applications(Env) ->
     case get_env(single_app_project, Env) of
-	false ->
-	    Apps = get_env(apps, Env),
-	    build_out_applications(Env, Apps);
-	true ->
-	    ProjDir = get_env(project_dir, Env),
-	    ProjVsn = get_env(project_version, Env),
-	    ProjName = get_env(project_name, Env),
-	    build_out_application(Env, ProjDir, ProjName, ProjVsn),
-	    build_out_build_config(Env)
+        false ->
+            Apps = get_env(apps, Env),
+            build_out_applications(Env, Apps);
+        true ->
+            ProjDir = get_env(project_dir, Env),
+            ProjVsn = get_env(project_version, Env),
+            ProjName = get_env(project_name, Env),
+            build_out_application(Env, ProjDir, ProjName, ProjVsn),
+            build_out_build_config(Env)
     end.
 
 -spec build_out_applications(env(), AppNames::[string()]) -> ok.
@@ -68,14 +68,14 @@ build_out_applications(Env, []) ->
 
 %% @doc build out all the things required by an application
 -spec build_out_application(env(), AppDir::string(),
-			    AppName::string(), AppVsn::string()) -> ok.
+                            AppName::string(), AppVsn::string()) -> ok.
 build_out_application(Env, AppDir, AppName, AppVsn) ->
     EbinDir = make_dir(filename:join(AppDir, "ebin")),
     AppSrc = make_dir(filename:join(AppDir, "src")),
     make_dir(filename:join(AppDir, "include")),
     make_dir(filename:join(AppDir, "doc")),
     build_out_super(Env, AppSrc, AppName),
-    build_out_app_src(Env, EbinDir, AppName, AppVsn),
+    build_out_app_src(Env, AppSrc, AppName, AppVsn),
     build_out_otp(Env, AppSrc, AppName),
     build_out_app_doc(Env, EbinDir, AppName).
 
@@ -92,14 +92,14 @@ build_out_super(Env, AppSrc, AppName) ->
 
 %% @doc Builds out the app descriptor for the app.
 -spec build_out_app_src(env(), EbinDir::string(),
-			AppName::string(), AppVsn::string()) -> ok.
-build_out_app_src(Env, EbinDir, AppName, AppVsn) ->
-    FileName = filename:join(EbinDir, AppName ++ ".app"),
+                        AppName::string(), AppVsn::string()) -> ok.
+build_out_app_src(Env, AppSrc, AppName, AppVsn) ->
+    FileName = filename:join(AppSrc, AppName ++ ".app.src"),
     case filelib:is_file(FileName) of
         true ->
             ok;
         false ->
-	    sin_skel:app_info(Env, FileName, AppName, AppVsn)
+            sin_skel:app_info(Env, FileName, AppName, AppVsn)
     end.
 
 %% @doc Builds out the overview.edoc for the app.
@@ -119,7 +119,7 @@ build_out_otp(Env, AppSrc, AppName) ->
     FileName = filename:join(AppSrc, AppName ++ "_app.erl"),
     case filelib:is_file(FileName) of
         true ->
-	    ok;
+            ok;
         false ->
             sin_skel:application(Env, FileName, AppName)
     end.
@@ -127,21 +127,21 @@ build_out_otp(Env, AppSrc, AppName) ->
 %% @doc Builds the build config dir in the root of the project.
 build_out_build_config(Env) ->
     case get_env(wants_build_config, Env) of
-	true ->
-	    ProjectDir = get_env(project_dir, Env),
-	    ProjectName = get_env(project_name, Env),
-	    ConfName = filename:join([ProjectDir, "sinan.cfg"]),
-	    ErlwareFile =
-		filename:join([ProjectDir,  "bin",
-			       "erlware_release_start_helper"]),
-	    BinFile = filename:join([ProjectDir,  "bin", ProjectName]),
-	    ConfigFile = filename:join([ProjectDir,  "config", "sys.config"]),
-	    sin_skel:build_config(Env, ConfName),
-	    sin_skel:bin(Env, BinFile),
-	    sin_skel:bin_support(Env, ErlwareFile),
-	    sin_skel:sysconfig(Env, ConfigFile);
-	false ->
-	    ok
+        true ->
+            ProjectDir = get_env(project_dir, Env),
+            ProjectName = get_env(project_name, Env),
+            ConfName = filename:join([ProjectDir, "sinan.cfg"]),
+            ErlwareFile =
+                filename:join([ProjectDir,  "bin",
+                               "erlware_release_start_helper"]),
+            BinFile = filename:join([ProjectDir,  "bin", ProjectName]),
+            ConfigFile = filename:join([ProjectDir,  "config", "sys.config"]),
+            sin_skel:build_config(Env, ConfName),
+            sin_skel:bin(Env, BinFile),
+            sin_skel:bin_support(Env, ErlwareFile),
+            sin_skel:sysconfig(Env, ConfigFile);
+        false ->
+            ok
     end.
 
 %% @doc Helper function that makes the specified directory and all parent
