@@ -31,7 +31,7 @@
 
 -define(SIGNS, "moddeps").
 -define(TASK, build).
--define(DEPS, [depends]).
+-define(DEPS, [prepare, depends]).
 
 %%====================================================================
 %% API
@@ -186,43 +186,33 @@ build_apps(BuildRef, BuildSupInfo, AppList, Args) ->
 
 %% @doc Build an individual otp application.
 build_app(BuildRef, Cache, Env, AppName, Args) ->
-    AppVsn = sin_config:get_value(BuildRef, "apps." ++ AppName ++ ".vsn"),
+    AppBuildDir =
+        sin_config:get_value(BuildRef, "apps." ++ AppName ++ ".builddir"),
     AppDir = sin_config:get_value(BuildRef, "apps." ++ AppName
-                                        ++ ".basedir"),
-    BuildTarget = lists:flatten([AppName, "-", AppVsn]),
-    AppBuildDir = filename:join([Env#env.apps_build_dir, BuildTarget]),
-    BuildRef2 = sin_config:store(BuildRef, "apps." ++ AppName ++ ".builddir",
-                                       AppBuildDir),
+                                  ++ ".basedir"),
+
     Target = filename:join([AppBuildDir, "ebin"]),
 
-    Ignorables = sin_config:get_value(BuildRef2, "ignore_dirs", []),
-
-    % Ignore the build dir when copying or we will create a deep monster in a
-    % few builds
-    BuildDir = sin_config:get_value(BuildRef2, "build_dir"),
-    sin_utils:copy_dir(BuildRef2, AppBuildDir, AppDir, "", [BuildDir | Ignorables]),
-
-
-    {EbinPaths, Includes} = setup_code_path(BuildRef2, Env, AppName),
+    {EbinPaths, Includes} = setup_code_path(BuildRef, Env, AppName),
 
     code:add_patha(Target),
-    {NewCache, NewFileList} = process_source_files(BuildRef2,
+    {NewCache, NewFileList} = process_source_files(BuildRef,
                                                     Cache,
                                                     Env#env.build_dir,
                                                     Target,
                                                     Includes,
                                                     gather_modules(BuildRef,
                                                                    AppName)),
-    BuildRef3 = sin_config:store(BuildRef2,
+    BuildRef2 = sin_config:store(BuildRef,
                                  [{"apps." ++ AppName ++ ".code_paths",
                                   [Target | EbinPaths]},
                                   {"apps." ++ AppName ++ ".file_list",
                                    NewFileList}]),
 
-    build_sources(BuildRef3, NewFileList,
+    build_sources(BuildRef2, NewFileList,
                   Includes, Args, AppDir, Target),
 
-    {NewCache, BuildRef3}.
+    {NewCache, BuildRef2}.
 
 %% @doc go through each source file building with the correct build module.
 -spec build_sources(sin_config:config(), [tuple()], [string()],

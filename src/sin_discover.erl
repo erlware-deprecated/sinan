@@ -115,16 +115,39 @@ process_raw_config(ProjectDir, Config, Override) ->
 intuit_build_config(ProjectDir, Override) ->
     %% App name is always the same as the name of the project dir
     AppName = filename:basename(ProjectDir),
-    case file:consult(filename:join([ProjectDir,
-                                     "ebin",
-                                     AppName ++ ".app"])) of
-        {error, enoent} ->
-            intuit_from_override(Override);
-        {error, _} ->
-            ?SIN_RAISE(Override, unable_to_intuit_config,
-                       "Unable to generate a project config");
-        {ok, [{application, _, Rest}]} ->
-            build_out_intuited_config(AppName, Rest)
+    try
+        case file:consult(get_app_file(ProjectDir, AppName, Override)) of
+            {error, _} ->
+                ?SIN_RAISE(Override, unable_to_intuit_config,
+                           "Unable to generate a project config");
+            {ok, [{application, _, Rest}]} ->
+                build_out_intuited_config(AppName, Rest)
+        end
+    catch
+        throw:no_app_metadata_at_top_level ->
+            intuit_from_override(Override)
+    end.
+
+
+%% @doc the app file could be in ebin or src/app.src. we need to
+%% check for both
+-spec get_app_file(string(), string(), sin_config:config()) ->
+                          string().
+get_app_file(ProjectDir, AppName, Config) ->
+    EbinDir = filename:join([ProjectDir,
+                             "ebin",
+                             AppName ++ ".app"]),
+    SrcDir = filename:join([ProjectDir,
+                            "src",
+                             AppName ++ ".app.src"]),
+    case {sin_utils:file_exists(Config, EbinDir),
+          sin_utils:file_exists(Config, SrcDir)} of
+        {_, true} ->
+            SrcDir;
+        {true, _} ->
+            EbinDir;
+         _ ->
+            throw(no_app_metadata_at_top_level)
     end.
 
 %% @doc Given information from the app dir that was found, create a new full
@@ -247,17 +270,18 @@ parent_dir([H | T], Acc) ->
                      Acc::list()) ->
     Config::sin_config:config().
 build_app_info(Config, [H|T], Acc) ->
-    AppName = filename:basename(H),
-    AppFile = filename:join([H, "ebin", string:concat(AppName, ".app")]),
+    {AppName, AppFile, AppDir} = get_app_info(H),
     case file:consult(AppFile) of
         {ok, [{application, Name, Details}]} ->
-            Config2 = source_details(H, AppName,
+            Config2 = source_details(AppDir, AppName,
                         process_details("apps." ++ AppName ++ ".",
                                         [{"name", Name},
                                          {"dotapp", AppFile},
-                                         {"basedir", H} | Details], Config))
-                ,
-            build_app_info(Config2,  T, [AppName | Acc]);
+                                         {"basedir", AppDir} | Details],
+                                        Config)),
+            Config3 = sin_config:store(Config2, "apps." ++ AppName ++ ".base",
+                                       Details),
+            build_app_info(Config3,  T, [AppName | Acc]);
         {error, {_, Module, Desc}} ->
             Error = Module:format_error(Desc),
             ?SIN_RAISE(Config, {invalid_app_file, Error},
@@ -270,6 +294,16 @@ build_app_info(Config, [H|T], Acc) ->
     end;
 build_app_info(Config, [], Acc) ->
     sin_config:store(Config, "project.applist", Acc).
+
+-spec get_app_info({ebin | appsrc, string()}) -> {string(), string()}.
+get_app_info({ebin, Dir}) ->
+    AppName = filename:basename(Dir),
+    AppFile = filename:join([Dir, "ebin", string:concat(AppName, ".app")]),
+    {AppName, AppFile, Dir};
+get_app_info({appsrc, Dir}) ->
+    AppName = filename:basename(Dir),
+    AppFile = filename:join([Dir, "src", string:concat(AppName, ".app.src")]),
+    {AppName, AppFile, Dir}.
 
 -spec source_details(string(), string(), sin_config:config()) ->
     sin_config:config().
@@ -309,8 +343,8 @@ look_for_app_dirs(Config, BuildDir, ProjectDir) ->
                                    {ok, Value} -> Value;
                                    _ -> []
                                end,
-    case look_for_app_dirs(Config, BuildDir, ProjectDir, "",
-                           Ignorables, []) of
+    case process_possible_app_dir(Config, BuildDir, ProjectDir,
+                                  Ignorables, []) of
         [] ->
             ?SIN_RAISE(Config, no_app_directories,
                        "Unable to find any application directories."
@@ -319,76 +353,67 @@ look_for_app_dirs(Config, BuildDir, ProjectDir) ->
             Else
     end.
 
-look_for_app_dirs(_, BuildDir, _Parent, BuildDir, _Ignore, Acc) ->
-    Acc;
-look_for_app_dirs(Config, BuildDir, Parent, Sub, Ignorables, Acc) ->
-    case sin_utils:is_dir_ignorable(Sub, Ignorables) or
-        sin_utils:is_dir_ignorable(filename:join([Parent, Sub]), Ignorables) of
-        true ->
-            Acc;
-        false ->
-            process_app_dir(Config, BuildDir, Parent, Sub, Ignorables, Acc)
-    end.
-
 %% @doc Process the app dir to see if it is an application directory.
--spec process_app_dir(Config::sin_config:config(),
-                      BuildDir::string(), Parent::string(), Sub::string(),
-                      Ignorables::[string()], Acc::list()) ->
-    ListOfDirs::[string()].
-process_app_dir(Config, BuildDir, Parent, Sub, Ignorables, Acc) ->
-    Pwd = filename:join([Parent, Sub]),
-    case filelib:is_dir(Pwd) of
+-spec process_possible_app_dir(Config::sin_config:config(),
+                               BuildDir::string(),
+                               TargetDir::string(),
+                               Ignorables::[string()], Acc::list()) ->
+                                      ListOfDirs::[{ebin | appsrc, string()}].
+process_possible_app_dir(Config, BuildDir, TargetDir, Ignorables, Acc) ->
+    PossibleAppName = filename:basename(TargetDir),
+    case filelib:is_dir(TargetDir) andalso not
+        sin_utils:is_dir_ignorable(TargetDir, Ignorables) of
         true ->
-            {ok, Dirs} = file:list_dir(Pwd),
-            Res = lists:foldl(fun(F, AccIn) ->
-                                      File = filename:join([Pwd, F]),
-                                      process_dirs(File, F, AccIn)
-                              end, none, Dirs),
-            case {Res, Dirs} of
-                {both, _} ->
-                    [Pwd | Acc];
-                {_, []} ->
-                    Acc;
-                {_, _} ->
-                    lists:foldl(fun(Elem, NAcc) ->
-                                        look_for_app_dirs(Config,
-                                                          BuildDir,
-                                                          Pwd, Elem,
-                                                          Ignorables,
-                                                          NAcc)
+            {ok, Dirs} = file:list_dir(TargetDir),
+            Ebin = has_src_ebin_dotapp(Config, PossibleAppName,
+                                       TargetDir, Dirs),
+            AppSrc =  has_src_appsrc(Config, PossibleAppName,
+                                     TargetDir, Dirs),
+            case {AppSrc, Ebin} of
+                {true, true} ->
+                    ?SIN_RAISE(Config,
+                               "conflict: ~s has both an ebin/*.app "
+                               "and a src/*.app.src ", [TargetDir]);
+                {true, _} ->
+                    [{appsrc, TargetDir} | Acc];
+                {_, true}  ->
+                    [{ebin, TargetDir} | Acc];
+                _ ->
+                    lists:foldl(fun(Sub, NAcc) ->
+                                        Dir = filename:join([TargetDir, Sub]),
+                                        process_possible_app_dir(Config,
+                                                                 BuildDir,
+                                                                 Dir,
+
+                                                                 Ignorables,
+                                                                 NAcc)
                                 end, Acc, Dirs)
             end;
         false ->
             Acc
     end.
 
-%% @doc Given a directory checks of the name is src or ebin, compares against
-%%  its state and returns an indicator if the parent is a app dir.
--spec process_dirs(File::string(), FinateState::string(), src | ebin) ->
-    src | ebin.
-process_dirs(File, F, ebin) ->
-    case {filelib:is_dir(File), F} of
-        {true, "src"} ->
-            both;
-        _ ->
-            ebin
-    end;
-process_dirs(File, F, src) ->
-    case {filelib:is_dir(File), F} of
-        {true, "ebin"} ->
-            both;
-        _ ->
-            src
-    end;
-process_dirs(File, F, Type)  ->
-    case {filelib:is_dir(File), F} of
-        {true, "ebin"} ->
-            ebin;
-        {true, "src"} ->
-            src;
-        _ ->
-            Type
-    end.
+-spec has_src_ebin_dotapp(sin_config:config(),
+                          string(), string(), [string()]) ->
+                                 boolean().
+has_src_ebin_dotapp(Config, BaseName, BaseDir, SubDirs) ->
+    lists:member("ebin", SubDirs) andalso
+        lists:member("src", SubDirs) andalso
+        sin_utils:file_exists(Config,
+                              filename:join([BaseDir, "ebin",
+                                             BaseName ++
+                                                 ".app"])).
+
+-spec has_src_appsrc(sin_config:config(),
+                     string(), string(), [string()]) ->
+                            boolean().
+has_src_appsrc(Config, BaseName, BaseDir, SubDirs) ->
+    lists:member("src", SubDirs) andalso
+        sin_utils:file_exists(Config,
+                              filename:join([BaseDir, "src",
+                                             BaseName ++
+                                                 ".app.src"])).
+
 
 %% @doc Gather the list of modules that currently may need to be built.
 gather_modules(SrcDir) ->

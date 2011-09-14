@@ -32,6 +32,7 @@
              sin_task_test,
              sin_task_xref,
              sin_task_erts,
+             sin_task_prepare,
              sin_compile_yrl,
              sin_compile_erl,
              sin_exceptions,
