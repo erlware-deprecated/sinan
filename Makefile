@@ -6,7 +6,7 @@ SRCDIR=src
 TESTDIR=test
 COPYDIRS= src test priv
 BEAMDIR=$(APPDIR)/ebin
-SMOKETEST_DIR=$(CURDIR)/support/test
+SMOKETEST_DIR=$(CURDIR)/smoketests
 PYPATH=$(PYTHONPATH):$(SMOKETEST_DIR)
 RSYNC_OPTIONS=-vaz --delete
 
