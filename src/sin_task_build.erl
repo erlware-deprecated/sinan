@@ -527,7 +527,7 @@ get_app_from_list(App, AppList) ->
 
 %% @doc Gather the list of modules that currently may need to be built.
 gather_modules(State, AppName) ->
-    sin_state:get_value({apps, AppName, all_modules}, State).
+    sin_state:get_value({apps, AppName, all_modules_detail}, State).
 
 
 %% @doc Ensure that the build dir exists and is ready to accept files.

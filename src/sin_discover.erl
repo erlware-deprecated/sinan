@@ -299,8 +299,8 @@ source_details(Dir, AppName, State0) ->
 
     SrcModules = gather_modules(SrcDir),
     TestModules = gather_modules(TestDir),
-    sin_state:store({apps, AppName, modules}, SrcModules,
-                    sin_state:store({apps, AppName, all_modules},
+    sin_state:store({apps, AppName, src_modules_detail}, SrcModules,
+                    sin_state:store({apps, AppName, all_modules_detail},
                                     SrcModules ++ TestModules, State0)).
 
 %% @doc Rolls through subdirectories of the build directory looking for

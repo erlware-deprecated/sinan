@@ -62,13 +62,14 @@ prepare_app(State0, BuildDir, AppInfo, Ignorables) ->
     sin_utils:copy_dir(State0, AppBuildDir, AppDir, "",
                        [BuildDir | Ignorables]),
 
+
     State1 = sin_state:store({apps, AppName, builddir},
                              AppBuildDir, State0),
 
-    BaseDetails = sin_state:get_value({apps, AppName, base}, State1),
+    BaseDetails = populate_modules(State1, AppName),
+
 
     DotApp = filename:join([AppBuildDir, "ebin", erlang:atom_to_list(AppName) ++ ".app"]),
-
 
     ok = file:write_file(DotApp,
                     io_lib:format("~p.\n",
@@ -85,3 +86,18 @@ format_exception(Exception) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
+populate_modules(State, AppName) ->
+    Details = sin_state:get_value({apps, AppName, base}, State),
+
+    SourceModuleList = lists:map(fun({_, Module, _, _, _}) ->
+                                         Module
+                                 end,
+                                 sin_state:get_value({apps, AppName, src_modules_detail},
+                                                     State)),
+
+    lists:reverse(
+      lists:foldl(fun(Element = {vsn, _}, Acc) ->
+                          [{modules, SourceModuleList}, Element | Acc];
+                     (Element, Acc) ->
+                          [Element | Acc]
+                  end, [], lists:keydelete(modules, 1, Details))).
