@@ -63,6 +63,7 @@ get_tasks() ->
      sin_task_build:description(),
      sin_task_xref:description(),
      sin_task_erts:description(),
+     sin_task_escript:description(),
      sin_task_cucumber:description()].
 
 %% @doc define the behaviour for tasks.

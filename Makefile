@@ -34,6 +34,9 @@ $(BEAMDIR)/%.beam: %.erl
 	+warn_obsolete_guard \
 	+warnings_as_errors +bin_opt_info +debug_info -W -o $(BEAMDIR) $<
 
+escript: main
+	erl -pa $(BEAMDIR) -s sinan manual_start -s sinan main -extra -s $(CURDIR) escript
+
 cucumber: main
 	erl -pa $(BEAMDIR) -s sinan manual_start -s sinan main -extra -s $(CURDIR) cucumber
 
