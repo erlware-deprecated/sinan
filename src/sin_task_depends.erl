@@ -28,8 +28,12 @@
 %% @doc provide a description of the system for the caller
 -spec description() -> sin_task:task_description().
 description() ->
-    Desc = "Analyzes all of the dependencies in the project and provides that"
-        "\n information to other tasks.",
+
+    Desc = "This task analyzes all of the dependencies in the project and
+        provides that" " information to the build state for use by other
+        tasks. It is not a command intended to be called directly by the
+        user. Though you can if that floats your boat.",
+
     #task{name = ?TASK,
           task_impl = ?MODULE,
           bare = false,

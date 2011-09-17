@@ -27,13 +27,18 @@
 %% @doc provides a description of this task
 -spec description() ->  sin_task:task_description().
 description() ->
-    Desc = "Runs all eunit tests available in the project. Currently this \n"
-        "task only supports eunit",
+
+    Desc = "This command runs all eunit and proper tests available in the
+        project. Currently this task only supports eunit. <break> <break> By
+        default this command trys to only run tests on code that has actually
+        changed since the last test run. This isnt always accurate. You may pass
+        the 'all' option to force it to run all tests in the system. ",
+
     #task{name = ?TASK,
           task_impl = ?MODULE,
           bare = false,
           deps = ?DEPS,
-          example = "test",
+          example = "test [all]",
           desc = Desc,
           short_desc = "Runs all of the existing eunit unit tests in the project",
           opts = []}.

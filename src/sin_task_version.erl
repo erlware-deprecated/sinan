@@ -24,7 +24,9 @@
 %% @doc provides a description for this task
 -spec description() -> sin_task:task_description().
 description() ->
-    Desc = "Simple prints out the current version of sinan",
+
+    Desc = "This command simply prents out the current version of sinan",
+
     #task{name = ?TASK,
           task_impl = ?MODULE,
           bare = true,

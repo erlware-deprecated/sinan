@@ -25,13 +25,16 @@
 %% @doc return a description of this task to the call
 -spec description() -> sin_task:config().
 description() ->
-    Desc = "Removes the build area and everything underneath",
+
+    Desc = "This command removes *all* the build artifacts currently in the
+    system.",
+
     #task{name = ?TASK,
           task_impl = ?MODULE,
           bare = false,
           deps = ?DEPS,
           example = "clean",
-          short_desc = Desc,
+          short_desc = "removes all build artifacts in the system",
           desc = Desc,
           opts = []}.
 

@@ -27,13 +27,16 @@
 %% @doc provide a description of the system for the caller
 -spec description() -> sin_task:task_description().
 description() ->
-    Desc = "Prepares the build area for the rest of the tasks "
-        "that occur in the system",
+
+    Desc = "This command prepares the system to run subsiquent commands. Though
+    it can be run independently it exists mostly as a dependency for other tasks
+    and plugins. ",
+
     #task{name = ?TASK,
           task_impl = ?MODULE,
           bare = false,
           example = "prepare",
-          short_desc = "build area preparation",
+          short_desc = "build system preparation",
           deps = ?DEPS,
           desc = Desc,
           opts = []}.

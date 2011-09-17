@@ -33,13 +33,18 @@
 %% @doc describe this task to the system.
 -spec description() -> ok.
 description() ->
-    Desc = "Generates a buildable default project layout ",
+
+    Desc = "This command asks the user a series of questions about the new
+    project that he wants to create. It then generates a buildable skeleton for
+    that project in the current directory. Try it out, you can always delete it
+    later.",
+
     #task{name = ?TASK,
           task_impl = ?MODULE,
           bare = true,
           deps = ?DEPS,
           example = "gen",
-          short_desc = Desc,
+          short_desc = "generates a new skeleton project",
           desc = Desc,
           opts = []}.
 

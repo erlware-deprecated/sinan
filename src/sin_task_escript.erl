@@ -27,7 +27,26 @@
 %% @doc provides a description of the sytem, for help and other reasons
 -spec description() -> sin_task:task_description().
 description() ->
-    Desc = "Creates an escript of the project including ",
+
+    Desc = "This takes the current project and turns it into an executable
+    escript. <break> <break> be aware though that there are significant
+    limitations in escript. These are not limitations of sinan, but limitations
+    in the built in escript functionality. These limitations are <break> <break>
+    - Your escript may be built off of a single script OR one Erlang OTP
+    Application not both <break> - Your escript will NOT contain any system
+    dependencies (remember an escript can only contain a single OTP
+    Application). <break> <break> The system will warn you if you violate these
+    restrictions. <break> <break> The escript task allows for a few options in
+    the sinan.config file. The options are specified as follows: <break> <break>
+    {escript, [{OptionKey, OptionValue}]}. <break> <break> The keys available
+    are: <break> <break> {source, <Path To Source File Rooted in the Project
+    Dir>} <break> {emu_args, \"String Of Escript Emulator Args\"}. <break> <break> So
+    a fully configured escript config would look like: <break> <break> {escript,
+    [{source, \"bin/my_cool_escript_file\"}, <break> {emu_args, \"-smp
+    disable\"}]}. <break> <break> See the escript documentation for details and
+    remember to only pass the script option if you want that to be your
+    escript.",
+
     #task{name = ?TASK,
           task_impl = ?MODULE,
           bare = false,

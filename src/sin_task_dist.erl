@@ -28,9 +28,21 @@
 %% @doc provides a description of the sytem, for help and other reasons
 -spec description() -> sin_task:task_description().
 description() ->
-    Desc = "Creates an tarball of the distribution including release \n"
-        "information. Check documentation for the dist task for configuration \n"
-        "information ",
+
+    Desc = "This command creates a release, then tars that release into a
+    standard erlang distribution tarball that can be deployed in the standard
+    erlang manner. Check the erlang documentation about sys_tools and
+    distribution tarballs. Configuration options are as follows: <break> <break>
+    {include_dirs, List}. <break> <break> This is a list of directories rooted
+    at the project that you would like included in the tarball. You do not need
+    to include your OTP Application directories or metadata files as they are
+    included automatically. However, you should include any additionally
+    directories that you would like to ship. <break> <break> {include_erts, true
+    | false}. <break> <break> This is a boolean that indicates to the system
+    whether or not you want the Erlang runtime system included in the
+    tarball. This allows you to distribute the vm with your release but has the
+    drawback of turning your tarball into a platform specific thing.",
+
     #task{name = ?TASK,
           task_impl = ?MODULE,
           bare = false,

@@ -27,12 +27,24 @@
 %% @doc provides a description of this task
 -spec description() ->  sin_task:task_description().
 description() ->
-    Desc = "Runs cucumberl for any features that exist in the system",
+
+    Desc = "This command makes use of the cucumberl to run cucumberl on any
+    features in the <project-root>/features directory of project. The
+    implemenation of your features can be in any OTP Application in the system
+    in other the src or test directories. Check the documentation for cucumberl
+    and Cucumber for details of these systems. <break> <break> You may also use
+    this task to generate the cucumberl implementation after the feature card is
+    written with the following syntax: <break> <break> sinan cucumber gen
+    my_cool_feature where my_cool_app <break> <break> This will result in a
+    my_cool_feature.erl skeleton implementation in the test directory of
+    my_cool_app in your project. The feature name should be specified by name
+    only. That is, without the .feature part of the file name.",
+
     #task{name = ?TASK,
           task_impl = ?MODULE,
           bare = false,
           deps = ?DEPS,
-          example = "test",
+          example = "cucumber [gen <feature-name> where <app-name>]",
           desc = Desc,
           short_desc = "Runs all of the cucumber features in the project",
           opts = []}.

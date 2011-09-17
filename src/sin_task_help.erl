@@ -25,15 +25,17 @@
 -spec description() -> sin_task:task_description().
 description() ->
 
-    Desc = "Provides helpful information about the tasks available and how to"
-        "invoke them",
+    Desc = "Provides helpful information about the tasks available and how to "
+        "invoke them. <break> <break> he additional args for <command> len
+        <integer> allows the user to control the line length of the help
+        printouts",
 
     #task{name = ?TASK,
           task_impl = ?MODULE,
           bare = true,
           deps = ?DEPS,
           desc = Desc,
-          example = "help [command]",
+          example = "help [command] | [<command> len <integer>",
           short_desc = "Provides help information for the available tasks",
           opts = []}.
 
@@ -41,31 +43,37 @@ description() ->
 -spec do_task(sin_config:config(), sin_state:state()) -> sin_state:state().
 do_task(Config, State) ->
     Tasks = sin_task:get_tasks() ,
-    case Config:match(additional_args) of
-        [] ->
-            ewl_talk:say("~nsinan [options] <command>"),
-            ewl_talk:say(" available commands are as follows~n~n"),
-            lists:map(fun(Task) ->
-                              ewl_talk:say("  ~p: ~s", [Task#task.name,
-                                                        Task#task.short_desc])
-                      end,
-                      Tasks),
-            ewl_talk:say("~nfor more information run 'sinan help <command>'");
+    Result =
+        case Config:match(additional_args) of
+            [] ->
+                sinan:usage(),
+                ewl_talk:say(" available commands are as follows~n~n"),
+                TaskNames =
+                    lists:map(fun(Task) ->
+                                      ewl_talk:say("  ~-20s: ~s", [Task#task.name,
+                                                                   Task#task.short_desc]),
+                                      Task#task.name
+                              end,
+                              Tasks),
+                ewl_talk:say("~nfor more information run 'sinan help <command>'"),
+                {command_list, TaskNames};
 
-        PTasks ->
-            lists:foreach(fun(Task) ->
-                                  process_task_entry(Task, Tasks)
-                          end, PTasks)
+        [Task, "len", LineLen] ->
+                process_task_entry(Task, Tasks, erlang:list_to_integer(LineLen)),
+                {help_detail, Task};
+        [Task] ->
+                process_task_entry(Task, Tasks, 80),
+                {help_detail, Task}
     end,
-    State.
+    sin_state:store(help_displayed, Result, State).
 
 %%====================================================================
 %%% Internal functions
 %%====================================================================
 
 %% @doc Prints out the task description.
--spec process_task_entry(string(), sin_task:task_description()) -> ok.
-process_task_entry(TaskName, Tasks) ->
+-spec process_task_entry(string(), sin_task:task_description(), integer()) -> ok.
+process_task_entry(TaskName, Tasks, LineLen) ->
     AtomName = list_to_atom(TaskName),
     ActualTask = lists:foldl(fun(Task, Acc) ->
                                      case Task#task.name == AtomName of
@@ -81,11 +89,25 @@ process_task_entry(TaskName, Tasks) ->
         undefined ->
             ewl_talk:say("~p: not found", [AtomName]);
         _ ->
-            ewl_talk:say("~nexample: ~n"),
-            ewl_talk:say("  sinan ~s", [ActualTask#task.example]),
+            ewl_talk:say("~nexample: sinan ~s", [ActualTask#task.example]),
             ewl_talk:say(""),
-            ewl_talk:say("  ~s~n", [ActualTask#task.desc])
+            break(ActualTask#task.desc, LineLen)
     end.
+
+
+break(Line, LineLen) ->
+    Tokens = string:tokens(lists:flatten(Line), [$\s, $\n, $\t, $\f, $\r]),
+    lists:foldl(fun("<break>", _Count) ->
+                        io:format("~n"),
+                        0;
+                   (Word, Count) when Count < LineLen ->
+                        io:format("~s ", [Word]),
+                        Count + erlang:length(Word);
+                   (Word, _) ->
+                        io:format("~s~n", [Word]),
+                        erlang:length(Word)
+                end, 0, Tokens),
+    io:format("~n").
 
 
 

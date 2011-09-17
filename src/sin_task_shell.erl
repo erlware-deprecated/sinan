@@ -25,9 +25,13 @@
 %% @doc return a description of this task
 -spec description() -> sin_task:task_description().
 description() ->
-    Desc = "Starts an erlang shell with all of the correct \n"
-        "paths preset so the developer can noodle with the \n"
-        "code to his hearts content",
+
+    Desc = "The repl is an extraordinarily important part of any Erlang
+    development project. This command helps the developer by starting up an
+    erlang shell with all the paths to code utilized within the project already
+    set. This does not, however, attempt to start any of that code. That is left
+    up to the developer.",
+
     #task{name = ?TASK,
           task_impl = ?MODULE,
           bare = false,

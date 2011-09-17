@@ -24,7 +24,9 @@
 %% @doc provides a description for this task
 -spec description() -> sin_task:task_description().
 description() ->
-    Desc = "Provides erts version sinan is running as",
+
+    Desc = "A very simple command that prints erts version sinan is running on",
+
     #task{name = ?TASK,
           task_impl = ?MODULE,
           bare = true,

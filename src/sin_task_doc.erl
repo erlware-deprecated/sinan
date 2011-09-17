@@ -27,8 +27,10 @@
 %% @doc return a description of this task for callers
 -spec description() -> sin_task:task_description().
 description() ->
-    Desc = "Runs edoc across all sources in the project and \n"
-        "outputs it into the build area",
+
+    Desc = "This command runs the erlang edoc across all sources in the project
+        and outputs to the build area: <break> <break> <build-area>/docs ",
+
     #task{name = ?TASK,
           task_impl = ?MODULE,
           bare = false,

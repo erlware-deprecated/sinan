@@ -25,9 +25,14 @@
 %% @doc describes this task to the system
 -spec description() -> sin_task:task_description().
 description() ->
-    Desc = "Creates the *.rel, *.boot and *.script into the \n"
-        "<build-area>/realeases/<vsn> directory. It also builds up a \n"
-        "release tar bal into the <build-area>/tar/ directory",
+
+    Desc = "This command creates all the artifacts needed to start the current
+        project as an otp release. This creates the *.rel, *.boot and *.script
+        files into the output area of the project. Those files maybe found at:
+        <break> <break> <build-area>/realeases/<project-name>-<vsn> |
+        <release-name>-<vsn> <break> <break> Check the erlang documentation for
+        releases to understand what this means. ",
+
     #task{name = ?TASK,
           task_impl = ?MODULE,
           bare = false,
