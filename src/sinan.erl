@@ -57,14 +57,17 @@ do_task(Task, StartDir, Config) ->
 do_task_full(Config0, State0, Task) when is_atom(Task) ->
     try
         {Config1, State1} = sin_discover:discover(Config0, State0),
-        ProjectRoot = sin_state:get_value(project_dir, State1),
-        run_task(Task, ProjectRoot, Config1, State1)
+        State2 = sin_sig:load(sin_state:get_value(build_dir, State1), State1),
+        ProjectRoot = sin_state:get_value(project_dir, State2),
+        State3 = run_task(Task, ProjectRoot, Config1, State2),
+        sin_sig:save(sin_state:get_value(build_dir, State3), State3)
     catch
         no_build_config ->
             ewl_talk:say("No build config found."),
             sin_state:add_run_error(Task, no_build_config, State0);
         Error = {pe, NewState, {Module, _, _}} ->
-            ewl_talk:say("build problem ~s", [Module:format_exception(Error)]),
+            ewl_talk:say("build problem ~s",
+                         [Module:format_exception(Error)]),
             NewState;
         Type:Exception ->
             ewl_talk:say("build problem ~p:~p:~p",
@@ -73,7 +76,8 @@ do_task_full(Config0, State0, Task) when is_atom(Task) ->
     end.
 
 %% @doc run the specified task, without expecting a build config and what not.
--spec do_task_bare(string(), sin_config:config(), sin_state:state(), task_name()) -> ok.
+-spec do_task_bare(string(), sin_config:config(),
+                   sin_state:state(), task_name()) -> ok.
 do_task_bare(StartDir, Config, State, Task) when is_atom(Task) ->
     run_task(Task, StartDir, Config, State).
 

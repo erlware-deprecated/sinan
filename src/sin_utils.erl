@@ -100,33 +100,33 @@ copy_dir(State, BuildDir, TargetDir, Sub) ->
                BuilderDir::string(),
                TargetDir::string(),
                Subdirs::string(),
-               Ignorables::string()) -> ok.
-copy_dir(State, BuildDir, TargetDir, SubDir, Ignorables) ->
-    check_not_circular(State, BuildDir, TargetDir, SubDir),
+               Ignorables::string()) -> sin_state:state().
+copy_dir(State0, BuildDir, TargetDir, SubDir, Ignorables) ->
+    check_not_circular(State0, BuildDir, TargetDir, SubDir),
     case are_dirs_ignorable(SubDir, Ignorables) of
         true ->
-            ok;
+            State0;
         false ->
             Target = filename:join([BuildDir | SubDir]),
             filelib:ensure_dir(filename:join([Target, "tmp"])),
             CpyTarget = filename:join([TargetDir | SubDir]),
             {ok, Files} = file:list_dir(CpyTarget),
-            lists:foldl(fun (IFile, _Acc) ->
+            lists:foldl(fun (IFile, State1) ->
                                 File = filename:join([CpyTarget, IFile]),
                                 case {is_dir_ignorable(IFile, Ignorables),
                                       filelib:is_dir(File)}
                                     of
                                     {true, _} ->
-                                        ok;
+                                        State1;
                                     {_, true} ->
-                                        copy_dir(State,
+                                        copy_dir(State1,
                                                  BuildDir, TargetDir,
                                                  SubDir ++ [IFile], Ignorables);
                                     {_, false} ->
-                                        copy_file(State, Target, IFile, File)
+                                        copy_file(State1, Target, IFile, File)
                                 end
                         end,
-                        [], Files)
+                        State0, Files)
     end.
 
 %% @doc Remove the specified code paths from the system code paths.
@@ -168,12 +168,12 @@ format_exception(Exception) ->
 
 %% @doc Copies the file specified by file to the target specified by ifile.
 -spec copy_file(sin_state:state(),
-                Target::string(), IFile::string(), File::string()) -> ok.
+                Target::string(), IFile::string(), File::string()) -> sin_state:state().
 copy_file(_, _Target, [$. | _], _File) ->
              ok;
 copy_file(State, Target, IFile, File) ->
     NFile = filename:join([Target, IFile]),
-    case sin_sig:target_changed(File, NFile) of
+    case sin_sig:changed(copy, File, State) of
         file_not_found ->
             ewl_talk:say("File ~s is not does not exist in the "
                        "file System. This shouldn't happen.",
@@ -186,9 +186,10 @@ copy_file(State, Target, IFile, File) ->
         true ->
             {ok, FileInfo} = file:read_file_info(File),
             file:copy(File, NFile),
-            file:write_file_info(NFile, FileInfo);
+            file:write_file_info(NFile, FileInfo),
+            sin_sig:update(copy, File, State);
         _ ->
-            ok
+            State
     end.
 
 %% @doc Check to see if the file is a symlink.

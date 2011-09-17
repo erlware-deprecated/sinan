@@ -43,14 +43,13 @@ get_dependencies(File, Includes) ->
 build_file(_Config, State, File, Options, _Target) ->
     ewl_talk:say("Building ~s", [File]),
     case compile:file(File, Options) of
-        {ok, ModuleName} ->
-            {ModuleName, State};
-        {ok, ModuleName, []} ->
-            {ModuleName, State};
-        {ok, ModuleName, Warnings} ->
-            {ModuleName,
-             ?WARN(State,
-                  sin_task_build:gather_fail_info(Warnings, "warning"))};
+        {ok, _ModuleName} ->
+            State;
+        {ok, _ModuleName, []} ->
+            State;
+        {ok, _ModuleName, Warnings} ->
+            ?WARN(State,
+                  sin_task_build:gather_fail_info(Warnings, "warning"));
         {error, Errors, Warnings} ->
             NewRef =
                 ?WARN(State,

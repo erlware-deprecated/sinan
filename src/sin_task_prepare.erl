@@ -59,23 +59,24 @@ prepare_app(State0, BuildDir, AppInfo, Ignorables) ->
 
     %% Ignore the build dir when copying or we will create a deep monster in a
     %% few builds
-    sin_utils:copy_dir(State0, AppBuildDir, AppDir, "",
-                       [BuildDir | Ignorables]),
+    State1 = sin_utils:copy_dir(State0, AppBuildDir, AppDir, "",
+                                [BuildDir | Ignorables]),
 
 
-    State1 = sin_state:store({apps, AppName, builddir},
-                             AppBuildDir, State0),
+    State2 = sin_state:store({apps, AppName, builddir},
+                             AppBuildDir, State1),
 
     BaseDetails = populate_modules(State1, AppName),
 
 
-    DotApp = filename:join([AppBuildDir, "ebin", erlang:atom_to_list(AppName) ++ ".app"]),
+    DotApp = filename:join([AppBuildDir, "ebin",
+                            erlang:atom_to_list(AppName) ++ ".app"]),
 
     ok = file:write_file(DotApp,
                     io_lib:format("~p.\n",
                                   [{application, AppName,
                                     BaseDetails}])),
-    State1.
+    State2.
 
 %% @doc Format an exception thrown by this module
 -spec format_exception(sin_exceptions:exception()) ->

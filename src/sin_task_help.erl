@@ -41,7 +41,7 @@ description() ->
 -spec do_task(sin_config:config(), sin_state:state()) -> sin_state:state().
 do_task(Config, State) ->
     Tasks = sin_task:get_tasks() ,
-    case Config:match(additionral_args) of
+    case Config:match(additional_args) of
         [] ->
             ewl_talk:say("~nsinan [options] <command>"),
             ewl_talk:say(" available commands are as follows~n~n"),

@@ -121,9 +121,8 @@ do_task(Config, State0) ->
                                                              Config:match(compile_deps, []),
                                                          LibDir,
                                                          []), State2),
-    save_deps(State3, AllDeps),
-    update_sigs(State3),
-    State3.
+    update_sigs(State3).
+
 
 %% @doc Format an exception thrown by this module
 -spec format_exception(sin_exceptions:exception()) ->
@@ -292,41 +291,6 @@ get_repo_apps(_ProjectApps, [], Acc) ->
 is_project_app({Name, _Deps, _Version, _Location}, ProjectApps) ->
     lists:keymember(Name, 1, ProjectApps).
 
-%% @doc Saves the list of dependencies for later use.
--spec save_deps(sin_state:state(), term()) -> ok.
-save_deps(State, Deps) ->
-    BuildDir = sin_state:get_value(build_dir, State),
-    filelib:ensure_dir(filename:join([BuildDir, "info", "tmp"])),
-    Depsf = filename:join([BuildDir, "info", "deps"]),
-    case file:open(Depsf, write) of
-        {error, _} ->
-            ?SIN_RAISE(State, unable_to_write_dep_info,
-                       "Couldn't open ~s for writing. Unable to "
-                       "write dependency information",
-                       [Depsf]);
-
-        {ok, IoDev} ->
-            io:format(IoDev, "~p.", [Deps]),
-            file:close(IoDev)
-    end,
-    save_repo_apps(State, BuildDir).
-
-%% @doc Saves the list of repo apps to info.
--spec save_repo_apps(sin_state:state(), string()) -> ok.
-save_repo_apps(State, BuildDir) ->
-    Apps = sin_state:get_value(project_repoapps, State),
-    Repsf = filename:join([BuildDir, "info", "repoapps"]),
-    case file:open(Repsf, write) of
-        {error, _} ->
-            ?SIN_RAISE(State, unable_to_write_dep_info,
-                       "Couldn't open ~s for writing. Unable to "
-                       "write dependency information",
-                       [Repsf]);
-        {ok, IoDev} ->
-            io:format(IoDev, "~p.", [Apps]),
-            file:close(IoDev)
-    end.
-
 %% @doc Roll through the list of project apps and gather the app name and
 %% version number.
 -spec gather_project_apps(sin_state:state(), string()) -> list().
@@ -390,12 +354,12 @@ update_sigs(State) ->
 
 %% @doc Update the signatures for each of the *.app files in the AppList.
 -spec update_app_sigs(sin_state:state(), string(), [atom()]) -> ok.
-update_app_sigs(State, BuildDir, [AppName | T]) ->
-    App = sin_state:get_value({apps, AppName, dotapp}, State),
-    sin_sig:update("dep", BuildDir, App),
-    update_app_sigs(State, BuildDir, T);
-update_app_sigs(_State, _BuildDir, []) ->
-    ok.
+update_app_sigs(State0, BuildDir, [AppName | T]) ->
+    App = sin_state:get_value({apps, AppName, dotapp}, State0),
+    State1 = sin_sig:update("dep", App, State0),
+    update_app_sigs(State1, BuildDir, T);
+update_app_sigs(State, _BuildDir, []) ->
+    State.
 
 process_release(State, RootDir, ProjectName, ProjectVsn, ProjectApps) ->
     case sin_release:get_release(State, RootDir, ProjectName, ProjectVsn) of

@@ -29,7 +29,6 @@
                app_list,
                deps}).
 
--define(SIGNS, "moddeps").
 -define(TASK, build).
 -define(DEPS, [prepare, depends]).
 
@@ -185,31 +184,29 @@ build_app(Config0, State0, Cache0, Env, AppName) ->
     {EbinPaths, Includes} = setup_code_path(State0, Env, AppName),
 
     code:add_patha(Target),
-    {Cache1, FileList} = process_source_files(State0,
-                                              Cache0,
-                                              Env#env.build_dir,
-                                              Target,
-                                              Includes,
-                                              gather_modules(State0,
-                                                             AppName)),
-    State1 = sin_state:store([{{apps, AppName, code_paths},
+    {Cache1, FileList, State1} = process_source_files(State0,
+                                                      Cache0,
+                                                      Includes,
+                                                      gather_modules(State0,
+                                                                     AppName)),
+    State2 = sin_state:store([{{apps, AppName, code_paths},
                                [Target | EbinPaths]},
                               {{apps, AppName, file_list},
                                FileList}],
-                             State0),
+                             State1),
 
-    build_sources(Config1, State1, FileList,
-                  Includes, AppDir, Target),
+    State3 = build_sources(Config1, State2, FileList,
+                           Includes, AppDir, Target),
 
-    {Cache1, State1}.
+    {Cache1, State3}.
 
 %% @doc go through each source file building with the correct build module.
 -spec build_sources(sin_config:config(), sin_state:state(), [tuple()], [string()],
                     string(), string()) ->
     ok.
-build_sources(Config0, State, FileList, Includes, AppDir,  Target) ->
-
-    lists:map(fun({{File, Module, _, _, _}, {changed, _, _, BuildModule}}) ->
+build_sources(Config0, State0, FileList, Includes, AppDir,  Target) ->
+    lists:foldl(fun({{File, Module, _, _, _},
+                     {changed, _, _, BuildModule}}, State1) ->
                       Config1 = Config0:specialize([{module, Module}]),
                       Options = Config1:match(compile_args, [])
                           ++ [{outdir, Target},
@@ -219,10 +216,12 @@ build_sources(Config0, State, FileList, Includes, AppDir,  Target) ->
                               %% Search directory with .hrl files
                               Includes],
                       event_compile_args(Config1, Options),
-                      BuildModule:build_file(Config1, State, File, Options, Target);
-                 (_) ->
-                      []
-              end, FileList).
+                      State2 = BuildModule:build_file(Config1, State1,
+                                                      File, Options, Target),
+                      update_changed(File, State2);
+                 (_, State1) ->
+                        State1
+              end, State0, FileList).
 
 %% @doc if the right config values is specified event the compile args
 event_compile_args(Config, Options) ->
@@ -237,21 +236,19 @@ event_compile_args(Config, Options) ->
 
 %% @doc process dependencies for each source file, the sort the list in build
 %% order.
-process_source_files(State, Cache, BuildDir, TargetDir,
+process_source_files(State0, Cache,
                      Includes, FileList) ->
-   {NewCache, TmpNewList} =
-        lists:foldl(fun(FileInfo, {Cache2, Acc}) ->
-                            {Cache3, NewFileInfo} =
-                                process_source_file(State,
+   {NewCache, TmpNewList, State3} =
+        lists:foldl(fun(FileInfo, {Cache2, Acc, State1}) ->
+                            {Cache3, NewFileInfo, State2} =
+                                process_source_file(State1,
                                                     Cache2,
                                                     FileList,
-                                                    BuildDir,
-                                                    TargetDir,
                                                     Includes,
                                                     FileInfo),
-                            {Cache3, [NewFileInfo | Acc]}
-                    end, {Cache, []}, FileList),
-    {NewCache, topo_sort_file_list(TmpNewList)}.
+                            {Cache3, [NewFileInfo | Acc], State2}
+                    end, {Cache, [], State0}, FileList),
+    {NewCache, topo_sort_file_list(TmpNewList), State3}.
 
 topo_sort_file_list(FileList) ->
     {ok, Data} =
@@ -280,56 +277,56 @@ topo_sort_file_list(FileList) ->
                   end,
                   [], Data)).
 
-process_source_file(State,
+process_source_file(State0,
                     Cache,
                     FileList,
-                    BuildDir,
-                    TargetDir,
                     Includes,
                     {File, Module, Ext, AtomExt, TestImplementations}) ->
-    BuildModule = get_build_module(State, AtomExt),
-    {Changed, {NewCache, {Deps, NewTI, TestedModules}}} =
-        has_changed(State, BuildDir, TargetDir, Cache, File, Ext, Includes,
-                BuildModule, TestImplementations,
-                FileList),
+    BuildModule = get_build_module(State0, AtomExt),
+    {Changed, {NewCache, {Deps, NewTI, TestedModules}}, State1} =
+        has_changed(State0, Cache, File, Includes,
+                    TestImplementations,
+                    FileList),
     {NewCache, {{File, Module, Ext, AtomExt, Deps},
-                {Changed, NewTI, TestedModules, BuildModule}}}.
+                {Changed, NewTI, TestedModules, BuildModule}}, State1}.
 
-has_changed(State, BuildDir, TargetDir, Cache, File, Ext, Includes,
-            BuildModule, TestImplementations,
+has_changed(State0, Cache, File, Includes,
+            TestImplementations,
             FileList) ->
-        case contents_changed(TargetDir, File, Ext, BuildModule) of
+        case contents_changed(File, State0) of
             true ->
-                Ret = save_real_dependencies(State,
-                                             Cache, BuildDir,
-                                             FileList, TestImplementations,
-                                             File, Includes),
-                {changed, Ret};
+                {Ret, State1} = save_real_dependencies(State0,
+                                                       Cache,
+                                                       FileList, TestImplementations,
+                                                       File, Includes),
+                {changed, Ret, State1};
             false ->
-                dependencies_have_changed(State, BuildDir, Cache, FileList,
+                dependencies_have_changed(State0, Cache, FileList,
                                           TestImplementations, File, Includes)
         end.
 
-dependencies_have_changed(State, BuildDir, Cache,
+dependencies_have_changed(State0, Cache,
                           FileList, TestImplementations,
                           File, Includes) ->
-        case sin_sig:get_sig_info(?SIGNS, BuildDir, File) of
-            undefined ->
-                Ret = save_real_dependencies(State,
-                                             Cache, BuildDir, FileList,
-                                             TestImplementations, File,
-                                             Includes),
-                {changed, Ret};
-            Terms  ->
+        case sin_sig:get_sig_info(File, State0) of
+            error ->
+                {Ret, State1} = save_real_dependencies(State0,
+                                                       Cache, FileList,
+                                                       TestImplementations, File,
+                                                       Includes),
+                {changed, Ret, State1};
+            {ok, Terms}  ->
                 case check_deps_for_change(Terms) of
                     true ->
-                        Ret = save_real_dependencies(state,
-                                                     Cache, BuildDir, FileList,
-                                                     TestImplementations, File,
-                                                     Includes),
-                        {changed, Ret};
+                        {Ret, State1} = save_real_dependencies(State0,
+                                                               Cache,
+                                                               FileList,
+                                                               TestImplementations,
+                                                               File,
+                                                               Includes),
+                        {changed, Ret, State1};
                     false ->
-                        {not_changed, {Cache, Terms}}
+                        {not_changed, {Cache, Terms}, State0}
                 end
         end.
 
@@ -346,16 +343,16 @@ check_deps_for_change([{File, TS} | Rest]) ->
 check_deps_for_change([]) ->
     false.
 
-save_real_dependencies(State,
-                       Cache, BuildDir,
+save_real_dependencies(State0,
+                       Cache,
                        FileList, TestImplementations, File, Includes) ->
-    {NewCache, Dependencies} = resolve_dependencies(State,
+    {NewCache, Dependencies} = resolve_dependencies(State0,
                                                     Cache, FileList,
                                                     TestImplementations,
                                                     File,
                                                     Includes),
-    sin_sig:save_sig_info(?SIGNS, BuildDir, File, Dependencies),
-    {NewCache,  Dependencies}.
+    State1 = sin_sig:save_sig_info(File, Dependencies, State0),
+    {{NewCache,  Dependencies}, State1}.
 
 resolve_dependencies(State,
                      Cache, FileList, TestImplementations,  File, Includes) ->
@@ -446,14 +443,16 @@ parse_form(_File, {attribute, _, tested_modules, ModList},
 parse_form(_, _, Acc) ->
     Acc.
 
-contents_changed(BuildDir, File, Ext, BuildModule) ->
-    TargetFile = BuildModule:get_target(BuildDir, File, Ext),
-    case sin_sig:target_changed(File, TargetFile) of
+contents_changed(File, State) ->
+    case sin_sig:changed(build, File, State) of
         false ->
             false;
         _ ->
             true
     end.
+
+update_changed(File, State) ->
+    sin_sig:update(build, File, State).
 
 get_build_module(_, '.erl') ->
     sin_compile_erl;

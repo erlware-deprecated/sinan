@@ -10,123 +10,109 @@
 
 -include_lib("kernel/include/file.hrl").
 -include_lib("eunit/include/eunit.hrl").
+-include("internal.hrl").
 
 %% API
--export([save_sig_info/4,
-	 get_sig_info/3,
-	 changed/3,
-	 update/3,
-	 target_changed/2]).
+-export([new/0,
+         save_sig_info/3,
+         get_sig_info/2,
+         changed/3,
+         update/3,
+         save/2,
+         load/2]).
+
+-define(BUILD_STATE_KEY, '__sin_sig__').
+-define(TERM_KEY, '__sin_sig_term__').
+
+%%====================================================================
+%% Types
+%%====================================================================
+-opaque sig() :: dict().
 
 %%====================================================================
 %% API
 %%====================================================================
+-spec new() -> sig().
+new() ->
+    dict:new().
 
 %% @doc Take a term and put it in the correct place in the sig area.
--spec save_sig_info(string(), string(), string(), Data::term()) -> boolean().
-save_sig_info(NS, BuildDir, File, Terms) ->
-    Target = make_filename(File, []),
-    SIG = filename:join([BuildDir, "sig", NS, Target]),
-    filelib:ensure_dir(filename:join([BuildDir, "sig", NS, "tmp"])),
-    file:write_file(SIG,io_lib:fwrite("~p.\n",[Terms])).
+-spec save_sig_info(term(), term(), sin_state:state()) ->
+                           sin_state:state().
+save_sig_info(Key, Value, State) ->
+    update_state(dict:store({?TERM_KEY, Key}, Value, get_sig(State)), State).
 
-%% @doc Take a predefined sig term file and return the values in that file.
--spec get_sig_info(string(), string(), string()) -> boolean().
-get_sig_info(NS, BuildDir, File) ->
-    Target = make_filename(File, []),
-    SIG = filename:join([BuildDir, "sig", NS, Target]),
-    case file:consult(SIG) of
-	{ok, [Terms]} ->
-	    Terms;
-	_  ->
-	    undefined
-    end.
+%% @doc Get the values determined by key from the sig
+-spec get_sig_info(term(), sin_state:state()) -> boolean().
+get_sig_info(Key, BuildState) ->
+    dict:find({?TERM_KEY, Key}, get_sig(BuildState)).
 
 %% @doc Check to see if the file has been changed. The build dir should be the
 %% fully qualified path to the%% projects top level build directory.
--spec changed(string(), string(), string()) -> boolean().
-changed(NS, BuildDir, File) ->
-    Target = make_filename(File, []),
-    SIG = filename:join([BuildDir, "sig", NS, Target]),
-    case {file:read_file_info(SIG), file:read_file_info(File)} of
-        {_, {error, enoent}} ->
-            file_not_found;
-        {_, {error, _}} ->
-            unable_to_access;
-        {{error, enoent}, _} ->
-            true;
-        {{ok, SigInfo}, {ok, FileInfo}}  when SigInfo#file_info.mtime =<
-                                              FileInfo#file_info.mtime ->
-            {ok, Bin} = file:read_file(File),
-            MD5 = erlang:md5(Bin),
-            {ok, MD52} = file:read_file(SIG),
-            case MD5 == MD52 of
-                true ->
+%% @doc Check to see if the file has changed in comparison to another file.
+-spec changed(term(), string(), sin_state:state()) -> boolean().
+changed(NS, TargetFile, State) ->
+    case dict:find({file, NS, TargetFile}, get_sig(State)) of
+        {ok, DiscInfoMtime} ->
+            case file:read_file_info(TargetFile) of
+                {error, enoent} ->
+                    file_not_found;
+                {error, eacces} ->
+                    unable_to_access;
+                {ok, #file_info{mtime=FileInfoMtime}} when DiscInfoMtime <
+                                                           FileInfoMtime ->
+                    true;
+                {ok, #file_info{mtime=FileInfoMtime}} when DiscInfoMtime >=
+                                                           FileInfoMtime ->
                     false;
-                false ->
+                _ ->
                     true
             end;
-        _ ->
-            false
-    end.
-
-%% @doc Check to see if the file has changed in comparison to another file.
--spec target_changed(StartFile::string(), TargetFile::string()) -> boolean().
-target_changed(StartFile, TargetFile) ->
-    case {file:read_file_info(TargetFile), file:read_file_info(StartFile)} of
-        {_, {error, enoent}} ->
-            file_not_found;
-        {_, {error, eacces}} ->
-            unable_to_access;
-        {{ok, TargetInfo}, {ok, FileInfo}}  when TargetInfo#file_info.mtime <
-                                                 FileInfo#file_info.mtime ->
-            true;
-        {{ok, TargetInfo}, {ok, FileInfo}}  when TargetInfo#file_info.mtime >=
-                                                 FileInfo#file_info.mtime ->
-            false;
         _ ->
             true
     end.
 
 %% @doc Update the signature for file. Build dir should be the build fully
 %% qualified build directory of the system.
--spec update(string(), string(), string()) -> ok.
-update(NS, BuildDir, File) ->
-    Target = make_filename(File, []),
-    SIG = filename:join([BuildDir, "sig", NS, Target]),
-    filelib:ensure_dir(filename:join([BuildDir, "sig", NS, "tmp"])),
-    case file:read_file(File) of
-        {ok, Bin} ->
-            MD5 = erlang:md5(Bin),
-            file:write_file(SIG, MD5);
-        Error = {error, _} ->
-            Error
-    end.
+-spec update(term(), string(), sin_state:state()) ->
+                    sin_state:state().
+update(NS, File, State) ->
+    {ok, #file_info{mtime=FileInfoMTime}} = file:read_file_info(File),
+    Sig0 = dict:store({file, NS, File}, FileInfoMTime, get_sig(State)),
+    update_state(Sig0, State).
+
+%% @doc save a sig stored in the build state to a file
+-spec save(string(), sin_state:state()) ->
+                  sin_state:state().
+save(Directory, State) ->
+    Sig = dict:to_list(get_sig(State)),
+    file:write_file(filename:join(Directory, ".sig"),
+                    io_lib:format("~p.\n",
+                                  [Sig])),
+    State.
+
+%% @doc load a previously saved sig into the build state
+-spec load(string(), sin_state:state()) ->
+                  sin_state:state().
+load(Directory, State) ->
+    SigPath = filename:join(Directory, ".sig"),
+    List = case file:consult(SigPath) of
+               {error, enoent} ->
+                   [];
+               {ok, [Terms]} ->
+                   Terms;
+               Error ->
+                   ?SIN_RAISE(State, {got_invalid_result_on_sig_load, Error})
+           end,
+    update_state(dict:from_list(List), State).
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
+get_sig(BuildState) ->
+    sin_state:get_value(?BUILD_STATE_KEY, new(), BuildState).
 
-%% @doc convert the directory/filename into something that can be a verified
-%% filename.
-make_filename([$/ | T], Acc) ->
-    make_filename(T, [$_ | Acc]);
-make_filename([$\\ | T], Acc) ->
-    make_filename(T, [$_ | Acc]);
-make_filename([$: | T], Acc) ->
-    make_filename(T, [$_, $_ | Acc]);
-make_filename([H | T], Acc) ->
-    make_filename(T, [H | Acc]);
-make_filename([], Acc) ->
-    lists:reverse([$g, $i, $s, $. | Acc]).
+update_state(Sig, BuildState) ->
+    sin_state:store(?BUILD_STATE_KEY, Sig, BuildState).
 
-%%====================================================================
-%% Tests
-%%====================================================================
-
-make_filename_test() ->
-    ?assertMatch("C___Windows_test_allac.sig",
-                 make_filename("C:\\Windows\\test\\allac", [])),
-    ?assertMatch("_home_test_testa_testn.sig",
-                 make_filename("/home/test/testa/testn", [])).
 
