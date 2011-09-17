@@ -15,7 +15,8 @@
          main/1,
          run_sinan/0,
          do_task/3,
-         manual_start/0]).
+         manual_start/0,
+         usage/0]).
 
 -export_type([args/0,
               task_name/0]).
@@ -148,6 +149,10 @@ manual_start() ->
                    proper,
                    sinan]).
 
+-spec usage() -> ok.
+usage() ->
+    usage(option_spec_list()).
+
 %%====================================================================
 %% Internal functions
 %%====================================================================
@@ -164,13 +169,8 @@ do_build(Options, [Target | Rest]) ->
             {error, Result}
     end;
 do_build(Options, []) ->
-    do_build(Options, ["build"]).
+    do_build(Options, ["help"]).
 
--spec usage() -> ok.
-usage() ->
-    usage(option_spec_list()).
-
--spec usage(term()) -> ok.
 usage(OptSpecList) ->
     getopt:usage(OptSpecList, "", "[command] [option1 option2]....",
                  [{"var=value",
