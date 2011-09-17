@@ -39,7 +39,7 @@ given([an, implementation, 'of', that, feature, that, fails],
 
 'when'([a, cucumber, step, is, run, on, this, project],
        {ProjectDir, ProjectName, FeaturePath}, _) ->
-    Result = sinan:run_sinan(["-s", ProjectDir, "cucumber"]),
+    Result = sinan:main(["-s", ProjectDir, "cucumber"]),
     sin_test_project_gen:validate_single_app_project(ProjectDir, ProjectName),
     {ok, {FeaturePath, Result}}.
 
@@ -47,7 +47,7 @@ then([then, sinan, should, run, cucumberl, on,
       the, features, in, the, features, directory],
      State = {FeaturePath, {_, BuildResult}}, _) ->
     ?assertMatch([FeaturePath],
-                 sin_config:get_value(BuildResult, "cucumber.features")),
+                 sin_state:get_value(cucumber_features, BuildResult)),
     {ok, State};
 then([report, the, build, as, failing],
      State = {_, BuildResult}, _) ->

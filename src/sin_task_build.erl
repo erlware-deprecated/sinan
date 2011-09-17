@@ -16,7 +16,7 @@
 
 %% API
 -export([description/0,
-         do_task/1,
+         do_task/2,
          gather_fail_info/2,
          strip_options/1,
          get_target/4,
@@ -51,15 +51,12 @@ description() ->
           opts = []}.
 
 %% @doc run the build task.
--spec do_task(sin_config:config()) -> sin_config:config().
-do_task(BuildRef) ->
-    ensure_build_dir(BuildRef),
-    Apps = sin_config:get_value(BuildRef, "project.allapps"),
-    NApps = reorder_apps_according_to_deps(BuildRef, Apps),
-    RawArgs = sin_config:get_value(BuildRef,
-                                         "tasks.build.compile_args", ""),
-    NArgs = sin_build_arg_parser:compile_build_args(BuildRef, RawArgs),
-    build_apps(BuildRef, NApps, NArgs).
+-spec do_task(sin_config:config(), sin_state:state()) -> sin_state:state().
+do_task(Config, State) ->
+    ensure_build_dir(State),
+    Apps = sin_state:get_value(project_allapps, State),
+    NApps = reorder_apps_according_to_deps(State, Apps),
+    build_apps(Config, State, NApps).
 
 %% @doc Gather up all the errors and warnings for output.
 -spec gather_fail_info([term()], string()) ->
@@ -112,15 +109,15 @@ format_exception(Exception) ->
 
 %% @doc Given a list of apps and dependencies creates an ordered build list for
 %% the apps.
--spec reorder_apps_according_to_deps(sin_config:config(),
+-spec reorder_apps_according_to_deps(sin_state:state(),
                                      [AppInfo::term()]) -> list().
-reorder_apps_according_to_deps(Config, AllApps) ->
+reorder_apps_according_to_deps(State, AllApps) ->
     ReOrdered = lists:foldr(
                   fun ({App, _, {Deps, IncDeps}, _}, Acc) ->
                           AllDeps = Deps++IncDeps,
                           case map_deps(App, AllDeps, AllApps) of
                               [] ->
-                                  [{'NONE', to_list(App)} | Acc];
+                                  [{'NONE', App} | Acc];
                               Else ->
                                   Else ++ Acc
                           end
@@ -129,7 +126,7 @@ reorder_apps_according_to_deps(Config, AllApps) ->
         {ok, DepList} ->
             DepList;
         {cycle, CycleList} ->
-            ?SIN_RAISE(Config, cycles_detected,
+            ?SIN_RAISE(State, cycles_detected,
                        "A cycle was detected in the dependency graph "
                        " I don't know how to build cycles. ~p",
                        [CycleList])
@@ -141,103 +138,95 @@ map_deps(App, Deps, AllApps) ->
          lists:foldr(fun (DApp, Acc) ->
                              case lists:keymember(DApp, 1, AllApps) of
                                  true ->
-                                     [{to_list(DApp), to_list(App)} | Acc];
+                                     [{DApp, App} | Acc];
                                  false ->
                                      Acc
                              end
                      end, [], Deps).
 
-%% @doc Change an atom to a list of the argument is an atom, otherwise just
-%% return the arg.
--spec to_list(atom()) -> string().
-to_list(Atom) when is_atom(Atom) ->
-    atom_to_list(Atom);
-to_list(Atom) when is_list(Atom) ->
-    Atom.
-
 %% @doc Build the apps in the list.
-build_apps(BuildRef, Apps, Args) ->
-    AppList = sin_config:get_value(BuildRef, "project.allapps"),
-    AllDeps = sin_config:get_value(BuildRef, "project.alldeps"),
-    ProjectDir = sin_config:get_value(BuildRef, "project.dir"),
-    BuildDir = sin_config:get_value(BuildRef, "build.dir"),
+build_apps(Config, State, Apps) ->
+    AppList = sin_state:get_value(project_allapps, State),
+    AllDeps = sin_state:get_value(project_alldeps, State),
+    ProjectDir = sin_state:get_value(project_dir, State),
+    BuildDir = sin_state:get_value(build_dir, State),
     AppBDir = filename:join([BuildDir, "apps"]),
     SigDir = filename:join([BuildDir, "sigs"]),
-    build_apps(BuildRef, #env{project_dir=ProjectDir,
-                              build_dir=BuildDir,
-                              apps_build_dir=AppBDir,
-                              sig_dir=SigDir,
-                              app_list=AppList,
-                              deps=AllDeps},
-               Apps, Args).
+    build_apps(Config, State, #env{project_dir=ProjectDir,
+                                   build_dir=BuildDir,
+                                   apps_build_dir=AppBDir,
+                                   sig_dir=SigDir,
+                                   app_list=AppList,
+                                   deps=AllDeps},
+               Apps).
 
 %% @doc build the apps as they come up in the list.
-build_apps(BuildRef, BuildSupInfo, AppList, Args) ->
-    Cache = dict:new(),
-    {_NewCache, NewBuildRef} =
+build_apps(Config, State0, BuildSupInfo, AppList) ->
+    Cache0 = dict:new(),
+    {_Cache, State1} =
         lists:foldl(fun ('NONE', Acc) ->
                             % We ignore an app type of none, its a remnent
                             % of the reorder process.
                             Acc;
-                        (App, {Cache2, BuildRef2}) ->
-                            build_app(BuildRef2, Cache2, BuildSupInfo, App, Args)
-                    end, {Cache, BuildRef}, AppList),
-    NewBuildRef.
+                        (App, {Cache1, State1}) ->
+                            build_app(Config, State1, Cache1, BuildSupInfo, App)
+                    end, {Cache0, State0}, AppList),
+    State1.
 
 %% @doc Build an individual otp application.
-build_app(BuildRef, Cache, Env, AppName, Args) ->
+build_app(Config0, State0, Cache0, Env, AppName) ->
+    Config1 = Config0:specialize([{app, AppName}]),
     AppBuildDir =
-        sin_config:get_value(BuildRef, "apps." ++ AppName ++ ".builddir"),
-    AppDir = sin_config:get_value(BuildRef, "apps." ++ AppName
-                                  ++ ".basedir"),
+        sin_state:get_value({apps, AppName, builddir}, State0),
+    AppDir = sin_state:get_value({apps, AppName, basedir}, State0),
 
     Target = filename:join([AppBuildDir, "ebin"]),
 
-    {EbinPaths, Includes} = setup_code_path(BuildRef, Env, AppName),
+    {EbinPaths, Includes} = setup_code_path(State0, Env, AppName),
 
     code:add_patha(Target),
-    {NewCache, NewFileList} = process_source_files(BuildRef,
-                                                    Cache,
-                                                    Env#env.build_dir,
-                                                    Target,
-                                                    Includes,
-                                                    gather_modules(BuildRef,
-                                                                   AppName)),
-    BuildRef2 = sin_config:store(BuildRef,
-                                 [{"apps." ++ AppName ++ ".code_paths",
-                                  [Target | EbinPaths]},
-                                  {"apps." ++ AppName ++ ".file_list",
-                                   NewFileList}]),
+    {Cache1, FileList} = process_source_files(State0,
+                                              Cache0,
+                                              Env#env.build_dir,
+                                              Target,
+                                              Includes,
+                                              gather_modules(State0,
+                                                             AppName)),
+    State1 = sin_state:store([{{apps, AppName, code_paths},
+                               [Target | EbinPaths]},
+                              {{apps, AppName, file_list},
+                               FileList}],
+                             State0),
 
-    build_sources(BuildRef2, NewFileList,
-                  Includes, Args, AppDir, Target),
+    build_sources(Config1, State1, FileList,
+                  Includes, AppDir, Target),
 
-    {NewCache, BuildRef2}.
+    {Cache1, State1}.
 
 %% @doc go through each source file building with the correct build module.
--spec build_sources(sin_config:config(), [tuple()], [string()],
-                    list([term()]), string(), string()) ->
+-spec build_sources(sin_config:config(), sin_state:state(), [tuple()], [string()],
+                    string(), string()) ->
     ok.
-build_sources(BuildRef, FileList, Includes,
-               Args, AppDir,  Target) ->
+build_sources(Config0, State, FileList, Includes, AppDir,  Target) ->
 
-    lists:map(fun({{File, _, _, _, _}, {changed, _, _, BuildModule}}) ->
-                      Options = Args ++ [{outdir, Target},
-                                         strict_record_tests,
-                                         return_errors, return_warnings,
-                                         {i, filename:join([AppDir, "include"])},
-                                         % Search directory with .hrl files
-                                         Includes],
-                      event_compile_args(BuildRef, Options),
-                      BuildModule:build_file(BuildRef, File, Options, Target);
+    lists:map(fun({{File, Module, _, _, _}, {changed, _, _, BuildModule}}) ->
+                      Config1 = Config0:specialize([{module, Module}]),
+                      Options = Config1:match(compile_args, [])
+                          ++ [{outdir, Target},
+                              strict_record_tests,
+                              return_errors, return_warnings,
+                              {i, filename:join([AppDir, "include"])},
+                              %% Search directory with .hrl files
+                              Includes],
+                      event_compile_args(Config1, Options),
+                      BuildModule:build_file(Config1, State, File, Options, Target);
                  (_) ->
                       []
               end, FileList).
 
 %% @doc if the right config values is specified event the compile args
-event_compile_args(BuildRef, Options) ->
-        case sin_config:get_value(BuildRef,
-                                  "task.build.print_args", undefined) of
+event_compile_args(Config, Options) ->
+        case Config:match(print_args, undefined) of
             undefined ->
                 ok;
             true ->
@@ -248,12 +237,12 @@ event_compile_args(BuildRef, Options) ->
 
 %% @doc process dependencies for each source file, the sort the list in build
 %% order.
-process_source_files(BuildRef, Cache, BuildDir, TargetDir,
+process_source_files(State, Cache, BuildDir, TargetDir,
                      Includes, FileList) ->
    {NewCache, TmpNewList} =
         lists:foldl(fun(FileInfo, {Cache2, Acc}) ->
                             {Cache3, NewFileInfo} =
-                                process_source_file(BuildRef,
+                                process_source_file(State,
                                                     Cache2,
                                                     FileList,
                                                     BuildDir,
@@ -291,42 +280,42 @@ topo_sort_file_list(FileList) ->
                   end,
                   [], Data)).
 
-process_source_file(BuildRef,
+process_source_file(State,
                     Cache,
                     FileList,
                     BuildDir,
                     TargetDir,
                     Includes,
                     {File, Module, Ext, AtomExt, TestImplementations}) ->
-    BuildModule = get_build_module(BuildRef, AtomExt),
+    BuildModule = get_build_module(State, AtomExt),
     {Changed, {NewCache, {Deps, NewTI, TestedModules}}} =
-        has_changed(BuildRef, BuildDir, TargetDir, Cache, File, Ext, Includes,
+        has_changed(State, BuildDir, TargetDir, Cache, File, Ext, Includes,
                 BuildModule, TestImplementations,
                 FileList),
     {NewCache, {{File, Module, Ext, AtomExt, Deps},
                 {Changed, NewTI, TestedModules, BuildModule}}}.
 
-has_changed(Config, BuildDir, TargetDir, Cache, File, Ext, Includes,
+has_changed(State, BuildDir, TargetDir, Cache, File, Ext, Includes,
             BuildModule, TestImplementations,
             FileList) ->
         case contents_changed(TargetDir, File, Ext, BuildModule) of
             true ->
-                Ret = save_real_dependencies(Config,
+                Ret = save_real_dependencies(State,
                                              Cache, BuildDir,
                                              FileList, TestImplementations,
                                              File, Includes),
                 {changed, Ret};
             false ->
-                dependencies_have_changed(Config, BuildDir, Cache, FileList,
+                dependencies_have_changed(State, BuildDir, Cache, FileList,
                                           TestImplementations, File, Includes)
         end.
 
-dependencies_have_changed(Config, BuildDir, Cache,
+dependencies_have_changed(State, BuildDir, Cache,
                           FileList, TestImplementations,
                           File, Includes) ->
         case sin_sig:get_sig_info(?SIGNS, BuildDir, File) of
             undefined ->
-                Ret = save_real_dependencies(Config,
+                Ret = save_real_dependencies(State,
                                              Cache, BuildDir, FileList,
                                              TestImplementations, File,
                                              Includes),
@@ -334,7 +323,7 @@ dependencies_have_changed(Config, BuildDir, Cache,
             Terms  ->
                 case check_deps_for_change(Terms) of
                     true ->
-                        Ret = save_real_dependencies(Config,
+                        Ret = save_real_dependencies(state,
                                                      Cache, BuildDir, FileList,
                                                      TestImplementations, File,
                                                      Includes),
@@ -357,10 +346,10 @@ check_deps_for_change([{File, TS} | Rest]) ->
 check_deps_for_change([]) ->
     false.
 
-save_real_dependencies(Config,
+save_real_dependencies(State,
                        Cache, BuildDir,
                        FileList, TestImplementations, File, Includes) ->
-    {NewCache, Dependencies} = resolve_dependencies(Config,
+    {NewCache, Dependencies} = resolve_dependencies(State,
                                                     Cache, FileList,
                                                     TestImplementations,
                                                     File,
@@ -368,28 +357,28 @@ save_real_dependencies(Config,
     sin_sig:save_sig_info(?SIGNS, BuildDir, File, Dependencies),
     {NewCache,  Dependencies}.
 
-resolve_dependencies(Config,
+resolve_dependencies(State,
                      Cache, FileList, TestImplementations,  File, Includes) ->
     {DepArtifacts, NewTestImplementations, TestedModules} =
         parse_attribute_dependencies(TestImplementations, File, Includes),
 
-    {NewCache, NewDeps} = realize_dependent_artifacts(Config,
+    {NewCache, NewDeps} = realize_dependent_artifacts(State,
                                                       Cache, DepArtifacts,
-                                                     FileList),
+                                                      FileList),
     {NewCache, {NewDeps,
                 NewTestImplementations, TestedModules}}.
 
-realize_dependent_artifacts(Config, Cache, DepArtifacts, FileList) ->
+realize_dependent_artifacts(State, Cache, DepArtifacts, FileList) ->
     lists:foldl(fun({file, File}, {Cache2, Acc}) ->
-                        {Cache3, TS} = get_ts(Config, Cache2, File),
+                        {Cache3, TS} = get_ts(State, Cache2, File),
                        {Cache3, [{File, TS} | Acc]};
                   ({module, Module}, {Cache2, Acc}) ->
-                       File = realize_module(Config, Module, FileList),
-                       {Cache3, TS} = get_ts(Config, Cache2, File),
+                       File = realize_module(State, Module, FileList),
+                       {Cache3, TS} = get_ts(State, Cache2, File),
                        {Cache3, [{File, TS} | Acc]}
               end, {Cache, []}, DepArtifacts).
 
-get_ts(Config, Cache, File) ->
+get_ts(State, Cache, File) ->
     case dict:find({ts, File}, Cache) of
         {ok, TS} ->
             {Cache, TS};
@@ -398,11 +387,11 @@ get_ts(Config, Cache, File) ->
                 {ok, FileInfo} ->
                          FileInfo#file_info.mtime;
                      Error ->
-                         ?SIN_RAISE(Config, {error_reading_timestamp, File, Error})
+                         ?SIN_RAISE(State, {error_reading_timestamp, File, Error})
                  end,
             {dict:store({ts, File}, TS, Cache), TS}
     end.
-realize_module(Config, Module, FileList) ->
+realize_module(State, Module, FileList) ->
     case lists:keyfind(Module, 2, FileList) of
         {File, Module, _, _, _} ->
             File;
@@ -412,7 +401,7 @@ realize_module(Config, Module, FileList) ->
                 FileName when is_list(FileName) ->
                     FileName;
                 _ ->
-                    ?SIN_RAISE(Config, {dependent_module_not_found, Module})
+                    ?SIN_RAISE(State, {dependent_module_not_found, Module})
             end
     end.
 
@@ -470,43 +459,42 @@ get_build_module(_, '.erl') ->
     sin_compile_erl;
 get_build_module(_, '.yrl') ->
     sin_compile_yrl;
-get_build_module(Config, Ext) ->
-    ?SIN_RAISE(Config, {unsupported_file_type, Ext}).
+get_build_module(State, Ext) ->
+    ?SIN_RAISE(State, {unsupported_file_type, Ext}).
 
 %% @doc Gather code paths and includes from the dependency list.
-setup_code_path(BuildRef, Env, AppName) ->
-    AtomApp = list_to_atom(AppName),
-    case get_app_from_list(AtomApp, Env#env.app_list) of
+setup_code_path(State, Env, AppName) ->
+    case get_app_from_list(AppName, Env#env.app_list) of
         not_in_list ->
-            ?SIN_RAISE(BuildRef, app_name_not_in_list,
+            ?SIN_RAISE(State, app_name_not_in_list,
                        "App ~s is not in the list of project apps. "
                        "This shouldn't happen!!",
                        [AppName]);
         {_, _, {Deps, IncDeps}, _} ->
-            get_compile_time_deps(BuildRef,
-                                  extract_info_from_deps(BuildRef,
+            get_compile_time_deps(State,
+                                  extract_info_from_deps(State,
                                                          Deps ++ IncDeps,
                                                          element(1, Env#env.deps),
                                                          [], [], []))
         end.
 %% @doc gather up the static compile time dependencies
-get_compile_time_deps(BuildRef, {Acc, IAcc}) ->
+get_compile_time_deps(State, {Acc, IAcc}) ->
     lists:foldl(fun({_, _, _, Path}, {NA, NIA}) ->
                         Ebin = filename:join([Path, "ebin"]),
                         Include = {i, filename:join([Path, "include"])},
                         {[Ebin | NA], [Include | NIA]}
                 end,
                 {Acc, IAcc},
-                sin_config:get_value(BuildRef, "project.compile_deps")).
+                sin_state:get_value(project_compile_deps, State)).
 
 %% @doc Gather path and include information from the dep list.
-extract_info_from_deps(BuildRef, [AppName | T],
+extract_info_from_deps(State, [AppName | T],
                        AppList, Marked, Acc, IAcc) ->
     case lists:member(AppName, Marked) of
         false ->
             case get_app_from_list(AppName, AppList) of
                 not_in_list ->
-                    ?SIN_RAISE(BuildRef,
+                    ?SIN_RAISE(State,
                                app_name_not_in_list,
                                "App ~s is not in the list of project apps. "
                                "This shouldn't happen!!!",
@@ -515,14 +503,14 @@ extract_info_from_deps(BuildRef, [AppName | T],
                     Ebin = filename:join([Path, "ebin"]),
                     Include = {i, filename:join([Path, "include"])},
                     code:add_patha(Ebin),
-                    extract_info_from_deps(BuildRef, T, AppList ++ Deps ++
+                    extract_info_from_deps(State, T, AppList ++ Deps ++
                                            IncDeps,
                                            Marked,
                                            [Ebin | Acc],
                                            [Include | IAcc])
             end;
         true ->
-            extract_info_from_deps(BuildRef, T, AppList, Marked, Acc,
+            extract_info_from_deps(State, T, AppList, Marked, Acc,
                                    IAcc)
     end;
 extract_info_from_deps(_, [], _, _, Acc, IAcc) ->
@@ -538,13 +526,13 @@ get_app_from_list(App, AppList) ->
     end.
 
 %% @doc Gather the list of modules that currently may need to be built.
-gather_modules(BuildRef, AppName) ->
-    sin_config:get_value(BuildRef, "apps." ++ AppName ++ ".all_modules").
+gather_modules(State, AppName) ->
+    sin_state:get_value({apps, AppName, all_modules}, State).
 
 
 %% @doc Ensure that the build dir exists and is ready to accept files.
-ensure_build_dir(BuildRef) ->
-    BuildDir = sin_config:get_value(BuildRef, "build.dir"),
+ensure_build_dir(State) ->
+    BuildDir = sin_state:get_value(build_dir, State),
     AppsDir = lists:flatten([BuildDir, "apps", "tmp"]),
     filelib:ensure_dir(AppsDir).
 
@@ -573,7 +561,7 @@ reorder_app_test() ->
                {app2, "123", {[app3, kernel], []}, "path"},
                {app3, "123", {[kernel], []}, "path"}],
     NewList  = reorder_apps_according_to_deps(sin_config:new(), AppList),
-    ?assertMatch(['NONE', "app3", "app2", "app1"], NewList),
+    ?assertMatch(['NONE', app3, app2, app1], NewList),
     AppList2 = [{app1, "123", {[app2, zapp1, stdlib], []}, "path"},
                 {app2, "123", {[app3, kernel], []}, "path"},
                 {app3, "123", {[kernel, zapp2], []}, "path"},
@@ -581,8 +569,8 @@ reorder_app_test() ->
                 {zapp2, "vsn", {[kernel], []}, "path"},
                 {zapp3, "vsn", {[], []}, "path"}],
     NewList2 = reorder_apps_according_to_deps(sin_config:new(), AppList2),
-    ?assertMatch(['NONE',"zapp2","app3","app2","zapp1","app1",
-                  "zapp3"], NewList2).
+    ?assertMatch(['NONE', zapp2, app3, app2, zapp1, app1,
+                  zapp3], NewList2).
 
 
 

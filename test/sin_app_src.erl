@@ -38,21 +38,21 @@ given([contains,an,'ebin/app'],
     AppEbin = filename:join([ProjectDir, "ebin", ProjectName ++ ".app"]),
     ?assertMatch(ok, file:write_file(AppEbin, app_src(ProjectName))),
     ?assertMatch(true,
-                 sin_utils:file_exists(sin_config:new(), AppEbin)),
+                 sin_utils:file_exists(sin_state:new(), AppEbin)),
     {ok, State}.
 
 'when'([a, build, step, is, run, on, this, project],
        {ProjectDir, ProjectName}, _) ->
-    Ret = sinan:run_sinan(["-s", ProjectDir, "build"]),
+    Ret = sinan:main(["-s", ProjectDir, "build"]),
     ?assertMatch({_, _}, Ret),
     {_, TrueRet} = Ret,
     {ok, {ProjectDir, ProjectName, TrueRet}}.
 
 then([build, the, app, normally], State = {_, _, BuildState}, _) ->
-    ?assertMatch([], sin_config:get_run_errors(BuildState)),
+    ?assertMatch([], sin_state:get_run_errors(BuildState)),
     {ok, State};
 then([the, build, should, fail], State = {_, _, BuildState}, _) ->
-    ?assertMatch(1,  erlang:length(sin_config:get_run_errors(BuildState))),
+    ?assertMatch(1,  erlang:length(sin_state:get_run_errors(BuildState))),
     {ok, State};
 then([sinan, should, put, the, app, file, in, 'ebin/.app'],
      State = {_, ProjectName, BuildState}, _) ->
@@ -66,12 +66,12 @@ then([sinan, should, warn, the, user, that,
          {sin_discover, _,
           {"conflict: ~s has both an ebin/*.app and a src/*.app.src ",
            [ProjectDir]}}}],
-       sin_config:get_run_errors(BuildState)),
+       sin_state:get_run_errors(BuildState)),
     {ok, State};
 then([warn, the, user, that, the,
       'ebin/app', is, being, ignored],
      State = {_, _, BuildState}, _) ->
-    Warnings = sin_config:get_run_warnings(BuildState),
+    Warnings = sin_state:get_run_warnings(BuildState),
     ?assertMatch(true,
                  lists:any(fun({sin_discover, Warning}) ->
                                    case Warning of
@@ -109,12 +109,14 @@ delete_if_exists(Path) ->
     end.
 
 verify_ebin_app(ProjectName, BuildState) ->
-    BaseDir = sin_config:get_value(BuildState,
-                                   "apps." ++ ProjectName ++ ".builddir"),
+    BaseDir = sin_state:get_value({apps,
+                                   erlang:list_to_atom(ProjectName),
+                                   builddir},
+                                  BuildState),
     BasePath = filename:join([BaseDir, "ebin", ProjectName ++
                                   ".app"]),
     ?assertMatch(true,
-                 sin_utils:file_exists(sin_config:new(), BasePath)),
+                 sin_utils:file_exists(sin_state:new(), BasePath)),
     AppContents = file:consult(BasePath),
     AtomName =  erlang:list_to_atom(ProjectName),
     ?assertMatch({ok, [{application, AtomName, _}]}, AppContents),

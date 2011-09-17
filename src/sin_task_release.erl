@@ -13,7 +13,7 @@
 -include("internal.hrl").
 
 %% API
--export([description/0, do_task/1, format_exception/1]).
+-export([description/0, do_task/2, format_exception/1]).
 
 -define(TASK, release).
 -define(DEPS, [build]).
@@ -38,21 +38,23 @@ description() ->
           opts = []}.
 
 %% @doc create an otp release
--spec do_task(sin_config:config()) -> sin_config:config().
-do_task(BuildRef) ->
-    BuildDir = sin_config:get_value(BuildRef, "build.dir"),
+-spec do_task(sin_config:matcher(), sin_state:state()) -> sin_state:state().
+do_task(Config, State0) ->
+    BuildDir = sin_state:get_value(build_dir, State0),
     {ReleaseName, Version} =
-        case sin_config:get_value(BuildRef, "-r") of
-            undefined ->
-                {project_name(BuildRef), project_version(BuildRef)};
-            R ->
-                {R, sin_config:get_value(BuildRef, "releases." ++ R ++ ".vsn")}
+        try
+            R = erlang:list_to_atom(Config:match('-r')),
+            {_, Vsn, _} = lists:keyfind(R, 1, Config:match(releases)),
+            {R, Vsn}
+        catch
+            throw:not_found ->
+                {Config:match(project_name), Config:match(project_vsn)}
         end,
-    ReleaseInfo = generate_rel_file(BuildRef, BuildDir, ReleaseName, Version),
-    BuildRef2 = sin_config:store(BuildRef, "project.release_info", ReleaseInfo),
-    copy_or_generate_sys_config_file(BuildRef2, BuildDir, ReleaseName, Version),
-    make_boot_script(BuildRef2, ReleaseInfo),
-    BuildRef2.
+    ReleaseInfo = generate_rel_file(Config, State0, BuildDir, ReleaseName, Version),
+    State1 = sin_state:store({project_release_info}, ReleaseInfo, State0),
+    copy_or_generate_sys_config_file(Config, BuildDir, ReleaseName, Version),
+    make_boot_script(State1, ReleaseInfo),
+    State1.
 
 %% @doc Format an exception thrown by this module
 -spec format_exception(sin_exceptions:exception()) ->
@@ -65,95 +67,65 @@ format_exception(Exception) ->
 %%====================================================================
 
 %% @doc Generate release information from info available in the project.
--spec generate_rel_file(sin_config:config(), string(), string(), string()) ->
+-spec generate_rel_file(sin_config:config(), sin_state:state(), string(), string(), string()) ->
     {ReleaseFile::string(), ReleaseInfo::term()}.
-generate_rel_file(BuildRef, BuildDir, Name, Version) ->
-    BuildFlavor = sin_config:get_value(BuildRef, "build.flavor"),
+generate_rel_file(Config, State, BuildDir, Name, Version) ->
     {ProjectName, ProjectVsn} =
-        case sin_config:get_value(BuildRef, "-r") of
-            undefined ->
-                {sin_config:get_value(BuildRef,
-                                            "project.name"),
-                 sin_config:get_value(BuildRef, "project.vsn")};
-            ReleaseName ->
-                {ReleaseName, sin_config:get_value(BuildRef, "releases."++
-                                                   ReleaseName ++".vsn")}
+        try
+            ReleaseName = erlang:list_to_atom(Config:match('-r')),
+            {ReleaseName, Vsn, _} = lists:keyfind(ReleaseName, 1,
+                                                  Config:match(releases)),
+            {ReleaseName, Vsn}
+        catch
+            throw:not_found ->
+                {Config:match(project_name),  Config:match(project_vsn)}
         end,
 
-    RootDir = sin_config:get_value(BuildRef, "project.dir"),
+    RootDir = sin_state:get_value(project_dir, State),
 
     Release =
-        case sin_release:get_release(RootDir, BuildFlavor, ProjectName,
+        case sin_release:get_release(State, RootDir, ProjectName,
                                      ProjectVsn) of
             no_file ->
                 Erts = get_erts_info(),
                 Deps =
-                    process_deps(BuildRef,
-                                 element(1,sin_config:get_value(BuildRef,
-                                                                "project.deps")), []),
+                    process_deps(State,
+                                 element(1, sin_state:get_value(project_deps, State)), []),
                 Deps2 =
-                    process_deps(BuildRef,
-                                 element(2,sin_config:get_value(BuildRef,
-                                                                "project.deps")), []),
+                    process_deps(State,
+                                 element(2, sin_state:get_value(project_deps, State)), []),
                 Deps3 = lists:map(fun({App, AppVersion}) ->
                                           {App, AppVersion, load}
                                   end, Deps2),
 
-                {release, {Name, Version}, {erts, Erts},
+                {release, {erlang:atom_to_list(Name), Version}, {erts, Erts},
                  lists:ukeymerge(1, lists:sort(Deps), lists:sort(Deps3))};
             RelInfo ->
                 RelInfo
         end,
-    {save_release(BuildRef, BuildDir, Name, Version, Release), Release}.
-
-%% @doc return project version or throw(no_project_version)
--spec project_version(sin_config:config()) -> Vsn::string().
-project_version(BuildRef) ->
-    case sin_config:get_value(BuildRef, "project.vsn") of
-        undefined ->
-            ewl_talk:say("No project version defined in build config; "
-                         "aborting!"),
-            ?SIN_RAISE(BuildRef, no_project_version);
-        Vsn ->
-            Vsn
-    end.
-
-%% @doc return project name or throw(no_project_version) area.
--spec project_name(sin_config:config()) -> Name::string().
-project_name(BuildRef) ->
-    case sin_config:get_value(BuildRef, "project.name") of
-        undefined ->
-            ewl_talk:say("No project name defined in build config; "
-                         "aborting!"),
-            ?SIN_RAISE(BuildRef, no_project_name);
-        Nm ->
-            Nm
-    end.
+    {save_release(State, BuildDir, Name, Version, Release), Release}.
 
 %% @doc Process the dependencies into a format useful for the rel depends area.
--spec process_deps(sin_config:config(),
+-spec process_deps(sin_state:state(),
                    [AppInfo::tuple()], [AppInfo::tuple()]) ->
     [AppInfo::tuple()].
-process_deps(BuildRef, [{App, Vsn, _, _} | T], Acc) ->
+process_deps(State, [{App, Vsn, _, _} | T], Acc) ->
     NewApp = stringify(App),
-    case {sin_config:get_value(BuildRef,
-                                     "project.release." ++ NewApp ++ ".type"),
-          sin_config:get_value(BuildRef,
-                                     "project.release." ++ NewApp ++
-                                     ".include_apps")} of
+    case {sin_state:get_value({project_release, NewApp, type}, State),
+          sin_state:get_value({project_release, NewApp, include_apps}, State)} of
         {undefined, undefined} ->
-            process_deps(BuildRef, T, [{App, Vsn} | Acc]);
+            process_deps(State, T, [{App, Vsn} | Acc]);
         {Type, undefined} ->
-            process_deps(BuildRef, T, [{App, Vsn, list_to_atom(Type)} | Acc]);
+            process_deps(State, T, [{App, Vsn, list_to_atom(Type)} | Acc]);
         {undefined, IncList} ->
-            process_deps(BuildRef, T,
+            process_deps(State, T,
                          [{App, Vsn, process_inc_list(IncList, [])} | Acc]);
         {Type, IncList} ->
-            process_deps(BuildRef,
+            process_deps(State,
                          T, [{App, Vsn, list_to_atom(Type),
                               process_inc_list(IncList, [])} | Acc])
     end;
-process_deps(_BuildRef, [], Acc) ->
+process_deps(_State, [], Acc) ->
     Acc.
 
 %% @doc Process the optional include list into a list of atoms.
@@ -165,11 +137,11 @@ process_inc_list([], Acc) ->
     Acc.
 
 %% @doc Save the release terms to a releases file for later use by the system.
--spec save_release(sin_config:config(), string(),
+-spec save_release(sin_state:state(), string(),
                    string(), string(), term()) ->
     {Location::string(), RelBase::string()}.
-save_release(Config, BuildDir, Name, Version, RelInfo) ->
-    Location = filename:join([BuildDir, "releases", Name ++ "-" ++ Version]),
+save_release(State, BuildDir, Name, Version, RelInfo) ->
+    Location = filename:join([BuildDir, "releases", atom_to_list(Name) ++ "-" ++ Version]),
     filelib:ensure_dir(filename:join([Location, "tmp"])),
     Relbase = filename:join([Location, Name]),
     Relf = lists:flatten([Relbase, ".rel"]),
@@ -178,7 +150,7 @@ save_release(Config, BuildDir, Name, Version, RelInfo) ->
             ewl_talk:say("Couldn't open ~s for writing. Unable to "
                          "write release information",
                          [Relf]),
-            ?SIN_RAISE(Config,
+            ?SIN_RAISE(State,
                        unable_to_write_rel_info);
         {ok, IoDev} ->
             io:format(IoDev, "~p.", [RelInfo]),
@@ -192,24 +164,25 @@ get_erts_info() ->
     erlang:system_info(version).
 
 %% @doc Gather up the path information and make the boot/script files.
--spec make_boot_script(sin_config:config(), {{string(), string()}, term()}) ->
+-spec make_boot_script(sin_state:state(), {{string(), string()}, term()}) ->
     ok.
-make_boot_script(BuildRef, {{Location, File}, {release, {Name, _}, _, _}}) ->
-    Options = [{path, [Location | get_code_paths(BuildRef)]},
+make_boot_script(State, {{Location, File}, {release, {Name, _}, _, _}}) ->
+    Options = [{path, [Location | get_code_paths(State)]},
                no_module_tests, silent],
-    case systools_make:make_script(Name, File, [{outdir, Location} | Options]) of
+    case systools_make:make_script(Name,
+                                   File, [{outdir, Location} | Options]) of
         ok ->
             ok;
         error ->
-            ?SIN_RAISE(BuildRef, release_script_generation_error);
+            ?SIN_RAISE(State, release_script_generation_error);
         {ok, _, []} ->
             ok;
         {ok,Module,Warnings} ->
-            ?SIN_RAISE(BuildRef, release_script_generation_error,
-                       "~s~n", [Module:format_warning(Warnings)]);
+            ?SIN_RAISE(State, release_script_generation_error,
+                       "~s~n", [lists:flatten(Module:format_warning(Warnings))]);
         {error,Module,Error} ->
-            ?SIN_RAISE(BuildRef, release_script_generation_error,
-                       "~s~n", [Module:format_error(Error)])
+            ?SIN_RAISE(State, release_script_generation_error,
+                       "~s~n", [lists:flatten(Module:format_error(Error))])
     end.
 
 
@@ -217,10 +190,10 @@ make_boot_script(BuildRef, {{Location, File}, {release, {Name, _}, _, _}}) ->
 -spec copy_or_generate_sys_config_file(sin_config:config(),
                                        string(), string(), string()) ->
     ok.
-copy_or_generate_sys_config_file(BuildRef, BuildDir, Name, Version) ->
-    RelSysConfPath = filename:join([BuildDir, "releases", Name ++ "-" ++
+copy_or_generate_sys_config_file(Config, BuildDir, Name, Version) ->
+    RelSysConfPath = filename:join([BuildDir, "releases", atom_to_list(Name) ++ "-" ++
                                     Version, "sys.config"]),
-    case sin_config:get_value(BuildRef, "config_dir") of
+    case Config:match(config_dir, undefined) of
         undefined ->
             generate_sys_config_file(RelSysConfPath);
         ConfigDir ->
@@ -252,20 +225,18 @@ generate_sys_config_file(RelSysConfPath) ->
 
 
 %% @doc Generates the correct set of code paths for the system.
--spec get_code_paths(sin_config:config()) -> sin_config:config().
-get_code_paths(BuildRef) ->
-    ProjApps = sin_config:get_value(BuildRef, "project.apps"),
+-spec get_code_paths(sin_state:state()) -> sin_config:config().
+get_code_paths(State) ->
+    ProjApps = sin_state:get_value(project_apps, State),
     ProjPaths = lists:merge(
                   lists:map(
                     fun({App, _, _, _}) ->
-                            sin_config:get_value(BuildRef,
-                                            "apps." ++ atom_to_list(App) ++
-                                              ".code_paths")
+                            sin_state:get_value({apps, App, code_paths}, State)
                     end, ProjApps)),
     RepoPaths = lists:map(
                   fun ({_App, _Vsn, _, Path}) ->
                           filename:join([Path, "ebin"])
-                  end, sin_config:get_value(BuildRef, "project.repoapps")),
+                  end, sin_state:get_value(project_repoapps, State)),
     lists:merge([ProjPaths, RepoPaths]).
 
 %% @doc Convert the value to a string if it is an atom

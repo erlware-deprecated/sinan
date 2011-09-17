@@ -15,7 +15,7 @@ class TestFail(st.SmokeTest):
         child.expect(pexpect.EOF)
 
         if not os.path.isfile(os.path.join(os.getcwd(),
-                                           "_build", "development",
+                                           "_build", app_desc.project_name,
                                            "apps", app_desc.project_name + "-" +
                                            app_desc.project_version, "ebin",
                                            "test_module.beam")):

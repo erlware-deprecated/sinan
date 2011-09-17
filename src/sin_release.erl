@@ -8,8 +8,7 @@
 %%%-------------------------------------------------------------------
 -module(sin_release).
 
--export([get_release/5,
-         get_release/4,
+-export([get_release/4,
          get_deps/1,
          get_erts_vsn/1,
          get_rel_info/1]).
@@ -19,33 +18,20 @@
 %%====================================================================
 
 %% @doc get the rel file for the specified information
--spec get_release(sin_config:config(),
-                  string(), string(), string(), string()) ->
+-spec get_release(sin_state:state(),
+                  string(), string(), string()) ->
     RelFilePath::string().
-get_release(Config, RootDir, Flavor, Name, Version) ->
+get_release(State, RootDir, Name, Version) ->
     VName = [Name, "-", Version, ".rel"],
     NName = [Name, ".rel"],
 
-    % Test <RootDir>/release/<Flavor>/<Name>-<Version>.rel
-    Paths = [filename:join([RootDir, "releases", Flavor, VName]),
+    % Test <RootDir>/release/<Name>-<Version>.rel
+    Paths = [filename:join([RootDir, "releases", VName]),
 
              % Test <RootDir>/release/<Flavor>/<Name>.rel
-             filename:join([RootDir, "releases", Flavor, NName]),
-
-             % Test <RootDir>/release/<Name>-<Version>.rel
-             filename:join([RootDir, "releases", VName]),
-
-             % Test <RootDir>/release/<Name>.rel
              filename:join([RootDir, "releases", NName])],
 
-    find_rel_file(Config, Paths).
-
-%% @doc get the rel file for the specified information
--spec get_release(sin_config:config(),
-                  string(), string(), string()) ->
-    RelFilePath::string().
-get_release(Config, RootDir, Name, Version) ->
-    get_release(Config, RootDir, none, Name, Version).
+    find_rel_file(State, Paths).
 
 %% @doc get dependenciens for the release
 -spec get_deps(ReleaseInfo::term()) ->
@@ -74,20 +60,20 @@ get_rel_info({release, RelInfo, _ErtsInfo, _Deps}) ->
 %% Internal functions
 %%====================================================================
 
-get_file(Config, Path) ->
-    case sin_utils:file_exists(Config, Path) of
+get_file(State, Path) ->
+    case sin_utils:file_exists(State, Path) of
         true ->
             file:consult(Path);
         false ->
             no_file
     end.
 
-find_rel_file(Config, [Path | Rest]) ->
-    case get_file(Config, Path) of
+find_rel_file(State, [Path | Rest]) ->
+    case get_file(State, Path) of
         {ok, [Data]} ->
             Data;
         no_file ->
-            find_rel_file(Config, Rest)
+            find_rel_file(State, Rest)
     end;
-find_rel_file(_Config, []) ->
+find_rel_file(_State, []) ->
     no_file.

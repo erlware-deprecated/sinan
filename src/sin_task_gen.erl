@@ -15,8 +15,7 @@
 
 %% API
 -export([description/0,
-	 do_task/1,
-	 gen/1]).
+         do_task/2]).
 
 -define(TASK, gen).
 -define(DEPS, []).
@@ -36,25 +35,20 @@
 description() ->
     Desc = "Generates a buildable default project layout ",
     #task{name = ?TASK,
-	  task_impl = ?MODULE,
-	  bare = true,
-	  deps = ?DEPS,
-	  example = "gen",
-	  short_desc = Desc,
-	  desc = Desc,
-	  opts = []}.
+          task_impl = ?MODULE,
+          bare = true,
+          deps = ?DEPS,
+          example = "gen",
+          short_desc = Desc,
+          desc = Desc,
+          opts = []}.
 
 %% @doc Do the generation of an erlang project
--spec do_task(sin_config:config()) -> ok.
-do_task(Config) ->
-    gen(Config).
-
-%% @doc Kicks off the generation process. Handles the individual steps in new
-%%  project generation.
--spec gen(sin_config:config()) -> ok.
-gen(Config) ->
+-spec do_task(sin_config:config(), sin_state:state()) -> sin_state:state().
+do_task(Config, State) ->
     {{Year, _, _}, {_, _, _}} = erlang:localtime(),
-    get_user_information(Config, [{year, integer_to_list(Year)}]).
+    get_user_information(Config, [{year, integer_to_list(Year)}]),
+    State.
 
 %%============================================================================
 %% Internal functions
@@ -77,12 +71,12 @@ get_user_information(Config, Env) ->
 %% @doc Get the project name, either from the command line or from the user.
 -spec get_project_name(sin_config:config()) -> string().
 get_project_name(Config) ->
-    case sin_config:get_value(Config, "command_line.arg") of
-	undefined ->
-	    ewl_talk:say("Please specify name of your project"),
-	    ewl_talk:ask("project name");
-	Value ->
-	    Value
+    case Config:match(additional_args) of
+        [] ->
+            ewl_talk:say("Please specify name of your project"),
+            ewl_talk:ask("project name");
+        [Value] ->
+            Value
     end.
 
 %% @doc Queries the user for the name of this project
@@ -94,27 +88,27 @@ get_project_information(Config, Env) ->
     ewl_talk:say("Please specify version of your project"),
     Version = ewl_talk:ask("project version"),
     ErtsVersion = ewl_talk:ask_default("Please specify the ERTS version",
-				       erlang:system_info(version)),
+                                       erlang:system_info(version)),
     Env2 = [{project_version, Version},
             {project_name, Name},
             {project_dir, Dir},
-	    {erts_version, ErtsVersion} | Env],
+            {erts_version, ErtsVersion} | Env],
 
     Env3 =
-	case ewl_talk:ask_default("Is this a single application project",
-				  boolean, "n") of
-	    false ->
-		get_application_names([{single_app_project, false} | Env2]);
-	    true ->
-		[{single_app_project, true} | Env2]
-	end,
+        case ewl_talk:ask_default("Is this a single application project",
+                                  boolean, "n") of
+            false ->
+                get_application_names([{single_app_project, false} | Env2]);
+            true ->
+                [{single_app_project, true} | Env2]
+        end,
     Env4 = case ewl_talk:ask_default("Would you like a build config?",
-				     boolean, "y") of
-	       true ->
-		   [{wants_build_config, true} | Env3];
-	       false ->
-		   [{wants_build_config, false} | Env3]
-	   end,
+                                     boolean, "y") of
+               true ->
+                   [{wants_build_config, true} | Env3];
+               false ->
+                   [{wants_build_config, false} | Env3]
+           end,
     all_done(sin_gen:gen(Env4)),
     Config.
 
@@ -123,8 +117,8 @@ get_project_information(Config, Env) ->
 -spec get_application_names(env()) -> ok.
 get_application_names(Env) ->
     ewl_talk:say("Please specify the names of the OTP apps"
-		 " that will be developed under this project. One "
-		 "application to a line. Finish with a blank line."),
+                 " that will be developed under this project. One "
+                 "application to a line. Finish with a blank line."),
 
     get_application_names(Env, ewl_talk:ask("app"), []).
 
@@ -133,12 +127,12 @@ get_application_names(Env, no_data, Acc) ->
     [{apps, Acc} | Env];
 get_application_names(Env, App, Acc) ->
     NewAcc = case lists:member(App, Acc) of
-		 true ->
-		     ewl_talk:say("App ~s is already specified", [App]),
-		     Acc;
-		 false ->
-		     [App | Acc]
-	     end,
+                 true ->
+                     ewl_talk:say("App ~s is already specified", [App]),
+                     Acc;
+                 false ->
+                     [App | Acc]
+             end,
     get_application_names(Env, ewl_talk:ask_default("app", ""), NewAcc).
 
 

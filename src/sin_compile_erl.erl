@@ -10,7 +10,7 @@
 
 %% API
 -export([get_dependencies/2,
-         build_file/4,
+         build_file/5,
          get_target/3,
          format_exception/1]).
 
@@ -37,22 +37,23 @@ get_dependencies(File, Includes) ->
                 end, Forms).
 
 %% @doc Do the actual compilation on the file.
--spec build_file(sin_config:config(), string(), [term()], string()) ->
+-spec build_file(sin_config:matcher(), sin_state:state(),
+                 string(), [term()], string()) ->
                         {module(), sin_config:config()}.
-build_file(BuildRef, File, Options, _Target) ->
+build_file(_Config, State, File, Options, _Target) ->
     ewl_talk:say("Building ~s", [File]),
     case compile:file(File, Options) of
         {ok, ModuleName} ->
-            {ModuleName, BuildRef};
+            {ModuleName, State};
         {ok, ModuleName, []} ->
-            {ModuleName, BuildRef};
+            {ModuleName, State};
         {ok, ModuleName, Warnings} ->
             {ModuleName,
-             ?WARN(BuildRef,
+             ?WARN(State,
                   sin_task_build:gather_fail_info(Warnings, "warning"))};
         {error, Errors, Warnings} ->
             NewRef =
-                ?WARN(BuildRef,
+                ?WARN(State,
                   lists:flatten([sin_task_build:gather_fail_info(Errors,
                                                                  "error"),
                                  sin_task_build:gather_fail_info(Warnings,
@@ -60,7 +61,7 @@ build_file(BuildRef, File, Options, _Target) ->
             ?SIN_RAISE(NewRef, {build_error, error_building_erl_file, File});
         error ->
             ewl_talk:say("Unknown error occured during build"),
-            ?SIN_RAISE(BuildRef, {build_error, error_building_erl_file, File})
+            ?SIN_RAISE(State, {build_error, error_building_erl_file, File})
     end.
 
 %% @doc Format an exception thrown by this module

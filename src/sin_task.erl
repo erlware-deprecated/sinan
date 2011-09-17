@@ -31,20 +31,20 @@
 %%====================================================================
 
 %% @doc get a specific task description
--spec get_task(sin_config:config(), task_name()) -> [task_name()].
-get_task(Config, TaskName) ->
+-spec get_task(sin_state:state(), task_name()) -> [task_name()].
+get_task(State, TaskName) ->
     Tasks = get_tasks(),
-    get_task(Config, TaskName, Tasks).
+    get_task(State, TaskName, Tasks).
 
 %% @doc get a dependency ordered list of tasks from the system.
--spec get_task_list(sin_config:config(), task_name()) -> [task_name()].
-get_task_list(Config, TaskName) ->
+-spec get_task_list(sin_state:state(), task_name()) -> [task_name()].
+get_task_list(State, TaskName) ->
     Tasks = get_tasks(),
-    RootTask = get_task(Config, TaskName, Tasks),
+    RootTask = get_task(State, TaskName, Tasks),
     lists:map(fun(DepTaskName) ->
-                      get_task(Config, DepTaskName, Tasks)
+                      get_task(State, DepTaskName, Tasks)
               end,
-              process_deps(Config, RootTask, Tasks)).
+              process_deps(State, RootTask, Tasks)).
 
 %% @doc get a list of all tasks in the system
 -spec get_tasks() -> [record(task)].
@@ -67,7 +67,7 @@ get_tasks() ->
 
 %% @doc define the behaviour for tasks.
 behaviour_info(callbacks) ->
-    [{description, 0}, {do_task, 1}];
+    [{description, 0}, {do_task, 2}];
 behaviour_info(_) ->
     undefined.
 
@@ -81,23 +81,23 @@ format_exception(Exception) ->
 %%% Internal functions
 %%====================================================================
 
--spec get_task(sin_config:config(),
+-spec get_task(sin_state:state(),
                task_name(), [task_description()]) -> task_description().
-get_task(_Config, TaskName, [Task = #task{name = TaskName} | _]) ->
+get_task(_State, TaskName, [Task = #task{name = TaskName} | _]) ->
     Task;
-get_task(Config, TaskName, [_ | Rest]) ->
-    get_task(Config, TaskName, Rest);
-get_task(Config, TaskName, _) ->
-    ?SIN_RAISE(Config, {task_not_found, TaskName}).
+get_task(State, TaskName, [_ | Rest]) ->
+    get_task(State, TaskName, Rest);
+get_task(State, TaskName, _) ->
+    ?SIN_RAISE(State, {task_not_found, TaskName}).
 
-process_deps(Config, Task, Tasks) ->
-    {DepChain, _, _} = process_deps(Config, Task, Tasks, []),
+process_deps(State, Task, Tasks) ->
+    {DepChain, _, _} = process_deps(State, Task, Tasks, []),
     ['NONE' | Rest] =
-        reorder_tasks(Config,
+        reorder_tasks(State,
                       lists:flatten([{'NONE', Task#task.name} | DepChain])),
     Rest.
 
-process_deps(Config, Task, Tasks, Seen) ->
+process_deps(State, Task, Tasks, Seen) ->
     case lists:member(Task, Seen) of
         true ->
             {[], Tasks, Seen};
@@ -108,25 +108,25 @@ process_deps(Config, Task, Tasks, Seen) ->
                                 end, Deps),
             {NewDeps, _, NewSeen} =
                 lists:foldl(fun(Arg, Acc) ->
-                                    process_dep(Config, Arg, Acc)
+                                    process_dep(State, Arg, Acc)
                             end,
                                                 {[], Tasks, Seen}, Deps),
             {[DepList | NewDeps], Tasks, NewSeen}
     end.
 
-process_dep(Config, TaskName, {Deps, Tasks, Seen}) ->
-    Task = get_task(Config, TaskName, Tasks),
-    {NewDeps, _, NewSeen} = process_deps(Config,
+process_dep(State, TaskName, {Deps, Tasks, Seen}) ->
+    Task = get_task(State, TaskName, Tasks),
+    {NewDeps, _, NewSeen} = process_deps(State,
                                          Task, Tasks, [TaskName | Seen]),
     {[Deps | NewDeps], Tasks, NewSeen}.
 
 %% @doc Reorder the tasks according to thier dependency set.
-reorder_tasks(Config, OTaskList) ->
+reorder_tasks(State, OTaskList) ->
     case sin_topo:sort(OTaskList) of
         {ok, TaskList} ->
             TaskList;
         {cycle, _} ->
-            ?SIN_RAISE(Config, cycle_fault,
+            ?SIN_RAISE(State, cycle_fault,
                        "There was a cycle in the task list. "
                        "Unable to complete build!")
     end.

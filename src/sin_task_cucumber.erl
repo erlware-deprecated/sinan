@@ -15,7 +15,7 @@
 -include_lib("cucumberl/include/cucumberl.hrl").
 
 %% API
--export([description/0, do_task/1, format_exception/1]).
+-export([description/0, do_task/2, format_exception/1]).
 
 -define(TASK, cucumber).
 -define(DEPS, [build]).
@@ -38,32 +38,33 @@ description() ->
           opts = []}.
 
 %% @doc run all the cucumber features in the system
-do_task(BuildRef) ->
-    ProjectRoot = sin_config:get_value(BuildRef, "project.dir"),
+-spec do_task(sin_config:config(), sin_state:state()) -> sin_state:state().
+do_task(Config, State) ->
+    ProjectRoot = sin_state:get_value(project_dir, State),
     Features = find_files(filename:join([ProjectRoot, "features"]),
                                         ".*\\.feature\$"),
 
+    AdditionalArgs = Config:match(additional_args),
     Outcomes =
-        case sin_config:get_value(BuildRef, "gen", undefined) of
-            undefined ->
-                [ {F, run_feature(BuildRef, F)} || F <- Features ];
-            Name ->
+        case AdditionalArgs of
+            ["gen", Name, "where", TargetApp] ->
                 [ {F,
-                   gen_feature(BuildRef, F,
-                               sin_config:get_value(BuildRef, "where"))}
-                  || F <- Features, filename:basename(F, ".feature") == Name]
+                   gen_feature(State, F, TargetApp)}
+                  || F <- Features, filename:basename(F, ".feature") == Name];
+            _ ->
+                [ {F, run_feature(State, F)} || F <- Features ]
         end,
 
     case lists:all(fun({_F, X}) -> X =:= ok end, Outcomes) of
         true    ->
             ok;
         false   ->
-            ?SIN_RAISE(BuildRef, {test_failures,
-                                  lists:filter(fun({_F, X}) ->
-                                                       X =/= ok
-                                               end, Outcomes)})
+            ?SIN_RAISE(State, {test_failures,
+                               lists:filter(fun({_F, X}) ->
+                                                    X =/= ok
+                                            end, Outcomes)})
     end,
-    sin_config:store(BuildRef, "cucumber.features", Features).
+    sin_state:store(cucumber_features, Features, State).
 
 %% @doc Format an exception thrown by this module
 -spec format_exception(sin_exceptions:exception()) ->
@@ -75,7 +76,7 @@ format_exception(Exception) ->
 %%====================================================================
 %%% Internal functions
 %%====================================================================
-run_feature(BuildRef, FeatureFile) ->
+run_feature(State, FeatureFile) ->
     try
         case cucumberl:run(FeatureFile) of
             {ok, _}  ->
@@ -87,13 +88,13 @@ run_feature(BuildRef, FeatureFile) ->
     catch
         throw:{error, nofile} ->
             ewl_talk:say("No behavior implementation for ~s", [FeatureFile]),
-            ?SIN_RAISE(BuildRef, {no_implementation, FeatureFile})
+            ?SIN_RAISE(State, {no_implementation, FeatureFile})
     end.
 
-gen_feature(BuildRef, FeatureFile, TargetApp) ->
+gen_feature(State, FeatureFile, TargetApp) ->
     TargetDir =
         filename:join(
-          [sin_config:get_value(BuildRef, "apps." ++ TargetApp ++ ".basedir"),
+          [sin_state:get_value({apps, erlang:list_to_atom(TargetApp), basedir}, State),
            "test"]),
     ok = ewl_file:mkdir_p(TargetDir),
     ok = cucumberl_gen:gen(FeatureFile, TargetDir).

@@ -13,7 +13,7 @@
 -include("internal.hrl").
 
 %% API
--export([description/0, do_task/1]).
+-export([description/0, do_task/2]).
 
 -define(TASK, version).
 -define(DEPS, []).
@@ -26,25 +26,25 @@
 description() ->
     Desc = "Simple prints out the current version of sinan",
     #task{name = ?TASK,
-	  task_impl = ?MODULE,
-	  bare = true,
-	  deps = ?DEPS,
-	  example = "version",
-	  short_desc = "Provides sinan version information",
-	  desc = Desc,
-	  opts = []}.
+          task_impl = ?MODULE,
+          bare = true,
+          deps = ?DEPS,
+          example = "version",
+          short_desc = "Provides sinan version information",
+          desc = Desc,
+          opts = []}.
 
 %% @doc Get the version of sinan that is currently running
--spec do_task(sin_config:config()) -> sin_config:config().
-do_task(BuildRef) ->
+-spec do_task(sin_config:config(), sin_state:state()) -> sin_state:state().
+do_task(_Config, State) ->
     Version = case get_version() of
-		  unknown_version ->
-		      "unknown";
-		  SinVersion ->
-		      SinVersion
-	      end,
+                  unknown_version ->
+                      "unknown";
+                  SinVersion ->
+                      SinVersion
+              end,
     ewl_talk:say("sinan version: ~s", [Version]),
-    sin_config:store(BuildRef, "sinan.vsn", Version).
+    sin_state:store(sinan_vsn, Version, State).
 
 %%====================================================================
 %%% Internal functions
@@ -58,10 +58,10 @@ get_version() ->
 
 get_version({ok, [{application, sinan, Opts}]}) ->
     case lists:keysearch(vsn, 1, Opts) of
-	{value, {vsn, Vsn}} ->
-	    Vsn;
-	_ ->
-	    unknown_version
+        {value, {vsn, Vsn}} ->
+            Vsn;
+        _ ->
+            unknown_version
     end;
 get_version(_) ->
     unknown_version.

@@ -29,46 +29,44 @@
 %%% @copyright 2007 Erlware
 %%%---------------------------------------------------------------------------
 
--define(SIN_RAISE(Config, Problem),
+-define(SIN_RAISE(State, Problem),
         throw({pe,
-               sin_config:add_run_error(Config,
-                                        ?MODULE,
-                                        {?MODULE, ?LINE, Problem}),
+               sin_state:add_run_error(?MODULE,
+                                       {?MODULE, ?LINE, Problem}, State),
                {?MODULE, ?LINE, Problem}})).
 
--define(SIN_RAISE(Config, Problem, Description),
+-define(SIN_RAISE(State, Problem, Description),
         throw({pe,
-               sin_config:add_run_error(Config,
-                                        ?MODULE,
-                                        {?MODULE, ?LINE,
-                                         {Problem, Description}}),
+               sin_state:add_run_error(?MODULE,
+                                       {?MODULE, ?LINE,
+                                        {Problem, Description}}, State),
                                         {?MODULE, ?LINE,
                                          {Problem, Description}}})).
 
--define(SIN_RAISE(Config, Problem, Description, DescArgs),
+-define(SIN_RAISE(State, Problem, Description, DescArgs),
         throw({pe,
-               sin_config:add_run_error(Config, ?MODULE,
-                                        {?MODULE, ?LINE,
-                                         {Problem,
-                                          io_lib:format(Description,
-                                                        DescArgs)}}),
+               sin_state:add_run_error(?MODULE,
+                                       {?MODULE, ?LINE,
+                                        {Problem,
+                                         io_lib:format(Description,
+                                                       DescArgs)}}, State),
                {?MODULE, ?LINE,
                 {Problem, io_lib:format(Description, DescArgs)}}})).
 
--define(WARN(Config, Warnings),
+-define(WARN(State, Warnings),
         ((fun() ->
                   WarnRef =
-                      sin_config:add_run_warning(Config, ?MODULE, Warnings),
+                      sin_state:add_run_warning(?MODULE, Warnings, State),
                   ewl_talk:say(Warnings),
                   WarnRef
           end)())).
 
 
--define(WARN(Config, Warnings, Detail),
+-define(WARN(State, Warnings, Detail),
         ((fun() ->
                 WarnRef =
-                     sin_config:add_run_warning(Config, ?MODULE,
-                                                io_lib:format(Warnings, Detail)),
+                     sin_state:add_run_warning(?MODULE,
+                                                io_lib:format(Warnings, Detail), State),
                  ewl_talk:say(Warnings, Detail),
                  WarnRef
           end)())).

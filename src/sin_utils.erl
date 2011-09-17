@@ -66,46 +66,43 @@ delete_dir(Dir) ->
     end.
 
 %% @doc Get the ignore dirs
--spec get_ignore_dirs(sin_config:config()) -> IgnoreDirs::[string()].
-get_ignore_dirs(BuildConfig) ->
-    BuildDir = sin_config:get_value(BuildConfig,
-                                          "build.dir"),
-    IgnoreDirs = sin_config:get_value(BuildConfig,
-                                            "ignore_dirs", []),
-    [BuildDir | IgnoreDirs].
+-spec get_ignore_dirs(sin_state:state()) ->
+                             IgnoreDirs::[string()].
+get_ignore_dirs(State) ->
+    sin_state:get_value(ignore_dirs, [], State).
 
 %% @doc Check to see if a file exists.
--spec file_exists(sin_config:config(), FileName::string()) -> boolean().
-file_exists(Config, FileName) ->
+-spec file_exists(sin_state:state(), FileName::string()) -> boolean().
+file_exists(State, FileName) ->
     case file:read_file_info(FileName) of
         {error, enoent} ->
             false;
         Error = {error, _} ->
-            ?SIN_RAISE(Config, {file_access, FileName}, Error);
+            ?SIN_RAISE(State, {file_access, FileName}, Error);
         _ ->
             true
     end.
 
 %% @doc Copies the specified directory down to the build dir on a file by file
 %% basis. It only copies if the file has .
--spec copy_dir(sin_config:config(), BuilderDir::string(),
+-spec copy_dir(sin_state:state(), BuilderDir::string(),
                TargetDir::string()) -> ok.
-copy_dir(Config, BuildDir, TargetDir) ->
-    copy_dir(Config, BuildDir, TargetDir, [], []).
+copy_dir(State, BuildDir, TargetDir) ->
+    copy_dir(State, BuildDir, TargetDir, [], []).
 
--spec copy_dir(sin_config:config(), BuilderDir::string(),
+-spec copy_dir(sin_state:state(), BuilderDir::string(),
                TargetDir::string(),
                Subdirs::string()) -> ok.
-copy_dir(Config, BuildDir, TargetDir, Sub) ->
-    copy_dir(Config, BuildDir, TargetDir, Sub, []).
+copy_dir(State, BuildDir, TargetDir, Sub) ->
+    copy_dir(State, BuildDir, TargetDir, Sub, []).
 
--spec copy_dir(sin_config:config(),
+-spec copy_dir(sin_state:state(),
                BuilderDir::string(),
                TargetDir::string(),
                Subdirs::string(),
                Ignorables::string()) -> ok.
-copy_dir(Config, BuildDir, TargetDir, SubDir, Ignorables) ->
-    check_not_circular(Config, BuildDir, TargetDir, SubDir),
+copy_dir(State, BuildDir, TargetDir, SubDir, Ignorables) ->
+    check_not_circular(State, BuildDir, TargetDir, SubDir),
     case are_dirs_ignorable(SubDir, Ignorables) of
         true ->
             ok;
@@ -122,11 +119,11 @@ copy_dir(Config, BuildDir, TargetDir, SubDir, Ignorables) ->
                                     {true, _} ->
                                         ok;
                                     {_, true} ->
-                                        copy_dir(Config,
+                                        copy_dir(State,
                                                  BuildDir, TargetDir,
                                                  SubDir ++ [IFile], Ignorables);
                                     {_, false} ->
-                                        copy_file(Config, Target, IFile, File)
+                                        copy_file(State, Target, IFile, File)
                                 end
                         end,
                         [], Files)
@@ -170,22 +167,22 @@ format_exception(Exception) ->
 %%====================================================================
 
 %% @doc Copies the file specified by file to the target specified by ifile.
--spec copy_file(sin_config:config(),
+-spec copy_file(sin_state:state(),
                 Target::string(), IFile::string(), File::string()) -> ok.
 copy_file(_, _Target, [$. | _], _File) ->
              ok;
-copy_file(Config, Target, IFile, File) ->
+copy_file(State, Target, IFile, File) ->
     NFile = filename:join([Target, IFile]),
     case sin_sig:target_changed(File, NFile) of
         file_not_found ->
             ewl_talk:say("File ~s is not does not exist in the "
                        "file System. This shouldn't happen.",
                          [File]),
-            ?SIN_RAISE(Config, {file_not_on_disc, File});
+            ?SIN_RAISE(State, {file_not_on_disc, File});
         unable_to_access ->
             ewl_talk:say("File ~s exists but is inaccessable.",
                          [File]),
-            ?SIN_RAISE(Config, {file_inaccessable, File});
+            ?SIN_RAISE(State, {file_inaccessable, File});
         true ->
             {ok, FileInfo} = file:read_file_info(File),
             file:copy(File, NFile),
@@ -272,28 +269,28 @@ is_string(_) ->
     false.
 
 %% @doc Get an enviroment variable, throw error if unavailable.
--spec get_application_env(sin_config:config(), atom()) -> term().
-get_application_env(Config, Key) ->
+-spec get_application_env(sin_state:state(), atom()) -> term().
+get_application_env(State, Key) ->
     case application:get_env(sinan, Key) of
         {ok, Value} ->
             Value;
       _ ->
-            ?SIN_RAISE(Config, variables_not_set,
+            ?SIN_RAISE(State, variables_not_set,
                        "Key ~w not set, must be set as application "
                        "environment variable ",
                        [Key])
     end.
 
--spec check_not_circular(sin_config:config(), string(), string(), string()) ->
+-spec check_not_circular(sin_state:state(), string(), string(), string()) ->
     ok.
-check_not_circular(Config, Target, Source, SubDir) ->
+check_not_circular(State, Target, Source, SubDir) ->
     case filename:split(Source) ++ SubDir ==
         filename:split(Target) of
         true ->
             ewl_talk:say("Can't copy a directory to itself (~p "
                          "to ~p)",
                          [filename:join([Source | SubDir]), Target]),
-            ?SIN_RAISE(Config, circular_recursion);
+            ?SIN_RAISE(State, circular_recursion);
         false ->
             ok
     end.
@@ -327,7 +324,7 @@ copy_from_app_test_() ->
              {timeout, 2,
               ?_assertThrow({pe, _,
                              {_, _, circular_recursion}},
-                            (sin_utils:copy_dir(sin_config:new(),
+                            (sin_utils:copy_dir(sin_state:new(),
                                                 BuildDir, TargetDir, [],
                                                 ["."])))}
      end}.

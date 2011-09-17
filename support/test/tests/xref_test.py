@@ -20,10 +20,8 @@ class TestXref(st.SmokeTest):
 
 
         self.do_run(app_desc)
-        currentdir = os.getcwd()
-        projdir = os.path.join(currentdir, app_desc.project_name)
-        builddir = os.path.join(projdir, "_build", "development")
-        os.chdir(projdir)
+        builddir = os.path.join("_build", app_desc.project_name)
+
         self.do_xref()
 
 

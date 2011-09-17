@@ -23,9 +23,9 @@
 %% @doc Get the list of versions available for the specified package.
 -spec package_versions(sin_config:config(),
                        string(), atom()) -> [Vsn::string()].
-package_versions(Config, LibDir, Package) when is_atom(Package) ->
+package_versions(State, LibDir, Package) when is_atom(Package) ->
     lists:sort(fun ewr_util:is_version_greater/2,
-               get_package_versions(Config, Package,
+               get_package_versions(State, Package,
                                     LibDir)).
 
 
@@ -34,9 +34,9 @@ package_versions(Config, LibDir, Package) when is_atom(Package) ->
 -spec package_dependencies(sin_config:config(),
                            LibDir::string(), Package::atom(),
                            Version::string()) -> Deps::term().
-package_dependencies(Config, LibDir, Package, Version) ->
+package_dependencies(State, LibDir, Package, Version) ->
     NPackage = atom_to_list(Package),
-    NDeps = get_package_dependencies(Config,
+    NDeps = get_package_dependencies(State,
                                      NPackage,
                                      Version,
                                      LibDir),
@@ -62,18 +62,18 @@ format_exception(Exception) ->
 
 %% @doc Get the version from an app-version
 -spec get_version(sin_config:config(), string()) -> Vsn::string().
-get_version(_Config, [$- | Rest]) ->
+get_version(_State, [$- | Rest]) ->
     Rest;
-get_version(Config, [_ | Rest]) ->
-    get_version(Config, Rest);
-get_version(Config, []) ->
-    ?SIN_RAISE(Config, unable_to_parse,  ["Unable to find package version"]).
+get_version(State, [_ | Rest]) ->
+    get_version(State, Rest);
+get_version(State, []) ->
+    ?SIN_RAISE(State, unable_to_parse,  ["Unable to find package version"]).
 
 %% @doc Get all the versions for a package, search across all relavent
 %% major/minor versions.
 -spec get_package_versions(sin_config:config(),
                            atom(), string()) -> [Version::string()].
-get_package_versions(Config, Package, LibDir) ->
+get_package_versions(State, Package, LibDir) ->
 
     AppVersions = lists:filter(fun(X) ->
                                        filelib:is_dir(X) end,
@@ -81,7 +81,7 @@ get_package_versions(Config, Package, LibDir) ->
                                                               Package) ++
                                                 "-*")),
     lists:map(fun(X) ->
-                      get_version(Config, filename:basename(X))
+                      get_version(State, filename:basename(X))
               end,
               AppVersions).
 
@@ -89,16 +89,16 @@ get_package_versions(Config, Package, LibDir) ->
 -spec get_package_dependencies(sin_config:config(),
                                atom(), string(), string()) ->
     {[atom()], [atom()]}.
-get_package_dependencies(Config, Package, Version, LibDir) ->
+get_package_dependencies(State, Package, Version, LibDir) ->
     DotAppName = lists:flatten([Package, ".app"]),
     AppName = lists:flatten([Package, "-", Version]),
     Location = filename:join([LibDir,AppName,
                               "ebin", DotAppName]),
     case file:consult(Location) of
         {ok, [Term]} ->
-            handle_parse_output(Config, Term);
+            handle_parse_output(State, Term);
         {error, _} ->
-            ?SIN_RAISE(Config, {invalid_app_file, Location},
+            ?SIN_RAISE(State, {invalid_app_file, Location},
                        "Invalid application: ~s", [Location])
     end.
 
@@ -107,8 +107,8 @@ get_package_dependencies(Config, Package, Version, LibDir) ->
     {Vsn::string(), VersionedDeps::list(), Deps::list()}.
 handle_parse_output(_, {application, _, Ops}) ->
     {get_deps(Ops), get_ideps(Ops)};
-handle_parse_output(Config, _) ->
-   ?SIN_RAISE(Config, invalid_app_data, "Invalid dependency info").
+handle_parse_output(State, _) ->
+   ?SIN_RAISE(State, invalid_app_data, "Invalid dependency info").
 
 %% @doc Get the list of non-versioned dependencies from the oplist. This is
 %% specifed in the applications entry.

@@ -1,7 +1,7 @@
 VSN=1.0.1
 ERLC=/usr/local/bin/erlc
 ERL=/usr/local/bin/erl
-APPDIR= $(abspath ./_build/development/apps/sinan-$(VSN))
+APPDIR= $(abspath ./_build/sinan/apps/sinan-$(VSN))
 SRCDIR=src
 TESTDIR=test
 COPYDIRS= src test priv
@@ -30,7 +30,7 @@ setup: $(COPYDIRS)
 main: setup ${ERL_OBJ} ${ERL_TEST_OBJ}
 
 $(BEAMDIR)/%.beam: %.erl
-	erlc +warn_export_vars +warn_export_all \
+	erlc -pa $(BEAMDIR) +warn_export_vars +warn_export_all \
 	+warn_obsolete_guard \
 	+warnings_as_errors +bin_opt_info +debug_info -W -o $(BEAMDIR) $<
 
@@ -38,7 +38,7 @@ cucumber: main
 	erl -pa $(BEAMDIR) -s sinan manual_start -s sinan main -extra -s $(CURDIR) cucumber
 
 test: main
-	erl -pa $(BEAMDIR) -s sinan manual_start -s sinan main -extra -s $(CURDIR) test
+	erl -pa $(BEAMDIR) -s sinan manual_start -s sinan main -extra -s $(CURDIR) test all
 
 run: main
 	$(ERL) -pa $(BEAMDIR) -s sinan manual_start

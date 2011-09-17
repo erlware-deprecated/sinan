@@ -23,15 +23,15 @@
 %%%===================================================================
 
 %% @doc Creats a function that can be used to run build hooks in the system.
--spec get_hooks_function(sin_config:config(),
+-spec get_hooks_function(sin_state:state(),
                          ProjectRoot::string()) -> function().
-get_hooks_function(Config, ProjectRoot) ->
+get_hooks_function(State, ProjectRoot) ->
     HooksDir = filename:join([ProjectRoot, "_hooks"]),
-    case sin_utils:file_exists(Config, HooksDir) of
+    case sin_utils:file_exists(State, HooksDir) of
        false ->
             no_hooks;
        true ->
-            gen_build_hooks_function(Config, HooksDir)
+            gen_build_hooks_function(State, HooksDir)
     end.
 
 %% @doc Format an exception thrown by this module
@@ -45,33 +45,33 @@ format_exception(Exception) ->
 %%%===================================================================
 
 %% @doc Generate a function that can be run pre and post task
--spec gen_build_hooks_function(sin_config:config(),
+-spec gen_build_hooks_function(sin_state:state(),
                                HooksDir::string()) -> function().
-gen_build_hooks_function(Config, HooksDir) ->
-    fun(Type, Task, BuildConfig) ->
-            do_hook(Config, Type, Task, BuildConfig, HooksDir)
+gen_build_hooks_function(State, HooksDir) ->
+    fun(Type, Task, BuildState) ->
+            do_hook(State, Type, Task, BuildState, HooksDir)
     end.
 
 %% @doc Setup to run the hook and run it if it exists.
--spec do_hook(sin_config:config(),
-              Type::atom(), Task::atom(), BuildConfig::string(),
+-spec do_hook(sin_state:state(),
+              Type::atom(), Task::atom(), BuildState::string(),
               HooksDir::string()) -> ok.
-do_hook(Config, Type, Task, BuildConfig, HooksDir) when is_atom(Task) ->
+do_hook(State, Type, Task, BuildState, HooksDir) when is_atom(Task) ->
     HookName = atom_to_list(Type) ++ "_" ++ atom_to_list(Task),
     HookPath = filename:join(HooksDir, HookName),
-    case sin_utils:file_exists(Config, HookPath) of
+    case sin_utils:file_exists(State, HookPath) of
        true ->
-            run_hook(Config, HookPath, BuildConfig, list_to_atom(HookName));
+            run_hook(State, HookPath, BuildState, list_to_atom(HookName));
        _ ->
             ok
     end.
 
 %% @doc Setup the execution environment and run the hook.
--spec run_hook(sin_config:config(),
-               HookPath::list(), BuildConfig::list(), HookName::atom()) -> ok.
-run_hook(Config, HookPath, BuildConfig, HookName) ->
-    Env = sin_config:get_pairs(BuildConfig),
-    command(Config, HookPath, stringify(Env, []), BuildConfig, HookName).
+-spec run_hook(sin_state:state(),
+               HookPath::list(), BuildState::list(), HookName::atom()) -> ok.
+run_hook(State, HookPath, BuildState, HookName) ->
+    Env = sin_state:get_pairs(BuildState),
+    command(State, HookPath, stringify(Env, []), BuildState, HookName).
 
 %% @doc Take a list of key value pairs and convert them to string based key
 %% value pairs.
@@ -82,36 +82,36 @@ stringify([], Acc) ->
     Acc.
 
 %% @doc Given a command an an environment run that command with the environment
--spec command(sin_config:config(), Command::list(), Env::list(),
-              BuildConfig::list(), HookName::atom()) -> list().
-command(Config, Cmd, Env, BuildConfig, HookName) ->
+-spec command(sin_state:state(), Command::list(), Env::list(),
+              BuildState::list(), HookName::atom()) -> list().
+command(State, Cmd, Env, BuildState, HookName) ->
     Opt =  [{env, Env}, stream, exit_status, use_stdio,
             stderr_to_stdout, in, eof],
     P = open_port({spawn, Cmd}, Opt),
-    get_data(Config, P, BuildConfig, HookName, []).
+    get_data(State, P, BuildState, HookName, []).
 
 %% @doc Event results only at newline boundries.
--spec event_newline(BuildConfig::list(), HookName::atom(),
+-spec event_newline(BuildState::list(), HookName::atom(),
                     Line::list(), Acc::list()) -> list().
-event_newline(BuildConfig, HookName, [?NEWLINE | T], Acc) ->
+event_newline(BuildState, HookName, [?NEWLINE | T], Acc) ->
     ewl_talk:say(lists:reverse(Acc)),
-    event_newline(BuildConfig, HookName, T, []);
-event_newline(BuildConfig, HookName, [?CARRIAGE_RETURN | T], Acc) ->
+    event_newline(BuildState, HookName, T, []);
+event_newline(BuildState, HookName, [?CARRIAGE_RETURN | T], Acc) ->
     ewl_talk:say(lists:reverse(Acc)),
-    event_newline(BuildConfig, HookName, T, []);
-event_newline(BuildConfig, HookName, [H | T], Acc) ->
-    event_newline(BuildConfig, HookName, T, [H | Acc]);
-event_newline(_BuildConfig, _HookName, [], Acc) ->
+    event_newline(BuildState, HookName, T, []);
+event_newline(BuildState, HookName, [H | T], Acc) ->
+    event_newline(BuildState, HookName, T, [H | Acc]);
+event_newline(_BuildState, _HookName, [], Acc) ->
     lists:reverse(Acc).
 
 %% @doc Recieve the data from the port and exit when complete.
--spec get_data(sin_config:config(), P::port(), BuildConfig::list(),
+-spec get_data(sin_state:state(), P::port(), BuildState::list(),
                HookName::atom(), Acc::list()) -> list().
-get_data(Config, P, BuildConfig, HookName, Acc) ->
+get_data(State, P, BuildState, HookName, Acc) ->
     receive
         {P, {data, D}} ->
-            NewAcc = event_newline(BuildConfig, HookName, Acc ++ D, []),
-            get_data(Config, P, BuildConfig, HookName, NewAcc);
+            NewAcc = event_newline(BuildState, HookName, Acc ++ D, []),
+            get_data(State, P, BuildState, HookName, NewAcc);
         {P, eof} ->
             ewl_talk:say(Acc),
             port_close(P),
@@ -119,7 +119,7 @@ get_data(Config, P, BuildConfig, HookName, Acc) ->
                 {P, {exit_status, 0}} ->
                     ok;
                 {P, {exit_status, N}} ->
-                    ?SIN_RAISE(Config, bad_exit_status,
+                    ?SIN_RAISE(State, bad_exit_status,
                                "Hook ~s exited with status ~p",
                                [HookName, N])
             end

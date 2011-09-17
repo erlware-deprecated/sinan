@@ -13,7 +13,7 @@
 -include("internal.hrl").
 
 %% API
--export([description/0, do_task/1]).
+-export([description/0, do_task/2]).
 
 -define(TASK, erts).
 -define(DEPS, []).
@@ -26,18 +26,19 @@
 description() ->
     Desc = "Provides erts version sinan is running as",
     #task{name = ?TASK,
-	  task_impl = ?MODULE,
-	  bare = true,
-	  deps = ?DEPS,
-	  example = "erts",
-	  short_desc = Desc,
-	  desc = Desc,
-	  opts = []}.
+          task_impl = ?MODULE,
+          bare = true,
+          deps = ?DEPS,
+          example = "erts",
+          short_desc = Desc,
+          desc = Desc,
+          opts = []}.
 
 %% @doc Get the version of sinan that is currently running
--spec do_task(sin_config:config()) -> sin_config:config().
-do_task(_BuildRef) ->
+-spec do_task(sin_config:config(), sin_state:state()) -> sin_state:state().
+do_task(_Config, State) ->
     ewl_talk:say("erts-~s (~s)", [erlang:system_info(version),
-				 erlang:system_info(otp_release)]).
+                                  erlang:system_info(otp_release)]),
+    State.
 
 

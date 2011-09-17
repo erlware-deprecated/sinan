@@ -14,7 +14,7 @@
 -include("internal.hrl").
 
 %% API
--export([description/0, do_task/1]).
+-export([description/0, do_task/2]).
 
 -define(TASK, xref).
 -define(DEPS, [build]).
@@ -40,28 +40,27 @@ description() ->
           opts = []}.
 
 %% @doc do the xref task
--spec do_task(sin_build_config:config()) ->
-    sin_build_config:config().
-do_task(BuildRef) ->
+-spec do_task(sin_config:config(), sin_state:state()) ->
+                     sin_state:state().
+do_task(_Config, State) ->
     ServerName = get_a_uniquish_name(),
     ExistingPaths = code:get_path(),
     xref:start(ServerName),
 
     Apps = lists:map(fun({App, _Vsn, _Deps, _}) ->
-                             atom_to_list(App)
-                     end, sin_config:get_value(BuildRef,
-                                               "project.apps")),
+                             App
+                     end, sin_state:get_value(project_apps, State)),
 
     ModuleInfo =
         lists:flatten(lists:map(fun(App) ->
-                                        xref_app(BuildRef, ServerName, App),
-                                        gather_modules(BuildRef, App)
+                                        xref_app(State, ServerName, App),
+                                        gather_modules(State, App)
                                 end,
                                 Apps)),
 
     lists:foreach(fun({Analysis, Name}) ->
                           ewl_talk:say("Looking for ~s", [Name]),
-                          notify_user(BuildRef, ModuleInfo, Analysis,
+                          notify_user(State, ModuleInfo, Analysis,
                                       xref:analyze(ServerName, Analysis))
                   end,
                   [{undefined_function_calls, "Undefined Function Calls"},
@@ -70,29 +69,25 @@ do_task(BuildRef) ->
                    {deprecated_function_calls, "Calls to Deprecated Functions"}]),
     code:set_path(ExistingPaths),
     xref:stop(ServerName),
-    BuildRef.
+    State.
 
 %% Get the module detail information from the config
--spec gather_modules(sin_build_config:config(), AppName::string()) ->
+-spec gather_modules(sin_state:state(), AppName::string()) ->
     [{Filename::string(), AppName::atom(), Extentions::string()}].
-gather_modules(BuildRef, App) ->
-    ConfigName = "apps." ++ App ++ ".module_detail",
-    sin_config:get_value(BuildRef, ConfigName, []).
+gather_modules(State, AppName) ->
+    sin_state:get_value({apps, AppName, module_detail}, [], State).
 
 
 %% @doc add the application to the specified xref system
--spec xref_app(sin_build_config:config(),
+-spec xref_app(sin_state:state(),
                ServerName::atom(), AppName::atom()) ->
     ok | fail.
-xref_app(BuildRef, ServerName, AppName) ->
-    Paths = sin_config:get_value(BuildRef,
-                                 "apps." ++ AppName ++ ".code_paths"),
+xref_app(State, ServerName, AppName) ->
+    Paths = sin_state:get_value({apps, AppName, code_paths}, State),
 
-    code:add_pathsa(Paths),
     xref:set_library_path(ServerName, Paths),
 
-    AppDir = sin_config:get_value(BuildRef,
-                                  "apps." ++ AppName ++ ".builddir"),
+    AppDir = sin_state:get_value({apps, AppName, builddir}, State),
 
     case xref:add_application(ServerName, AppDir,
                               [{warnings, true}]) of
@@ -100,7 +95,7 @@ xref_app(BuildRef, ServerName, AppName) ->
             ok;
         Error = {error, Module, Reason} ->
             ewl_talk:say(Module:format_error(Reason)),
-            ?SIN_RAISE(BuildRef, {Error, Module:format_error(Reason)})
+            ?SIN_RAISE(State, {Error, Module:format_error(Reason)})
     end.
 
 %%====================================================================
@@ -108,13 +103,13 @@ xref_app(BuildRef, ServerName, AppName) ->
 %%====================================================================
 
 %% @doc print out the appropriate message for the responce
--spec notify_user(sin_config:config(),
+-spec notify_user(sin_state:state(),
                   [term()], atom(), {error, atom(), term()} |
                   {ok, [term()]}) ->
     ok.
-notify_user(Config, _, _, Error = {error, Module, Reason}) ->
+notify_user(State, _, _, Error = {error, Module, Reason}) ->
     ewl_talk:say(Module:format_error(Reason)),
-    ?SIN_RAISE(Config, {Error, Module:format_error(Reason)});
+    ?SIN_RAISE(State, {Error, Module:format_error(Reason)});
 notify_user(_, ModuleInfo, Analysis, {ok, AnswerList}) ->
     lists:foreach(fun(Answer) ->
                           display_answer(Analysis, ModuleInfo, Answer)

@@ -24,7 +24,7 @@
 
 %% @doc Kicks off the generation process. Handles the individual steps in new
 %%  project generation.
--spec gen(sin_config:config()) -> ok.
+-spec gen([{Key::term(), Value::term()}]) -> ok.
 gen(Env) ->
     build_out_skeleton(Env).
 
@@ -130,7 +130,7 @@ build_out_build_config(Env) ->
         true ->
             ProjectDir = get_env(project_dir, Env),
             ProjectName = get_env(project_name, Env),
-            ConfName = filename:join([ProjectDir, "sinan.cfg"]),
+            ConfName = filename:join([ProjectDir, "sinan.config"]),
             ErlwareFile =
                 filename:join([ProjectDir,  "bin",
                                "erlware_release_start_helper"]),

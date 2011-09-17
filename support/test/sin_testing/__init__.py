@@ -10,7 +10,7 @@ import unittest
 import exceptions
 import tempfile
 import sys
-import json
+import re
 
 class TestError(exceptions.Exception):
     """Raised when a test fails """
@@ -34,32 +34,28 @@ def spawn(command):
     child.logfile_read = LoggerWriter()
     return child
 
-def get_build_root_path(project_dir):
-    config = os.path.join(project_dir, "sinan.cfg")
-
-    if not os.path.exists(config):
-        raise TestError("unable to load sinan.cfg")
-
-    with open(config, "r") as f:
-        data = json.loads("{" + f.read() + "}")
-        vsn = data[u'project'][u'vsn']
-        return os.path.join(project_dir,
-                            "_build",
-                            "development",
-                            "apps",
-                            "sinan-" + vsn,
-                            "ebin")
-
 def sinan(command):
     def check_accepts(f):
         def new_f(*args, **kwds):
             print("Running Command %s in %s" % (command, os.getcwd()))
             self = args[0]
+
+            ebin = ""
+            with open(os.path.join(self.sinan_dir, "sinan.config"), "r") as fl:
+                data = fl.read()
+                vsn = re.search(r"""{project_vsn, "(.+)"}""", data).group(1)
+
+                ebin = os.path.join(self.sinan_dir,
+                                    "_build",
+                                    "sinan",
+                                    "apps",
+                                    "sinan-" + vsn, "ebin")
+
             child_cmd = ("erl -noshell -pa %s "
                           " -s sinan manual_start"
                           " -s sinan main"
                           " -extra %s" %
-                          (get_build_root_path(self.project_dir), command))
+                          (ebin, command))
             print child_cmd
             child = spawn(child_cmd)
             res = f(self, child, *(args[1:]), **kwds)
@@ -99,12 +95,13 @@ class SmokeTest(unittest.TestCase):
         return os.path.abspath(cwd)
 
     def setUp(self):
+        self.release_name = None
+        self.release_version = None
         self.smokedir = tempfile.mkdtemp(prefix='smoke_test_')
 
         self.current_dir = os.getcwd()
-        self.project_dir = self.get_project_root(self.current_dir)
+        self.sinan_dir = self.current_dir
         sys.path.append(self.current_dir)
-
         os.chdir(self.smokedir)
 
     def tearDown(self):
@@ -179,7 +176,7 @@ class SmokeTest(unittest.TestCase):
                                 ["bin", a.project_name],
                                 ["bin", "erlware_release_start_helper"],
                                 ["config", "sys.config"],
-                                "sinan.cfg")
+                                "sinan.config")
         for n in a.app_names:
             ppath = os.path.join(projdir, "lib", n)
 
@@ -204,11 +201,13 @@ class SmokeTest(unittest.TestCase):
     def do_build(self, child, appdesc):
         child.expect(pexpect.EOF)
 
-        build_dir = os.path.join(os.getcwd(), "_build/development/apps/")
-        self.assertTrue(os.path.isdir(build_dir))
+        build_tmp = self.get_build_root_path()
+        build_dir = os.path.join(*(build_tmp))
+        self.assertTrue(build_dir)
 
         for n in appdesc.app_names:
-            app_dir = os.path.join(build_dir, "%s-0.1.0" % n)
+            app_dir = os.path.join(build_dir, "apps", "%s-0.1.0" % n)
+            print app_dir
             self.assert_dirs_exist(app_dir,
                                    "ebin",
                                    "src",
@@ -243,9 +242,10 @@ class SmokeTest(unittest.TestCase):
         child.expect(pexpect.EOF)
         version = appdesc.project_version
         name = appdesc.project_name
-        version_dir = os.path.join(os.getcwd(),
-                                   "_build", "development", "releases",
-                                   "%s-%s" % (name, version))
+        build_tmp = self.get_build_root_path()
+        build_tmp.append("releases"),
+        build_tmp.append("%s-%s" % (name, version))
+        version_dir = os.path.join(*build_tmp)
 
         print("Checking version directory at %s " % version_dir)
         self.assert_files_exist(version_dir,
@@ -259,18 +259,24 @@ class SmokeTest(unittest.TestCase):
     @sinan("dist")
     def do_dist(self, child, appdesc):
         child.expect(pexpect.EOF)
-        tar_file = os.path.join(os.getcwd(), "_build", "development", "tar",
-                                "%s-%s.tar.gz" %
-                                (appdesc.project_name, appdesc.project_version))
+        build_tmp = self.get_build_root_path()
+        build_tmp.append("tar")
+        build_tmp.append("%s-%s.tar.gz" %
+                         (appdesc.project_name, appdesc.project_version))
+        tar_file = os.path.join(*build_tmp)
 
+        print tar_file
         self.assertTrue(os.path.isfile(tar_file))
 
         return appdesc
 
     def do_run(self, appdesc):
-        currentdir = os.getcwd()
+        self.current_app_desc = appdesc
         a = self.do_gen(appdesc)
-        os.chdir(os.path.join(currentdir, a.project_name))
+
+        self.project_dir = os.path.join(self.smokedir, a.project_name)
+
+        os.chdir(os.path.join(self.project_dir))
 
         self.do_apply(["do_build",
                        "do_clean",
@@ -279,7 +285,22 @@ class SmokeTest(unittest.TestCase):
                        "do_release",
                        "do_dist"], a)
 
-        os.chdir(currentdir)
+    def get_build_root_path(self, project_dir=None, release_name=None,
+                            release_version=None):
+        if not project_dir:
+            project_dir = self.project_dir
 
+        if not release_name and not self.release_name:
+            release_name = self.current_app_desc.project_name
+        elif not release_name:
+            release_name = self.release_name
 
+        if not release_version and not self.release_version:
+            release_version = self.current_app_desc.project_version
+        elif not release_version:
+            release_version = self.release_version
+
+        return [project_dir,
+                "_build",
+                release_name]
 

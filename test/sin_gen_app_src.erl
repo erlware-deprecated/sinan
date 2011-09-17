@@ -25,7 +25,7 @@ given([an, empty, temp, directory, with, no, project], _State,
     {ok, {ProjectDir, ProjectName}};
 'when'([a, build, is, run],
        {ProjectDir, ProjectName}, _) ->
-    Ret = sinan:run_sinan(["-s", ProjectDir, "build"]),
+    Ret = sinan:main(["-s", ProjectDir, "build"]),
     {ok, {ProjectDir, ProjectName, Ret}}.
 
 
@@ -36,7 +36,7 @@ then([sinan, should, generate, an, 'app.src',
                           ProjectName ++ ".app.src"]),
 
     ?assertMatch(true,
-                 sin_utils:file_exists(sin_config:new(), Path)),
+                 sin_utils:file_exists(sin_state:new(), Path)),
 
     {ok, State};
 then([build, the, project, normally],

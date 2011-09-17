@@ -10,7 +10,7 @@
 
 %% API
 -export([get_dependencies/2,
-         build_file/4,
+         build_file/5,
          get_target/3,
          format_exception/1]).
 
@@ -25,7 +25,7 @@ get_target(BuildDir, File, ".yrl") ->
 get_dependencies(_File, _Includes) ->
     [].
 
-build_file(BuildRef, File, Options, Target) ->
+build_file(Config, State, File, Options, Target) ->
     ErlFile = filename:basename(File, ".yrl"),
     AppDir = filename:dirname(Target),
     ErlTarget = filename:join([AppDir,"src"]),
@@ -35,17 +35,17 @@ build_file(BuildRef, File, Options, Target) ->
     case yecc:file(File, [{parserfile, ErlName} |
                           sin_task_build:strip_options(Options)]) of
         {ok, _ModuleName} ->
-            sin_compile_erl:build_file(BuildRef, ErlName, Options, Target);
+            sin_compile_erl:build_file(Config, State, ErlName, Options, Target);
         {ok, _ModuleName, []} ->
-            sin_compile_erl:build_file(BuildRef, ErlName, Options, Target);
+            sin_compile_erl:build_file(Config, State, ErlName, Options, Target);
         {ok, _ModuleName, Warnings} ->
             NewRef =
-                ?WARN(BuildRef,
+                ?WARN(State,
                       sin_task_build:gather_fail_info(Warnings, "warning")),
             ?SIN_RAISE(NewRef, {build_error, error_building_yecc, File});
         {error, Errors, Warnings} ->
             NewRef =
-                ?WARN(BuildRef,
+                ?WARN(State,
                       lists:flatten([sin_task_build:gather_fail_info(Errors,
                                                                      "error"),
                                      sin_task_build:gather_fail_info(Warnings,

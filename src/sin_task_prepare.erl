@@ -14,7 +14,7 @@
 
 %% API
 -export([description/0,
-         do_task/1,
+         do_task/2,
          format_exception/1]).
 
 -define(TASK, prepare).
@@ -39,45 +39,42 @@ description() ->
           opts = []}.
 
 %% @doc do the system preparation
--spec do_task(sin_config:config()) -> sin_config:config().
-do_task(BuildRef) ->
-    BuildDir = sin_config:get_value(BuildRef, "build.dir"),
-    Ignorables = sin_config:get_value(BuildRef, "ignore_dirs", []),
+-spec do_task(sin_config:matcher(), sin_state:state()) -> sin_state:state().
+do_task(_Config, State0) ->
+    BuildDir = sin_state:get_value(build_dir, State0),
+    Ignorables = sin_state:get_value(ignore_dirs, State0),
 
-    ProjectApps = sin_config:get_value(BuildRef, "project.allapps", []),
-    lists:foldl(fun(App, Config1) ->
-                          prepare_app(Config1, BuildDir, App, Ignorables)
-                  end, BuildRef, ProjectApps).
+    ProjectApps = sin_state:get_value(project_allapps, State0),
+    lists:foldl(fun(App, State1) ->
+                          prepare_app(State1, BuildDir, App, Ignorables)
+                  end, State0, ProjectApps).
 
--spec prepare_app(sin_config:config(), string(), string(),
+-spec prepare_app(sin_state:state(), string(), string(),
                   [string()]) ->
                          sin_config:config().
-prepare_app(BuildRef0, BuildDir, AppInfo, Ignorables) ->
+prepare_app(State0, BuildDir, AppInfo, Ignorables) ->
     {AppName, _AppVsn, _Deps, AppBuildDir} = AppInfo,
 
-    AppStrName = erlang:atom_to_list(AppName),
-    AppDir = sin_config:get_value(BuildRef0, "apps." ++ AppStrName
-                                        ++ ".basedir"),
+    AppDir = sin_state:get_value({apps, AppName, basedir}, State0),
 
     %% Ignore the build dir when copying or we will create a deep monster in a
     %% few builds
-    sin_utils:copy_dir(BuildRef0, AppBuildDir, AppDir, "",
+    sin_utils:copy_dir(State0, AppBuildDir, AppDir, "",
                        [BuildDir | Ignorables]),
 
-    BuildRef1 = sin_config:store(BuildRef0, "apps." ++ AppStrName ++ ".builddir",
-                                 AppBuildDir),
+    State1 = sin_state:store({apps, AppName, builddir},
+                             AppBuildDir, State0),
 
-    BaseDetails = sin_config:get_value(BuildRef1,
-                                       "apps." ++ AppStrName ++ ".base"),
+    BaseDetails = sin_state:get_value({apps, AppName, base}, State1),
 
-    DotApp = filename:join([AppBuildDir, "ebin", AppStrName ++ ".app"]),
+    DotApp = filename:join([AppBuildDir, "ebin", erlang:atom_to_list(AppName) ++ ".app"]),
 
 
     ok = file:write_file(DotApp,
                     io_lib:format("~p.\n",
                                   [{application, AppName,
                                     BaseDetails}])),
-    BuildRef1.
+    State1.
 
 %% @doc Format an exception thrown by this module
 -spec format_exception(sin_exceptions:exception()) ->

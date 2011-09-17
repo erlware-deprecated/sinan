@@ -14,7 +14,7 @@
 
 %% API
 -export([description/0,
-         do_task/1,
+         do_task/2,
          format_exception/1]).
 
 -define(TASK, doc).
@@ -39,11 +39,11 @@ description() ->
           opts = []}.
 
 %% @doc run edoc on all applications
--spec do_task(sin_config:config()) -> sin_config:config().
-do_task(BuildRef) ->
-    Apps = sin_config:get_value(BuildRef, "project.apps"),
-    run_docs(BuildRef, Apps),
-    BuildRef.
+-spec do_task(sin_config:config(), sin_state:state()) -> sin_state:state().
+do_task(_Config, State) ->
+    Apps = sin_state:get_value(project_apps, State),
+    run_docs(State, Apps),
+    State.
 
 %% @doc Format an exception thrown by this module
 -spec format_exception(sin_exceptions:exception()) ->
@@ -57,8 +57,8 @@ format_exception(Exception) ->
 
 %% @doc
 %%  Run edoc on all the modules in all of the applications.
--spec run_docs(sin_config:config(), [AppInfo::tuple()]) -> ok.
-run_docs(BuildRef, [{AppName, _, _, Path} | T]) ->
+-spec run_docs(sin_state:state(), [AppInfo::tuple()]) -> ok.
+run_docs(State, [{AppName, _, _, Path} | T]) ->
     DocDir = filename:join([Path, "docs"]),
     filelib:ensure_dir(filename:join([DocDir, "tmp"])),
 
@@ -68,10 +68,10 @@ run_docs(BuildRef, [{AppName, _, _, Path} | T]) ->
                          [{dir, DocDir}])
     catch
         throw:Error ->
-            ?SIN_RAISE(BuildRef, Error)
+            ?SIN_RAISE(State, Error)
     end,
-    run_docs(BuildRef, T);
-run_docs(_BuildRef, []) ->
+    run_docs(State, T);
+run_docs(_State, []) ->
     ok.
 
 

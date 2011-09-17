@@ -12,8 +12,8 @@
 
 %% API
 -export([main/0,
+         main/1,
          run_sinan/0,
-         run_sinan/1,
          do_task/3,
          manual_start/0]).
 
@@ -36,48 +36,46 @@
 
 %% @doc run the specified task
 -spec do_task(task_name(), string(), sin_config:config()) -> ok.
-do_task(Task, StartDir, Override) ->
+do_task(Task, StartDir, Config) ->
     try
-        TaskDesc = sin_task:get_task(Override, Task),
+        State = sin_state:store(start_dir, StartDir, sin_state:new()),
+        TaskDesc = sin_task:get_task(State, Task),
         case TaskDesc#task.bare of
             false ->
-                do_task_full(StartDir, Override, Task);
+                do_task_full(Config, State, Task);
             true ->
-                do_task_bare(StartDir, Override, Task)
+                do_task_bare(StartDir, Config, State, Task)
         end
     catch
-        {pe, Config, {_, _, {task_not_found, TaskName}}} ->
+        {pe, NewState, {_, _, {task_not_found, TaskName}}} ->
             ewl_talk:say("Task not found ~s.", [TaskName]),
-            sin_config:add_run_error(Config, Task, task_not_found)
+            NewState
     end.
 
 %% @doc run the specified task with a full project dir
--spec do_task_full(string(), sin_config:config(), task_name()) -> ok.
-do_task_full(StartDir, Override, Task) when is_atom(Task) ->
+-spec do_task_full(sin_config:config(), sin_state:state(), task_name()) -> ok.
+do_task_full(Config0, State0, Task) when is_atom(Task) ->
     try
-        Config = sin_discover:discover(StartDir, Override),
-        ProjectRoot = sin_config:get_value(Config, "project.dir"),
-        run_task(Task, ProjectRoot, Config)
+        {Config1, State1} = sin_discover:discover(Config0, State0),
+        ProjectRoot = sin_state:get_value(project_dir, State1),
+        run_task(Task, ProjectRoot, Config1, State1)
     catch
         no_build_config ->
             ewl_talk:say("No build config found."),
-            sin_config:add_run_error(Override, Task, no_build_config);
-        Error = {unable_to_create_canonical, {_, _,Desc}}  ->
-            ewl_talk:say("Error discovering project layout: ~s", Desc),
-            sin_config:add_run_error(Override, Task, Error);
-        Error = {pe, NewConfig, {Module, _, _}} ->
+            sin_state:add_run_error(Task, no_build_config, State0);
+        Error = {pe, NewState, {Module, _, _}} ->
             ewl_talk:say("build problem ~s", [Module:format_exception(Error)]),
-            NewConfig;
+            NewState;
         Type:Exception ->
             ewl_talk:say("build problem ~p:~p:~p",
                          [Type, Exception, erlang:get_stacktrace()]),
-            sin_config:add_run_error(Override, Task, Exception)
+            sin_state:add_run_error(Task, Exception, State0)
     end.
 
 %% @doc run the specified task, without expecting a build config and what not.
--spec do_task_bare(string(), task_name(), args()) -> ok.
-do_task_bare(StartDir, Config, Task) when is_atom(Task) ->
-    run_task(Task, StartDir, Config).
+-spec do_task_bare(string(), sin_config:config(), sin_state:state(), task_name()) -> ok.
+do_task_bare(StartDir, Config, State, Task) when is_atom(Task) ->
+    run_task(Task, StartDir, Config, State).
 
 %% @doc do the full run of sinan as required by the command line args, halt the
 %% system when the run is complete.
@@ -94,12 +92,12 @@ main() ->
 -spec run_sinan() -> sin_config:config() | ok.
 run_sinan() ->
     Args = init:get_plain_arguments(),
-    run_sinan(Args).
+    main(Args).
 
 %% @doc do a full run of sinan with arbitrary args that may be parsed like
 %% command line args
--spec run_sinan([string()]) -> sin_config:config().
-run_sinan(Args) ->
+-spec main([string()]) -> sin_config:config().
+main(Args) ->
     case getopt:parse(option_spec_list(), Args) of
         {ok, {Options, NonOptArgs}} ->
             do_build(Options, NonOptArgs);
@@ -150,12 +148,12 @@ manual_start() ->
 %% Internal functions
 %%====================================================================
 
--spec do_build(term(), [string()]) -> sin_config:config().
+-spec do_build(term(), [string()]) -> {ok | error, sin_state:state()}.
 do_build(Options, [Target | Rest]) ->
     Result = do_task(list_to_atom(Target),
                      find_start_dir(Options),
                      setup_config_overrides(Options, Rest)),
-    case sin_config:get_run_errors(Result) of
+    case sin_state:get_run_errors(Result) of
         [] ->
             {ok, Result};
         _ ->
@@ -186,35 +184,32 @@ option_spec_list() ->
      {version, $n, "nversion", string, "the version of the project"}].
 
 %% @doc run the task including all task dependencies
--spec run_task(task_name(), string(), sin_config:config()) -> ok.
-run_task(Task, ProjectDir, BuildConfig) ->
-    try
-       Tasks = sin_task:get_task_list(BuildConfig, Task),
-       case sin_hooks:get_hooks_function(BuildConfig, ProjectDir) of
-           no_hooks ->
-               lists:foldl(
-                 fun(TaskDesc, NewConfig) ->
-                         ewl_talk:say("starting: ~p",
-                                      TaskDesc#task.name),
-                         NewNewConfig =
-                             (TaskDesc#task.task_impl):do_task(NewConfig),
-                         NewNewConfig
-                 end, BuildConfig, Tasks);
-           HooksFun ->
-               lists:foldl(
-                 fun(TaskDesc, NewConfig) ->
-                         ewl_talk:say("starting: ~p", TaskDesc#task.name),
-                         HooksFun(pre, Task, NewConfig),
-                         NewNewConfig =
-                             (TaskDesc#task.task_impl):do_task(NewConfig),
-                         HooksFun(post, Task, NewNewConfig),
-                         NewNewConfig
-                 end, BuildConfig, Tasks)
-       end
-    catch
-        throw:{task_not_found, Task} ->
-            sin_talk:say("Unknown task ~p", [Task])
-    end.
+-spec run_task(task_name(), string(), sin_config:config(),
+               sin_state:state()) -> ok.
+run_task(Task, ProjectDir, Config0, State0) ->
+    Tasks = sin_task:get_task_list(Config0, Task),
+    case sin_hooks:get_hooks_function(State0, ProjectDir) of
+        no_hooks ->
+            lists:foldl(
+              fun(TaskDesc, State1) ->
+                      ewl_talk:say("starting: ~p",
+                                   TaskDesc#task.name),
+                      Matcher = sin_config:create_matcher([{task, TaskDesc#task.name}],
+                                                          Config0),
+                      (TaskDesc#task.task_impl):do_task(Matcher, State1)
+              end, State0, Tasks);
+        HooksFun ->
+            lists:foldl(
+              fun(TaskDesc, State1) ->
+                      ewl_talk:say("starting: ~p", TaskDesc#task.name),
+                      HooksFun(pre, Task, State1),
+                      Matcher = sin_config:create_matcher([{task, TaskDesc#task.name}],
+                                                          Config0),
+                      State2 =
+                          (TaskDesc#task.task_impl):do_task(Matcher, State1),
+                      HooksFun(post, Task, State2)
+              end, State0, Tasks)
+       end.
 
 %% @doc parse the start dir out of the args passed in.
 -spec find_start_dir(Options::term()) -> string().
@@ -231,12 +226,13 @@ find_start_dir(Options) ->
 -spec setup_config_overrides(Options::term(), term()) ->
     sin_config:config().
 setup_config_overrides(Options, Args) ->
-    push_values_if_exist(sin_config:parse_args(Args, sin_config:new()),
+    push_values_if_exist(sin_config:add(additional_args, Args,
+                                        sin_config:new()),
                          Options,
-                         [{release, "-r"},
-                          {start_dir, "start_dir"},
-                          {project, "project.name"},
-                          {version, "project.vsn"}]).
+                         [{release, '-r'},
+                          {start_dir, start_dir},
+                          {project, project_name},
+                          {version, project_vsn}]).
 
 %% @doc This pushes the values given in the args (if they exist) into the
 %% override config under the name specified in key.
@@ -244,12 +240,13 @@ setup_config_overrides(Options, Args) ->
 %% For example the name/key mapping expects an atom for the name that matches
 %% the atom specified in the release and a string as the key. The string is used
 %% as the key to push into the config
--spec push_values_if_exist(sin_config:config(), term(), [{atom(), string()}]) ->
+-spec push_values_if_exist(sin_config:config(),
+                           term(), [{atom(), string()}]) ->
     sin_config:config().
 push_values_if_exist(Config, Options, [{Name, Key} | Rest]) ->
     case lists:keysearch(Name, 1, Options) of
         {value, {Name, Value}} ->
-            push_values_if_exist(sin_config:store(Config, Key, Value),
+            push_values_if_exist(sin_config:add(Key, Value, Config),
                                  Options, Rest);
         _ ->
             push_values_if_exist(Config, Options, Rest)
@@ -266,8 +263,9 @@ push_values_if_exist_test() ->
                {bar, "baz"},
                {z, 333},
                {noid, avoid}],
-    Config = push_values_if_exist(sin_config:new(), Options, [{bar, "monsefu"},
-                                                              {z, "chiclayo"}]),
-    ?assertMatch("baz", sin_config:get_value(Config, "monsefu")),
-    ?assertMatch(333, sin_config:get_value(Config, "chiclayo")),
-    ?assertMatch(undefined, sin_config:get_value(Config, "noid")).
+    Config = push_values_if_exist(sin_config:new(),
+                                  Options, [{bar, monsefu},
+                                            {z, chiclayo}]),
+    ?assertMatch("baz", sin_config:match(monsefu, Config)),
+    ?assertMatch(333, sin_config:match(chiclayo, Config)),
+    ?assertMatch(undefined, sin_config:match(noid, undefined, Config)).

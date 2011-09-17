@@ -17,7 +17,11 @@ class TestConfigless(st.SmokeTest):
     def build_configless(self, child, app_desc):
         child.expect(pexpect.EOF)
 
-        build_dir = os.path.join(os.getcwd(), "_build/development/apps/")
+        build_dir = os.path.join(os.getcwd(),
+                                 "_build",
+                                 "ctest_project",
+                                 "apps")
+
         self.assertTrue(os.path.isdir(build_dir))
 
         for n in app_desc.app_names:
@@ -44,16 +48,12 @@ class TestConfigless(st.SmokeTest):
                               app_names = ["app1", "app2", "app3"])
 
         self.do_run(app_desc)
-        currentdir = os.getcwd()
-        projdir = os.path.join(currentdir, app_desc.project_name)
-        os.chdir(projdir)
 
-        os.remove(os.path.join(projdir, "sinan.cfg"))
+        os.remove(os.path.join("sinan.config"))
 
         self.clean_configless(app_desc)
         self.build_configless(app_desc)
 
-        os.chdir(currentdir)
 
     def test_configless_single_app(self):
         app_desc = st.AppDesc(user_name = "Smoke Test User",
@@ -65,27 +65,22 @@ class TestConfigless(st.SmokeTest):
 
         self.do_run(app_desc)
 
-        currentdir = os.getcwd()
-        projdir = os.path.join(currentdir, app_desc.project_name)
-        os.chdir(projdir)
+        shutil.move(os.path.join("lib", "app1", "src"),
+                    ".")
 
-        shutil.move(os.path.join(projdir, "lib", "app1", "src"),
-                    projdir)
+        shutil.move(os.path.join("lib", "app1", "include"),
+                    ".")
 
-        shutil.move(os.path.join(projdir, "lib", "app1", "include"),
-                    projdir)
+        shutil.move(os.path.join("lib", "app1", "ebin"),
+                    ".")
 
-        shutil.move(os.path.join(projdir, "lib", "app1", "ebin"),
-                        projdir)
-
-        shutil.rmtree(os.path.join(projdir, "lib"))
-        os.remove(os.path.join(projdir, "sinan.cfg"))
+        shutil.rmtree(os.path.join("lib"))
+        os.remove(os.path.join("sinan.config"))
 
         self.do_clean(app_desc)
 
         self.do_build(app_desc)
 
-        os.chdir(currentdir)
 
 if __name__ == '__main__':
     unittest.main()

@@ -31,8 +31,8 @@ given([two, generated, projects], _, _) ->
 'when'([a, build, step, is, run, on, each, project, concurrently],
        ProjectDescs, _) ->
     Results = ec_plists:map(fun({_, ProjectDir}) ->
-                                   sinan:run_sinan(["-s", ProjectDir,
-                                                    "build"])
+                                   sinan:main(["-s", ProjectDir,
+                                               "build"])
                            end, ProjectDescs),
     {ok, lists:zip(ProjectDescs, Results)}.
 
