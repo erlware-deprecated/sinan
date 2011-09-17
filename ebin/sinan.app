@@ -40,6 +40,6 @@
   {applications, [kernel, stdlib, compiler, erlware_commons,
                   edoc, syntax_tools, eunit, proper,
                   ktuo, ewrepo, ewlib, xtools,
-                  xmerl, mnesia, sgte, erlware_commons,
+                  xmerl, mnesia, erlware_commons,
                   cucumberl,
                   parsetools, getopt]}]}.
