@@ -168,13 +168,10 @@ class SmokeTest(unittest.TestCase):
         projdir = os.path.join(os.getcwd(), a.project_name)
 
         self.assert_dirs_exist(projdir,
-                               "bin",
                                "config",
                                "lib")
 
         self.assert_files_exist(projdir,
-                                ["bin", a.project_name],
-                                ["bin", "erlware_release_start_helper"],
                                 ["config", "sys.config"],
                                 "sinan.config")
         for n in a.app_names:
@@ -215,7 +212,7 @@ class SmokeTest(unittest.TestCase):
                                    "doc")
 
             self.assert_files_exist(app_dir,
-                                    [ "src", n + "_sup.erl"],
+                                    ["src", n + "_sup.erl"],
                                     ["src", n + "_app.erl"],
                                     ["ebin", n + "_sup.beam"],
                                     ["ebin", n + "_app.beam"])

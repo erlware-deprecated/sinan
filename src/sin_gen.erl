@@ -37,7 +37,6 @@ gen(Env) ->
 build_out_skeleton(Env) ->
     ProjDir = get_env(project_dir, Env),
     make_dir(filename:join(ProjDir, "doc")),
-    make_dir(filename:join(ProjDir, "bin")),
     make_dir(filename:join(ProjDir, "config")),
     build_out_applications(Env).
 
@@ -129,16 +128,9 @@ build_out_build_config(Env) ->
     case get_env(wants_build_config, Env) of
         true ->
             ProjectDir = get_env(project_dir, Env),
-            ProjectName = get_env(project_name, Env),
             ConfName = filename:join([ProjectDir, "sinan.config"]),
-            ErlwareFile =
-                filename:join([ProjectDir,  "bin",
-                               "erlware_release_start_helper"]),
-            BinFile = filename:join([ProjectDir,  "bin", ProjectName]),
             ConfigFile = filename:join([ProjectDir,  "config", "sys.config"]),
             sin_skel:build_config(Env, ConfName),
-            sin_skel:bin(Env, BinFile),
-            sin_skel:bin_support(Env, ErlwareFile),
             sin_skel:sysconfig(Env, ConfigFile);
         false ->
             ok

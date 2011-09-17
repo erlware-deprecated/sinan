@@ -11,13 +11,11 @@
 
 %%% API
 -export([application/3,
-	 supervisor/3,
+         supervisor/3,
          app_info/4,
-	 edoc_overview/3,
-	 build_config/2,
-	 sysconfig/2,
-	 bin_support/2,
-	 bin/2]).
+         edoc_overview/3,
+         build_config/2,
+         sysconfig/2]).
 
 -export_type([env/0]).
 
@@ -45,7 +43,7 @@ supervisor(Env, FileName, AppName) ->
 -spec app_info(env(), FileName::string(), AppName::string(), AppVsn::string()) -> ok.
 app_info(Env, FileName, AppName, AppVsn) ->
     write_template("dotapp", [{app_name, AppName},
-			      {app_vsn, AppVsn}| Env], FileName).
+                              {app_vsn, AppVsn}| Env], FileName).
 
 %% @doc Writes out a overview.edoc to the filename provided.
 -spec edoc_overview(env(), FileName::string(), AppName::string()) -> ok.
@@ -57,16 +55,6 @@ edoc_overview(Env, FileName, AppName) ->
 -spec build_config(env(), FileName::string()) -> ok.
 build_config(Env, FileName) ->
     write_template("buildcfg", Env, FileName).
-
-%% @doc Writes the bin file out to the specified library
--spec bin(env(), Filename::string()) -> ok.
-bin(Env, FileName) ->
-    write_template("exe", Env, FileName).
-
-%% @doc Writes the bin support file
--spec bin_support(env, Filename::string()) -> ok.
-bin_support(Env, FileName) ->
-    write_template("erlware_release_start_helper", Env, FileName).
 
 %% @doc Writes the sys config out to the specifiecd place
 -spec sysconfig(env(), Filename::string()) -> ok.
