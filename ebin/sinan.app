@@ -39,7 +39,7 @@
   {registered, [sin_sup]},
   {applications, [kernel, stdlib, compiler, erlware_commons,
                   edoc, syntax_tools, eunit, proper,
-                  ktuo, ewrepo, ewlib, xtools,
+                  ktuo, ewrepo, ewlib, tools,
                   xmerl, mnesia, erlware_commons,
                   cucumberl,
                   parsetools, getopt]}]}.

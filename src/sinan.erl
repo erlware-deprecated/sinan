@@ -139,7 +139,7 @@ manual_start() ->
                    eunit,
                    ewlib,
                    ewrepo,
-                   xtools,
+                   tools,
                    xmerl,
                    mnesia,
                    sgte,
