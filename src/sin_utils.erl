@@ -85,42 +85,43 @@ file_exists(State, FileName) ->
 
 %% @doc Copies the specified directory down to the build dir on a file by file
 %% basis. It only copies if the file has .
--spec copy_dir(sin_state:state(), BuilderDir::string(),
-               TargetDir::string()) -> ok.
-copy_dir(State, BuildDir, TargetDir) ->
-    copy_dir(State, BuildDir, TargetDir, [], []).
-
--spec copy_dir(sin_state:state(), BuilderDir::string(),
-               TargetDir::string(),
-               Subdirs::string()) -> ok.
-copy_dir(State, BuildDir, TargetDir, Sub) ->
-    copy_dir(State, BuildDir, TargetDir, Sub, []).
+-spec copy_dir(sin_state:state(), string(),
+               string()) -> ok.
+copy_dir(State, To, From) ->
+    copy_dir(State, To, From, [], []).
 
 -spec copy_dir(sin_state:state(),
-               BuilderDir::string(),
-               TargetDir::string(),
-               Subdirs::string(),
+               string(),
+               string(),
+               string()) -> ok.
+copy_dir(State, To, From, Sub) ->
+    copy_dir(State, To, From, Sub, []).
+
+-spec copy_dir(sin_state:state(),
+               string(),
+               string(),
+               string(),
                Ignorables::string()) -> sin_state:state().
-copy_dir(State0, BuildDir, TargetDir, SubDir, Ignorables) ->
-    check_not_circular(State0, BuildDir, TargetDir, SubDir),
+copy_dir(State0, To, From, SubDir, Ignorables) ->
+    check_not_circular(State0, To, From, SubDir),
     case are_dirs_ignorable(SubDir, Ignorables) of
         true ->
             State0;
         false ->
-            Target = filename:join([BuildDir | SubDir]),
+            Target = filename:join([To | SubDir]),
             filelib:ensure_dir(filename:join([Target, "tmp"])),
-            CpyTarget = filename:join([TargetDir | SubDir]),
+            CpyTarget = filename:join([From | SubDir]),
             {ok, Files} = file:list_dir(CpyTarget),
-            lists:foldl(fun (IFile, State1) ->
+            lists:foldl(fun(IFile, State1) ->
                                 File = filename:join([CpyTarget, IFile]),
                                 case {is_dir_ignorable(IFile, Ignorables),
                                       filelib:is_dir(File)}
-                                    of
+                                of
                                     {true, _} ->
                                         State1;
                                     {_, true} ->
                                         copy_dir(State1,
-                                                 BuildDir, TargetDir,
+                                                 To, From,
                                                  SubDir ++ [IFile], Ignorables);
                                     {_, false} ->
                                         copy_file(State1, Target, IFile, File)
@@ -308,25 +309,4 @@ basename1([], Acc) ->
 %%====================================================================
 %% tests
 %%====================================================================
-copy_from_app_test_() ->
-    % Create a directory in /tmp for the test. Clean everything afterwards
-    {ok, BaseDir} = ewl_file:create_tmp_dir("/tmp"),
-    {setup,
-     fun () ->
-             ok = file:make_dir(filename:join(BaseDir, "app_name")),
-             ok = file:make_dir(filename:join(BaseDir, "ebin")),
-             ok = file:make_dir(filename:join(BaseDir, "doc"))
-     end,
-     fun (_) ->
-             ewl_file:delete_dir(BaseDir) end,
-     fun (_) ->
-             TargetDir = filename:join(BaseDir, "app_name"),
-             BuildDir = filename:join(TargetDir,
-                                      "_build/development/apps/app_name"),
-             {timeout, 2,
-              ?_assertThrow({pe, _,
-                             {_, _, circular_recursion}},
-                            (sin_utils:copy_dir(sin_state:new(),
-                                                BuildDir, TargetDir, [],
-                                                ["."])))}
-     end}.
+
