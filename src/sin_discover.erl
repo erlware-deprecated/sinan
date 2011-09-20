@@ -96,12 +96,15 @@ process_raw_config(ProjectDir, FileConfig, CommandLineConfig, State0) ->
         sin_config:new_from_terms(default_config_terms(), []),
     Config0 = sin_config:merge(CommandLineConfig, sin_config:merge(FileConfig, DefaultConfig)),
     BuildDir = sin_config:match(build_dir, Config0),
-    State1 = sin_state:store([{build_root, filename:join([ProjectDir,
+    State1 = sin_state:store([{release, get_release_name(Config0)},
+                              {build_root, filename:join([ProjectDir,
                                                            BuildDir])},
-                             {build_dir, filename:join([ProjectDir,
-                                                        BuildDir,
-                                                        get_release_name(Config0)])},
+                              {build_dir, filename:join([ProjectDir,
+                                                         BuildDir,
+                                                         get_release_name(Config0)])},
                               {project_dir, ProjectDir}], State0),
+
+
     {Config0, State1}.
 
 %% @doc If this is a single app project then the config is generated from the

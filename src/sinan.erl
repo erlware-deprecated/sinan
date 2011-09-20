@@ -198,7 +198,9 @@ run_task(Task, ProjectDir, Config0, State0) ->
               fun(TaskDesc, State1) ->
                       ewl_talk:say("starting: ~p",
                                    TaskDesc#task.name),
-                      Matcher = sin_config:create_matcher([{task, TaskDesc#task.name}],
+                      Matcher = sin_config:create_matcher([{release,
+                                                            sin_state:get_value(release, State0)},
+                                                            {task, TaskDesc#task.name}],
                                                           Config0),
                       (TaskDesc#task.task_impl):do_task(Matcher, State1)
               end, State0, Tasks);
@@ -257,7 +259,6 @@ push_values_if_exist(Config, Options, [{Name, Key} | Rest]) ->
     end;
 push_values_if_exist(Config, _Options, []) ->
     Config.
-
 
 %%====================================================================
 %% Tests
