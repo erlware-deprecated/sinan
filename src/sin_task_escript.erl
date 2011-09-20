@@ -29,23 +29,41 @@
 description() ->
 
     Desc = "This takes the current project and turns it into an executable
-    escript. <break> <break> be aware though that there are significant
+    escript. <break> <break>
+
+     Be aware though that there are significant
     limitations in escript. These are not limitations of sinan, but limitations
     in the built in escript functionality. These limitations are <break> <break>
-    - Your escript may be built off of a single script OR one Erlang OTP
-    Application not both <break> - Your escript will NOT contain any system
-    dependencies (remember an escript can only contain a single OTP
-    Application). <break> <break> The system will warn you if you violate these
-    restrictions. <break> <break> The escript task allows for a few options in
-    the sinan.config file. The options are specified as follows: <break> <break>
-    {escript, [{OptionKey, OptionValue}]}. <break> <break> The keys available
-    are: <break> <break> {source, <Path To Source File Rooted in the Project
-    Dir>} <break> {emu_args, \"String Of Escript Emulator Args\"}. <break> <break> So
-    a fully configured escript config would look like: <break> <break> {escript,
-    [{source, \"bin/my_cool_escript_file\"}, <break> {emu_args, \"-smp
-    disable\"}]}. <break> <break> See the escript documentation for details and
-    remember to only pass the script option if you want that to be your
-    escript.",
+
+    - Your escript may be built off of a single script OR Erlang OTP
+    Applications but not both <break> <break> <break>
+
+    The system will warn you
+    if you violate these restrictions. <break> <break>
+
+    The escript task allows for a few options in the sinan.config file. The
+    options are specified as follows: <break> <break>
+
+    {escript, [{OptionKey, OptionValue}]}. <break> <break>
+
+    The keys available are: <break> <break>
+
+    {source, <Path To Source File Rooted in the Project Dir>} <break>
+
+    {emu_args, \"String Of Escript Emulator Args\"}. <break> <break>
+
+    {include_apps, [the, non-project, apps, i, want, in, my,
+        escript]}. <break> <break>
+
+    So a fully configured escript config would look like: <break> <break>
+
+     {escript,
+       [{source, \"bin/my_cool_escript_file\"}, <break>
+       {emu_args, \"-smp disable\"},
+       {include_apps, [kernel, stdlib, my_dep]}. <break> <break>
+
+    See the escript documentation for details and remember to only pass the
+    script option if you want that to be your escript.",
 
     #task{name = ?TASK,
           task_impl = ?MODULE,
@@ -61,26 +79,11 @@ description() ->
 do_task(Config, State) ->
     ProjectDir = sin_state:get_value(project_dir, State),
     ProjectApps = sin_state:get_value(project_apps, State),
-    make_escript(Config, State, ProjectDir, ProjectApps).
-
-%% @doc Format an exception thrown by this module
--spec format_exception(sin_exceptions:exception()) ->
-    string().
-format_exception(Exception) ->
-    sin_exceptions:format_exception(Exception).
-
-%%====================================================================
-%%% Internal functions
-%%====================================================================
-
-%% @doc Go through and actually build up the escript blob
--spec make_escript(sin_config:matcher(),
-                   sin_state:state(), string(), [term()]) ->
-                          sin_state:state().
-make_escript(Config, State, ProjectDir, ProjectApps) ->
+    RepoApps = sin_state:get_value(project_repoapps, State),
     BuildDir = sin_state:get_value(build_dir, State),
     EscriptDir = filename:join([BuildDir, "escript"]),
-    filelib:ensure_dir(filename:join([EscriptDir, "tmp"])),
+    EscriptWorkingDir = filename:join(EscriptDir, ".ez"),
+    ewl_file:mkdir_p(EscriptWorkingDir),
     ProjectName = Config:match(project_name),
     ReleaseName =
         try
@@ -95,7 +98,13 @@ make_escript(Config, State, ProjectDir, ProjectApps) ->
     Body =
         case PossibleSourceFile of
             [] ->
-                gather_dirs(State, EscriptDir, ProjectApps);
+                make_archive(State,
+                             ReleaseName,
+                             EscriptWorkingDir,
+                             gather_dirs(State, EscriptWorkingDir,
+                                         filter_apps(RepoApps, EscriptOptions)
+                                         ++
+                                             ProjectApps, []));
             _ ->
                 ewl_talk:say("With escript you may have source files "
                              "or archive files, but you may not have "
@@ -136,18 +145,36 @@ make_escript(Config, State, ProjectDir, ProjectApps) ->
     file:change_mode(EscriptTarget, 8#00100 + 8#00010 + 8#00001 +
                          8#00400 + 8#00040 + 8#00004 +
                          8#00200 + 8#00020 + 8#00002),
+    sin_utils:delete_dir(EscriptWorkingDir),
     State.
 
--spec gather_dirs(sin_state:state(), string(), [tuple()]) ->
-    [string()].
-gather_dirs(State, EscriptDir, [{AppName, Vsn, _, Path}]) ->
+%% @doc Format an exception thrown by this module
+-spec format_exception(sin_exceptions:exception()) ->
+    string().
+format_exception(Exception) ->
+    sin_exceptions:format_exception(Exception).
 
-    AppNameVsn = erlang:atom_to_list(AppName) ++ "-" ++ Vsn,
-    EscriptPath = filename:join([EscriptDir,
-                                 AppNameVsn ++ ".ez"]),
-    CWD = filename:dirname(Path),
+%%====================================================================
+%%% Internal functions
+%%====================================================================
+
+-spec gather_dirs(sin_state:state(), string(), [tuple()], [string()]) ->
+    [string()].
+gather_dirs(State0, EscriptTargetDir,
+            [{AppName, Vsn, _, Path} | T], FileList) ->
+    FileName = erlang:atom_to_list(AppName) ++ "-" ++ Vsn,
+    Target = filename:join(EscriptTargetDir, FileName),
+    ok = ewl_file:mkdir_p(Target),
+    State1 = sin_utils:copy_dir(State0, Target, Path),
+    gather_dirs(State1, EscriptTargetDir, T, [FileName | FileList]);
+gather_dirs(_State, _, [], FileList) ->
+    FileList.
+
+make_archive(State, ProjectName, CWD, FileList) ->
+    EscriptPath = filename:join([CWD,
+                                 erlang:atom_to_list(ProjectName) ++ ".ez"]),
     case zip:create(EscriptPath,
-                    [AppNameVsn],
+                    FileList,
                     [{cwd, CWD},
                      {compress, all},
                      {uncompress,[".beam",".app"]}]) of
@@ -155,17 +182,17 @@ gather_dirs(State, EscriptDir, [{AppName, Vsn, _, Path}]) ->
             ok;
         {error, enoent} ->
             ewl_talk:say("Error trying to write ez archive "
-                         "for application ~s in ~s to ~s. This is "
+                         "for applications in ~s. This is "
                          "probably due to dot files (.* .#* "
                          "like emacs archive files in the "
                          "application directory. Do a sinan clean,"
                          "clean out the project directory and "
-                         "try again", [AppNameVsn, CWD, EscriptPath]),
-            ?SIN_RAISE(State, {error_creating_archive, AppNameVsn, CWD});
+                         "try again", [EscriptPath]),
+            ?SIN_RAISE(State, {error_creating_archive, EscriptPath});
         Error ->
             ewl_talk:say("Unknown error (~p) occured while "
-                         "trying to write ~s in ~s to ~s",
-                         [Error, AppNameVsn, CWD, EscriptPath]),
+                         "trying to write ~s to ~s",
+                         [Error, CWD, EscriptPath]),
             ?SIN_RAISE(State, {error_creating_archive, Error})
     end,
     {archive, EscriptPath}.
@@ -180,8 +207,9 @@ get_source_file(State, ProjectDir, EscriptOptions) ->
                                 {ok, Source} ->
                                     [{source, Source} | Acc];
                                 Error = {error, _} ->
-                                    ?SIN_RAISE(State, {unable_to_read_source,
-                                                       AbsoluteSourcePath, Error})
+                                    ?SIN_RAISE(State,
+                                               {unable_to_read_source,
+                                                AbsoluteSourcePath, Error})
                             end;
                        (_, Acc) ->
                             Acc
@@ -196,3 +224,16 @@ get_source_file(State, ProjectDir, EscriptOptions) ->
                          "escript directive"),
             ?SIN_RAISE(State, {multiple_source_entries, Sources})
     end.
+
+filter_apps(Apps, EscriptOptions) ->
+    IncludedApps =
+        case lists:keyfind(include_apps, 1, EscriptOptions) of
+            {include_apps, IApps} ->
+                IApps;
+            _ ->
+                []
+        end,
+    lists:filter(fun({AppName, _, _, _}) ->
+                         lists:member(AppName, IncludedApps)
+                 end, Apps).
+
