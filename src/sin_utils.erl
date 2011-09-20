@@ -168,9 +168,10 @@ format_exception(Exception) ->
 
 %% @doc Copies the file specified by file to the target specified by ifile.
 -spec copy_file(sin_state:state(),
-                Target::string(), IFile::string(), File::string()) -> sin_state:state().
-copy_file(_, _Target, [$. | _], _File) ->
-             ok;
+                Target::string(), IFile::string(), File::string()) ->
+                       sin_state:state().
+copy_file(State, _Target, [$. | _], _File) ->
+            State;
 copy_file(State, Target, IFile, File) ->
     NFile = filename:join([Target, IFile]),
     case sin_sig:changed(copy, File, State) of
