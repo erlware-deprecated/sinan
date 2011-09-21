@@ -84,14 +84,8 @@ do_task(Config, State) ->
     EscriptDir = filename:join([BuildDir, "escript"]),
     EscriptWorkingDir = filename:join(EscriptDir, ".ez"),
     ewl_file:mkdir_p(EscriptWorkingDir),
-    ProjectName = Config:match(project_name),
-    ReleaseName =
-        try
-            Config:match('-r')
-        catch
-            throw:not_found ->
-                erlang:atom_to_list(ProjectName)
-        end,
+    ReleaseName = sin_state:get_value(release, State),
+
     EscriptOptions = Config:match(escript, []),
     PossibleSourceFile = get_source_file(State, ProjectDir, EscriptOptions),
 

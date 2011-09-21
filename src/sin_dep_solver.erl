@@ -212,7 +212,7 @@ remove_excluded(Deps, AppsLimits) ->
                                        end, get_limits(AppsLimits, DepApp))
                  end, Deps).
 
-%% @dev given a spec() return the app name
+%% @doc given a spec() return the app name
 -spec dep_app(spec()) -> app().
 dep_app({exclude, App}) when is_atom(App) -> App;
 dep_app({App, _Ver}) -> App;

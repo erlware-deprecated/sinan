@@ -128,7 +128,7 @@ supervisor(Env, FileName, AppName) ->
 %% @doc Writes out a generic application to the filename provided.
 -spec app_info(env(), FileName::string(), AppName::string(), AppVsn::string()) -> ok.
 app_info(_Env, FileName, AppName, AppVsn) ->
-    Data = ["%% This is the application resource file (.app file) for the $app_name$,\n"
+    Data = ["%% This is the application resource file (.app file) for the,\n"
             "%% application.\n"
             "{application, ", AppName, ",\n"
             "  [{description, \"Your Desc HERE\"},\n"

@@ -49,7 +49,6 @@ get_sig_info(Key, BuildState) ->
 
 %% @doc Check to see if the file has been changed. The build dir should be the
 %% fully qualified path to the%% projects top level build directory.
-%% @doc Check to see if the file has changed in comparison to another file.
 -spec changed(term(), string(), sin_state:state()) -> boolean().
 changed(NS, TargetFile, State) ->
     case dict:find({file, NS, TargetFile}, get_sig(State)) of

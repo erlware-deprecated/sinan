@@ -183,11 +183,15 @@ make_boot_script(State, {{Location, File}, {release, {Name, _}, _, _}}) ->
         {ok, _, []} ->
             ok;
         {ok,Module,Warnings} ->
+            Detail = Module:format_warning(Warnings),
+            ewl_talk:say("~s", Detail),
             ?SIN_RAISE(State, release_script_generation_error,
-                       "~s~n", [lists:flatten(Module:format_warning(Warnings))]);
+                       "~s~n", [lists:flatten(Detail)]);
         {error,Module,Error} ->
+            Detail = Module:format_error(Error),
+            ewl_talk:say("~s", Detail),
             ?SIN_RAISE(State, release_script_generation_error,
-                       "~s~n", [lists:flatten(Module:format_error(Error))])
+                       "~s~n", [lists:flatten(Detail)])
     end.
 
 

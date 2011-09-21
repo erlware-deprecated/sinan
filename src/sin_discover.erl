@@ -427,7 +427,7 @@ default_config_terms() ->
 
 get_release_name(Config) ->
     try
-        sin_config:match('-r', Config)
+        erlang:list_to_atom(sin_config:match('-r', Config))
     catch
         throw:not_found ->
             sin_config:match(project_name, Config)
