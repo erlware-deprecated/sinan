@@ -1,5 +1,7 @@
-OTP Applications
-================
+---
+layout: default
+title: OTP Applications
+---
 
 OTP applications are just groups of related code. They can be what we
 refer to as library applications:a collection of modules to be used by
@@ -28,21 +30,16 @@ to be present or started beforehand.
 
 OTP applications use a simple directory layout.
 
-.Application Directory Structure
-[source,txt]
-----------------------------------------------------------------------
-<application-name>
-    |- ebin
-    |- src
-    |- include
-    |- doc
-----------------------------------------------------------------------
+    <application-name>
+        |- ebin
+        |- src
+        |- include
+        |- doc
 
 You should of course replace <application-name> with the name of your
 application. The names of the subdirectories are self-explanatory.
 
-Subdirectories of the application directory
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+### Subdirectories of the application directory
 
 - src: This is where your *.erl files and private *.hrl files go
 - doc: Documentation. If you generate documentation from EDoc, you put

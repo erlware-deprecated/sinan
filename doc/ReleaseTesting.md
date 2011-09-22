@@ -1,7 +1,7 @@
-// -*- mode:doc -*-
-Release Testing
-===============
-Eric Merritt <ericbmerritt@gmail.com>
+---
+layout: default
+title: Sinan Release Testing
+---
 
 Introduction
 ------------
@@ -20,27 +20,16 @@ There are a few things you need to run the release testing
 framework. You will need the following.
 
 - http://www.noah.org/wiki/pexpect[pexpect]
-- http://somethingaboutorange.com/mrl/projects/nose/1.0.0/[nose]
 
-To run the tests simple do the following in <sinan-root>/support/test.
+To run the tests simple do the following in <sinan-root>.
 
-[source,sh]
-----------------------------------------------------------------------
-  nosetests -s ./tests
-----------------------------------------------------------------------
+    $> make smoketests
 
 You may also run individual tests by running the following command.
 
-[source,sh]
-----------------------------------------------------------------------
-  nosetests -s ./tests/<test-file>.py
-----------------------------------------------------------------------
+    $> PYTHONPATH=$PYTHONPATH:./smoketests python smoketests/tests/<test-file>.py
 
 This can be very helpful during development.
-
-Unfortunately at the moment its important that you run the tests from
-the test directory. Later on we might expand this to be a bit more
-flexable.
 
 
 Why Python?
@@ -89,24 +78,22 @@ the moment it is just a container for values as you can see. The only
 thing to be aware of is the app_names. App names is a list of
 applications that you would like to be generated in the project.
 
-[source,python]
-----------------------------------------------------------------------
-class AppDesc(object):
-    def __init__(self,
-                 user_name=None,
-                 email=None,
-                 copyright_holder=None,
-                 project_name=None,
-                 project_version=None,
-                 app_names=None):
-        self.user_name = user_name
-        self.email = email
-        self.copyright_holder = copyright_holder
-        self.project_name = project_name
-        self.project_version = project_version
-        self.app_names = app_names
 
-----------------------------------------------------------------------
+    class AppDesc(object):
+        def __init__(self,
+                     user_name=None,
+                     email=None,
+                     copyright_holder=None,
+                     project_name=None,
+                     project_version=None,
+                     app_names=None):
+            self.user_name = user_name
+            self.email = email
+            self.copyright_holder = copyright_holder
+            self.project_name = project_name
+            self.project_version = project_version
+            self.app_names = app_names
+
 
 
 SmokeTest Class
@@ -125,8 +112,6 @@ The first argument to both of these functions is the base directory for the
 checks. The rest of the arguments are directories or files to check for
 in the context of the base directory.
 
-[source,python]
-----------------------------------------------------------------------
         self.assert_dirs_exist(projdir,
                                "bin",
                                "config",
@@ -134,12 +119,9 @@ in the context of the base directory.
 
 
         self.assert_files_exist(projdir,
-                                ["bin", a.project_name],
-                                ["bin", "erlware_release_start_helper"],
                                 ["config", "sys.config"],
-                                "sinan.cfg")
+                                "sinan.config")
 
-----------------------------------------------------------------------
 In the first example we are checking if a set of directories exist in
 the project directory. In the second example we are checking to see if
 the files exist. Notice the use of lists here. When these functions
@@ -148,8 +130,7 @@ correct seperator for the platform you are running on. This makes it
 easy to check large numbers of files or directories. If the file or
 directory doesn't exist then an error is asserted.
 
-do_<task> functions
-~~~~~~~~~~~~~~~~~~~
+### do_<task> functions
 
 There are several functions for running standard sinan tasks as
 well. These are, do_clean, do_t, do_release, do_dist.
@@ -159,8 +140,7 @@ exception of the do_t which runs the test task. The do_t is a hack to
 get around test autodetection in unittest.
 
 
-do_run
-~~~~~~
+### do_run
 
 The do run function is the thing you will use the most. It will take
 an appdesc and run build, test, relaese, and dist. In all cases it
@@ -168,8 +148,7 @@ will test the output and make sure it ran correctly. You may then
 customize the generated app to your wishes. A good example of this is
 the release_test.py file.
 
-sinan decorator
-~~~~~~~~~~~~~~~
+### sinan decorator
 
 The sinan decorator allows you to declare that your function runs a
 specific sinan task. The decorator spawns the sinan currently in
@@ -177,19 +156,12 @@ development passes the spawned process to the function that is being
 decorated. For example, the following code lets we want to execute a
 test that needs to run sinan gen. We could simply do it as follows.
 
-[source,python]
-----------------------------------------------------------------------
-  @sin_testing.sinan("gen")
-  def my_test_function(self, child):
-      """ Here is where we would do stuff"""
-      pass
-----------------------------------------------------------------------
+     @sin_testing.sinan("gen")
+     def my_test_function(self, child):
+          """ Here is where we would do stuff"""
+          pass
 
 When the function is called the sinan decorator will run the gen
 command, passing the pexpect child object to the function
 decorated. The function can then do anything it would like with that
 child using the pexpect api.
-
-
-
-

@@ -1,7 +1,7 @@
-// -*- Doc -*-
-Build Hooks
-============
-Eric Merritt <ericbmerritt@gmail.com>
+---
+layout: default
+title: Build Hooks
+---
 
 Sinan provides a mechenism to integrate with external tools. This is
 via the hooks functionality. This functionality is used by putting a
@@ -26,28 +26,27 @@ variables. There are two sets of environmental variables that are
 passed. The first is the global information about the project. These
 variables are available as follows.
 
-[glossary]
-PREFIX::
-	 The file path of the erlang/erlware installation that sinan
-  is running out of.
-ERTS_VSN::
-	 The erts version that sinan is building of
-BUILD_DIR::
-	 The build directory where the projectis being built too
-BUILD_FLAVOR::
-	 The current build flavor of the system
-BUILD_REF::
-	 The unique id for this run of sinan
-PROJECT_DIR::
-	 The project root directory
-PROJECT_NAME::
-	 The project name as defined in the build config
-PROJECT_VSN::
-	 The project version
-PROJECT_APPS::
-	 A comma seperated list of apps that are part of the project.
-PROJECT_DEPS::
-	 A comma seperated list of apps that are dependencies of the project
+PREFIX
+: The file path of the erlang/erlware installation that sinan
+is running out of.
+ERTS_VSN
+: The erts version that sinan is building of
+BUILD_DIR
+: The build directory where the projectis being built too
+BUILD_FLAVOR
+: The current build flavor of the system
+BUILD_REF
+: The unique id for this run of sinan
+PROJECT_DIR
+: The project root directory
+PROJECT_NAME
+: The project name as defined in the build config
+PROJECT_VSN
+: The project version
+PROJECT_APPS
+: A comma seperated list of apps that are part of the project.
+PROJECT_DEPS
+: A comma seperated list of apps that are dependencies of the project
 
 
 The second set environmental variables that are available for each
@@ -55,16 +54,13 @@ application and dependency in the project. The 'APP' in the following
 descriptions is replaced by the name of the app in upper case. These
 values are as follows.
 
-[glossary]
-APP_VSN::
-	  The version of the application
-APP_LOCATION::
-	 The file path to the application that sinan is using.
-APP_DEPS::
-	 A comma seperated list of the names of the dependent
-	 applicatinos for this application.
+APP_VSN
+: The version of the application
+APP_LOCATION
+: The file path to the application that sinan is using.
+APP_DEPS
+: A comma seperated list of the names of the dependent
+  applicatinos for this application.
 
 The combination of scripts and environmental variables should be
 enough to do most required actions on the these tertiary builds.
-
-

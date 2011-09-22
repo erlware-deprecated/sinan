@@ -1,8 +1,7 @@
-Introduction
-------------
-
-Sinan Projects
---------------
+---
+layout: default
+title: Sinan Projects
+---
 
 A project is a convienience tool used in developement and a way to
 group applications that you are working on together that will be part
@@ -26,37 +25,26 @@ gathering this information is the big difference between single-app
 and multi-app projects.  To make a bit more sense of things, lets look
 at some examples
 
-
-
-
-.Single-App Project
-[source,txt]
----------------------------------------------------------------------
-my_app
-    |- ebin
-    |- include
-    |- priv
-    |- src
----------------------------------------------------------------------
+    my_app
+        |- ebin
+        |- include
+        |- priv
+        |- src
 
 As you can see, this is a normal OTP Application. You just change
 directory to the root and build and everything should happen as you
 expect.
 
-.Bad Multi-App Project
-[source,txt]
----------------------------------------------------------------------
-my_project
-    |- bin
-    |- some_strange_app_dir
-              |- app1
-              |- app2
-              |- app3
-    |- some_other_app_dir
-              |- app4
-    |- app5
-    |- app6
----------------------------------------------------------------------
+    my_project
+        |- bin
+        |- some_strange_app_dir
+                  |- app1
+                  |- app2
+                  |- app3
+        |- some_other_app_dir
+                  |- app4
+        |- app5
+        |- app6
 
 Sinan will find and build all of the apps, 1 - 6, in this project
 without a problem. Sinan doesn't care how you organize your apps as
@@ -69,21 +57,17 @@ your project and all of your non-otp dirs at the same level as your
 lib. Lets take our previous example and make it consistant with this
 standard.
 
-.Good Multi-App Project
-[source,txt]
----------------------------------------------------------------------
-my_project
-    |- bin
-    |- lib
-        |- app1
-        |- app2
-        |- app3
-        |- app4
-        |- app5
-        |- app6
-    |- docs
-    |- other_stuff
----------------------------------------------------------------------
+    my_project
+        |- bin
+        |- lib
+            |- app1
+            |- app2
+            |- app3
+            |- app4
+            |- app5
+            |- app6
+        |- docs
+        |- other_stuff
 
 Again, Sinan will happily build this project, but its layed out more
 consistantly both with what you will probably do in the future and
@@ -91,8 +75,7 @@ what other folks with OTP projects tend to do. In the end its up to
 you and what works for your project and development style, but we
 recommend that you start with this.
 
-Defining a Project
-~~~~~~~~~~~~~~~~~~
+### Defining a Project
 
 In general you don't actually have to do anything to define a
 project. Just run the sinan command that you would like to run in the
@@ -104,10 +87,8 @@ information. To get around this problem you must provide the
 project name and version on the command line when you build in the
 root of a multi-app project. You can do this as follows.
 
-[source,sh]
----------------------------------------------------------------------
-sinan -p my_project -n 0.1.0.0
----------------------------------------------------------------------
+
+    $> sinan -p my_project -n 0.1.0.0
 
 That will give sinan the information that it needs to do the task
 correctly.
