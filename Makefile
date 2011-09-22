@@ -56,6 +56,9 @@ smoketests: main
 
 testall : cucumber test smoketests
 
+gh-pages:
+	./do-gh-pages
+
 clean:
 	rm -rf _build ;
 	rm -rf erl_crush.dump
