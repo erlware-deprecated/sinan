@@ -4,12 +4,12 @@ ERL=/usr/local/bin/erl
 APPDIR= $(abspath ./_build/sinan/apps/sinan-$(VSN))
 SRCDIR=src
 TESTDIR=test
-COPYDIRS= src test
+COPYDIRS= include src test
 BEAMDIR=$(APPDIR)/ebin
 SMOKETEST_DIR=$(CURDIR)/smoketests
 PYPATH=$(PYTHONPATH):$(SMOKETEST_DIR)
 RSYNC_OPTIONS=-vaz --delete
-
+BEHAVIOURS=src/sin_task.erl
 .SUFFIXES: .erl .beam .yrl
 
 vpath %.erl src test
@@ -27,12 +27,21 @@ setup: $(COPYDIRS)
 	mkdir -p $(APPDIR)/ebin;
 	rsync $(RSYNC_OPTIONS) ebin/sinan.app $(APPDIR)/ebin/sinan.app
 
-main: setup ${ERL_OBJ} ${ERL_TEST_OBJ}
+build_behaviours: $(BEHAVIOURS)
+        # make sure sin_task gets built first so its always available
+	erlc -pa $(BEAMDIR) +warn_export_vars +warn_export_all \
+	+warn_obsolete_guard \
+	+warnings_as_errors +bin_opt_info +debug_info -W -o $(BEAMDIR) $<
+
+main: setup build_behaviours ${ERL_OBJ} ${ERL_TEST_OBJ}
 
 $(BEAMDIR)/%.beam: %.erl
 	erlc -pa $(BEAMDIR) +warn_export_vars +warn_export_all \
 	+warn_obsolete_guard \
 	+warnings_as_errors +bin_opt_info +debug_info -W -o $(BEAMDIR) $<
+
+build: main
+	erl -pa $(BEAMDIR) -s sinan manual_start -s sinan main -extra -s $(CURDIR) build
 
 escript: main
 	erl -pa $(BEAMDIR) -s sinan manual_start -s sinan main -extra -s $(CURDIR) escript
@@ -51,7 +60,7 @@ debug: main
 
 smoketests: main
 	for f in $(wildcard $(SMOKETEST_DIR)/tests/*.py) ; do	\
-		PYTHONPATH=$(PYPATH) python $$f ; \
+		PYTHONPATH=$(PYPATH) python2 $$f ; \
 	done
 
 testall : cucumber test smoketests
