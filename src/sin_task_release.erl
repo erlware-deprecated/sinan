@@ -54,14 +54,8 @@ description() ->
 -spec do_task(sin_config:matcher(), sin_state:state()) -> sin_state:state().
 do_task(Config, State0) ->
     BuildDir = sin_state:get_value(build_dir, State0),
-    {ReleaseName, Version} =
-        try
-            R = erlang:list_to_atom(Config:match('-r')),
-            {R, Config:match(project_vsn)}
-        catch
-            throw:not_found ->
-                {Config:match(project_name), Config:match(project_vsn)}
-        end,
+    ReleaseName = sin_state:get_value(release, State0),
+    Version = sin_state:get_value(release_vsn, State0),
     ReleaseInfo = generate_rel_file(Config, State0, BuildDir, ReleaseName, Version),
     State1 = sin_state:store(rel, ReleaseInfo, State0),
     copy_or_generate_sys_config_file(Config, BuildDir, ReleaseName, Version),
@@ -82,22 +76,14 @@ format_exception(Exception) ->
 -spec generate_rel_file(sin_config:config(), sin_state:state(), string(), string(), string()) ->
     {ReleaseFile::string(), ReleaseInfo::term()}.
 generate_rel_file(Config, State, BuildDir, Name, Version) ->
-    {ProjectName, ProjectVsn} =
-        try
-            ReleaseName = erlang:list_to_atom(Config:match('-r')),
-            {ReleaseName, Vsn, _} = lists:keyfind(ReleaseName, 1,
-                                                  Config:match(releases)),
-            {ReleaseName, Vsn}
-        catch
-            throw:not_found ->
-                {Config:match(project_name),  Config:match(project_vsn)}
-        end,
+    ReleaseName = sin_state:get_value(release, State),
+    ReleaseVsn = sin_state:get_value(release_vsn, State),
 
     RootDir = sin_state:get_value(project_dir, State),
 
     Release =
-        case sin_release:get_release(State, RootDir, ProjectName,
-                                     ProjectVsn) of
+        case sin_release:get_release(State, RootDir, ReleaseName,
+                                     ReleaseVsn) of
             no_file ->
                 Erts = get_erts_info(),
                 Deps0 =

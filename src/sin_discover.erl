@@ -97,6 +97,7 @@ process_raw_config(ProjectDir, FileConfig, CommandLineConfig, State0) ->
     Config0 = sin_config:merge(CommandLineConfig, sin_config:merge(FileConfig, DefaultConfig)),
     BuildDir = sin_config:match(build_dir, Config0),
     State1 = sin_state:store([{release, get_release_name(Config0)},
+                              {release_vsn, sin_config:match(project_vsn, Config0)},
                               {build_root, filename:join([ProjectDir,
                                                            BuildDir])},
                               {build_dir, filename:join([ProjectDir,
