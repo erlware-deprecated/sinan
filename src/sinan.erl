@@ -19,8 +19,10 @@
          usage/0]).
 
 -export_type([args/0,
-              task_name/0]).
+              task_name/0,
+              app/0]).
 
+-include_lib("sinan/include/sinan.hrl").
 -include_lib("eunit/include/eunit.hrl").
 -include("internal.hrl").
 
@@ -30,6 +32,7 @@
 
 -type args() :: ktj_parse:object().
 -type task_name() :: sin_task:task_name().
+-type app() :: record(app).
 
 %%====================================================================
 %% API
@@ -133,20 +136,17 @@ manual_start() ->
                    compiler,
                    syntax_tools,
                    edoc,
-                   ktuo,
                    sasl,
-                   ibrowse,
                    eunit,
                    ewlib,
-                   ewrepo,
                    tools,
                    xmerl,
                    mnesia,
-                   sgte,
                    parsetools,
                    getopt,
                    crypto,
                    proper,
+                   erlware_commons,
                    sinan]).
 
 -spec usage() -> ok.
