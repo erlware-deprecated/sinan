@@ -12,6 +12,7 @@
 
 -behaviour(sin_task).
 
+-include_lib("sinan/include/sinan.hrl").
 -include("internal.hrl").
 
 %% API
@@ -78,8 +79,8 @@ description() ->
 -spec do_task(sin_config:matcher(), sin_state:state()) -> sin_state:state().
 do_task(Config, State) ->
     ProjectDir = sin_state:get_value(project_dir, State),
-    ProjectApps = sin_state:get_value(project_apps, State),
-    RepoApps = sin_state:get_value(project_repoapps, State),
+    AllDeps = sin_state:get_value(release_deps, State),
+    ReleaseApps = sin_state:get_value(release_apps, State),
     BuildDir = sin_state:get_value(build_dir, State),
     EscriptDir = filename:join([BuildDir, "escript"]),
     EscriptWorkingDir = filename:join(EscriptDir, ".ez"),
@@ -96,9 +97,9 @@ do_task(Config, State) ->
                              ReleaseName,
                              EscriptWorkingDir,
                              gather_dirs(State, EscriptWorkingDir,
-                                         filter_apps(RepoApps, EscriptOptions)
+                                         filter_apps(AllDeps, EscriptOptions)
                                          ++
-                                             ProjectApps, []));
+                                             ReleaseApps, []));
             _ ->
                 ewl_talk:say("With escript you may have source files "
                              "or archive files, but you may not have "
@@ -155,7 +156,7 @@ format_exception(Exception) ->
 -spec gather_dirs(sin_state:state(), string(), [tuple()], [string()]) ->
     [string()].
 gather_dirs(State0, EscriptTargetDir,
-            [{AppName, Vsn, _, Path} | T], FileList) ->
+            [#app{name=AppName, vsn=Vsn, path=Path} | T], FileList) ->
     FileName = erlang:atom_to_list(AppName) ++ "-" ++ Vsn,
     Target = filename:join(EscriptTargetDir, FileName),
     ok = ewl_file:mkdir_p(Target),
@@ -227,7 +228,7 @@ filter_apps(Apps, EscriptOptions) ->
             _ ->
                 []
         end,
-    lists:filter(fun({AppName, _, _, _}) ->
+    lists:filter(fun(#app{name=AppName}) ->
                          lists:member(AppName, IncludedApps)
                  end, Apps).
 

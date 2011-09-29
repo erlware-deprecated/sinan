@@ -12,10 +12,17 @@ class TestFoo(st.SmokeTest):
               {project_name, %(project_name)s}.
               {project_vsn, "%(project_version)s"}.
 
-               {releases, [{r1, "1.0", [app1, app2, app3]},
-                           {r2, "2.0", [app4, app1]},
-                           {r3, "3.0", [app3, app2]},
-                           {r4, "1.1", [app3, app2]}]}.
+               {{dep_constraints, [{release, r1}]},
+                   [{exclude, app4}]}.
+               {{dep_constraints, [{release, r2}]},
+                   [{exclude, app4},
+                    {exclude, app1}]}.
+               {{dep_constraints, [{release, r3}]},
+                   [{exclude, app4},
+                    {exclude, app1}]}.
+               {{dep_constraints, [{release, r4}]},
+                    [{exclude, app4},
+                     {exclude, app1}]}.
 
         """ % {"project_name" : app_desc.project_name,
                "project_version" : app_desc.project_version}
@@ -43,10 +50,7 @@ class TestFoo(st.SmokeTest):
                 child.expect(pexpect.EOF)
 
             self.release_name = r
-            self.release_version = {"r1" : "1.0",
-                                    "r2" : "2.0",
-                                    "r3" : "3.0",
-                                    "r4" : "1.1"}[r]
+            self.release_version = app_desc.project_version
 
             ((st.sinan("-r %s dist" % r)(run_dist))(self))
 

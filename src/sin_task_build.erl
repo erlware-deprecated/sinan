@@ -12,6 +12,8 @@
 
 -include_lib("kernel/include/file.hrl").
 -include_lib("eunit/include/eunit.hrl").
+-include_lib("sinan/include/sinan.hrl").
+
 -include("internal.hrl").
 
 %% API
@@ -27,6 +29,7 @@
                apps_build_dir,
                sig_dir,
                app_list,
+               includes,
                deps}).
 
 -define(TASK, build).
@@ -76,7 +79,7 @@ description() ->
 -spec do_task(sin_config:config(), sin_state:state()) -> sin_state:state().
 do_task(Config, State) ->
     ensure_build_dir(State),
-    Apps = sin_state:get_value(project_allapps, State),
+    Apps = sin_state:get_value(release_apps, State),
     NApps = reorder_apps_according_to_deps(State, Apps),
     build_apps(Config, State, NApps).
 
@@ -132,21 +135,21 @@ format_exception(Exception) ->
 %% @doc Given a list of apps and dependencies creates an ordered build list for
 %% the apps.
 -spec reorder_apps_according_to_deps(sin_state:state(),
-                                     [AppInfo::term()]) -> list().
+                                     [sinan:app()]) -> list().
 reorder_apps_according_to_deps(State, AllApps) ->
     ReOrdered = lists:foldr(
-                  fun ({App, _, {Deps, IncDeps}, _}, Acc) ->
-                          AllDeps = Deps++IncDeps,
-                          case map_deps(App, AllDeps, AllApps) of
+                  fun (#app{name=AppName}, Acc) ->
+                          AllDeps = sin_state:get_value({apps, AppName, deps}, State),
+                          case map_deps(AppName, AllDeps, AllApps) of
                               [] ->
-                                  [{'NONE', App} | Acc];
+                                  [{'NONE', AppName} | Acc];
                               Else ->
                                   Else ++ Acc
                           end
                   end, [], AllApps),
     case sin_topo:sort(ReOrdered) of
         {ok, DepList} ->
-            DepList;
+            remap_info(State, DepList, AllApps);
         {cycle, CycleList} ->
             ?SIN_RAISE(State, cycles_detected,
                        "A cycle was detected in the dependency graph "
@@ -154,11 +157,31 @@ reorder_apps_according_to_deps(State, AllApps) ->
                        [CycleList])
     end.
 
+-spec remap_info(sin_state:state(), [atom()], [sinan:app()]) ->
+                        [sinan:app()].
+remap_info(State, ['NONE' | Rest], AllApps) ->
+    remap_info(State, Rest, AllApps);
+remap_info(State, Rest, AllApps) ->
+    lists:map(fun(AppName0) ->
+                      case ec_lists:find(fun(#app{name=AppName1}) ->
+                                                 AppName1 == AppName0
+                                         end, AllApps) of
+                          {ok, App} ->
+                              App;
+                          error ->
+                              ?SIN_RAISE(State, {unable_to_find_app_info,
+                                                 this_shouldnt_happen, AppName0})
+                      end
+              end, Rest).
+
+
 %% @doc Map the lists of dependencies for 'App' into a pairs for the topo sort.
--spec map_deps(atom(), list(), list()) -> list().
+-spec map_deps(atom(), [atom()], [sinan:app()]) -> list().
 map_deps(App, Deps, AllApps) ->
          lists:foldr(fun (DApp, Acc) ->
-                             case lists:keymember(DApp, 1, AllApps) of
+                             case lists:any(fun(#app{name=AppName}) ->
+                                                    AppName == DApp
+                                            end, AllApps) of
                                  true ->
                                      [{DApp, App} | Acc];
                                  false ->
@@ -168,17 +191,25 @@ map_deps(App, Deps, AllApps) ->
 
 %% @doc Build the apps in the list.
 build_apps(Config, State, Apps) ->
-    AppList = sin_state:get_value(project_allapps, State),
-    AllDeps = sin_state:get_value(project_alldeps, State),
+    AppList = sin_state:get_value(release_apps, State),
+    AllDeps = sin_state:get_value(release_deps, State),
     ProjectDir = sin_state:get_value(project_dir, State),
     BuildDir = sin_state:get_value(build_dir, State),
     AppBDir = filename:join([BuildDir, "apps"]),
     SigDir = filename:join([BuildDir, "sigs"]),
+
+    Includes =
+        lists:map(fun(#app{path=Path}) ->
+                          true = code:add_patha(filename:join(Path, "ebin")),
+                          filename:join(Path, "includes")
+                  end, AllDeps),
+
     build_apps(Config, State, #env{project_dir=ProjectDir,
                                    build_dir=BuildDir,
                                    apps_build_dir=AppBDir,
                                    sig_dir=SigDir,
                                    app_list=AppList,
+                                   includes=Includes,
                                    deps=AllDeps},
                Apps).
 
@@ -186,17 +217,13 @@ build_apps(Config, State, Apps) ->
 build_apps(Config, State0, BuildSupInfo, AppList) ->
     Cache0 = dict:new(),
     {_Cache, State1} =
-        lists:foldl(fun ('NONE', Acc) ->
-                            % We ignore an app type of none, its a remnent
-                            % of the reorder process.
-                            Acc;
-                        (App, {Cache1, State1}) ->
+        lists:foldl(fun(App, {Cache1, State1}) ->
                             build_app(Config, State1, Cache1, BuildSupInfo, App)
                     end, {Cache0, State0}, AppList),
     State1.
 
 %% @doc Build an individual otp application.
-build_app(Config0, State0, Cache0, Env, AppName) ->
+build_app(Config0, State0, Cache0, Env, #app{name=AppName}) ->
     Config1 = Config0:specialize([{app, AppName}]),
     AppBuildDir =
         sin_state:get_value({apps, AppName, builddir}, State0),
@@ -204,17 +231,16 @@ build_app(Config0, State0, Cache0, Env, AppName) ->
 
     Target = filename:join([AppBuildDir, "ebin"]),
 
-    {EbinPaths, Includes} = setup_code_path(State0, Env, AppName),
+    Includes = Env#env.includes,
 
     code:add_patha(Target),
+
     {Cache1, FileList, State1} = process_source_files(State0,
                                                       Cache0,
                                                       Includes,
                                                       gather_modules(State0,
                                                                      AppName)),
-    State2 = sin_state:store([{{apps, AppName, code_paths},
-                               [Target | EbinPaths]},
-                              {{apps, AppName, file_list},
+    State2 = sin_state:store([{{apps, AppName, file_list},
                                FileList}],
                              State1),
 
@@ -483,69 +509,6 @@ get_build_module(_, '.yrl') ->
     sin_compile_yrl;
 get_build_module(State, Ext) ->
     ?SIN_RAISE(State, {unsupported_file_type, Ext}).
-
-%% @doc Gather code paths and includes from the dependency list.
-setup_code_path(State, Env, AppName) ->
-    case get_app_from_list(AppName, Env#env.app_list) of
-        not_in_list ->
-            ?SIN_RAISE(State, app_name_not_in_list,
-                       "App ~s is not in the list of project apps. "
-                       "This shouldn't happen!!",
-                       [AppName]);
-        {_, _, {Deps, IncDeps}, _} ->
-            get_compile_time_deps(State,
-                                  extract_info_from_deps(State,
-                                                         Deps ++ IncDeps,
-                                                         element(1, Env#env.deps),
-                                                         [], [], []))
-        end.
-%% @doc gather up the static compile time dependencies
-get_compile_time_deps(State, {Acc, IAcc}) ->
-    lists:foldl(fun({_, _, _, Path}, {NA, NIA}) ->
-                        Ebin = filename:join([Path, "ebin"]),
-                        Include = {i, filename:join([Path, "include"])},
-                        {[Ebin | NA], [Include | NIA]}
-                end,
-                {Acc, IAcc},
-                sin_state:get_value(project_compile_deps, State)).
-
-%% @doc Gather path and include information from the dep list.
-extract_info_from_deps(State, [AppName | T],
-                       AppList, Marked, Acc, IAcc) ->
-    case lists:member(AppName, Marked) of
-        false ->
-            case get_app_from_list(AppName, AppList) of
-                not_in_list ->
-                    ?SIN_RAISE(State,
-                               app_name_not_in_list,
-                               "App ~s is not in the list of project apps. "
-                               "This shouldn't happen!!!",
-                               [AppName]);
-                {_, _, {Deps, IncDeps}, Path} ->
-                    Ebin = filename:join([Path, "ebin"]),
-                    Include = {i, filename:join([Path, "include"])},
-                    code:add_patha(Ebin),
-                    extract_info_from_deps(State, T, AppList ++ Deps ++
-                                           IncDeps,
-                                           Marked,
-                                           [Ebin | Acc],
-                                           [Include | IAcc])
-            end;
-        true ->
-            extract_info_from_deps(State, T, AppList, Marked, Acc,
-                                   IAcc)
-    end;
-extract_info_from_deps(_, [], _, _, Acc, IAcc) ->
-    {Acc, IAcc}.
-
-%% @doc Get the app from the app list.
-get_app_from_list(App, AppList) ->
-    case lists:keysearch(App, 1, AppList) of
-        {value, Entry} ->
-            Entry;
-        false ->
-            not_in_list
-    end.
 
 %% @doc Gather the list of modules that currently may need to be built.
 gather_modules(State, AppName) ->

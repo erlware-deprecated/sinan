@@ -11,6 +11,7 @@
 -behaviour(sin_task).
 
 -include_lib("eunit/include/eunit.hrl").
+-include_lib("sinan/include/sinan.hrl").
 -include("internal.hrl").
 
 %% API
@@ -44,31 +45,15 @@ description() ->
 %% @doc Run the shell command.
 -spec do_task(sin_config:config(), sin_state:state()) -> sin_state:state().
 do_task(_Config, State) ->
-    ProjectApps = sin_state:get_value(project_apps, State),
-    ProjectRepoApps = sin_state:get_value(project_repoapps, State),
-    make_shell(ProjectApps, ProjectRepoApps),
+    ReleaseDeps = sin_state:get_value(release_deps, State),
+    lists:foreach(fun(#app{path=Path}) ->
+                          code:add_patha(filename:join(Path, "ebin"))
+                  end, ReleaseDeps),
+
     State.
 
 %%====================================================================
 %%% Internal functions
 %%====================================================================
 
-%% @doc Go through and actually start the shell.
--spec make_shell(string(), [string()]) -> ok.
-make_shell(ProjectApps, ProjectRepoApps) ->
-    setup_paths(ProjectApps),
-    setup_paths(ProjectRepoApps).
-
-%% @doc gather a list of paths from the app and add them to the code path
--spec setup_paths([AppInfo::term()]) -> ok.
-setup_paths([{_AppName, _Vsn, _, AppPath} | T]) ->
-    code:add_patha(AppPath),
-    setup_paths(T);
-setup_paths([]) ->
-    ok.
-
-
-%%====================================================================
-%% Tests
-%%====================================================================
 

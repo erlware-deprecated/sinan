@@ -13,6 +13,7 @@
 
 -behaviour(sin_task).
 
+-include_lib("sinan/include/sinan.hrl").
 -include("internal.hrl").
 
 %% API
@@ -56,9 +57,8 @@ description() ->
 -spec do_task(sin_config:matcher(), sin_state:state()) -> sin_state:state().
 do_task(Config, State) ->
     ProjectDir = sin_state:get_value(project_dir, State),
-    ProjectApps = sin_state:get_value(project_apps, State),
-    ProjectRepoApps = sin_state:get_value(project_repoapps, State),
-    make_tar(Config, State, ProjectDir, ProjectApps, ProjectRepoApps).
+    ReleaseApps = sin_state:get_value(release_runtime_deps, State),
+    make_tar(Config, State, ProjectDir, ReleaseApps).
 
 %% @doc Format an exception thrown by this module
 -spec format_exception(sin_exceptions:exception()) ->
@@ -72,10 +72,9 @@ format_exception(Exception) ->
 
 %% @doc Go through and actually build up the tar file.
 -spec make_tar(sin_config:matcher(),
-               sin_state:state(), string(), [term()],
-               [term()]) ->
+               sin_state:state(), string(), [sinan:app()]) ->
                       sin_state:state().
-make_tar(Config, State, ProjectDir, ProjectApps, ProjectRepoApps) ->
+make_tar(Config, State, ProjectDir, ReleaseApps) ->
     BuildDir = sin_state:get_value(build_dir, State),
     TarDir = filename:join([BuildDir, "tar"]),
     filelib:ensure_dir(filename:join([TarDir, "tmp"])),
@@ -83,18 +82,15 @@ make_tar(Config, State, ProjectDir, ProjectApps, ProjectRepoApps) ->
     ReleaseName =
         try
             RStr = Config:match('-r'),
-            R = erlang:list_to_atom(RStr),
-            {R, Vsn, _Apps} = lists:keyfind(R, 1, Config:match(releases)),
-            RStr ++ "-" ++ Vsn
+            RStr ++ "-" ++ Config:match(project_vsn)
         catch
             throw:not_found ->
                 erlang:atom_to_list(ProjectName) ++ "-" ++ Config:match(project_vsn)
         end,
 
     LibDir = filename:join([ProjectName, "lib"]),
-    List1 = gather_dirs(LibDir, ProjectRepoApps, []),
-    List2 = gather_dirs(LibDir, ProjectApps, List1),
-    List3 = List2 ++ copy_additional_dirs(Config, State, ProjectName, ProjectDir) ++
+    List1 = gather_dirs(LibDir, ReleaseApps, []),
+    List3 = List1 ++ copy_additional_dirs(Config, State, ProjectName, ProjectDir) ++
         get_release_dirs(Config, State, ProjectName, BuildDir, ProjectDir) ++
         add_defaults(State, ProjectDir, ProjectName),
     create_tar_file(State, filename:join([TarDir,
@@ -196,7 +192,7 @@ erts_dir(Config, TopLevel) ->
 %% pairs.
 -spec gather_dirs(string(), [string()], list()) ->
     [{string(), string()}].
-gather_dirs(LibDir, [{AppName, Vsn, _, Path} | T], Acc) ->
+gather_dirs(LibDir, [#app{name=AppName, vsn=Vsn, path=Path} | T], Acc) ->
     DirName = lists:flatten([atom_to_list(AppName), "-", Vsn]),
     NewName = filename:join([LibDir, DirName]),
     gather_dirs(LibDir, T, [{Path, NewName} | Acc]);

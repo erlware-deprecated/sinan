@@ -11,6 +11,7 @@
 
 -behaviour(sin_task).
 
+-include_lib("sinan/include/sinan.hrl").
 -include("internal.hrl").
 
 %% API
@@ -51,9 +52,9 @@ do_task(_Config, State) ->
     ExistingPaths = code:get_path(),
     xref:start(ServerName),
 
-    Apps = lists:map(fun({App, _Vsn, _Deps, _}) ->
+    Apps = lists:map(fun(#app{name=App}) ->
                              App
-                     end, sin_state:get_value(project_apps, State)),
+                     end, sin_state:get_value(release_apps, State)),
 
     ModuleInfo =
         lists:flatten(lists:map(fun(App) ->

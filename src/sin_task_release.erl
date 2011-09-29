@@ -10,6 +10,7 @@
 
 -behaviour(sin_task).
 
+-include_lib("sinan/include/sinan.hrl").
 -include("internal.hrl").
 
 %% API
@@ -31,7 +32,14 @@ description() ->
         files into the output area of the project. Those files maybe found at:
         <break> <break> <build-area>/realeases/<project-name>-<vsn> |
         <release-name>-<vsn> <break> <break> Check the erlang documentation for
-        releases to understand what this means. ",
+        releases to understand what this means. <break> <break>"
+
+        "The release task tasks a single configuration that looks like
+         {types, [{AppName1, RelType},<break>
+                  {AppName2, RelType}]}. <break>
+
+        This configuration allows you to specify the type of application this is
+        for the release. (Again review the release information for details). " ,
 
     #task{name = ?TASK,
           task_impl = ?MODULE,
@@ -49,14 +57,13 @@ do_task(Config, State0) ->
     {ReleaseName, Version} =
         try
             R = erlang:list_to_atom(Config:match('-r')),
-            {_, Vsn, _} = lists:keyfind(R, 1, Config:match(releases)),
-            {R, Vsn}
+            {R, Config:match(project_vsn)}
         catch
             throw:not_found ->
                 {Config:match(project_name), Config:match(project_vsn)}
         end,
     ReleaseInfo = generate_rel_file(Config, State0, BuildDir, ReleaseName, Version),
-    State1 = sin_state:store({project_release_info}, ReleaseInfo, State0),
+    State1 = sin_state:store(rel, ReleaseInfo, State0),
     copy_or_generate_sys_config_file(Config, BuildDir, ReleaseName, Version),
     make_boot_script(State1, ReleaseInfo),
     State1.
@@ -93,52 +100,32 @@ generate_rel_file(Config, State, BuildDir, Name, Version) ->
                                      ProjectVsn) of
             no_file ->
                 Erts = get_erts_info(),
-                Deps =
-                    process_deps(State,
-                                 element(1, sin_state:get_value(project_deps, State)), []),
-                Deps2 =
-                    process_deps(State,
-                                 element(2, sin_state:get_value(project_deps, State)), []),
-                Deps3 = lists:map(fun({App, AppVersion}) ->
+                Deps0 =
+                    process_deps(Config:match(types, []),
+                                 sin_state:get_value(release_runtime_deps, State), []),
+                Deps1 = lists:map(fun({App, AppVersion}) ->
                                           {App, AppVersion, load}
-                                  end, Deps2),
+                                  end, Deps0),
 
                 {release, {erlang:atom_to_list(Name), Version}, {erts, Erts},
-                 lists:ukeymerge(1, lists:sort(Deps), lists:sort(Deps3))};
+                 lists:sort(Deps1)};
             RelInfo ->
                 RelInfo
         end,
     {save_release(State, BuildDir, Name, Version, Release), Release}.
 
 %% @doc Process the dependencies into a format useful for the rel depends area.
--spec process_deps(sin_state:state(),
+-spec process_deps([atom()],
                    [AppInfo::tuple()], [AppInfo::tuple()]) ->
     [AppInfo::tuple()].
-process_deps(State, [{App, Vsn, _, _} | T], Acc) ->
-    NewApp = stringify(App),
-    case {sin_state:get_value({project_release, NewApp, type}, State),
-          sin_state:get_value({project_release, NewApp, include_apps}, State)} of
-        {undefined, undefined} ->
-            process_deps(State, T, [{App, Vsn} | Acc]);
-        {Type, undefined} ->
-            process_deps(State, T, [{App, Vsn, list_to_atom(Type)} | Acc]);
-        {undefined, IncList} ->
-            process_deps(State, T,
-                         [{App, Vsn, process_inc_list(IncList, [])} | Acc]);
-        {Type, IncList} ->
-            process_deps(State,
-                         T, [{App, Vsn, list_to_atom(Type),
-                              process_inc_list(IncList, [])} | Acc])
+process_deps(Types, [#app{name=App, vsn=Vsn} | T], Acc) ->
+    case lists:keyfind(App, 1, Types) of
+        {App, Type} ->
+            process_deps(Types, T, [{App, Vsn, list_to_atom(Type)} | Acc]);
+        _ ->
+            process_deps(Types, T, [{App, Vsn} | Acc])
     end;
-process_deps(_State, [], Acc) ->
-    Acc.
-
-%% @doc Process the optional include list into a list of atoms.
--spec process_inc_list([string()], [atom()]) ->
-    [atom()].
-process_inc_list([H | T], Acc) ->
-    process_inc_list(T, [list_to_atom(H) | Acc]);
-process_inc_list([], Acc) ->
+process_deps(_, [], Acc) ->
     Acc.
 
 %% @doc Save the release terms to a releases file for later use by the system.
@@ -236,21 +223,6 @@ generate_sys_config_file(RelSysConfPath) ->
 %% @doc Generates the correct set of code paths for the system.
 -spec get_code_paths(sin_state:state()) -> sin_config:config().
 get_code_paths(State) ->
-    ProjApps = sin_state:get_value(project_apps, State),
-    ProjPaths = lists:merge(
-                  lists:map(
-                    fun({App, _, _, _}) ->
-                            sin_state:get_value({apps, App, code_paths}, State)
-                    end, ProjApps)),
-    RepoPaths = lists:map(
-                  fun ({_App, _Vsn, _, Path}) ->
-                          filename:join([Path, "ebin"])
-                  end, sin_state:get_value(project_repoapps, State)),
-    lists:merge([ProjPaths, RepoPaths]).
+    [filename:join([Path, "ebin"]) ||
+        #app{path=Path} <- sin_state:get_value(release_runtime_deps, State)].
 
-%% @doc Convert the value to a string if it is an atom
--spec stringify(string() | atom()) -> string().
-stringify(Value) when is_list(Value) ->
-    Value;
-stringify(Value) when is_atom(Value) ->
-    atom_to_list(Value).

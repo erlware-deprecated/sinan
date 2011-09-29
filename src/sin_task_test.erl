@@ -12,6 +12,7 @@
 
 -behaviour(sin_task).
 
+-include_lib("sinan/include/sinan.hrl").
 -include("internal.hrl").
 
 %% API
@@ -45,10 +46,8 @@ description() ->
 
 %% @doc run all tests for all modules in the system
 do_task(Config, State) ->
-    Apps = lists:map(fun({App, _Vsn, _Deps, _}) ->
-                             App
-                     end, sin_state:get_value(project_apps, State)),
-    test_apps(build_all(Config), State, Apps, []),
+    test_apps(build_all(Config), State,
+              sin_state:get_value(release_apps, State), []),
     State.
 
 
@@ -71,8 +70,8 @@ build_all(Config) ->
 %% @doc Run tests for all the applications specified.
 %% @private
 -spec test_apps(all | changed,
-                sin_state:state(), [string()], [[atom()]]) -> ok.
-test_apps(BuildAll, State, [AppName | T], Acc) ->
+                sin_state:state(), [sinan:app()], [[atom()]]) -> ok.
+test_apps(BuildAll, State, [#app{name=AppName} | T], Acc) ->
     io:format("testing app ~p~n", [AppName]),
     Modules = sin_state:get_value({apps, AppName, file_list}, State),
     case Modules == undefined orelse length(Modules) =< 0 of

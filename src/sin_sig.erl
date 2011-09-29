@@ -43,7 +43,8 @@ save_sig_info(Key, Value, State) ->
     update_state(dict:store({?TERM_KEY, Key}, Value, get_sig(State)), State).
 
 %% @doc Get the values determined by key from the sig
--spec get_sig_info(term(), sin_state:state()) -> boolean().
+-spec get_sig_info(term(), sin_state:state()) ->
+                          {ok, term()} | error.
 get_sig_info(Key, BuildState) ->
     dict:find({?TERM_KEY, Key}, get_sig(BuildState)).
 

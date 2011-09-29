@@ -8,11 +8,31 @@
 -module(sin_test_project_gen).
 
 -export([single_app_project/2,
-         validate_single_app_project/2]).
+         single_app_project/3,
+         validate_single_app_project/2,
+         multi_app_project/3]).
 
 -include_lib("eunit/include/eunit.hrl").
 
 single_app_project(BaseDir, ProjectName) ->
+    single_app_project(BaseDir, ProjectName, "0.1.0").
+
+single_app_project(BaseDir, ProjectName, Vsn) ->
+    ProjectDir = filename:join([BaseDir, ProjectName]),
+    Env = [{year, "2010"},
+           {username, "ATestUser"},
+           {email_address, "ATestUser@noreply.com"},
+           {copyright_holder, "ATestUser"},
+           {project_version, Vsn},
+           {project_name, ProjectName},
+           {project_dir, ProjectDir},
+           {erts_version, erlang:system_info(version)},
+           {single_app_project, true},
+           {wants_build_config, true}],
+    sin_gen:gen(Env),
+    {ProjectDir, Env}.
+
+multi_app_project(BaseDir, ProjectName, Apps) ->
     ProjectDir = filename:join([BaseDir, ProjectName]),
     Env = [{year, "2010"},
            {username, "ATestUser"},
@@ -22,7 +42,8 @@ single_app_project(BaseDir, ProjectName) ->
            {project_name, ProjectName},
            {project_dir, ProjectDir},
            {erts_version, erlang:system_info(version)},
-           {single_app_project, true},
+           {single_app_project, false},
+           {apps, Apps},
            {wants_build_config, true}],
     sin_gen:gen(Env),
     {ProjectDir, Env}.

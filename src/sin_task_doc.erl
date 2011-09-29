@@ -10,6 +10,7 @@
 
 -behaviour(sin_task).
 
+-include_lib("sinan/include/sinan.hrl").
 -include("internal.hrl").
 
 %% API
@@ -43,7 +44,7 @@ description() ->
 %% @doc run edoc on all applications
 -spec do_task(sin_config:config(), sin_state:state()) -> sin_state:state().
 do_task(_Config, State) ->
-    Apps = sin_state:get_value(project_apps, State),
+    Apps = sin_state:get_value(release_apps, State),
     run_docs(State, Apps),
     State.
 
@@ -60,7 +61,7 @@ format_exception(Exception) ->
 %% @doc
 %%  Run edoc on all the modules in all of the applications.
 -spec run_docs(sin_state:state(), [AppInfo::tuple()]) -> ok.
-run_docs(State, [{AppName, _, _, Path} | T]) ->
+run_docs(State, [#app{name=AppName, path=Path} | T]) ->
     DocDir = filename:join([Path, "docs"]),
     filelib:ensure_dir(filename:join([DocDir, "tmp"])),
 

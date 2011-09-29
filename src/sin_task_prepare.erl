@@ -11,6 +11,7 @@
 -behaviour(sin_task).
 
 -include("internal.hrl").
+-include_lib("sinan/include/sinan.hrl").
 
 %% API
 -export([description/0,
@@ -47,7 +48,7 @@ do_task(_Config, State0) ->
     BuildDir = sin_state:get_value(build_dir, State0),
     Ignorables = sin_state:get_value(ignore_dirs, State0),
 
-    ProjectApps = sin_state:get_value(project_allapps, State0),
+    ProjectApps = sin_state:get_value(release_apps, State0),
     lists:foldl(fun(App, State1) ->
                           prepare_app(State1, BuildDir, App, Ignorables)
                   end, State0, ProjectApps).
@@ -55,9 +56,7 @@ do_task(_Config, State0) ->
 -spec prepare_app(sin_state:state(), string(), string(),
                   [string()]) ->
                          sin_config:config().
-prepare_app(State0, BuildDir, AppInfo, Ignorables) ->
-    {AppName, _AppVsn, _Deps, AppBuildDir} = AppInfo,
-
+prepare_app(State0, BuildDir, _AppInfo = #app{name=AppName, path=AppBuildDir}, Ignorables) ->
     AppDir = sin_state:get_value({apps, AppName, basedir}, State0),
 
     %% Ignore the build dir when copying or we will create a deep monster in a
@@ -71,6 +70,20 @@ prepare_app(State0, BuildDir, AppInfo, Ignorables) ->
 
     BaseDetails = populate_modules(State1, AppName),
 
+    Applications = case lists:keyfind(applications, 1, BaseDetails) of
+                       {applications, AppList} ->
+                           AppList;
+                       false ->
+                           []
+                   end,
+    IncludedApps = case lists:keyfind(included_applications, 1, BaseDetails) of
+                     {included_applications, IncAppList} ->
+                         IncAppList;
+                     false ->
+                         []
+                   end,
+    State3 = sin_state:store({apps, AppName, deps},
+                             Applications ++ IncludedApps, State2),
 
     DotApp = filename:join([AppBuildDir, "ebin",
                             erlang:atom_to_list(AppName) ++ ".app"]),
@@ -79,7 +92,7 @@ prepare_app(State0, BuildDir, AppInfo, Ignorables) ->
                     io_lib:format("~p.\n",
                                   [{application, AppName,
                                     BaseDetails}])),
-    State2.
+    State3.
 
 %% @doc Format an exception thrown by this module
 -spec format_exception(sin_exceptions:exception()) ->
