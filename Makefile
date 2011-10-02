@@ -9,7 +9,7 @@ BEAMDIR=$(APPDIR)/ebin
 SMOKETEST_DIR=$(CURDIR)/smoketests
 PYPATH=$(PYTHONPATH):$(SMOKETEST_DIR)
 RSYNC_OPTIONS=-vaz --delete
-BEHAVIOURS=src/sin_task.erl
+BEHAVIOURS=src/sin_task.erl src/sin_dep_resolver.erl
 .SUFFIXES: .erl .beam .yrl
 
 vpath %.erl src test
