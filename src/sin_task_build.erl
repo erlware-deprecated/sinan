@@ -25,7 +25,7 @@
          format_exception/1]).
 
 -define(TASK, build).
--define(DEPS, [prepare, depends]).
+-define(DEPS, [depends]).
 
 %%====================================================================
 %% API
@@ -74,7 +74,8 @@ do_task(Config, State0) ->
     Apps0 = sin_state:get_value(release_apps, State0),
     NApps = reorder_apps_according_to_deps(State0, Apps0),
     {State1, Apps1} = build_apps(Config, State0, NApps),
-    sin_state:store(release_apps, Apps1, State1).
+    sin_app_meta:populate(Config, sin_state:store(release_apps, Apps1, State1)).
+
 
 %% @doc Gather up all the errors and warnings for output.
 -spec gather_fail_info([term()], string()) ->
@@ -183,16 +184,36 @@ map_deps(App, Deps, AllApps) ->
                      end, [], Deps).
 
 %% @doc Build the apps in the list.
-build_apps(Config, State, Apps) ->
-    AllDeps = sin_state:get_value(release_deps, State),
+build_apps(Config, State0, Apps) ->
+    AllDeps = sin_state:get_value(release_deps, State0),
 
-    Includes =
-        lists:map(fun(#app{path=Path}) ->
-                          true = code:add_patha(filename:join(Path, "ebin")),
-                          filename:join(Path, "includes")
-                  end, AllDeps),
+    BuildDir = sin_state:get_value(build_dir, State0),
+    Ignorables = sin_state:get_value(ignore_dirs, State0),
 
-    build_apps(Config, State, Includes, Apps).
+
+    {State2, Includes} =
+        lists:foldl(fun(#app{name=AppName, path=Path, project=true}, {State1, Includes}) ->
+                          {prepare_app(State1, AppName, Path, BuildDir, Ignorables),
+                           [filename:join(Path, "includes") | Includes]};
+                       (#app{path=Path}, {State1, Includes}) ->
+                            {State1, [filename:join(Path, "includes") | Includes]}
+                    end, {State0, []}, AllDeps),
+
+    build_apps(Config, State2, Includes, Apps).
+
+prepare_app(State0, AppName, AppBuildDir, BuildDir, Ignorables) ->
+    AppDir = sin_state:get_value({apps, AppName, basedir}, State0),
+
+    %% Ignore the build dir when copying or we will create a deep monster in a
+    %% few builds
+    State1 = sin_utils:copy_dir(State0, AppBuildDir, AppDir, "",
+                                [BuildDir | Ignorables]),
+
+    State2 = sin_state:store({apps, AppName, builddir},
+                             AppBuildDir, State1),
+
+    true = code:add_patha(filename:join(AppBuildDir, "ebin")),
+    State2.
 
 %% @doc build the apps as they come up in the list.
 build_apps(Config, State0, Includes, AppList) ->

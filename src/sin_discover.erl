@@ -258,11 +258,25 @@ build_app_info(State0, [H|T], Acc) ->
     {AppName, AppFile, AppDir} = get_app_info(H),
     case file:consult(AppFile) of
         {ok, [{application, AppName, Details}]} ->
+
+            Applications = case lists:keyfind(applications, 1, Details) of
+                               {applications, AppList} ->
+                                   AppList;
+                               false ->
+                                   []
+                           end,
+            IncludedApps = case lists:keyfind(included_applications, 1, Details) of
+                               {included_applications, IncAppList} ->
+                                   IncAppList;
+                               false ->
+                                   []
+                           end,
+
             State1 = source_details(AppDir, AppName,
-                                    sin_state:store({apps, AppName, dotapp},
-                                                    AppFile,
-                                                    sin_state:store({apps, AppName, basedir},
-                                                                    AppDir, State0))),
+                                    sin_state:store([{{apps, AppName, dotapp}, AppFile},
+                                                     {{apps, AppName, basedir}, AppDir},
+                                                     {{apps, AppName, deps}, Applications ++ IncludedApps}],
+                                                    State0)),
             State3 =
                 lists:foldl(fun({Key, Value}, State4) ->
                                     sin_state:store({apps, AppName, Key}, Value, State4)
