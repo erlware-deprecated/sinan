@@ -24,14 +24,6 @@
          get_target/4,
          format_exception/1]).
 
--record(env,  {project_dir,
-               build_dir,
-               apps_build_dir,
-               sig_dir,
-               app_list,
-               includes,
-               deps}).
-
 -define(TASK, build).
 -define(DEPS, [prepare, depends]).
 
@@ -192,12 +184,7 @@ map_deps(App, Deps, AllApps) ->
 
 %% @doc Build the apps in the list.
 build_apps(Config, State, Apps) ->
-    AppList = sin_state:get_value(release_apps, State),
     AllDeps = sin_state:get_value(release_deps, State),
-    ProjectDir = sin_state:get_value(project_dir, State),
-    BuildDir = sin_state:get_value(build_dir, State),
-    AppBDir = filename:join([BuildDir, "apps"]),
-    SigDir = filename:join([BuildDir, "sigs"]),
 
     Includes =
         lists:map(fun(#app{path=Path}) ->
@@ -205,32 +192,23 @@ build_apps(Config, State, Apps) ->
                           filename:join(Path, "includes")
                   end, AllDeps),
 
-    build_apps(Config, State, #env{project_dir=ProjectDir,
-                                   build_dir=BuildDir,
-                                   apps_build_dir=AppBDir,
-                                   sig_dir=SigDir,
-                                   app_list=AppList,
-                                   includes=Includes,
-                                   deps=AllDeps},
-               Apps).
+    build_apps(Config, State, Includes, Apps).
 
 %% @doc build the apps as they come up in the list.
-build_apps(Config, State0, BuildSupInfo, AppList) ->
+build_apps(Config, State0, Includes, AppList) ->
         lists:foldl(fun(App0, {State1, Apps0}) ->
-                            {State2, App1} = build_app(Config, State1, BuildSupInfo, App0),
+                            {State2, App1} = build_app(Config, State1, Includes, App0),
                             {State2, [App1 | Apps0]}
                     end, {State0, []}, AppList).
 
 %% @doc Build an individual otp application.
-build_app(Config0, State0, Env, App=#app{name=AppName,
+build_app(Config0, State0, Includes, App=#app{name=AppName,
                                          path=AppBuildDir,
                                          sources=Modules0}) ->
     Config1 = Config0:specialize([{app, AppName}]),
     AppDir = sin_state:get_value({apps, AppName, basedir}, State0),
 
     Target = filename:join([AppBuildDir, "ebin"]),
-
-    Includes = Env#env.includes,
 
     code:add_patha(Target),
 
