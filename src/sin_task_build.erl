@@ -240,7 +240,7 @@ build_app(Config0, State0, Env, App=#app{name=AppName,
                                 build_source_if_required(Config1, State1,
                                                          Module,
                                                          Includes, AppDir,
-                                                         Target),
+                                                         Target, Modules0),
                             {State2, [Mods | Modules1]}
                     end, {State0, []}, Modules0),
     {State3, App#app{modules=lists:flatten(NewModules)}}.
@@ -251,7 +251,7 @@ build_source_if_required(Config0, State0,
                          Module=#module{name=Name,
                                         type=Type,
                                         change_sig=NewSig},
-              Includes, AppDir,  Target) ->
+              Includes, AppDir,  Target, AllModules) ->
     case Type of
         T when T == yrl; T == erl ->
             case sin_sig:get_sig_info({?MODULE, Name}, State0) of
@@ -261,21 +261,46 @@ build_source_if_required(Config0, State0,
                             {ok, Modules} = sin_sig:get_sig_info({?MODULE, modules, Name}, State0),
                             {State0, Modules};
                         false ->
-                            {State1, Modules} =
-                                build_source(Config0, State0, Module,
-                                             Includes, AppDir, Target),
-                            {sin_sig:save_sig_info({?MODULE, modules, Name}, Modules, State1),
-                             Modules}
+                            do_build_source(Config0, State0, Module, Includes, AppDir,  Target, AllModules)
                     end;
                 _ ->
-                    {State1, Modules} =
-                        build_source(Config0, State0, Module, Includes, AppDir, Target),
-                    {sin_sig:save_sig_info({?MODULE, modules, Name}, Modules, State1),
-                     Modules}
+                    do_build_source(Config0, State0, Module, Includes, AppDir,  Target, AllModules)
             end;
         _ ->
             {State0, [Module]}
     end.
+
+do_build_source(Config0, State0, Module = #module{name=Name, module_deps=DepModules},
+                Includes, AppDir,  Target, AllModules) ->
+    State1 = build_dep_modules(Config0, State0, DepModules,
+                               Includes, AppDir,  Target, AllModules),
+    {State2, Modules} =
+        build_source(Config0, State1, Module,
+                     Includes, AppDir, Target),
+    {sin_sig:save_sig_info({?MODULE, modules, Name}, Modules, State2),
+     Modules}.
+
+build_dep_modules(_Config0, State0, [], _Includes, _AppDir,  _Target, _AllModules) ->
+    State0;
+build_dep_modules(Config0, State0, DepNames, Includes, AppDir,  Target, AllModules) ->
+    sets:fold(fun(DepName, State1) ->
+                      case ec_lists:find(fun(#module{name=ModName})
+                                               when ModName == DepName ->
+                                                 true;
+                                              (_) ->
+                                                 false
+                                         end, AllModules) of
+                          {ok, Module} ->
+                                {State2, _} =
+                                  build_source_if_required(Config0, State1,
+                                                           Module,
+                                                           Includes, AppDir,
+                                                           Target, AllModules),
+                                State2;
+                          error ->
+                              State1
+                      end
+              end, State0, DepNames).
 
 build_source(Config0, State0,
              Module=#module{name=Name,
