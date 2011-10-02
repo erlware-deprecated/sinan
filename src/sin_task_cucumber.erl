@@ -38,7 +38,12 @@ description() ->
     my_cool_feature where my_cool_app <break> <break> This will result in a
     my_cool_feature.erl skeleton implementation in the test directory of
     my_cool_app in your project. The feature name should be specified by name
-    only. That is, without the .feature part of the file name.",
+    only. That is, without the .feature part of the file name. <break><break>
+
+    If you wish to run a subset of tests you can do so on the command line in
+    the form:<break><break>
+
+    sinan cucumber my_feature_one my_feature_two my_feature_three ...",
 
     #task{name = ?TASK,
           task_impl = ?MODULE,
@@ -53,8 +58,9 @@ description() ->
 -spec do_task(sin_config:config(), sin_state:state()) -> sin_state:state().
 do_task(Config, State) ->
     ProjectRoot = sin_state:get_value(project_dir, State),
-    Features = find_files(filename:join([ProjectRoot, "features"]),
-                                        ".*\\.feature\$"),
+    FeatureRoot = filename:join([ProjectRoot, "features"]),
+    Features = find_files(FeatureRoot,
+                          ".*\\.feature\$"),
 
     AdditionalArgs = Config:match(additional_args),
     Outcomes =
@@ -63,8 +69,12 @@ do_task(Config, State) ->
                 [ {F,
                    gen_feature(State, F, TargetApp)}
                   || F <- Features, filename:basename(F, ".feature") == Name];
-            _ ->
-                [ {F, run_feature(State, F)} || F <- Features ]
+            [] ->
+                [ {F, run_feature(State, F)} || F <- Features ];
+            FeatureNames when is_list(FeatureNames) ->
+                [ {F, run_feature(State,
+                                  filename:join(FeatureRoot, F ++ ".feature"))}
+                  || F <- FeatureNames ]
         end,
 
     case lists:all(fun({_F, X}) -> X =:= ok end, Outcomes) of
