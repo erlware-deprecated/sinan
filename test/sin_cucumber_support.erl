@@ -14,11 +14,7 @@
 %% Step definitions for the sample calculator Addition feature.
 
 given([a, generated, project], _, _) ->
-    {ok, BaseDir} = ewl_file:create_tmp_dir("/tmp"),
-    ProjectName = "foobachoo",
-    {ProjectDir, _} =
-        sin_test_project_gen:single_app_project(BaseDir, ProjectName),
-    {ok, {ProjectDir, ProjectName}};
+    sin_test_project_gen:a_generated_project();
 given([a, feature, file, in, the, features, directory, 'of',
        that, project], {ProjectDir, ProjectName}, _) ->
     ?assertMatch(ok,

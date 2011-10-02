@@ -9,11 +9,7 @@ given([sinan, has, nothing, in, its, priv, dir], State, _) ->
     ?assertMatch(false, sin_utils:file_exists(sin_state:new(), "./priv")),
     {ok, State};
 given([a, project, generated, by, gen], _State, _) ->
-    {ok, BaseDir} = ewl_file:create_tmp_dir("/tmp"),
-    ProjectName = "super_foo",
-    {ProjectDir, _} =
-        sin_test_project_gen:single_app_project(BaseDir, ProjectName),
-    {ok, {ProjectDir, ProjectName}}.
+    sin_test_project_gen:a_generated_project().
 
 'when'([a,build,step,is,run,on,this,project],
     {ProjectDir, ProjectName}, _) ->

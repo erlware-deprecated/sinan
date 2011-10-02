@@ -13,11 +13,7 @@
 
 given([a, generated, project, in, a, different, location, then, the, cwd],
       _, _) ->
-    {ok, BaseDir} = ewl_file:create_tmp_dir("/tmp"),
-    ProjectName = "foobachoo",
-    {ProjectDir, _} =
-        sin_test_project_gen:single_app_project(BaseDir, ProjectName),
-    {ok, {ProjectDir, ProjectName}}.
+    sin_test_project_gen:a_generated_project().
 
 'when'([a, build, step, is, run, on, this, project],
        Ret = {ProjectDir, _}, _) ->

@@ -5,11 +5,7 @@
 -export([given/3, 'when'/3, then/3]).
 
 given([a,generated,project], _State, _) ->
-    {ok, BaseDir} = ewl_file:create_tmp_dir("/tmp"),
-    ProjectName = "super_foo",
-    {ProjectDir, _} =
-        sin_test_project_gen:single_app_project(BaseDir, ProjectName),
-    {ok, {ProjectDir, ProjectName}}.
+    sin_test_project_gen:a_generated_project().
 
 'when'([a,build,step,is,run,on,this,project],
        {ProjectDir, ProjectName}, _) ->

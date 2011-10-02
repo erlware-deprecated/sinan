@@ -7,12 +7,24 @@
 %%%-------------------------------------------------------------------
 -module(sin_test_project_gen).
 
--export([single_app_project/2,
+-export([a_generated_project/0,
+         a_generated_project/1,
+         single_app_project/2,
          single_app_project/3,
          validate_single_app_project/2,
          multi_app_project/3]).
 
 -include_lib("eunit/include/eunit.hrl").
+
+a_generated_project() ->
+    a_generated_project("super_foo").
+
+a_generated_project(ProjectName) ->
+    {ok, BaseDir} = ewl_file:create_tmp_dir("/tmp"),
+    {ProjectDir, _} =
+        single_app_project(BaseDir, ProjectName),
+    {ok, {ProjectDir, ProjectName}}.
+
 
 single_app_project(BaseDir, ProjectName) ->
     single_app_project(BaseDir, ProjectName, "0.1.0").

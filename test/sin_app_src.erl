@@ -6,14 +6,11 @@
 
 given([a, generated, project, that, contains, an, 'ebin/app'],
       _State, _) ->
-    {ok, BaseDir} = ewl_file:create_tmp_dir("/tmp"),
-    ProjectName = "super_foo",
-    {ProjectDir, _} =
-        sin_test_project_gen:single_app_project(BaseDir, ProjectName),
+    Result = {ok, {ProjectDir, ProjectName}} = sin_test_project_gen:a_generated_project(),
     AppEbin = filename:join([ProjectDir, "ebin", ProjectName ++ ".app"]),
     ?assertMatch(ok, file:write_file(AppEbin,
                                      sin_cuke_support_funs:app_src(ProjectName))),
-    {ok, {ProjectDir, ProjectName}};
+    Result;
 given([a,generated,project,that,contains,an,'app.src'], _State, _) ->
       {ok, BaseDir} = ewl_file:create_tmp_dir("/tmp"),
     ProjectName = "super_foo",
