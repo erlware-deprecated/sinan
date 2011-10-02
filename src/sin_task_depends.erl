@@ -55,7 +55,7 @@ do_task(Config, State0) ->
                                                        State0),
                         Changed0 orelse sin_sig:changed(deps, AppF, State0)
                     end, false, ProjectApps),
-    {State1, {RuntimeDeps, CompiletimeDeps, MergedDeps, ReleaseApps}} =
+    {State1, {RuntimeDeps0, CompiletimeDeps}} =
         case Changed1 of
             true ->
                 case sin_sig:get_sig_info(?MODULE, State0) of
@@ -68,12 +68,33 @@ do_task(Config, State0) ->
                 solve_deps(Config, State0, ProjectApps)
         end,
 
-    sin_state:store(release_runtime_deps, RuntimeDeps,
+    {State4, ReleaseApps, RuntimeDeps1} =
+        lists:foldl(fun(App0=#app{name=AppName},
+                        {State2, ReleaseApps0, RuntimeApps0}) ->
+                            case lists:member(AppName, ProjectApps) of
+                                true ->
+                                    {State3, Mods} =
+                                        process_source_files(State2, AppName,
+                                                             RuntimeDeps0 ++
+                                                                 CompiletimeDeps),
+                                        App1 = App0#app{sources=Mods,
+                                                        project=true},
+                                    {State3, [App1 | ReleaseApps0], [App1 | RuntimeApps0]};
+                                false ->
+                                    {State2, ReleaseApps0, [App0 | RuntimeApps0]}
+                            end
+                    end, {State1, [], []}, RuntimeDeps0),
+
+    MergedDeps = RuntimeDeps0 ++ lists:filter(fun(#app{name=App, vsn=Vsn}) ->
+                                                      not lists:member({App, Vsn}, RuntimeDeps0)
+                                              end, CompiletimeDeps),
+
+    sin_state:store(release_runtime_deps, RuntimeDeps1,
                     sin_state:store(release_compile_deps,
                                     CompiletimeDeps,
                                     sin_state:store(release_deps, MergedDeps,
                                                     sin_state:store(release_apps,
-                                                                    ReleaseApps, State1)))).
+                                                                    ReleaseApps, State4)))).
 
 -spec solve_deps(sin_config:config(), sin_state:state(), [atom()]) ->
                         {sin_state:state(), term()}.
@@ -97,9 +118,11 @@ solve_deps(Config, State0, ProjectApps) ->
         lists:map(fun({App, Vsn}) ->
                           {_, Path} =
                               sin_dep_resolver:resolve(ResolverState1, App, Vsn),
+
                           #app{name=App, vsn=Vsn, path=Path,
                                type=runtime, project=lists:member(App, ProjectApps)}
                   end, RuntimeDeps0),
+
     CompiletimeDeps1 =
         lists:map(fun({App, Vsn}) ->
                           {_, Path} =
@@ -109,31 +132,21 @@ solve_deps(Config, State0, ProjectApps) ->
 
                   end, CompiletimeDeps0),
 
-    MergedDeps = RuntimeDeps1 ++ lists:filter(fun(#app{name=App, vsn=Vsn}) ->
-                                                      not lists:member({App, Vsn}, RuntimeDeps0)
-                                              end, CompiletimeDeps1),
+    {State3, RuntimeDeps2} =
+        lists:foldl(fun(App=#app{project=true, path=Path}, {State1, Acc}) ->
+                            {State2, Modules} =
+                                process_source_files(State1, Path, RuntimeDeps1),
+                            {State2, [App#app{modules=Modules} | Acc]};
+                       (App, {State1, Acc}) ->
+                            {State1, [App | Acc]}
+                    end, {State0, []}, RuntimeDeps1),
 
-    ReleaseApps =
-        lists:foldl(fun(AppName0, Acc) ->
-                            case ec_lists:search(fun(App1 = #app{name=AppName1})
-                                                       when AppName1 == AppName0->
-                                                         {ok, App1};
-                                                    (_) ->
-                                                         not_found
-                                                 end, RuntimeDeps1) of
-                                {ok, App, _} ->
-                                    [App | Acc];
-                                not_found ->
-                                    Acc
-                            end
-                    end, [], ProjectApps),
 
-    State1 =
+    State4 =
         sin_sig:save_sig_info(?MODULE,
-                              {RuntimeDeps1, CompiletimeDeps1, MergedDeps,
-                               ReleaseApps}, State0),
+                              {RuntimeDeps2, CompiletimeDeps1}, State3),
 
-    {State1, {RuntimeDeps1, CompiletimeDeps1, MergedDeps, ReleaseApps}}.
+    {State4, {RuntimeDeps1, CompiletimeDeps1}}.
 
 %% @doc Format an exception thrown by this module
 -spec format_exception(sin_exceptions:exception()) ->
@@ -144,6 +157,30 @@ format_exception(Exception) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
+-spec process_source_files(sin_state:state(), atom(), [sinan:app()]) ->
+                                  {sin_state:state(), [sinan:mod()]}.
+process_source_files(State0, AppName, Deps) ->
+    Includes = lists:map(fun(#app{path=Path}) ->
+                                 filename:join(Path, "includes")
+                         end, Deps),
+    AppDir = sin_state:get_value({apps, AppName, basedir}, State0),
+    SrcDir = filename:join(AppDir, "src"),
+    TestDir = filename:join(AppDir, "test"),
+    {State1, SrcModules} = process_source_files_in_path(State0, SrcDir, Includes),
+    {State2, TestModules} = process_source_files_in_path(State1, TestDir, Includes),
+    {State2, SrcModules ++ TestModules}.
+
+-spec process_source_files_in_path(sin_state:state(), string(), [string()]) ->
+                                          {sin_state:state(), sinan:mod()}.
+process_source_files_in_path(State0, Dir, Includes) ->
+    filelib:fold_files(Dir, "^((.+\.erl)|(.+\.hrl)|(.+\.erl))$", true,
+                       fun(Path, {State1, Acc}) ->
+                               {State2, Rec} =
+                                   sin_file_info:process_file(State1, Path, Includes),
+                               {State2, [Rec | Acc]}
+                       end, {State0, []}).
+
+
 -spec get_compiletime_deps(sin_state:state(), sin_config:config(),
                            sin_dep_solver:state(),
                            [sin_dep_solver:spec()]) ->

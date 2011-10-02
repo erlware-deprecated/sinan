@@ -9,11 +9,11 @@
 -module(sin_compile_erl).
 
 %% API
--export([get_dependencies/2,
-         build_file/5,
+-export([build_file/5,
          get_target/3,
          format_exception/1]).
 
+-include_lib("sinan/include/sinan.hrl").
 -include("internal.hrl").
 
 %%%===================================================================
@@ -22,34 +22,21 @@
 get_target(BuildDir, File, ".erl") ->
     sin_task_build:get_target(File, ".erl", BuildDir, ".beam").
 
-
-get_dependencies(File, Includes) ->
-    {ok, Forms} = epp:parse_file(File, Includes,[]),
-    lists:foldl(fun({attribute, _, file, {Include, _}}, Acc) ->
-                        [{file, Include} | Acc];
-                   ({attribute, _, compile,
-                     {parse_transform, DepModule}}, Acc) ->
-                        [{module, DepModule} | Acc];
-                   ({attribute, _, behaviour, DepModule}, Acc) ->
-                        [{module, DepModule} | Acc];
-                   (_, Acc) ->
-                        Acc
-                end, Forms).
-
 %% @doc Do the actual compilation on the file.
 -spec build_file(sin_config:matcher(), sin_state:state(),
-                 string(), [term()], string()) ->
+                 sin_file_info:mod(), [term()], string()) ->
                         {module(), sin_config:config()}.
-build_file(_Config, State, File, Options, _Target) ->
+build_file(_Config, State, Module=#module{path=File}, Options, _Target) ->
     ewl_talk:say("Building ~s", [File]),
     case compile:file(File, Options) of
         {ok, _ModuleName} ->
-            State;
+            {State, [Module]};
         {ok, _ModuleName, []} ->
-            State;
+            {State, [Module]};
         {ok, _ModuleName, Warnings} ->
-            ?WARN(State,
-                  sin_task_build:gather_fail_info(Warnings, "warning"));
+            {?WARN(State,
+                  sin_task_build:gather_fail_info(Warnings, "warning")),
+             [Module]};
         {error, Errors, Warnings} ->
             NewRef =
                 ?WARN(State,

@@ -77,11 +77,12 @@ description() ->
 
 %% @doc run the build task.
 -spec do_task(sin_config:config(), sin_state:state()) -> sin_state:state().
-do_task(Config, State) ->
-    ensure_build_dir(State),
-    Apps = sin_state:get_value(release_apps, State),
-    NApps = reorder_apps_according_to_deps(State, Apps),
-    build_apps(Config, State, NApps).
+do_task(Config, State0) ->
+    ensure_build_dir(State0),
+    Apps0 = sin_state:get_value(release_apps, State0),
+    NApps = reorder_apps_according_to_deps(State0, Apps0),
+    {State1, Apps1} = build_apps(Config, State0, NApps),
+    sin_state:store(release_apps, Apps1, State1).
 
 %% @doc Gather up all the errors and warnings for output.
 -spec gather_fail_info([term()], string()) ->
@@ -215,18 +216,16 @@ build_apps(Config, State, Apps) ->
 
 %% @doc build the apps as they come up in the list.
 build_apps(Config, State0, BuildSupInfo, AppList) ->
-    Cache0 = dict:new(),
-    {_Cache, State1} =
-        lists:foldl(fun(App, {Cache1, State1}) ->
-                            build_app(Config, State1, Cache1, BuildSupInfo, App)
-                    end, {Cache0, State0}, AppList),
-    State1.
+        lists:foldl(fun(App0, {State1, Apps0}) ->
+                            {State2, App1} = build_app(Config, State1, BuildSupInfo, App0),
+                            {State2, [App1 | Apps0]}
+                    end, {State0, []}, AppList).
 
 %% @doc Build an individual otp application.
-build_app(Config0, State0, Cache0, Env, #app{name=AppName}) ->
+build_app(Config0, State0, Env, App=#app{name=AppName,
+                                         path=AppBuildDir,
+                                         sources=Modules0}) ->
     Config1 = Config0:specialize([{app, AppName}]),
-    AppBuildDir =
-        sin_state:get_value({apps, AppName, builddir}, State0),
     AppDir = sin_state:get_value({apps, AppName, basedir}, State0),
 
     Target = filename:join([AppBuildDir, "ebin"]),
@@ -235,42 +234,67 @@ build_app(Config0, State0, Cache0, Env, #app{name=AppName}) ->
 
     code:add_patha(Target),
 
-    {Cache1, FileList, State1} = process_source_files(State0,
-                                                      Cache0,
-                                                      Includes,
-                                                      gather_modules(State0,
-                                                                     AppName)),
-    State2 = sin_state:store([{{apps, AppName, file_list},
-                               FileList}],
-                             State1),
+    {State3, NewModules} =
+        lists:foldl(fun(Module, {State1, Modules1}) ->
+                            {State2, Mods} =
+                                build_source_if_required(Config1, State1,
+                                                         Module,
+                                                         Includes, AppDir,
+                                                         Target),
+                            {State2, [Mods | Modules1]}
+                    end, {State0, []}, Modules0),
+    {State3, App#app{modules=lists:flatten(NewModules)}}.
 
-    State3 = build_sources(Config1, State2, FileList,
-                           Includes, AppDir, Target),
-
-    {Cache1, State3}.
 
 %% @doc go through each source file building with the correct build module.
--spec build_sources(sin_config:config(), sin_state:state(), [tuple()], [string()],
-                    string(), string()) ->
-    ok.
-build_sources(Config0, State0, FileList, Includes, AppDir,  Target) ->
-    lists:foldl(fun({{File, Module, _, _, _},
-                     {changed, _, _, BuildModule}}, State1) ->
-                      Config1 = Config0:specialize([{module, Module}]),
-                      Options = Config1:match(compile_args, [])
-                          ++ [{outdir, Target},
-                              strict_record_tests,
-                              return_errors, return_warnings,
-                              {i, filename:join([AppDir, "include"])},
-                              %% Search directory with .hrl files
-                              Includes],
-                      event_compile_args(Config1, Options),
-                      State2 = BuildModule:build_file(Config1, State1,
-                                                      File, Options, Target),
-                      update_changed(File, State2);
-                 (_, State1) ->
-                        State1
-              end, State0, FileList).
+build_source_if_required(Config0, State0,
+                         Module=#module{name=Name,
+                                        type=Type,
+                                        change_sig=NewSig},
+              Includes, AppDir,  Target) ->
+    case Type of
+        T when T == yrl; T == erl ->
+            case sin_sig:get_sig_info({?MODULE, Name}, State0) of
+                {ok, Sig} ->
+                    case Sig == NewSig of
+                        true ->
+                            {ok, Modules} = sin_sig:get_sig_info({?MODULE, modules, Name}, State0),
+                            {State0, Modules};
+                        false ->
+                            {State1, Modules} =
+                                build_source(Config0, State0, Module,
+                                             Includes, AppDir, Target),
+                            {sin_sig:save_sig_info({?MODULE, modules, Name}, Modules, State1),
+                             Modules}
+                    end;
+                _ ->
+                    {State1, Modules} =
+                        build_source(Config0, State0, Module, Includes, AppDir, Target),
+                    {sin_sig:save_sig_info({?MODULE, modules, Name}, Modules, State1),
+                     Modules}
+            end;
+        _ ->
+            {State0, [Module]}
+    end.
+
+build_source(Config0, State0,
+             Module=#module{name=Name,
+                            type=Type,
+                            change_sig=NewSig},
+             Includes, AppDir, Target) ->
+    Config1 = Config0:specialize([{module, Module}]),
+    Options = Config1:match(compile_args, [])
+        ++ [{outdir, Target},
+            strict_record_tests,
+            return_errors, return_warnings,
+            {i, filename:join([AppDir, "include"])},
+            %% Search directory with .hrl files
+            Includes],
+    event_compile_args(Config1, Options),
+    BuildModule = get_build_module(State0, Type),
+    {State2, Mods} = BuildModule:build_file(Config1, State0,
+                                            Module, Options, Target),
+    {sin_sig:save_sig_info({?MODULE, Name}, NewSig, State2), Mods}.
 
 %% @doc if the right config values is specified event the compile args
 event_compile_args(Config, Options) ->
@@ -283,244 +307,18 @@ event_compile_args(Config, Options) ->
                 ewl_talk:say("Compile args:~n~p", [Options])
          end.
 
-%% @doc process dependencies for each source file, the sort the list in build
-%% order.
-process_source_files(State0, Cache,
-                     Includes, FileList) ->
-   {NewCache, TmpNewList, State3} =
-        lists:foldl(fun(FileInfo, {Cache2, Acc, State1}) ->
-                            {Cache3, NewFileInfo, State2} =
-                                process_source_file(State1,
-                                                    Cache2,
-                                                    FileList,
-                                                    Includes,
-                                                    FileInfo),
-                            {Cache3, [NewFileInfo | Acc], State2}
-                    end, {Cache, [], State0}, FileList),
-    {NewCache, topo_sort_file_list(TmpNewList), State3}.
-
-topo_sort_file_list(FileList) ->
-    {ok, Data} =
-        sin_topo:sort(
-          lists:flatten(
-            lists:map(fun({{File, _, _, _, []}, _}) ->
-                              {'NONE', File};
-                         ({{File, _, _, _, Deps}, _}) ->
-                              lists:map(fun({DepFile, _}) ->
-                                                {DepFile, File}
-                                        end, Deps)
-                      end,
-                      FileList))),
-    lists:reverse(
-      lists:foldl(fun('NONE', Acc) ->
-                          Acc;
-                     (File, Acc) ->
-                          case ec_lists:find(fun({{LFile, _, _, _, _}, _}) ->
-                                                     LFile == File
-                                             end, FileList) of
-                              error ->
-                                  Acc;
-                              {ok, Item} ->
-                                  [Item | Acc]
-                          end
-                  end,
-                  [], Data)).
-
-process_source_file(State0,
-                    Cache,
-                    FileList,
-                    Includes,
-                    {File, Module, Ext, AtomExt, TestImplementations}) ->
-    BuildModule = get_build_module(State0, AtomExt),
-    {Changed, {NewCache, {Deps, NewTI, TestedModules}}, State1} =
-        has_changed(State0, Cache, File, Includes,
-                    TestImplementations,
-                    FileList),
-    {NewCache, {{File, Module, Ext, AtomExt, Deps},
-                {Changed, NewTI, TestedModules, BuildModule}}, State1}.
-
-has_changed(State0, Cache, File, Includes,
-            TestImplementations,
-            FileList) ->
-        case contents_changed(File, State0) of
-            true ->
-                {Ret, State1} = save_real_dependencies(State0,
-                                                       Cache,
-                                                       FileList, TestImplementations,
-                                                       File, Includes),
-                {changed, Ret, State1};
-            false ->
-                dependencies_have_changed(State0, Cache, FileList,
-                                          TestImplementations, File, Includes)
-        end.
-
-dependencies_have_changed(State0, Cache,
-                          FileList, TestImplementations,
-                          File, Includes) ->
-        case sin_sig:get_sig_info(File, State0) of
-            error ->
-                {Ret, State1} = save_real_dependencies(State0,
-                                                       Cache, FileList,
-                                                       TestImplementations, File,
-                                                       Includes),
-                {changed, Ret, State1};
-            {ok, Terms}  ->
-                case check_deps_for_change(Terms) of
-                    true ->
-                        {Ret, State1} = save_real_dependencies(State0,
-                                                               Cache,
-                                                               FileList,
-                                                               TestImplementations,
-                                                               File,
-                                                               Includes),
-                        {changed, Ret, State1};
-                    false ->
-                        {not_changed, {Cache, Terms}, State0}
-                end
-        end.
-
-check_deps_for_change({Deps, _, _}) ->
-   check_deps_for_change(Deps);
-check_deps_for_change([{File, TS} | Rest]) ->
-    case file:read_file_info(File) of
-        {ok, TargetInfo}
-        when TargetInfo#file_info.mtime > TS ->
-            true;
-        _ ->
-            check_deps_for_change(Rest)
-    end;
-check_deps_for_change([]) ->
-    false.
-
-save_real_dependencies(State0,
-                       Cache,
-                       FileList, TestImplementations, File, Includes) ->
-    {NewCache, Dependencies} = resolve_dependencies(State0,
-                                                    Cache, FileList,
-                                                    TestImplementations,
-                                                    File,
-                                                    Includes),
-    State1 = sin_sig:save_sig_info(File, Dependencies, State0),
-    {{NewCache,  Dependencies}, State1}.
-
-resolve_dependencies(State,
-                     Cache, FileList, TestImplementations,  File, Includes) ->
-    {DepArtifacts, NewTestImplementations, TestedModules} =
-        parse_attribute_dependencies(TestImplementations, File, Includes),
-
-    {NewCache, NewDeps} = realize_dependent_artifacts(State,
-                                                      Cache, DepArtifacts,
-                                                      FileList),
-    {NewCache, {NewDeps,
-                NewTestImplementations, TestedModules}}.
-
-realize_dependent_artifacts(State, Cache, DepArtifacts, FileList) ->
-    lists:foldl(fun({file, File}, {Cache2, Acc}) ->
-                        {Cache3, TS} = get_ts(State, Cache2, File),
-                       {Cache3, [{File, TS} | Acc]};
-                  ({module, Module}, {Cache2, Acc}) ->
-                       File = realize_module(State, Module, FileList),
-                       {Cache3, TS} = get_ts(State, Cache2, File),
-                       {Cache3, [{File, TS} | Acc]}
-              end, {Cache, []}, DepArtifacts).
-
-get_ts(State, Cache, File) ->
-    case dict:find({ts, File}, Cache) of
-        {ok, TS} ->
-            {Cache, TS};
-        error ->
-            TS = case file:read_file_info(File) of
-                {ok, FileInfo} ->
-                         FileInfo#file_info.mtime;
-                     Error ->
-                         ?SIN_RAISE(State, {error_reading_timestamp, File, Error})
-                 end,
-            {dict:store({ts, File}, TS, Cache), TS}
-    end.
-realize_module(State, Module, FileList) ->
-    case lists:keyfind(Module, 2, FileList) of
-        {File, Module, _, _, _} ->
-            File;
-        false ->
-            %% Its a dependent file then, somewhere in the code path
-            case code:which(Module) of
-                FileName when is_list(FileName) ->
-                    FileName;
-                _ ->
-                    ?SIN_RAISE(State, {dependent_module_not_found, Module})
-            end
-    end.
-
-parse_attribute_dependencies(TestImplementations, File, Includes) ->
-    %% Drop off the first attribute, we don't care so much about that, it just
-    %% points to itself.
-    {ok, Forms} =
-        epp:parse_file(File, Includes, []),
-    lists:foldl(fun(Attr, Acc) ->
-                        parse_form(File, Attr, Acc)
-                end,
-                {[], TestImplementations, []},
-                Forms).
-
-parse_form(_File, {attribute, _ , file, {[], _}}, Acc) ->
-    Acc;
-parse_form(File, {attribute, _ , file, {File, _}}, Acc) ->
-    Acc;
-parse_form(_File, {attribute, _ , file, {Include, _}},
-           {Deps, TestImplementations, TestedModules}) ->
-    {[{file, Include} | Deps], TestImplementations, TestedModules};
-parse_form(_File, {attribute, _, compile, {parse_transform, proper_transformer}},
-           {Deps, TestImplementations, TestedModules}) ->
-    {Deps, [proper | TestImplementations], TestedModules};
-parse_form(_File, {attribute, _, compile, {parse_transform, eunit_autoexport}},
-           {Deps, TestImplementations, TestedModules}) ->
-    {Deps, [eunit | TestImplementations], TestedModules};
-parse_form(_File, {attribute, _, compile, {parse_transform, Module}},
-           {Deps, TestImplementations, TestedModules}) ->
-    {[{module, Module} | Deps], TestImplementations, TestedModules};
-parse_form(_File, {attribute, _, behaviour, Module},
-           {Deps, TestImplementations, TestedModules}) ->
-    {[{module, Module} | Deps], TestImplementations,
-     TestedModules};
-parse_form(_File, {attribute, _, behavior, Module},
-           {Deps, TestImplementations, TestedModules}) ->
-    {[{module, Module} | Deps], TestImplementations,
-     TestedModules};
-parse_form(_File, {attribute, _, tested_modules, ModList},
-          {Deps, TestImplementations, TestedModules}) ->
-    {Deps, TestImplementations, ModList ++ TestedModules};
-parse_form(_, _, Acc) ->
-    Acc.
-
-contents_changed(File, State) ->
-    case sin_sig:changed(build, File, State) of
-        false ->
-            false;
-        _ ->
-            true
-    end.
-
-update_changed(File, State) ->
-    sin_sig:update(build, File, State).
-
-get_build_module(_, '.erl') ->
+get_build_module(_, erl) ->
     sin_compile_erl;
-get_build_module(_, '.yrl') ->
+get_build_module(_, yrl) ->
     sin_compile_yrl;
 get_build_module(State, Ext) ->
     ?SIN_RAISE(State, {unsupported_file_type, Ext}).
-
-%% @doc Gather the list of modules that currently may need to be built.
-gather_modules(State, AppName) ->
-    sin_state:get_value({apps, AppName, all_modules_detail}, State).
-
 
 %% @doc Ensure that the build dir exists and is ready to accept files.
 ensure_build_dir(State) ->
     BuildDir = sin_state:get_value(build_dir, State),
     AppsDir = lists:flatten([BuildDir, "apps", "tmp"]),
     filelib:ensure_dir(AppsDir).
-
 
 %% @doc Actual get the failer detail information and add it to the accumulator.
 gather_fail_info(File, ListOfProblems, Acc, WoE) ->
@@ -541,21 +339,5 @@ gather_fail_info(File, ListOfProblems, Acc, WoE) ->
 %%====================================================================
 %% Tests
 %%====================================================================
-reorder_app_test() ->
-    AppList = [{app1, "123", {[app2, stdlib], []}, "path"},
-               {app2, "123", {[app3, kernel], []}, "path"},
-               {app3, "123", {[kernel], []}, "path"}],
-    NewList  = reorder_apps_according_to_deps(sin_config:new(), AppList),
-    ?assertMatch(['NONE', app3, app2, app1], NewList),
-    AppList2 = [{app1, "123", {[app2, zapp1, stdlib], []}, "path"},
-                {app2, "123", {[app3, kernel], []}, "path"},
-                {app3, "123", {[kernel, zapp2], []}, "path"},
-                {zapp1, "vsn", {[app2, app3, zapp2], []}, "path"},
-                {zapp2, "vsn", {[kernel], []}, "path"},
-                {zapp3, "vsn", {[], []}, "path"}],
-    NewList2 = reorder_apps_according_to_deps(sin_config:new(), AppList2),
-    ?assertMatch(['NONE', zapp2, app3, app2, zapp1, app1,
-                  zapp3], NewList2).
-
 
 

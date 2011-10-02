@@ -32,8 +32,8 @@ description() ->
     Desc = "This command runs all eunit and proper tests available in the
         project. Currently this task only supports eunit. <break> <break> By
         default this command trys to only run tests on code that has actually
-        changed since the last test run. This isnt always accurate. You may pass
-        the 'all' option to force it to run all tests in the system. ",
+        changed since the last test run. This isnt always accurate.
+        ",
 
     #task{name = ?TASK,
           task_impl = ?MODULE,
@@ -45,8 +45,8 @@ description() ->
           opts = []}.
 
 %% @doc run all tests for all modules in the system
-do_task(Config, State) ->
-    test_apps(build_all(Config), State,
+do_task(_Config, State) ->
+    test_apps(State,
               sin_state:get_value(release_apps, State), []),
     State.
 
@@ -55,95 +55,39 @@ do_task(Config, State) ->
 %%% Internal functions
 %%====================================================================
 
-%% @doc if the command line has an 'all' prespective run all tests instead of
-%% just those that changed
--spec build_all(sin_state:state()) ->
-    all | changed.
-build_all(Config) ->
-    case Config:match(additional_args) of
-        ["all"] ->
-            all;
-        _ ->
-            changed
-    end.
-
 %% @doc Run tests for all the applications specified.
 %% @private
--spec test_apps(all | changed,
-                sin_state:state(), [sinan:app()], [[atom()]]) -> ok.
-test_apps(BuildAll, State, [#app{name=AppName} | T], Acc) ->
+-spec test_apps(sin_state:state(), [sinan:app()], [[atom()]]) -> ok.
+test_apps(State, [#app{name=AppName, modules=Modules} | T], Acc) ->
     io:format("testing app ~p~n", [AppName]),
-    Modules = sin_state:get_value({apps, AppName, file_list}, State),
     case Modules == undefined orelse length(Modules) =< 0 of
         true ->
             ewl_talk:say("No modules defined for ~p.",
                          [AppName]),
             ok;
         false ->
-            prepare_for_tests(BuildAll, Modules)
+            run_module_tests(Modules)
     end,
-    test_apps(BuildAll, State, T, [Modules | Acc]);
-test_apps(_, _, [], Modules) ->
+    test_apps(State, T, [Modules | Acc]);
+test_apps(_, [], Modules) ->
     Modules.
 
-%% @doc Prepare for running the tests. This mostly means seting up the
-%% coverage tools.
--spec prepare_for_tests(all | changed,
-                        [tuple()]) -> ok.
-prepare_for_tests(BuildAll, AllModules) ->
-    run_module_tests(BuildAll, AllModules).
-
-
 %% @doc Run tests for each module that has a test/0 function
--spec run_module_tests(all | changed, [atom()]) -> ok.
-run_module_tests(BuildAll, AllModules) ->
+-spec run_module_tests([sin_file_info:mod()]) -> ok.
+run_module_tests(AllModules) ->
     lists:foreach(
-      fun({{_, Module, _, _, _},
-           {HasChanged, TestImplementations,
-            TestedModules, _}}) ->
-              case {BuildAll, lists:member(proper, TestImplementations),
-                    tested_changed(TestedModules, AllModules)} of
-                  {all, _, _} ->
-                      proper:module(Module);
-                  {_, true, true} ->
-                      proper:module(Module);
+      fun(#module{name=Name, tags=Tags}) ->
+              case sets:is_element(proper, Tags) of
+                  true ->
+                      proper:module(Name);
                   _ ->
                       ok
               end,
-              case {BuildAll,
-                    lists:member(eunit, TestImplementations), HasChanged} of
-                  {all, _, _} ->
-                      ewl_talk:say("testing ~p", [Module]),
-                      eunit:test(Module);
-                  {_, true, changed} ->
-                      ewl_talk:say("testing ~p", [Module]),
-                      eunit:test(Module);
+              case sets:is_element(eunit, Tags) of
+                  true ->
+                      ewl_talk:say("testing ~p", [Name]),
+                      eunit:test(Name);
                   _ ->
                       ok
               end
       end, AllModules).
-
-
-%% @doc check to see if any of the modules listed in 'TestedModules' have
-%% changed. If so return true, else return false.
--spec tested_changed([module()], [tuple]) -> boolean().
-tested_changed([], _) ->
-    true;
-tested_changed(TestedModules, All) ->
-    tested_changed1(TestedModules, All).
-
-tested_changed1([TestModule | Rest], FileList) ->
-    case ec_lists:find(fun({{_, TargetModule, _, _, _},
-                            {changed, _, _, _}}) ->
-                               TargetModule == TestModule;
-                          (_) ->
-                               false
-                       end, FileList) of
-        {ok, _} ->
-            true;
-        _ ->
-            false
-    end,
-    tested_changed(Rest, FileList);
-tested_changed1([], _) ->
-    false.
