@@ -14,6 +14,7 @@
 
 %% API
 -export([new/0,
+         do_if_changed/5,
          save_sig_info/3,
          get_sig_info/2,
          changed/3,
@@ -35,6 +36,41 @@
 -spec new() -> sig().
 new() ->
     dict:new().
+
+%% @doc many times an action needs to occur on a file or directory only if that
+%% file or directory have changed. Then the result of that action should be
+%% saved. For example, lets say you want to parse a file if that file has
+%% changed. If the file hasn't changed there is no reason reparse the file,
+%% better just to return the data from the last time you parsed it. This
+%% function helps you do that. Automatically checking if the file specified
+%% changed. If it did change it calls the function passed in cachees the result
+%% and continues. If the file did not change it simple returns the cached value.
+-spec do_if_changed(term(),string(), fun(), fun(), sin_state:state()) ->
+                           {sin_state:state(), term()}.
+do_if_changed(NS, Path, DepsChangedAction, Function, State0) ->
+    case sin_sig:changed(NS, Path, State0) of
+        true ->
+            {State1, Result} = Function(Path, State0),
+            {sin_sig:save_sig_info({?MODULE, Path}, Result, State1),
+             Result};
+         false ->
+            case sin_sig:get_sig_info({NS, Path}, State0) of
+                {ok, Result} ->
+                    case DepsChangedAction(State0, Result) of
+                        true ->
+                            {State1, Result} = Function(Path, State0),
+                            {sin_sig:save_sig_info({?MODULE, Path},
+                                                   Result, State1), Result};
+                        false ->
+                            {State0, Result}
+                    end;
+                _ ->
+                    {State1, Result} = Function(Path, State0),
+                    {sin_sig:save_sig_info({?MODULE, Path}, Result, State1),
+                     Result}
+            end
+    end.
+
 
 %% @doc Take a term and put it in the correct place in the sig area.
 -spec save_sig_info(term(), term(), sin_state:state()) ->
