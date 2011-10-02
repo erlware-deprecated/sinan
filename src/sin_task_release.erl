@@ -39,7 +39,10 @@ description() ->
                   {AppName2, RelType}]}. <break>
 
         This configuration allows you to specify the type of application this is
-        for the release. (Again review the release information for details). " ,
+        for the release. (Again review the release information for details).
+        <break><break>
+        You may substitute your own release file (completely replacing the
+        generated file) by placing a file in releases/<release-name>.rel" ,
 
     #task{name = ?TASK,
           task_impl = ?MODULE,
