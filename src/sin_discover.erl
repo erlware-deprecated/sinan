@@ -119,11 +119,16 @@ process_raw_config(ProjectDir, FileConfig, CommandLineConfig, State0) ->
 intuit_build_config(ProjectDir, Config, State) ->
     %% App name is always the same as the name of the project dir
     AppName = filename:basename(ProjectDir),
+    AppFilePath = get_app_file(ProjectDir, AppName, Config),
     try
-        case file:consult(get_app_file(ProjectDir, AppName, Config)) of
-            {error, _} ->
+        case file:consult(AppFilePath) of
+            {error, enoent} ->
                 ?SIN_RAISE(State, unable_to_intuit_config,
                            "Unable to generate a project config");
+            {error, Error} ->
+                ewl_talk:say("~s:~s", [AppFilePath, file:format_error(Error)]),
+                ?SIN_RAISE(State, {unable_to_read_config,
+                                   AppFilePath, Error});
             {ok, [{application, _, Rest}]} ->
                 build_out_intuited_config(AppName, Rest)
         end
