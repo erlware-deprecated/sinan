@@ -1,5 +1,3 @@
-// -*- mode: doc -*-
-
 README
 ======
 
