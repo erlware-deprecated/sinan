@@ -37,7 +37,7 @@ tarball you can run
 
 The tarball will end up in
 
-    <project-root>/_build/developement/tar/<app-name>-<app-vsn>.tar.gz
+    <project-root>/_build/<release-name>/tar/<app-name>-<app-vsn>.tar.gz
 
 To get a list of all tasks currently available run the command
 
