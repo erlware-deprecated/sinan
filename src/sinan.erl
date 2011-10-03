@@ -135,7 +135,6 @@ manual_start() ->
                    compiler,
                    syntax_tools,
                    edoc,
-                   sasl,
                    eunit,
                    ewlib,
                    tools,
