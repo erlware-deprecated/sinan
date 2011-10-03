@@ -24,7 +24,6 @@
 
 -include_lib("sinan/include/sinan.hrl").
 -include_lib("eunit/include/eunit.hrl").
--include("internal.hrl").
 
 %%====================================================================
 %% Types

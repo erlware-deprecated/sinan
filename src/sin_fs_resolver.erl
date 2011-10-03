@@ -12,7 +12,7 @@
 
 -export([new/2, app_dependencies/3, app_versions/2, resolve/3]).
 
--include("internal.hrl").
+-include_lib("sinan/include/sinan.hrl").
 
 %%============================================================================
 %% Api

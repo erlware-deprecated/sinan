@@ -9,7 +9,6 @@
 -module(sin_app_meta).
 
 
--include("internal.hrl").
 -include_lib("sinan/include/sinan.hrl").
 
 %% API

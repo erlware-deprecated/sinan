@@ -11,7 +11,7 @@
 
 -behaviour(sin_task).
 
--include("internal.hrl").
+-include_lib("sinan/include/sinan.hrl").
 -include_lib("cucumberl/include/cucumberl.hrl").
 
 %% API

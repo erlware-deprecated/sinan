@@ -13,7 +13,6 @@
 -export([process_file/3]).
 -export_type([date/0, time/0, date_time/0, mod/0]).
 
--include("internal.hrl").
 -include_lib("sinan/include/sinan.hrl").
 -include_lib("kernel/include/file.hrl").
 

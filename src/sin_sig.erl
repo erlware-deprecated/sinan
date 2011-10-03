@@ -10,7 +10,7 @@
 
 -include_lib("kernel/include/file.hrl").
 -include_lib("eunit/include/eunit.hrl").
--include("internal.hrl").
+-include_lib("sinan/include/sinan.hrl").
 
 %% API
 -export([new/0,

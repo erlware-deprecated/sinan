@@ -9,7 +9,7 @@
 %%%-------------------------------------------------------------------
 -module(sin_hooks).
 
--include("internal.hrl").
+-include_lib("sinan/include/sinan.hrl").
 
 -define(NEWLINE, 10).
 -define(CARRIAGE_RETURN, 13).

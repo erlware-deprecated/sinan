@@ -23,7 +23,7 @@
          to_list/0,
          specialize/1]).
 
--include("internal.hrl").
+-include_lib("sinan/include/sinan.hrl").
 
 %%====================================================================
 %% API

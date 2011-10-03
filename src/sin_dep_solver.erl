@@ -5,7 +5,7 @@
 -export_type([spec/0, app_path/0,
               state/0, app/0, version/0]).
 
--include("internal.hrl").
+-include_lib("sinan/include/sinan.hrl").
 
 -record(state, {r :: sin_dep_resolver:impl(),
                 deps :: set(),

@@ -12,7 +12,6 @@
 
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("sinan/include/sinan.hrl").
--include("internal.hrl").
 
 %% API
 -export([description/0, do_task/2]).

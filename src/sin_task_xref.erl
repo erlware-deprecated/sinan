@@ -11,11 +11,9 @@
 
 -behaviour(sin_task).
 
--include_lib("sinan/include/sinan.hrl").
--include("internal.hrl").
-
-%% API
 -export([description/0, do_task/2]).
+
+-include_lib("sinan/include/sinan.hrl").
 
 -define(TASK, xref).
 -define(DEPS, [build]).

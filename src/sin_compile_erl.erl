@@ -14,7 +14,6 @@
          format_exception/1]).
 
 -include_lib("sinan/include/sinan.hrl").
--include("internal.hrl").
 
 %%%===================================================================
 %%% API

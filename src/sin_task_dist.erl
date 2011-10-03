@@ -14,7 +14,6 @@
 -behaviour(sin_task).
 
 -include_lib("sinan/include/sinan.hrl").
--include("internal.hrl").
 
 %% API
 -export([description/0, do_task/2, format_exception/1]).

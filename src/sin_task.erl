@@ -8,7 +8,8 @@
 %%%-------------------------------------------------------------------
 -module(sin_task).
 
--include("internal.hrl").
+
+-include_lib("sinan/include/sinan.hrl").
 
 -export([get_task/2,
          get_task_list/2,

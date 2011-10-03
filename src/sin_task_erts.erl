@@ -10,7 +10,7 @@
 
 -behaviour(sin_task).
 
--include("internal.hrl").
+-include_lib("sinan/include/sinan.hrl").
 
 %% API
 -export([description/0, do_task/2]).

@@ -13,7 +13,6 @@
          get_target/3,
          format_exception/1]).
 
--include("internal.hrl").
 -include_lib("sinan/include/sinan.hrl").
 
 %%%===================================================================
