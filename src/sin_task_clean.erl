@@ -41,9 +41,9 @@ description() ->
 %% @doc clean all sinan artifacts from the system
 -spec do_task(sin_config:config(), sin_state:state()) -> sin_state:state().
 do_task(_Config, State) ->
-    ewl_talk:say("cleaning build artifacts"),
+    ec_talk:say("cleaning build artifacts"),
     BuildDir = sin_state:get_value(build_root, State),
-    ewl_talk:say("Removing directories and contents in ~s", [BuildDir]),
+    ec_talk:say("Removing directories and contents in ~s", [BuildDir]),
     sin_utils:delete_dir(BuildDir),
     State.
 

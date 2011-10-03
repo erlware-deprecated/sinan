@@ -12,7 +12,7 @@ given([a, generated, project, that, contains, an, 'ebin/app'],
                                      sin_cuke_support_funs:app_src(ProjectName))),
     Result;
 given([a,generated,project,that,contains,an,'app.src'], _State, _) ->
-      {ok, BaseDir} = ewl_file:create_tmp_dir("/tmp"),
+    BaseDir = ec_file:mkdtemp(),
     ProjectName = "super_foo",
     {ProjectDir, _} =
         sin_test_project_gen:single_app_project(BaseDir, ProjectName),

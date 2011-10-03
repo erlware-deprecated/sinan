@@ -38,7 +38,7 @@
              sin_error_store]},
   {registered, [sin_sup]},
   {applications, [kernel, stdlib, compiler, erlware_commons,
-                  edoc, syntax_tools, eunit, proper, ewlib, tools,
+                  edoc, syntax_tools, eunit, proper, tools,
                   xmerl, mnesia, erlware_commons,
                   cucumberl,
                   parsetools, getopt]}]}.

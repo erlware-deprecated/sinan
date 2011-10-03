@@ -83,7 +83,7 @@ do_task(Config, State) ->
     BuildDir = sin_state:get_value(build_dir, State),
     EscriptDir = filename:join([BuildDir, "escript"]),
     EscriptWorkingDir = filename:join(EscriptDir, ".ez"),
-    ewl_file:mkdir_p(EscriptWorkingDir),
+    ec_file:mkdir_path(EscriptWorkingDir),
     ReleaseName = sin_state:get_value(release, State),
 
     EscriptOptions = Config:match(escript, []),
@@ -100,7 +100,7 @@ do_task(Config, State) ->
                                          ++
                                              ReleaseApps, []));
             _ ->
-                ewl_talk:say("With escript you may have source files "
+                ec_talk:say("With escript you may have source files "
                              "or archive files, but you may not have "
                              "both. Since script files are defined "
                              "I am omiting dependency archives"),
@@ -116,7 +116,7 @@ do_task(Config, State) ->
             false ->
                 [];
             {emu_args, BadArgs} ->
-                ewl_talk:say("emu_args to escript must be a list! not ~p",
+                ec_talk:say("emu_args to escript must be a list! not ~p",
                              [BadArgs]),
                 ?SIN_RAISE(State, {bad_emu_args, BadArgs})
         end,
@@ -125,10 +125,10 @@ do_task(Config, State) ->
                         lists:flatten([shebang, EmuArgs,
                                        PossibleSourceFile, Body])) of
         ok ->
-            ewl_talk:say("Escript created at ~s",
+            ec_talk:say("Escript created at ~s",
                          [EscriptTarget]);
         Error = {error, _} ->
-            ewl_talk:say("Enable to create escript at ~s due to ~p!",
+            ec_talk:say("Enable to create escript at ~s due to ~p!",
                          [EscriptTarget, Error]),
             ?SIN_RAISE(State, {unable_to_create_escript, Error})
     end,
@@ -158,7 +158,7 @@ gather_dirs(State0, EscriptTargetDir,
             [#app{name=AppName, vsn=Vsn, path=Path} | T], FileList) ->
     FileName = erlang:atom_to_list(AppName) ++ "-" ++ Vsn,
     Target = filename:join(EscriptTargetDir, FileName),
-    ok = ewl_file:mkdir_p(Target),
+    ok = ec_file:mkdir_path(Target),
     State1 = sin_utils:copy_dir(State0, Target, Path),
     gather_dirs(State1, EscriptTargetDir, T, [FileName | FileList]);
 gather_dirs(_State, _, [], FileList) ->
@@ -175,7 +175,7 @@ make_archive(State, ProjectName, CWD, FileList) ->
         {ok, EscriptPath} ->
             ok;
         {error, enoent} ->
-            ewl_talk:say("Error trying to write ez archive "
+            ec_talk:say("Error trying to write ez archive "
                          "for applications in ~s. This is "
                          "probably due to dot files (.* .#* "
                          "like emacs archive files in the "
@@ -184,7 +184,7 @@ make_archive(State, ProjectName, CWD, FileList) ->
                          "try again", [EscriptPath]),
             ?SIN_RAISE(State, {error_creating_archive, EscriptPath});
         Error ->
-            ewl_talk:say("Unknown error (~p) occured while "
+            ec_talk:say("Unknown error (~p) occured while "
                          "trying to write ~s to ~s",
                          [Error, CWD, EscriptPath]),
             ?SIN_RAISE(State, {error_creating_archive, Error})
@@ -214,7 +214,7 @@ get_source_file(State, ProjectDir, EscriptOptions) ->
         [Source] ->
             [Source];
         _ ->
-            ewl_talk:say("You may only have one source entry in your "
+            ec_talk:say("You may only have one source entry in your "
                          "escript directive"),
             ?SIN_RAISE(State, {multiple_source_entries, Sources})
     end.

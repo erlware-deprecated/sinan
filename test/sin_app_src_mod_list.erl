@@ -5,7 +5,7 @@
 -export([given/3, 'when'/3, then/3]).
 
 given([a,generated,project,that,contains,an,'ebin/app'], _State, _) ->
-    {ok, BaseDir} = ewl_file:create_tmp_dir("/tmp"),
+    BaseDir = ec_file:mkdtemp(),
     ProjectName = "super_foo",
     {ProjectDir, _} =
         sin_test_project_gen:single_app_project(BaseDir, ProjectName),
@@ -16,7 +16,7 @@ given([a,generated,project,that,contains,an,'ebin/app'], _State, _) ->
     sin_cuke_support_funs:delete_if_exists(AppSrc),
     {ok, {ProjectDir, ProjectName}};
 given([a,generated,project,that,contains,an,'app.src'], _State, _) ->
-    {ok, BaseDir} = ewl_file:create_tmp_dir("/tmp"),
+    BaseDir = ec_file:mkdtemp(),
     ProjectName = "super_foo",
     {ProjectDir, _} =
         sin_test_project_gen:single_app_project(BaseDir, ProjectName),

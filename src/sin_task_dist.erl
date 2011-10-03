@@ -112,7 +112,7 @@ add_defaults(State, ProjectDir, TopLevel) ->
 create_tar_file(State, FileName, TarContents) ->
     case erl_tar:open(FileName, [compressed, write]) of
         Error = {error, _} ->
-            ewl_talk:say("Unable to open tar file ~s, unable to build "
+            ec_talk:say("Unable to open tar file ~s, unable to build "
                          "distribution.", [FileName]),
             ?SIN_RAISE(State, {unable_to_build_dist, Error});
         {ok, Tar} ->

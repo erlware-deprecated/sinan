@@ -177,12 +177,12 @@ copy_file(State, Target, IFile, File) ->
     NFile = filename:join([Target, IFile]),
     case sin_sig:changed(copy, File, State) of
         file_not_found ->
-            ewl_talk:say("File ~s is not does not exist in the "
+            ec_talk:say("File ~s is not does not exist in the "
                        "file System. This shouldn't happen.",
                          [File]),
             ?SIN_RAISE(State, {file_not_on_disc, File});
         unable_to_access ->
-            ewl_talk:say("File ~s exists but is inaccessable.",
+            ec_talk:say("File ~s exists but is inaccessable.",
                          [File]),
             ?SIN_RAISE(State, {file_inaccessable, File});
         true ->
@@ -290,7 +290,7 @@ check_not_circular(State, Target, Source, SubDir) ->
     case filename:split(Source) ++ SubDir ==
         filename:split(Target) of
         true ->
-            ewl_talk:say("Can't copy a directory to itself (~p "
+            ec_talk:say("Can't copy a directory to itself (~p "
                          "to ~p)",
                          [filename:join([Source | SubDir]), Target]),
             ?SIN_RAISE(State, circular_recursion);

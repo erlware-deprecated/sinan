@@ -5,9 +5,9 @@
 -export([given/3, 'when'/3, then/3]).
 
 given([a, generated, project, that, contains, a, dependency, spec], _State, _) ->
-    {ok, BaseDir} = ewl_file:create_tmp_dir("/tmp"),
-    {ok, DepBuildDir} = ewl_file:create_tmp_dir("/tmp"),
-    {ok, DepDir} = ewl_file:create_tmp_dir("/tmp"),
+    BaseDir = ec_file:mkdtemp(),
+    DepBuildDir = ec_file:mkdtemp(),
+    DepDir = ec_file:mkdtemp(),
     ProjectName = "super_foo",
     generate_dependencies(DepBuildDir, DepDir,
                           ["futz", "fitz", "footz"],
@@ -96,7 +96,7 @@ generate_dependency(BaseDir, DepDir, App, Vsn) ->
     ?assertMatch({ok, _}, sinan:main(["-s", ProjectDir, "build"])),
     DepApp = filename:join([ProjectDir, "_build", App, "apps", App ++ "-" ++ Vsn]),
     DepTarget = filename:join(DepDir, App ++ "-" ++ Vsn),
-    ewl_file:mkdir_p(DepTarget),
+    ec_file:mkdir_path(DepTarget),
     sin_utils:copy_dir(sin_state:new(), DepTarget, DepApp),
     sin_utils:delete_dir(ProjectDir).
 

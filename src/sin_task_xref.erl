@@ -62,7 +62,7 @@ do_task(_Config, State) ->
                                 Apps)),
 
     lists:foreach(fun({Analysis, Name}) ->
-                          ewl_talk:say("Looking for ~s", [Name]),
+                          ec_talk:say("Looking for ~s", [Name]),
                           notify_user(State, ModuleInfo, Analysis,
                                       xref:analyze(ServerName, Analysis))
                   end,
@@ -97,7 +97,7 @@ xref_app(State, ServerName, AppName) ->
         {ok, _AppNameVsn} ->
             ok;
         Error = {error, Module, Reason} ->
-            ewl_talk:say(Module:format_error(Reason)),
+            ec_talk:say(Module:format_error(Reason)),
             ?SIN_RAISE(State, {Error, Module:format_error(Reason)})
     end.
 
@@ -111,7 +111,7 @@ xref_app(State, ServerName, AppName) ->
                   {ok, [term()]}) ->
     ok.
 notify_user(State, _, _, Error = {error, Module, Reason}) ->
-    ewl_talk:say(Module:format_error(Reason)),
+    ec_talk:say(Module:format_error(Reason)),
     ?SIN_RAISE(State, {Error, Module:format_error(Reason)});
 notify_user(_, ModuleInfo, Analysis, {ok, AnswerList}) ->
     lists:foreach(fun(Answer) ->
@@ -124,19 +124,19 @@ notify_user(_, ModuleInfo, Analysis, {ok, AnswerList}) ->
 display_answer(exports_not_used, _, MFA) ->
     case is_eunit_test(MFA) of
         false ->
-            ewl_talk:say("~s is exported but not used", [format_mfa(MFA)]);
+            ec_talk:say("~s is exported but not used", [format_mfa(MFA)]);
         true ->
             ok
     end;
 display_answer(locals_not_used, _, MFA) ->
-    ewl_talk:say("~s is defined but not used", [format_mfa(MFA)]);
+    ec_talk:say("~s is defined but not used", [format_mfa(MFA)]);
 display_answer(undefined_function_calls, ModuleInfo, {Caller, Callee}) ->
-    ewl_talk:say("~s:~s calls the undefined function ~s ",
+    ec_talk:say("~s:~s calls the undefined function ~s ",
                  [find_module(ModuleInfo, Caller),
                   format_mfa(Caller),
                   format_mfa(Callee)]);
 display_answer(deprecated_function_calls, ModuleInfo, {Caller, Callee}) ->
-    ewl_talk:say("~s:~s calls the deprecated function ~s ",
+    ec_talk:say("~s:~s calls the deprecated function ~s ",
                  [find_module(ModuleInfo, Caller),
                   format_mfa(Caller),
                   format_mfa(Callee)]).

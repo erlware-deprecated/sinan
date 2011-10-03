@@ -51,7 +51,7 @@ do_task(Task, StartDir, Config) ->
         end
     catch
         {pe, NewState, {_, _, {task_not_found, TaskName}}} ->
-            ewl_talk:say("Task not found ~s.", [TaskName]),
+            ec_talk:say("Task not found ~s.", [TaskName]),
             NewState
     end.
 
@@ -66,14 +66,14 @@ do_task_full(Config0, State0, Task) when is_atom(Task) ->
         sin_sig:save(sin_state:get_value(build_dir, State3), State3)
     catch
         no_build_config ->
-            ewl_talk:say("No build config found."),
+            ec_talk:say("No build config found."),
             sin_state:add_run_error(Task, no_build_config, State0);
         Error = {pe, NewState, {Module, _, _}} ->
-            ewl_talk:say("build problem ~s",
+            ec_talk:say("build problem ~s",
                          [Module:format_exception(Error)]),
             NewState;
         Type:Exception ->
-            ewl_talk:say("build problem ~p:~p:~p",
+            ec_talk:say("build problem ~p:~p:~p",
                          [Type, Exception, erlang:get_stacktrace()]),
             sin_state:add_run_error(Task, Exception, State0)
     end.
@@ -136,7 +136,6 @@ manual_start() ->
                    syntax_tools,
                    edoc,
                    eunit,
-                   ewlib,
                    tools,
                    xmerl,
                    mnesia,
@@ -194,7 +193,7 @@ run_task(Task, ProjectDir, Config0, State0) ->
         no_hooks ->
             lists:foldl(
               fun(TaskDesc, State1) ->
-                      ewl_talk:say("starting: ~p",
+                      ec_talk:say("starting: ~p",
                                    TaskDesc#task.name),
                       Matcher = sin_config:create_matcher([{release,
                                                             sin_state:get_value(release, State0)},
@@ -205,7 +204,7 @@ run_task(Task, ProjectDir, Config0, State0) ->
         HooksFun ->
             lists:foldl(
               fun(TaskDesc, State1) ->
-                      ewl_talk:say("starting: ~p", TaskDesc#task.name),
+                      ec_talk:say("starting: ~p", TaskDesc#task.name),
                       HooksFun(pre, Task, State1),
                       Matcher = sin_config:create_matcher([{task, TaskDesc#task.name}],
                                                           Config0),

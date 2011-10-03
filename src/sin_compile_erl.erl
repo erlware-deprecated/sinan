@@ -26,7 +26,7 @@ get_target(BuildDir, File, ".erl") ->
                  sin_file_info:mod(), [term()], string()) ->
                         {module(), sin_config:config()}.
 build_file(_Config, State, Module=#module{path=File}, Options, _Target) ->
-    ewl_talk:say("Building ~s", [File]),
+    ec_talk:say("Building ~s", [File]),
     case compile:file(File, Options) of
         {ok, _ModuleName} ->
             {State, [Module]};
@@ -45,7 +45,7 @@ build_file(_Config, State, Module=#module{path=File}, Options, _Target) ->
                                                                  "warning")])),
             ?SIN_RAISE(NewRef, {build_error, error_building_erl_file, File});
         error ->
-            ewl_talk:say("Unknown error occured during build"),
+            ec_talk:say("Unknown error occured during build"),
             ?SIN_RAISE(State, {build_error, error_building_erl_file, File})
     end.
 

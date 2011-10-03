@@ -47,15 +47,15 @@ do_task(Config, State) ->
         case Config:match(additional_args) of
             [] ->
                 sinan:usage(),
-                ewl_talk:say(" available commands are as follows~n~n"),
+                ec_talk:say(" available commands are as follows~n~n"),
                 TaskNames =
                     lists:map(fun(Task) ->
-                                      ewl_talk:say("  ~-20s: ~s", [Task#task.name,
+                                      ec_talk:say("  ~-20s: ~s", [Task#task.name,
                                                                    Task#task.short_desc]),
                                       Task#task.name
                               end,
                               Tasks),
-                ewl_talk:say("~nfor more information run 'sinan help <command>'"),
+                ec_talk:say("~nfor more information run 'sinan help <command>'"),
                 {command_list, TaskNames};
 
         [Task, "len", LineLen] ->
@@ -87,10 +87,10 @@ process_task_entry(TaskName, Tasks, LineLen) ->
                              Tasks),
     case ActualTask of
         undefined ->
-            ewl_talk:say("~p: not found", [AtomName]);
+            ec_talk:say("~p: not found", [AtomName]);
         _ ->
-            ewl_talk:say("~nexample: sinan ~s", [ActualTask#task.example]),
-            ewl_talk:say(""),
+            ec_talk:say("~nexample: sinan ~s", [ActualTask#task.example]),
+            ec_talk:say(""),
             break(ActualTask#task.desc, LineLen)
     end.
 

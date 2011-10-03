@@ -45,7 +45,7 @@ do_task(_Config, State) ->
                   SinVersion ->
                       SinVersion
               end,
-    ewl_talk:say("sinan version: ~s", [Version]),
+    ec_talk:say("sinan version: ~s", [Version]),
     sin_state:store(sinan_vsn, Version, State).
 
 %%====================================================================

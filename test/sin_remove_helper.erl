@@ -5,7 +5,7 @@
 -export([given/3, 'when'/3, then/3]).
 
 given([an, empty, directory], _State, _) ->
-    {ok, BaseDir} = ewl_file:create_tmp_dir("/tmp"),
+    BaseDir = ec_file:mkdtemp(),
     {ok, BaseDir}.
 
 'when'([a, project, is, generated], BaseDir, _) ->

@@ -160,7 +160,7 @@ get_app_file(ProjectDir, AppName, Config) ->
     sin_config:config().
 build_out_intuited_config(AppName, Rest) ->
    {value, {vsn, ProjectVsn}} = lists:keysearch(vsn, 1, Rest),
-    sin_config:add_all([{project_name, AppName},
+    sin_config:add_all([{project_name, erlang:list_to_atom(AppName)},
                         {project_vsn, ProjectVsn}], sin_config:new()).
 
 %% @doc The override is command line override values that are provided by the

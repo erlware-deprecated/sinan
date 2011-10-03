@@ -61,7 +61,7 @@ test_apps(State, [#app{name=AppName, modules=Modules} | T], Acc) ->
     io:format("testing app ~p~n", [AppName]),
     case Modules == undefined orelse length(Modules) =< 0 of
         true ->
-            ewl_talk:say("No modules defined for ~p.",
+            ec_talk:say("No modules defined for ~p.",
                          [AppName]),
             ok;
         false ->
@@ -84,7 +84,7 @@ run_module_tests(AllModules) ->
               end,
               case sets:is_element(eunit, Tags) of
                   true ->
-                      ewl_talk:say("testing ~p", [Name]),
+                      ec_talk:say("testing ~p", [Name]),
                       eunit:test(Name);
                   _ ->
                       ok

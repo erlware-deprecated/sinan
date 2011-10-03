@@ -94,10 +94,10 @@ command(State, Cmd, Env, BuildState, HookName) ->
 -spec event_newline(BuildState::list(), HookName::atom(),
                     Line::list(), Acc::list()) -> list().
 event_newline(BuildState, HookName, [?NEWLINE | T], Acc) ->
-    ewl_talk:say(lists:reverse(Acc)),
+    ec_talk:say(lists:reverse(Acc)),
     event_newline(BuildState, HookName, T, []);
 event_newline(BuildState, HookName, [?CARRIAGE_RETURN | T], Acc) ->
-    ewl_talk:say(lists:reverse(Acc)),
+    ec_talk:say(lists:reverse(Acc)),
     event_newline(BuildState, HookName, T, []);
 event_newline(BuildState, HookName, [H | T], Acc) ->
     event_newline(BuildState, HookName, T, [H | Acc]);
@@ -113,7 +113,7 @@ get_data(State, P, BuildState, HookName, Acc) ->
             NewAcc = event_newline(BuildState, HookName, Acc ++ D, []),
             get_data(State, P, BuildState, HookName, NewAcc);
         {P, eof} ->
-            ewl_talk:say(Acc),
+            ec_talk:say(Acc),
             port_close(P),
             receive
                 {P, {exit_status, 0}} ->

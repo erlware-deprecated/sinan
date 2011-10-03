@@ -9,7 +9,7 @@ given([a,generated,project], _State, _) ->
 given([a, escript, file, that, should, become, the, base],
       State = {ProjectDir, ProjectName}, _) ->
     AppBin =filename:join([ProjectDir, "bin"]),
-    ok = ewl_file:mkdir_p(AppBin),
+    ok = ec_file:mkdir_path(AppBin),
     ?assertMatch(ok,
                  file:write_file(filename:join([AppBin, "test_escript"]),
                                  escript_contents(ProjectName, false))),

@@ -75,7 +75,6 @@
               value/0]).
 
 -include_lib("eunit/include/eunit.hrl").
--include("internal.hrl").
 
 -define(WRAP(X), {?MODULE, X}).
 

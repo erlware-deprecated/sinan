@@ -229,7 +229,7 @@ new_limits() -> [].
 add_limit(State, Source, AppsLimits, NewLimit) ->
     case is_valid_limit(NewLimit) of
         false ->
-            ewl_talk:say("Invalid constraint ~p found originating at ~p",
+            ec_talk:say("Invalid constraint ~p found originating at ~p",
                          [NewLimit, Source]),
             ?SIN_RAISE(State, {invalid_constraint, NewLimit, Source});
         true ->

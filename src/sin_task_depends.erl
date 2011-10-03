@@ -196,15 +196,15 @@ get_compiletime_deps(State0, Config, SolverState0, DefaultSpecs) ->
                                      CompiletimeApps1,
                                      CompileSpecs) of
             Error1 = {failed, {possible_culprit, SpecList1}} ->
-            ewl_talk:say("Unable to resolve compile time dependencies, probably do "
+            ec_talk:say("Unable to resolve compile time dependencies, probably do "
                          "to the following constraints:"),
             lists:foreach(fun({AppName, LimitSet, Sources}) ->
-                                  ewl_talk:say(" constraint on ~p with constraints ~p "
+                                  ec_talk:say(" constraint on ~p with constraints ~p "
                                                "originating from these application(s) ~p",
                                                [AppName, sets:to_list(LimitSet),
                                                 sets:to_list(Sources)]);
                              (AppName) when is_atom(AppName) ->
-                                  ewl_talk:say(" application ~p in the project ",
+                                  ec_talk:say(" application ~p in the project ",
                                                [AppName])
 
                           end, SpecList1),
@@ -223,15 +223,15 @@ get_runtime_deps(State0, SolverState0, Apps, Specs) ->
     case sin_dep_solver:all_deps(SolverState0, Apps,
                                  Specs) of
         Error1 = {failed, {possible_culprit, SpecList1}} ->
-            ewl_talk:say("Unable to resolve runtime dependencies, probably do "
+            ec_talk:say("Unable to resolve runtime dependencies, probably do "
                          "to the following constraints:"),
             lists:foreach(fun({AppName, LimitSet, Sources}) ->
-                                  ewl_talk:say(" constraint on ~p with constraints ~p "
+                                  ec_talk:say(" constraint on ~p with constraints ~p "
                                                "originating from these application(s) ~p",
                                                [AppName, sets:to_list(LimitSet),
                                                 sets:to_list(Sources)]);
                              (AppName) when is_atom(AppName) ->
-                                  ewl_talk:say(" application ~p in the project ",
+                                  ec_talk:say(" application ~p in the project ",
                                                [AppName])
                           end, SpecList1),
             ?SIN_RAISE(State0, Error1);

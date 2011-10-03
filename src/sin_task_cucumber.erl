@@ -109,7 +109,7 @@ run_feature(State, FeatureFile) ->
         end
     catch
         throw:{error, nofile} ->
-            ewl_talk:say("No behavior implementation for ~s", [FeatureFile]),
+            ec_talk:say("No behavior implementation for ~s", [FeatureFile]),
             ?SIN_RAISE(State, {no_implementation, FeatureFile})
     end.
 
@@ -118,7 +118,7 @@ gen_feature(State, FeatureFile, TargetApp) ->
         filename:join(
           [sin_state:get_value({apps, erlang:list_to_atom(TargetApp), basedir}, State),
            "test"]),
-    ok = ewl_file:mkdir_p(TargetDir),
+    ok = ec_file:mkdir_path(TargetDir),
     ok = cucumberl_gen:gen(FeatureFile, TargetDir).
 
 find_files(Dir, Regex) ->

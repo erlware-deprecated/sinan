@@ -15,7 +15,7 @@
 
 given([an, empty, temp, directory, with, no, project], _State,
       _) ->
-    {ok, BaseDir} = ewl_file:create_tmp_dir("/tmp"),
+    BaseDir = ec_file:mkdtemp(),
     {ok, BaseDir}.
 
 'when'([the, sinan, gen, task, is, called], BaseDir, _) ->

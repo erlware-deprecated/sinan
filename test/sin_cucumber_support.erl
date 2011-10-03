@@ -18,7 +18,7 @@ given([a, generated, project], _, _) ->
 given([a, feature, file, in, the, features, directory, 'of',
        that, project], {ProjectDir, ProjectName}, _) ->
     ?assertMatch(ok,
-                 ewl_file:mkdir_p(filename:join([ProjectDir, "features"]))),
+                 ec_file:mkdir_path(filename:join([ProjectDir, "features"]))),
     FeatureName = "test_feature",
     FeaturePath = filename:join([ProjectDir, "features", FeatureName ++
                                      ".feature"]),
@@ -60,7 +60,7 @@ then([report, the, build, as, passing],
 
 write_impl(Impl, ProjectDir, FeatureName) ->
     ?assertMatch(ok,
-                 ewl_file:mkdir_p(filename:join([ProjectDir, "test"]))),
+                 ec_file:mkdir_path(filename:join([ProjectDir, "test"]))),
     FeatureName = "test_feature",
     FeatureImplPath = filename:join([ProjectDir, "test", FeatureName ++
                                          ".erl"]),

@@ -324,9 +324,9 @@ event_compile_args(Config, Options) ->
             undefined ->
                 ok;
             true ->
-                ewl_talk:say("Compile args:~n~p", [Options]);
+                ec_talk:say("Compile args:~n~p", [Options]);
             "True" ->
-                ewl_talk:say("Compile args:~n~p", [Options])
+                ec_talk:say("Compile args:~n~p", [Options])
          end.
 
 get_build_module(_, erl) ->

@@ -14,7 +14,7 @@
 %% Step definitions for the sample calculator Addition feature.
 
 given([two, generated, projects], _, _) ->
-    {ok, BaseDir} = ewl_file:create_tmp_dir("/tmp"),
+    BaseDir = ec_file:mkdtemp(),
     ProjectDescs =
         lists:map(fun(Number) ->
                           ProjectName = "foobachoo" ++

@@ -20,7 +20,7 @@ a_generated_project() ->
     a_generated_project("super_foo").
 
 a_generated_project(ProjectName) ->
-    {ok, BaseDir} = ewl_file:create_tmp_dir("/tmp"),
+    BaseDir = ec_file:mkdtemp(),
     {ProjectDir, _} =
         single_app_project(BaseDir, ProjectName),
     {ok, {ProjectDir, ProjectName}}.
