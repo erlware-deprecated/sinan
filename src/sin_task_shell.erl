@@ -44,11 +44,7 @@ description() ->
 %% @doc Run the shell command.
 -spec do_task(sin_config:config(), sin_state:state()) -> sin_state:state().
 do_task(_Config, State) ->
-    ReleaseDeps = sin_state:get_value(release_deps, State),
-    lists:foreach(fun(#app{path=Path}) ->
-                          code:add_patha(filename:join(Path, "ebin"))
-                  end, ReleaseDeps),
-
+    shell:server(false, false),
     State.
 
 %%====================================================================
