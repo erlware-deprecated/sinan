@@ -209,8 +209,9 @@ prepare_app(State0, AppName, AppBuildDir, BuildDir, Ignorables) ->
 
     State2 = sin_state:store({apps, AppName, builddir},
                              AppBuildDir, State1),
-
-    true = code:add_patha(filename:join(AppBuildDir, "ebin")),
+    Ebin = filename:join(AppBuildDir, "ebin"),
+    ec_file:mkdir_path(Ebin),
+    true = code:add_patha(Ebin),
     State2.
 
 %% @doc build the apps as they come up in the list.
