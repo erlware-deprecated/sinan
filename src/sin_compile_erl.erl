@@ -32,18 +32,19 @@ build_file(_Config, State, Module=#module{path=File}, Options, _Target) ->
             {State, [Module]};
         {ok, _ModuleName, []} ->
             {State, [Module]};
-        {ok, _ModuleName, Warnings} ->
+        {ok, _ModuleName, Warnings0} ->
+            Warnings1 = sin_task_build:gather_fail_info(Warnings0, "warning"),
             {?WARN(State,
-                  sin_task_build:gather_fail_info(Warnings, "warning")),
+                  {build_warnings, Warnings1}),
              [Module]};
         {error, Errors, Warnings} ->
-            NewRef =
-                ?WARN(State,
-                  lists:flatten([sin_task_build:gather_fail_info(Errors,
-                                                                 "error"),
-                                 sin_task_build:gather_fail_info(Warnings,
-                                                                 "warning")])),
-            ?SIN_RAISE(NewRef, {build_error, error_building_erl_file, File});
+            ErrorStrings =
+                lists:flatten([sin_task_build:gather_fail_info(Errors,
+                                                               "error"),
+                               sin_task_build:gather_fail_info(Warnings,
+                                                               "warning")]),
+            ec_talk:say(lists:flatten(ErrorStrings)),
+            ?SIN_RAISE(State, {build_error, error_building_erl_file, File});
         error ->
             ec_talk:say("Unknown error occured during build"),
             ?SIN_RAISE(State, {build_error, error_building_erl_file, File})

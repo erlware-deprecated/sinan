@@ -37,19 +37,15 @@ build_file(Config, State0, Module=#module{path=File}, Options, Target) ->
             {ok, _ModuleName, []} ->
                 {State1, ErlModule0} = sin_file_info:process_file(State0, File, []),
                 sin_compile_erl:build_file(Config, State1, ErlModule0, Options, Target);
-            {ok, _ModuleName, Warnings} ->
-                NewRef =
-                    ?WARN(State0,
-                          sin_task_build:gather_fail_info(Warnings, "warning")),
-                ?SIN_RAISE(NewRef, {build_error, error_building_yecc, File});
+            {ok, _ModuleName, Warnings0} ->
+                Warnings1 = sin_task_build:gather_fail_info(Warnings0, "warning"),
+                ?SIN_RAISE(State0, {build_error, error_building_yecc, File, Warnings1});
             {error, Errors, Warnings} ->
-                NewRef =
-                    ?WARN(State0,
-                          lists:flatten([sin_task_build:gather_fail_info(Errors,
-                                                                         "error"),
-                                         sin_task_build:gather_fail_info(Warnings,
-                                                                         "warning")])),
-                ?SIN_RAISE(NewRef, {build_error, error_building_yecc, File})
+                Errors = lists:flatten([sin_task_build:gather_fail_info(Errors,
+                                                                        "error"),
+                                        sin_task_build:gather_fail_info(Warnings,
+                                                                        "warning")]),
+                ?SIN_RAISE(State0, {build_error, error_building_yecc, File})
         end,
     {State2, [ErlModule1, Module]}.
 

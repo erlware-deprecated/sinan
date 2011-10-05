@@ -70,7 +70,6 @@
         ((fun() ->
                   WarnRef =
                       sin_state:add_run_warning(?MODULE, Warnings, State),
-                  ewl_talk:say(Warnings),
                   WarnRef
           end)())).
 
@@ -80,6 +79,5 @@
                 WarnRef =
                      sin_state:add_run_warning(?MODULE,
                                                 io_lib:format(Warnings, Detail), State),
-                 ewl_talk:say(Warnings, Detail),
                  WarnRef
           end)())).
