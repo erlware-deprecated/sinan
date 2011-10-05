@@ -29,7 +29,7 @@
 %% Types
 %%====================================================================
 
--type args() :: ktj_parse:object().
+-type args() :: [string()].
 -type task_name() :: sin_task:task_name().
 -type app() :: record(app).
 
