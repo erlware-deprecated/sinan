@@ -122,8 +122,8 @@ process_raw_config(ProjectDir, FileConfig, CommandLineConfig, State0) ->
 intuit_build_config(ProjectDir, Config, State) ->
     %% App name is always the same as the name of the project dir
     AppName = filename:basename(ProjectDir),
-    AppFilePath = get_app_file(ProjectDir, AppName, Config),
     try
+        AppFilePath = get_app_file(ProjectDir, AppName, Config),
         case file:consult(AppFilePath) of
             {error, enoent} ->
                 ?SIN_RAISE(State, unable_to_intuit_config,
