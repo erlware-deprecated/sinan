@@ -339,8 +339,7 @@ get_build_module(State, Ext) ->
 
 %% @doc Ensure that the build dir exists and is ready to accept files.
 ensure_build_dir(State) ->
-    BuildDir = sin_state:get_value(build_dir, State),
-    AppsDir = lists:flatten([BuildDir, "apps", "tmp"]),
+    AppsDir = lists:flatten(sin_state:get_value(apps_dir, State), "tmp"),
     filelib:ensure_dir(AppsDir).
 
 %% @doc Actual get the failer detail information and add it to the accumulator.

@@ -55,12 +55,13 @@ description() ->
 %% @doc create an otp release
 -spec do_task(sin_config:matcher(), sin_state:state()) -> sin_state:state().
 do_task(Config, State0) ->
-    BuildDir = sin_state:get_value(build_dir, State0),
+    ReleaseDir = sin_state:get_value(release_dir, State0),
     ReleaseName = sin_state:get_value(release, State0),
     Version = sin_state:get_value(release_vsn, State0),
-    ReleaseInfo = generate_rel_file(Config, State0, BuildDir, ReleaseName, Version),
+    ReleaseInfo = generate_rel_file(Config, State0, ReleaseDir,
+                                    ReleaseName, Version),
     State1 = sin_state:store(rel, ReleaseInfo, State0),
-    copy_or_generate_sys_config_file(Config, BuildDir, ReleaseName, Version),
+    copy_or_generate_sys_config_file(Config, ReleaseDir, Version),
     make_boot_script(State1, ReleaseInfo),
     State1.
 
@@ -75,9 +76,10 @@ format_exception(Exception) ->
 %%====================================================================
 
 %% @doc Generate release information from info available in the project.
--spec generate_rel_file(sin_config:config(), sin_state:state(), string(), string(), string()) ->
+-spec generate_rel_file(sin_config:config(), sin_state:state(), string(),
+                        string(), string()) ->
     {ReleaseFile::string(), ReleaseInfo::term()}.
-generate_rel_file(Config, State, BuildDir, Name, Version) ->
+generate_rel_file(Config, State, ReleaseDir, Name, Version) ->
     ReleaseName = sin_state:get_value(release, State),
     ReleaseVsn = sin_state:get_value(release_vsn, State),
 
@@ -100,7 +102,7 @@ generate_rel_file(Config, State, BuildDir, Name, Version) ->
             RelInfo ->
                 RelInfo
         end,
-    {save_release(State, BuildDir, Name, Version, Release), Release}.
+    {save_release(State, ReleaseDir, Name, Version, Release), Release}.
 
 %% @doc Process the dependencies into a format useful for the rel depends area.
 -spec process_deps([atom()],
@@ -120,8 +122,8 @@ process_deps(_, [], Acc) ->
 -spec save_release(sin_state:state(), string(),
                    string(), string(), term()) ->
     {Location::string(), RelBase::string()}.
-save_release(State, BuildDir, Name, Version, RelInfo) ->
-    Location = filename:join([BuildDir, "releases", atom_to_list(Name) ++ "-" ++ Version]),
+save_release(State, RelDir, Name, Version, RelInfo) ->
+    Location = filename:join(RelDir, Version),
     filelib:ensure_dir(filename:join([Location, "tmp"])),
     Relbase = filename:join([Location, Name]),
     Relf = lists:flatten([Relbase, ".rel"]),
@@ -171,12 +173,11 @@ make_boot_script(State, {{Location, File}, {release, {Name, _}, _, _}}) ->
 
 
 %% @doc copy config/sys.config or generate one to releases/VSN/sys.config
--spec copy_or_generate_sys_config_file(sin_config:config(),
-                                       string(), string(), string()) ->
-    ok.
-copy_or_generate_sys_config_file(Config, BuildDir, Name, Version) ->
-    RelSysConfPath = filename:join([BuildDir, "releases", atom_to_list(Name) ++ "-" ++
-                                    Version, "sys.config"]),
+-spec copy_or_generate_sys_config_file(sin_config:config(), string(),
+                                       string()) ->
+                                              ok.
+copy_or_generate_sys_config_file(Config, RelDir, Version) ->
+    RelSysConfPath = filename:join([RelDir, Version, "sys.config"]),
     case Config:match(config_dir, undefined) of
         undefined ->
             generate_sys_config_file(RelSysConfPath);

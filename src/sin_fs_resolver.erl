@@ -19,8 +19,7 @@
 %%============================================================================
 -spec new(sin_config:config(), sin_state:state()) -> sin_dep_resolver:impl().
 new(Config, State) ->
-    BuildDir = sin_state:get_value(build_dir, State),
-    AppBDir = filename:join([BuildDir, "apps"]),
+    AppBDir = sin_state:get_value(apps_dir, State),
     ErlLib = case os:getenv("ERL_LIBS") of
                  false ->
                      [];
@@ -71,10 +70,10 @@ app_versions(RState={PathList, State, ProjectApps}, App) ->
 resolve(RState={PathList, State, ProjectApps}, App, Version) ->
     case lists:member(App, ProjectApps) of
         true ->
-            BuildDir = sin_state:get_value(build_dir, State),
+            AppsBuildDir = sin_state:get_value(apps_dir, State),
             Path =
-                filename:join([BuildDir, "apps",
-                               erlang:atom_to_list(App) ++ "-" ++Version]),
+                filename:join(AppsBuildDir,
+                              erlang:atom_to_list(App) ++ "-" ++Version),
             {RState, Path};
         false ->
             case look_for_dependency_path(State, PathList, App, Version) of

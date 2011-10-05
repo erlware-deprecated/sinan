@@ -16,7 +16,7 @@ class TestFail(st.SmokeTest):
 
         if not os.path.isfile(os.path.join(os.getcwd(),
                                            "_build", app_desc.project_name,
-                                           "apps", app_desc.project_name + "-" +
+                                           "lib", app_desc.project_name + "-" +
                                            app_desc.project_version, "ebin",
                                            "test_module.beam")):
             raise "File Not Built"

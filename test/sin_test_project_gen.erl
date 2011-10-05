@@ -79,7 +79,7 @@ validate_single_app_project(ProjectDir, ProjectName) ->
     EBin = filename:join([ProjectDir, "ebin"]),
     ?assertMatch(true, filelib:is_file(EBin)),
     ?assertMatch(true, filelib:is_regular(filename:join([EBin, "overview.edoc"]))),
-    AppDir = filename:join([ProjectDir, "_build", ProjectName, "apps",
+    AppDir = filename:join([ProjectDir, "_build", ProjectName, "lib",
                             ProjectName ++ "-0.1.0"]),
     ?assertMatch(true, filelib:is_file(AppDir)),
     BConfig =  filename:join([AppDir, "config"]),

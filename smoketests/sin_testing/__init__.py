@@ -48,7 +48,7 @@ def sinan(command):
                 ebin = os.path.join(self.sinan_dir,
                                     "_build",
                                     "sinan",
-                                    "apps",
+                                    "lib",
                                     "sinan-" + vsn, "ebin")
 
             child_cmd = ("erl -noshell -pa %s "
@@ -203,7 +203,7 @@ class SmokeTest(unittest.TestCase):
         self.assertTrue(build_dir)
 
         for n in appdesc.app_names:
-            app_dir = os.path.join(build_dir, "apps", "%s-0.1.0" % n)
+            app_dir = os.path.join(build_dir, "lib", "%s-0.1.0" % n)
             print app_dir
             self.assert_dirs_exist(app_dir,
                                    "ebin",
@@ -241,7 +241,7 @@ class SmokeTest(unittest.TestCase):
         name = appdesc.project_name
         build_tmp = self.get_build_root_path()
         build_tmp.append("releases"),
-        build_tmp.append("%s-%s" % (name, version))
+        build_tmp.append(version)
         version_dir = os.path.join(*build_tmp)
 
         print("Checking version directory at %s " % version_dir)

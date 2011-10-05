@@ -32,7 +32,7 @@ then([sinan, should, put, the, populate, the, module, list],
      {ProjectDir, ProjectName, Ret}, _) ->
     BuildEbin = filename:join([ProjectDir,
                                "_build", ProjectName,
-                               "apps", ProjectName ++ "-0.1.0",
+                               "lib", ProjectName ++ "-0.1.0",
                                "ebin", ProjectName ++ ".app"]),
     Result = file:consult(BuildEbin),
     ?assertMatch({ok, [{application, _, _}]}, Result),

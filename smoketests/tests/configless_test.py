@@ -20,7 +20,7 @@ class TestConfigless(st.SmokeTest):
         build_dir = os.path.join(os.getcwd(),
                                  "_build",
                                  "ctest_project",
-                                 "apps")
+                                 "lib")
 
         self.assertTrue(os.path.isdir(build_dir))
 

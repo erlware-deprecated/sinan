@@ -56,25 +56,21 @@ class TestFoo(st.SmokeTest):
 
             self.assert_dirs_exist("_build",
                                    [r, "releases",
-                                    "%s-%s" % (self.release_name,
-                                               self.release_version)])
+                                    self.release_version])
 
             self.assert_files_exist("_build",
                                    [r, "releases",
-                                    "%s-%s" % (self.release_name,
-                                               self.release_version),
+                                    self.release_version,
                                     self.release_name + ".rel"])
 
             self.assert_files_exist("_build",
                                    [r, "releases",
-                                    "%s-%s" % (self.release_name,
-                                               self.release_version),
+                                    self.release_version,
                                     self.release_name + ".boot"])
 
             self.assert_files_exist("_build",
                                    [r, "releases",
-                                    "%s-%s" % (self.release_name,
-                                               self.release_version),
+                                    self.release_version,
                                     self.release_name + ".script"])
 
 

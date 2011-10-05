@@ -82,7 +82,7 @@ make_tar(Config, State, ProjectDir, ReleaseApps) ->
     LibDir = filename:join([ReleaseName, "lib"]),
     List1 = gather_dirs(LibDir, ReleaseApps, []),
     List3 = List1 ++ copy_additional_dirs(Config, State, ReleaseName, ProjectDir) ++
-        get_release_dirs(Config, State, ReleaseName, BuildDir, ProjectDir) ++
+        get_release_dirs(Config, State, ProjectDir) ++
         add_defaults(State, ProjectDir, ReleaseName),
     create_tar_file(State, filename:join([TarDir,
                                    lists:flatten([ReleaseName, ".tar.gz"])]),
@@ -192,11 +192,14 @@ gather_dirs(_, [], Acc) ->
 
 %% @doc Get the release information for the system.
 -spec get_release_dirs(sin_config:matcher(),
-                       sin_state:state(),  string(), string(), string()) -> [{string(), string()}].
-get_release_dirs(Config, State, ProjectName, BuildDir, ProjectDir) ->
+                       sin_state:state(),  string()) -> [{string(), string()}].
+get_release_dirs(Config, State, ProjectDir) ->
     Name = sin_state:get_value(release, State),
-    SourceReleases = filename:join([BuildDir, "releases", ProjectName]),
-    TargetReleases = filename:join([ProjectName, "releases", ProjectName]),
+    Vsn = sin_state:get_value(release_vsn, State),
+    ReleaseDir = sin_state:get_value(release_dir, State),
+    SourceReleases = filename:join(ReleaseDir, Vsn),
+    TargetReleases = filename:join([erlang:atom_to_list(Name) ++ "-" ++ Vsn,
+                                    "releases", Vsn]),
     Result =
         case Config:match(include_release_info, undefined) of
             Value when Value == true; Value == undefined ->

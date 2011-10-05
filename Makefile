@@ -1,7 +1,7 @@
 VSN=2.0.0
 ERLC=/usr/local/bin/erlc
 ERL=/usr/local/bin/erl
-APPDIR= $(abspath ./_build/sinan/apps/sinan-$(VSN))
+APPDIR= $(abspath ./_build/sinan/lib/sinan-$(VSN))
 SRCDIR=src
 TESTDIR=test
 COPYDIRS= include src test

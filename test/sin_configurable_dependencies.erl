@@ -56,7 +56,7 @@ then([sinan, builds, the, app, normally, each, time],
 then([correctly, figures, out, the, constrained, dependencies],
      State = {ProjectDir, ProjectName, _}, _) ->
     ReleaseFile = filename:join([ProjectDir, "_build", ProjectName,
-                                 releases, ProjectName ++ "-0.1.0",
+                                 "releases", "0.1.0",
                                  ProjectName ++ ".rel"]),
     {ok, [{release, {ProjectName, _}, _,
            AppVsns}]} = file:consult(ReleaseFile),
@@ -69,7 +69,7 @@ then([correctly, figures, out, the, constrained, dependencies, for, each, releas
     State = {ProjectDir, _ProjectName, _}, _) ->
     lists:foreach(fun({Name, Vsn}) ->
                           ReleaseFile = filename:join([ProjectDir, "_build", Name,
-                                                       releases, Name ++ "-0.1.0",
+                                                       "releases", "0.1.0",
                                                        Name ++ ".rel"]),
                           {ok, [{release, {Name, _}, _,
                                  AppVsns}]} = file:consult(ReleaseFile),
@@ -94,7 +94,7 @@ generate_dependency(BaseDir, DepDir, App, Vsn) ->
     {ProjectDir, _} =
         sin_test_project_gen:single_app_project(BaseDir, App, Vsn),
     ?assertMatch({ok, _}, sinan:main(["-s", ProjectDir, "build"])),
-    DepApp = filename:join([ProjectDir, "_build", App, "apps", App ++ "-" ++ Vsn]),
+    DepApp = filename:join([ProjectDir, "_build", App, "lib", App ++ "-" ++ Vsn]),
     DepTarget = filename:join(DepDir, App ++ "-" ++ Vsn),
     ec_file:mkdir_path(DepTarget),
     sin_utils:copy_dir(sin_state:new(), DepTarget, DepApp),
