@@ -26,9 +26,15 @@ new(Config, State) ->
                  Libs ->
                      Libs
              end,
-    {[AppBDir, code:lib_dir() |
-         get_erl_lib_path(ErlLib) ++
-          Config:match(dep_dirs, [])], State,
+    DepDirs =[AppBDir, code:lib_dir() |
+              get_erl_lib_path(ErlLib) ++
+                  Config:match(dep_dirs, [])],
+
+    ec_talk:say("Using the following lib directories to resolve dependencies:~n"),
+    lists:foreach(fun(DepDir) ->
+                          ec_talk:say("    ~s", [DepDir])
+                  end, DepDirs),
+    {DepDirs, State,
      sin_state:get_value(project_applist, State)}.
 
 -spec app_dependencies(sin_dep_resolver:state(),
