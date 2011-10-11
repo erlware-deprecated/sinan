@@ -159,12 +159,14 @@ format_exception(Exception) ->
 -spec process_source_files(sin_state:state(), atom(), [sinan:app()]) ->
                                   {sin_state:state(), [sinan:mod()]}.
 process_source_files(State0, AppName, Deps) ->
-    Includes = lists:map(fun(#app{path=Path}) ->
-                                 filename:join(Path, "includes")
-                         end, Deps),
     AppDir = sin_state:get_value({apps, AppName, basedir}, State0),
     SrcDir = filename:join(AppDir, "src"),
     TestDir = filename:join(AppDir, "test"),
+    Includes = [SrcDir, TestDir |
+                lists:map(fun(#app{path=Path}) ->
+                                  filename:join(Path, "includes")
+                          end, Deps)],
+
     {State1, SrcModules} = process_source_files_in_path(State0, SrcDir, Includes),
     {State2, TestModules} = process_source_files_in_path(State1, TestDir, Includes),
     {State2, SrcModules ++ TestModules}.
