@@ -8,8 +8,8 @@ COPYDIRS= include src test
 BEAMDIR=$(APPDIR)/ebin
 SMOKETEST_DIR=$(CURDIR)/smoketests
 PYPATH=$(PYTHONPATH):$(SMOKETEST_DIR)
+BEHAVIOURS= src/sin_task.erl src/sin_dep_resolver.erl
 RSYNC_OPTIONS=-vaz --delete
-BEHAVIOURS=src/sin_task.erl src/sin_dep_resolver.erl
 .SUFFIXES: .erl .beam .yrl
 
 vpath %.erl src test
@@ -31,7 +31,7 @@ build_behaviours: $(BEHAVIOURS)
         # make sure sin_task gets built first so its always available
 	erlc -pa $(BEAMDIR) +warn_export_vars +warn_export_all \
 	+warn_obsolete_guard \
-	+warnings_as_errors +bin_opt_info +debug_info -W -o $(BEAMDIR) $<
+	+warnings_as_errors +bin_opt_info +debug_info -W -o $(BEAMDIR) $(BEHAVIOURS)
 
 main: setup build_behaviours ${ERL_OBJ} ${ERL_TEST_OBJ}
 
