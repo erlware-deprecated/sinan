@@ -192,9 +192,9 @@ build_apps(Config, State0, Apps) ->
     {State2, Includes} =
         lists:foldl(fun(#app{name=AppName, path=Path, project=true}, {State1, Includes}) ->
                           {prepare_app(State1, AppName, Path, BuildDir, Ignorables),
-                           [filename:join(Path, "includes") | Includes]};
-                       (#app{path=Path}, {State1, Includes}) ->
-                            {State1, [filename:join(Path, "includes") | Includes]}
+                           [{i, filename:join(Path, "include")} | Includes]};
+                       (App, {State1, Includes}) when is_record(App, app) ->
+                            {State1, Includes}
                     end, {State0, []}, AllDeps),
 
     build_apps(Config, State2, Includes, Apps).
@@ -229,8 +229,6 @@ build_app(Config0, State0, Includes, App=#app{name=AppName,
     AppDir = sin_state:get_value({apps, AppName, basedir}, State0),
 
     Target = filename:join([AppBuildDir, "ebin"]),
-
-    code:add_patha(Target),
 
     {State3, NewModules} =
         lists:foldl(fun(Module, {State1, Modules1}) ->
