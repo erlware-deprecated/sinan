@@ -101,15 +101,12 @@ get_erl_lib_path(Paths) ->
 
 -spec get_path_sep() -> char().
 get_path_sep() ->
-    Test = filename:join("o", "o"),
-    {Sep, got} = lists:foldl(fun($o, {_, no}) ->
-                                     {ignored, yes};
-                                (Sep, {_, yes}) ->
-                                     {Sep, got};
-                                (_, Acc) ->
-                                     Acc
-                             end, {[], no}, Test),
-    [Sep].
+    case erlang:system_info(system_architecture) of
+        "win32" ->
+            ";";
+        _SysArch ->
+            ":"
+    end.
 
 
 -spec look_for_dependency_path(sin_state:impl(), [string()],
