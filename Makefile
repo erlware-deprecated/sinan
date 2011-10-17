@@ -1,4 +1,4 @@
-VSN=2.0.0
+VSN=2.0.1
 ERLC=/usr/local/bin/erlc
 ERL=/usr/local/bin/erl
 APPDIR= $(abspath ./_build/sinan/lib/sinan-$(VSN))
@@ -41,22 +41,22 @@ $(BEAMDIR)/%.beam: %.erl
 	+warnings_as_errors +bin_opt_info +debug_info -W -o $(BEAMDIR) $<
 
 build: main
-	erl -pa $(BEAMDIR) -s sinan manual_start -s sinan main -extra -s $(CURDIR) build
+	erl -pa $(BEAMDIR) -s sinan main -extra -s $(CURDIR) build
 
 escript: main
-	erl -pa $(BEAMDIR) -s sinan manual_start -s sinan main -extra -s $(CURDIR) escript
+	erl -pa $(BEAMDIR) -s sinan main -extra -s $(CURDIR) escript
 
 cucumber: main
-	erl -pa $(BEAMDIR) -s sinan manual_start -s sinan main -extra -s $(CURDIR) cucumber
+	erl -pa $(BEAMDIR) -s sinan main -extra -s $(CURDIR) cucumber
 
 test: main
-	erl -pa $(BEAMDIR) -s sinan manual_start -s sinan main -extra -s $(CURDIR) test all
+	erl -pa $(BEAMDIR) -s sinan main -extra -s $(CURDIR) test all
 
 run: main
-	$(ERL) -pa $(BEAMDIR) -s sinan manual_start
+	$(ERL) -pa $(BEAMDIR)
 
 debug: main
-	$(ERL) -pa $(BEAMDIR) -s sinan manual_start -s debugger start
+	$(ERL) -pa $(BEAMDIR) -s debugger start
 
 smoketests: main
 	for f in $(wildcard $(SMOKETEST_DIR)/tests/*.py) ; do	\

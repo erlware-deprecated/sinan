@@ -8,7 +8,7 @@ via the hooks functionality. This functionality is used by putting a
 directory called '_hooks' in the root of your project. Inside this
 directory you place executable files that implement the functionality
 you want to run. When these files are run is determenid by there
-name. The are named in the form of '<when>-<task>'. The when is may be
+name. The are named in the form of &lt;when&gt;-&lt;task&gt;. The when is may be
 one of two values, either 'pre' or 'post'. The task is
 the name of the task you want the thing to run around. For example, if
 you wanted something to run just after the build task is complete you
@@ -27,24 +27,33 @@ passed. The first is the global information about the project. These
 variables are available as follows.
 
 PREFIX
-: The file path of the erlang/erlware installation that sinan
-is running out of.
+: The file path of the erlang/erlware installation that sinan is
+  running out of.
+
 ERTS_VSN
 : The erts version that sinan is building of
+
 BUILD_DIR
 : The build directory where the projectis being built too
+
 BUILD_FLAVOR
 : The current build flavor of the system
+
 BUILD_REF
 : The unique id for this run of sinan
+
 PROJECT_DIR
 : The project root directory
+
 PROJECT_NAME
 : The project name as defined in the build config
+
 PROJECT_VSN
 : The project version
+
 PROJECT_APPS
 : A comma seperated list of apps that are part of the project.
+
 PROJECT_DEPS
 : A comma seperated list of apps that are dependencies of the project
 
@@ -56,8 +65,10 @@ values are as follows.
 
 APP_VSN
 : The version of the application
+
 APP_LOCATION
 : The file path to the application that sinan is using.
+
 APP_DEPS
 : A comma seperated list of the names of the dependent
   applicatinos for this application.
