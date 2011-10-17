@@ -21,7 +21,7 @@ framework. You will need the following.
 
 - http://www.noah.org/wiki/pexpect[pexpect]
 
-To run the tests simple do the following in <sinan-root>.
+To run the tests simple do the following in &lt;sinan-root&gt;.
 
     $> make smoketests
 
@@ -52,14 +52,15 @@ tool. It all depends very much on the task at hand.
 Test Framework
 --------------
 
-The testing framework makes use of the link:<link to python
-unittest>[Python unittest module] and the nose testing infrastructure,
-along with a convience module called sin_testing provided
-here. Individual test files are expected to go into the tests
-directory. Each file is also expected to be completely self contained,
-that is one test file may not depend on other test files. You may, of
-course, share code between tests, but that shared code should go into
-the sin_testing library and then called from the clients for that code.
+The testing framework makes use of the
+[Python unittest library](http://docs.python.org/library/unittest.html)
+and the nose testing infrastructure, along with a convience module
+called sin_testing provided here. Individual test files are expected
+to go into the tests directory. Each file is also expected to be
+completely self contained, that is one test file may not depend on
+other test files. You may, of course, share code between tests, but
+that shared code should go into the sin_testing library and then
+called from the clients for that code.
 
 sin_testing
 -----------
@@ -78,7 +79,7 @@ the moment it is just a container for values as you can see. The only
 thing to be aware of is the app_names. App names is a list of
 applications that you would like to be generated in the project.
 
-
+    {% highlight python %}
     class AppDesc(object):
         def __init__(self,
                      user_name=None,
@@ -93,7 +94,7 @@ applications that you would like to be generated in the project.
             self.project_name = project_name
             self.project_version = project_version
             self.app_names = app_names
-
+    {% endhighlight %}
 
 
 SmokeTest Class
@@ -112,6 +113,7 @@ The first argument to both of these functions is the base directory for the
 checks. The rest of the arguments are directories or files to check for
 in the context of the base directory.
 
+    {% highlight python %}
         self.assert_dirs_exist(projdir,
                                "bin",
                                "config",
@@ -121,6 +123,7 @@ in the context of the base directory.
         self.assert_files_exist(projdir,
                                 ["config", "sys.config"],
                                 "sinan.config")
+    {% endhighlight %}
 
 In the first example we are checking if a set of directories exist in
 the project directory. In the second example we are checking to see if
@@ -130,7 +133,7 @@ correct seperator for the platform you are running on. This makes it
 easy to check large numbers of files or directories. If the file or
 directory doesn't exist then an error is asserted.
 
-### do_<task> functions
+### do_&lt;task&gt; functions
 
 There are several functions for running standard sinan tasks as
 well. These are, do_clean, do_t, do_release, do_dist.
@@ -156,10 +159,12 @@ development passes the spawned process to the function that is being
 decorated. For example, the following code lets we want to execute a
 test that needs to run sinan gen. We could simply do it as follows.
 
-     @sin_testing.sinan("gen")
-     def my_test_function(self, child):
+    {% highlight python %}
+    --decorator should go here but maruku sucks--sin_testing.sinan("gen")
+    def my_test_function(self, child):
           """ Here is where we would do stuff"""
           pass
+    {% endhighlight %}
 
 When the function is called the sinan decorator will run the gen
 command, passing the pexpect child object to the function

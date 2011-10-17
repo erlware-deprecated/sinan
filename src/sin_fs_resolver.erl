@@ -26,9 +26,9 @@ new(Config, State) ->
                  Libs ->
                      Libs
              end,
-    DepDirs =[AppBDir, code:lib_dir() |
-              get_erl_lib_path(ErlLib) ++
-                  Config:match(dep_dirs, [])],
+    DepDirs =sets:to_list(sets:from_list([AppBDir, code:lib_dir() |
+                                          get_erl_lib_path(ErlLib) ++
+                                              Config:match(dep_dirs, [])])),
 
     ec_talk:say("Using the following lib directories to resolve dependencies:~n"),
     lists:foreach(fun(DepDir) ->

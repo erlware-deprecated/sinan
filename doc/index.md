@@ -6,11 +6,12 @@ title: Getting Started Guide
 What is Sinan
 -------------
 
-Sinan is a build tool designed to build SinanProjects and
-OTPApplications, Releases and Applications. Sinan leverages the
-metadata artifacts provided by OTP to do a good job building, testing,
-releasing, etc with very little or no additional input from the
-developer.
+Sinan is a build tool designed to build
+[Sinan Projects](SinanProjects.html) and
+[OTP Applications](OTPApplications.html), Releases and
+Applications. Sinan leverages the metadata artifacts provided by [OTP](OTP.html)
+to do a good job building, testing, releasing, etc with very little or
+no additional input from the developer.
 
 Quick start
 -----------
@@ -55,10 +56,10 @@ to answer these questions.
     Would you like a build config? ("y")> n
     Project was created, you should be good to go!
 
-In this example we are going to generate a project with only one OTP
+In this example we are going to generate a project with only one [OTP](OTP.html)
 application. The gen system needs to know a bit of information about
 you, your name, who is going to hold the copyright, the project
-version etc. For now, leave the erts version as is, you can do that by
+version etc. For now, leave the [ERTS](ERTS.html) version as is, you can do that by
 just hitting enter after the promyt. This is a very simple project so
 we don't need a build config either. Just enter 'n' after that
 request.
@@ -130,10 +131,12 @@ and does all of its changes there.
 
 The directory of interest to us right now is the app directory. If you
 look there you will see that we have a directory there in the built to
-conform to Erlang's expectations for OTP Applications. That is the
-version of our app, with the version number postpended. We have all of
-our source built into ebin and the source in src (OTP applications are
-almost always distributed with source).
+conform to Erlang's expectations for
+[OTP Applications](OTPApplications.html). That is the version of our
+app, with the version number postpended. We have all of our source
+built into ebin and the source in src
+([OTP Applications](OTPApplications) are almost always distributed
+with source).
 
 Thats the build comand, but sinan can do a much more. Lets explore
 some of the other commands.
@@ -144,7 +147,7 @@ Sinan has the ability to run eunit, proper and cucumber tests in any
 project Lets add a test to the application behavior (foo_app.erl) file
 and run our new tests. Currently the app file looks as follows.
 
-
+    {% highlight erlang %}
     %%%----------------------------------------------------------------
     %%% @author Eric Merritt <ericbmerritt@gmail.com>
     %%% @doc
@@ -183,6 +186,7 @@ and run our new tests. Currently the app file looks as follows.
     %%%===================================================================
     %%% Internal functions
     %%%===================================================================
+    {% endhighlight %}
 
 For now we are just going to add a test section and a single test that
 doesn't do much that is very interesting.
@@ -191,9 +195,7 @@ First we need to import the eunit header (don't worry sinan makes sure
 its avaibale). Then we can add a test section right below the internal
 functions section.
 
-.Adding the test
-[source,erlang]
-----------------------------------------------------------------------
+    {% highlight erlang %}
      %%%----------------------------------------------------------------
      %%% @author Eric Merritt <ericbmerritt@gmail.com>
      %%% @doc
@@ -243,7 +245,7 @@ functions section.
         ?assertMatch(foo, foo).
 
      -endif.
-
+    {% endhighlight %}
 Notice the include_lib belowe the export and the new function
 something_test in the tests section. Now that we have built once you
 can be anywhere under the build dir and sinan will know how to find
@@ -262,9 +264,9 @@ no problems. Sinan has added somethings to the _build area to give us
 some more information about things like test
 results.
 
-### Creating an OTP release
+### Creating an [OTP](OTP.html) release
 
-Creating a release for OTP manually can be a pain in the butt. Sinan,
+Creating a release for [OTP](OTP.html) manually can be a pain in the butt. Sinan,
 however, makes it trivial. We just need to run the sinan rel task to
 get all of the rel, build, and script artifacts.
 
@@ -290,7 +292,7 @@ a look at that.
 
 Once again everything that was there remains there, I have just cut
 down the example to new items. Sinan has generated all of the release
-artifacts for your new project by looking in your OTP lib dir. In fact
+artifacts for your new project by looking in your [OTP](OTP.html) lib dir. In fact
 it has also generated the release files as well.
 
 The *.rel file is by far the most interesting. Lets take a look at
@@ -306,10 +308,10 @@ This is a good, fully expanded release file with all the current
 dependencies, and with those dependencies resolved.
 
 Finially, we want to distribute this wonderful project to other
-folks. Of course, OTP provides the framework, but sinan knows how to
+folks. Of course, [OTP](OTP.html) provides the framework, but sinan knows how to
 do the work for you. Lets look at that.
 
-#### Creating an OTP distribution
+#### Creating an [OTP](OTP.html) distribution
 
 The dist task is much like the release task. It doesn't have much
 output but it does create artifacts in +_build+ that we care
@@ -346,7 +348,7 @@ dir contents in the interests of berevity.
             |-- foo.rel
             `-- foo.script
 
-This is a normal OTP distribution tarball with all of the dependencies included.
+This is a normal [OTP](OTP.html) distribution tarball with all of the dependencies included.
 
 Sinan has a few more commands and things can get much more complex if
 you need them to be. If you need further help you can always run the
@@ -356,13 +358,13 @@ sinan help command.
     starting: help
     Usage:  [-v <verbose>] [-s <start_dir>] [-r <release>] [-p <project>] [-n <version>] [command] [option1 option2]....
 
-      -v, --verbose	Be verbose about what gets done
-      -s, --start-dir	The search location for the project
-      -r, --release	the release to build
-      -p, --project	the name of the project
-      -n, --nversion	the version of the project
-      var=value		Variables that will affect the compilation (e.g. debug=1)
-      command		Commands that will be executed by erlb (e.g. compile)
+      -v, --verbose     Be verbose about what gets done
+      -s, --start-dir   The search location for the project
+      -r, --release     the release to build
+      -p, --project     the name of the project
+      -n, --nversion    the version of the project
+      var=value         Variables that will affect the compilation (e.g. debug=1)
+      command           Commands that will be executed by erlb (e.g. compile)
 
      available commands are as follows
 

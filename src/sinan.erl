@@ -105,6 +105,7 @@ run_sinan() ->
 %% command line args
 -spec main([string()]) -> sin_config:config().
 main(Args) ->
+    manual_start(),
     case getopt:parse(option_spec_list(), Args) of
         {ok, {Options, NonOptArgs}} ->
             do_build(Options, NonOptArgs);
