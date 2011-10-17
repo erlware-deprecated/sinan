@@ -67,8 +67,13 @@ do_task(Config, State0) ->
                 solve_deps(Config, State0, ProjectApps)
         end,
 
+    lists:foreach(fun(#app{path=Path}) ->
+                          Ebin = filename:join(Path, "ebin"),
+                          true = code:add_patha(Ebin)
+                  end, CompiletimeDeps),
+
     {State4, ReleaseApps, RuntimeDeps1} =
-        lists:foldl(fun(App0=#app{name=AppName},
+        lists:foldl(fun(App0=#app{name=AppName, path=Path},
                         {State2, ReleaseApps0, RuntimeApps0}) ->
                             case lists:member(AppName, ProjectApps) of
                                 true ->
@@ -80,6 +85,8 @@ do_task(Config, State0) ->
                                                         project=true},
                                     {State3, [App1 | ReleaseApps0], [App1 | RuntimeApps0]};
                                 false ->
+                                    Ebin = filename:join(Path, "ebin"),
+                                    true = code:add_patha(Ebin),
                                     {State2, ReleaseApps0, [App0 | RuntimeApps0]}
                             end
                     end, {State1, [], []}, RuntimeDeps0),
