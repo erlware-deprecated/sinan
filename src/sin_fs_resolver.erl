@@ -10,7 +10,8 @@
 
 -behaviour(sin_dep_resolver).
 
--export([new/2, app_dependencies/3, app_versions/2, resolve/3]).
+-export([new/2, app_dependencies/3, app_versions/2,
+         resolve/3, format_exception/1]).
 
 -include_lib("sinan/include/sinan.hrl").
 
@@ -89,6 +90,13 @@ resolve(RState={PathList, State, ProjectApps}, App, Version) ->
                     ?SIN_RAISE(State, {unable_to_find_dependencies, App, Version})
             end
     end.
+
+%% @doc Format an exception thrown by this module
+-spec format_exception(sin_exceptions:exception()) ->
+    string().
+format_exception(Exception) ->
+    sin_exceptions:format_exception(Exception).
+
 %%============================================================================
 %% Internal Functions
 %%============================================================================
