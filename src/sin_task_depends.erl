@@ -77,13 +77,9 @@ do_task(Config, State0) ->
                         {State2, ReleaseApps0, RuntimeApps0}) ->
                             case lists:member(AppName, ProjectApps) of
                                 true ->
-                                    {State3, Mods} =
-                                        process_source_files(State2, AppName,
-                                                             RuntimeDeps0 ++
-                                                                 CompiletimeDeps),
-                                        App1 = App0#app{sources=Mods,
-                                                        project=true},
-                                    {State3, [App1 | ReleaseApps0], [App1 | RuntimeApps0]};
+                                    App1 = App0#app{project=true},
+                                    {State2, [App1 | ReleaseApps0],
+                                     [App1 | RuntimeApps0]};
                                 false ->
                                     Ebin = filename:join(Path, "ebin"),
                                     true = code:add_patha(Ebin),
@@ -138,21 +134,12 @@ solve_deps(Config, State0, ProjectApps) ->
 
                   end, CompiletimeDeps0),
 
-    {State3, RuntimeDeps2} =
-        lists:foldl(fun(App=#app{project=true, path=Path}, {State1, Acc}) ->
-                            {State2, Modules} =
-                                process_source_files(State1, Path, RuntimeDeps1),
-                            {State2, [App#app{modules=Modules} | Acc]};
-                       (App, {State1, Acc}) ->
-                            {State1, [App | Acc]}
-                    end, {State0, []}, RuntimeDeps1),
 
-
-    State4 =
+    State1 =
         sin_sig:save_sig_info(?MODULE,
-                              {RuntimeDeps2, CompiletimeDeps1}, State3),
+                              {RuntimeDeps1, CompiletimeDeps1}, State0),
 
-    {State4, {RuntimeDeps1, CompiletimeDeps1}}.
+    {State1, {RuntimeDeps1, CompiletimeDeps1}}.
 
 %% @doc Format an exception thrown by this module
 -spec format_exception(sin_exceptions:exception()) ->
@@ -163,32 +150,6 @@ format_exception(Exception) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
--spec process_source_files(sin_state:state(), atom(), [sinan:app()]) ->
-                                  {sin_state:state(), [sinan:mod()]}.
-process_source_files(State0, AppName, Deps) ->
-    AppDir = sin_state:get_value({apps, AppName, basedir}, State0),
-    SrcDir = filename:join(AppDir, "src"),
-    TestDir = filename:join(AppDir, "test"),
-    Includes = [SrcDir, TestDir |
-                lists:map(fun(#app{path=Path}) ->
-                                  filename:join(Path, "includes")
-                          end, Deps)],
-
-    {State1, SrcModules} = process_source_files_in_path(State0, SrcDir, Includes),
-    {State2, TestModules} = process_source_files_in_path(State1, TestDir, Includes),
-    {State2, SrcModules ++ TestModules}.
-
--spec process_source_files_in_path(sin_state:state(), string(), [string()]) ->
-                                          {sin_state:state(), sinan:mod()}.
-process_source_files_in_path(State0, Dir, Includes) ->
-    filelib:fold_files(Dir, "^((.+\.erl)|(.+\.hrl)|(.+\.erl))$", true,
-                       fun(Path, {State1, Acc}) ->
-                               {State2, Rec} =
-                                   sin_file_info:process_file(State1, Path, Includes),
-                               {State2, [Rec | Acc]}
-                       end, {State0, []}).
-
-
 -spec get_compiletime_deps(sin_state:state(), sin_config:config(),
                            sin_dep_solver:state(),
                            [sin_dep_solver:spec()]) ->
@@ -272,4 +233,3 @@ remove_excluded(State0, Apps0, Constraints) ->
                          end
                   end, Apps1),
     {Apps1, DefaultSpecs ++ Constraints}.
-
