@@ -74,9 +74,24 @@ extract_resolver_state(#state{r=R0}) ->
 %% passes. Then the possible culprits are the inverse of those limits.
 -spec shrink_deps(state(), [app()], [spec()]) ->
                          {failed, {possible_culprit, [ app() | spec()]}}.
-shrink_deps(State0, Apps0, Limits0) ->
-    AdjustedLimits = lists:map(fun(App) -> {app, App} end, Apps0) ++ Limits0,
-    BroadestFirst = broadest_first(remove_empty(powerset(AdjustedLimits))),
+shrink_deps(State0, Apps, Limits0) ->
+    AdjustedLimits = lists:foldl(fun(NApp, Acc) ->
+                                         case lists:keysearch(NApp, 1, Limits0) of
+                                             false ->
+                                                 [{app, NApp} | Acc];
+                                             _ ->
+                                                 Acc
+                                         end
+                                 end, [], Apps) ++ Limits0,
+    ec_talk:say("It looks like we couldn't satisfy all the dependency constraints"
+                " We are going to search the space to see what the problem is"
+                " but this could take a while"),
+    ec_talk:say("Getting the powerset of all constraints"),
+    PS = powerset(AdjustedLimits),
+    ec_talk:say("Power set contains ~p elements", [erlang:length(PS)]),
+    ec_talk:say("Doing optimal sort of the power set"),
+    BroadestFirst = broadest_first(remove_empty(PS)),
+    ec_talk:say("Looking for the first passing constraint set"),
     FirstPassingSet =
         case ec_lists:find(fun([]) ->
                                    false;
@@ -554,7 +569,7 @@ conflicting_failing_test() ->
                                sin_config:create_matcher([], Config), sin_state:new()),
     State = new(Res),
 
-    ?assertMatch({failed,{possible_culprit,[app1]}},
+    ?assertMatch({failed,{possible_culprit,[app3]}},
                  all_deps(State, [app1, app3], [])).
 
 
