@@ -77,7 +77,8 @@ run_hook(State, HookPath, BuildState, HookName) ->
 %% value pairs.
 -spec stringify(PairList::list(), Acc::list()) -> list().
 stringify([{Key, Value} | Rest], Acc) ->
-    stringify(Rest, [{Key, lists:flatten(sin_utils:term_to_list(Value))} | Acc]);
+    stringify(Rest, [{lists:flatten(sin_utils:term_to_list(Key)),
+                      lists:flatten(sin_utils:term_to_list(Value))} | Acc]);
 stringify([], Acc) ->
     Acc.
 
