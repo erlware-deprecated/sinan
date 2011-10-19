@@ -131,7 +131,8 @@ format_exception(Exception) ->
 reorder_apps_according_to_deps(State, AllApps) ->
     ReOrdered = lists:foldr(
                   fun (#app{name=AppName}, Acc) ->
-                          AllDeps = sin_state:get_value({apps, AppName, deps}, State),
+                          AllDeps = sin_state:get_value({apps, AppName, deps},
+                                                        State),
                           case map_deps(AppName, AllDeps, AllApps) of
                               [] ->
                                   [{'NONE', AppName} | Acc];
@@ -182,49 +183,64 @@ map_deps(App, Deps, AllApps) ->
                      end, [], Deps).
 
 %% @doc Build the apps in the list.
-build_apps(Config, State0, Apps) ->
-    AllDeps = sin_state:get_value(release_deps, State0),
-
+build_apps(Config, State0, Apps0) ->
     BuildDir = sin_state:get_value(build_dir, State0),
     Ignorables = sin_state:get_value(ignore_dirs, State0),
 
+    {State2, Apps2} =
+        lists:foldl(fun(App0 = #app{project=true}, {State1, Apps1}) ->
+                            {State2, App1} = prepare_app(State1, App0, BuildDir,
+                                                         Ignorables),
+                            {State3, App2} = build_app(Config, State2, App1),
+                            {State3, [App2 | Apps1]}
+                    end, {State0, []}, Apps0),
+    Apps3 = lists:reverse(Apps2),
+    {State2, Apps3}.
 
-    {State2, Includes} =
-        lists:foldl(fun(#app{name=AppName, path=Path, project=true}, {State1, Includes}) ->
-                          {prepare_app(State1, AppName, Path, BuildDir, Ignorables),
-                           [{i, filename:join(Path, "include")} | Includes]};
-                       (App, {State1, Includes}) when is_record(App, app) ->
-                            {State1, Includes}
-                    end, {State0, []}, AllDeps),
-
-    build_apps(Config, State2, Includes, Apps).
-
-prepare_app(State0, AppName, AppBuildDir, BuildDir, Ignorables) ->
+prepare_app(State0, App0 = #app{name=AppName, path=Path}, BuildDir, Ignorables) ->
     AppDir = sin_state:get_value({apps, AppName, basedir}, State0),
 
     %% Ignore the build dir when copying or we will create a deep monster in a
     %% few builds
-    State1 = sin_utils:copy_dir(State0, AppBuildDir, AppDir, "",
+    State1 = sin_utils:copy_dir(State0, Path, AppDir, "",
                                 [BuildDir | Ignorables]),
 
     State2 = sin_state:store({apps, AppName, builddir},
-                             AppBuildDir, State1),
-    Ebin = filename:join(AppBuildDir, "ebin"),
+                             Path, State1),
+    {State3, Mods} =
+        process_source_files(State2, AppDir),
+
+    Ebin = filename:join(Path, "ebin"),
     ec_file:mkdir_path(Ebin),
     true = code:add_patha(Ebin),
-    State2.
+    {State3, App0#app{sources=Mods}}.
 
-%% @doc build the apps as they come up in the list.
-build_apps(Config, State0, Includes, AppList) ->
-        lists:foldl(fun(App0, {State1, Apps0}) ->
-                            {State2, App1} = build_app(Config, State1, Includes, App0),
-                            {State2, [App1 | Apps0]}
-                    end, {State0, []}, AppList).
+-spec process_source_files(sin_state:state(), atom()) ->
+                                  {sin_state:state(), [sinan:mod()]}.
+process_source_files(State0, AppDir) ->
+    SrcDir = filename:join(AppDir, "src"),
+    TestDir = filename:join(AppDir, "test"),
+    Includes = [SrcDir, TestDir],
+
+    {State1, SrcModules} = process_source_files_in_path(State0, SrcDir, Includes),
+    {State2, TestModules} = process_source_files_in_path(State1, TestDir, Includes),
+    {State2, SrcModules ++ TestModules}.
+
+-spec process_source_files_in_path(sin_state:state(), string(), [string()]) ->
+                                          {sin_state:state(), sinan:mod()}.
+process_source_files_in_path(State0, Dir, Includes) ->
+    filelib:fold_files(Dir, "^((.+\.erl)|(.+\.hrl)|(.+\.erl))$", true,
+                       fun(Path, {State1, Acc}) ->
+                               {State2, Rec} =
+                                   sin_file_info:process_file(State1, Path, Includes),
+                               {State2, [Rec | Acc]}
+                       end, {State0, []}).
+
 
 %% @doc Build an individual otp application.
-build_app(Config0, State0, Includes, App=#app{name=AppName,
-                                         path=AppBuildDir,
-                                         sources=Modules0}) ->
+build_app(Config0, State0, App=#app{name=AppName,
+                                    path=AppBuildDir,
+                                    sources=Modules0}) ->
     Config1 = Config0:specialize([{app, AppName}]),
     AppDir = sin_state:get_value({apps, AppName, basedir}, State0),
 
@@ -235,7 +251,7 @@ build_app(Config0, State0, Includes, App=#app{name=AppName,
                             {State2, Mods} =
                                 build_source_if_required(Config1, State1,
                                                          Module,
-                                                         Includes, AppDir,
+                                                         AppDir,
                                                          Target, Modules0),
                             {State2, [Mods | Modules1]}
                     end, {State0, []}, Modules0),
@@ -247,7 +263,7 @@ build_source_if_required(Config0, State0,
                          Module=#module{name=Name,
                                         type=Type,
                                         change_sig=NewSig},
-              Includes, AppDir,  Target, AllModules) ->
+                         AppDir,  Target, AllModules) ->
     case Type of
         T when T == yrl; T == erl ->
             case sin_sig:get_sig_info({?MODULE, Name}, State0) of
@@ -257,28 +273,28 @@ build_source_if_required(Config0, State0,
                             {ok, Modules} = sin_sig:get_sig_info({?MODULE, modules, Name}, State0),
                             {State0, Modules};
                         false ->
-                            do_build_source(Config0, State0, Module, Includes, AppDir,  Target, AllModules)
+                            do_build_source(Config0, State0, Module, AppDir,  Target, AllModules)
                     end;
                 _ ->
-                    do_build_source(Config0, State0, Module, Includes, AppDir,  Target, AllModules)
+                    do_build_source(Config0, State0, Module, AppDir,  Target, AllModules)
             end;
         _ ->
             {State0, [Module]}
     end.
 
 do_build_source(Config0, State0, Module = #module{name=Name, module_deps=DepModules},
-                Includes, AppDir,  Target, AllModules) ->
+                AppDir,  Target, AllModules) ->
     State1 = build_dep_modules(Config0, State0, DepModules,
-                               Includes, AppDir,  Target, AllModules),
+                               AppDir,  Target, AllModules),
     {State2, Modules} =
         build_source(Config0, State1, Module,
-                     Includes, AppDir, Target),
+                     AppDir, Target),
     {sin_sig:save_sig_info({?MODULE, modules, Name}, Modules, State2),
      Modules}.
 
-build_dep_modules(_Config0, State0, [], _Includes, _AppDir,  _Target, _AllModules) ->
+build_dep_modules(_Config0, State0, [], _AppDir,  _Target, _AllModules) ->
     State0;
-build_dep_modules(Config0, State0, DepNames, Includes, AppDir,  Target, AllModules) ->
+build_dep_modules(Config0, State0, DepNames, AppDir,  Target, AllModules) ->
     sets:fold(fun(DepName, State1) ->
                       case ec_lists:find(fun(#module{name=ModName})
                                                when ModName == DepName ->
@@ -290,7 +306,7 @@ build_dep_modules(Config0, State0, DepNames, Includes, AppDir,  Target, AllModul
                                 {State2, _} =
                                   build_source_if_required(Config0, State1,
                                                            Module,
-                                                           Includes, AppDir,
+                                                           AppDir,
                                                            Target, AllModules),
                                 State2;
                           error ->
@@ -302,15 +318,13 @@ build_source(Config0, State0,
              Module=#module{name=Name,
                             type=Type,
                             change_sig=NewSig},
-             Includes, AppDir, Target) ->
+             AppDir, Target) ->
     Config1 = Config0:specialize([{module, Module}]),
     Options = Config1:match(compile_args, [])
         ++ [{outdir, Target},
             strict_record_tests,
             return_errors, return_warnings,
-            {i, filename:join([AppDir, "include"])},
-            %% Search directory with .hrl files
-            Includes],
+            {i, filename:join([AppDir, "include"])}],
     event_compile_args(Config1, Options),
     BuildModule = get_build_module(State0, Type),
     {State2, Mods} = BuildModule:build_file(Config1, State0,
