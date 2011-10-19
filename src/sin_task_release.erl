@@ -160,15 +160,15 @@ make_boot_script(State, {{Location, File}, {release, {Name, _}, _, _}}) ->
         {ok, _, []} ->
             ok;
         {ok,Module,Warnings} ->
-            Detail = Module:format_warning(Warnings),
+            Detail = lists:flatten(Module:format_warning(Warnings)),
             ec_talk:say("~s", Detail),
             ?SIN_RAISE(State, release_script_generation_error,
-                       "~s~n", [lists:flatten(Detail)]);
+                       "~s~n", [Detail]);
         {error,Module,Error} ->
-            Detail = Module:format_error(Error),
+            Detail = lists:flatten(Module:format_error(Error)),
             ec_talk:say("~s", Detail),
             ?SIN_RAISE(State, release_script_generation_error,
-                       "~s~n", [lists:flatten(Detail)])
+                       "~s~n", [Detail])
     end.
 
 
