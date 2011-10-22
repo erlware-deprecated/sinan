@@ -206,12 +206,12 @@ run_task(Task, ProjectDir, Config0, State0) ->
             lists:foldl(
               fun(TaskDesc, State1) ->
                       ec_talk:say("starting: ~p", TaskDesc#task.name),
-                      HooksFun(pre, Task, State1),
+                      State2 = HooksFun(pre, Task, State1),
                       Matcher = sin_config:create_matcher([{task, TaskDesc#task.name}],
                                                           Config0),
-                      State2 =
-                          (TaskDesc#task.task_impl):do_task(Matcher, State1),
-                      HooksFun(post, Task, State2)
+                      State3 =
+                          (TaskDesc#task.task_impl):do_task(Matcher, State2),
+                      HooksFun(post, Task, State3)
               end, State0, Tasks)
        end.
 

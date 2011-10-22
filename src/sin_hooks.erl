@@ -63,7 +63,7 @@ do_hook(State, Type, Task, BuildState, HooksDir) when is_atom(Task) ->
        true ->
             run_hook(State, HookPath, BuildState, list_to_atom(HookName));
        _ ->
-            ok
+            State
     end.
 
 %% @doc Setup the execution environment and run the hook.
@@ -91,9 +91,9 @@ command(State, Cmd, Env, BuildState, HookName) ->
     P = open_port({spawn, Cmd}, Opt),
     get_data(State, P, BuildState, HookName, []).
 
-%% @doc Event results only at newline boundries.
+%% @doc Event results only at newline boundaries.
 -spec event_newline(BuildState::list(), HookName::atom(),
-                    Line::list(), Acc::list()) -> list().
+                    Line::list(), Acc::list()) -> ok.
 event_newline(BuildState, HookName, [?NEWLINE | T], Acc) ->
     ec_talk:say(lists:reverse(Acc)),
     event_newline(BuildState, HookName, T, []);
@@ -107,7 +107,7 @@ event_newline(_BuildState, _HookName, [], Acc) ->
 
 %% @doc Recieve the data from the port and exit when complete.
 -spec get_data(sin_state:state(), P::port(), BuildState::list(),
-               HookName::atom(), Acc::list()) -> list().
+               HookName::atom(), Acc::list()) -> sin_state:state().
 get_data(State, P, BuildState, HookName, Acc) ->
     receive
         {P, {data, D}} ->
@@ -118,7 +118,7 @@ get_data(State, P, BuildState, HookName, Acc) ->
             port_close(P),
             receive
                 {P, {exit_status, 0}} ->
-                    ok;
+                    State;
                 {P, {exit_status, N}} ->
                     ?SIN_RAISE(State, bad_exit_status,
                                "Hook ~s exited with status ~p",
