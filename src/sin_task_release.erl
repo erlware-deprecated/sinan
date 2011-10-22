@@ -94,7 +94,7 @@ generate_rel_file(Config, State, ReleaseDir, Name, Version) ->
                     process_deps(Config:match(types, []),
                                  sin_state:get_value(release_runtime_deps, State), []),
                 Deps1 = lists:map(fun({App, AppVersion}) ->
-                                          {App, AppVersion, load}
+                                          {App, AppVersion}
                                   end, Deps0),
 
                 {release, {erlang:atom_to_list(Name), Version}, {erts, Erts},

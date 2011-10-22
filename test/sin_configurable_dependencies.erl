@@ -61,9 +61,9 @@ then([correctly, figures, out, the, constrained, dependencies],
     {ok, [{release, {ProjectName, _}, _,
            AppVsns}]} = file:consult(ReleaseFile),
 
-    ?assertMatch({futz, "0.3.0", load}, lists:keyfind(futz, 1, AppVsns)),
-    ?assertMatch({fitz, "0.2.0", load}, lists:keyfind(fitz, 1, AppVsns)),
-    ?assertMatch({footz, "0.2.0", load}, lists:keyfind(footz, 1, AppVsns)),
+    ?assertMatch({futz, "0.3.0"}, lists:keyfind(futz, 1, AppVsns)),
+    ?assertMatch({fitz, "0.2.0"}, lists:keyfind(fitz, 1, AppVsns)),
+    ?assertMatch({footz, "0.2.0"}, lists:keyfind(footz, 1, AppVsns)),
     {ok, State};
 then([correctly, figures, out, the, constrained, dependencies, for, each, release],
     State = {ProjectDir, _ProjectName, _}, _) ->
@@ -74,9 +74,9 @@ then([correctly, figures, out, the, constrained, dependencies, for, each, releas
                           {ok, [{release, {Name, _}, _,
                                  AppVsns}]} = file:consult(ReleaseFile),
 
-                          ?assertMatch({futz, Vsn, _}, lists:keyfind(futz, 1, AppVsns)),
-                          ?assertMatch({fitz, Vsn, _}, lists:keyfind(fitz, 1, AppVsns)),
-                          ?assertMatch({footz, Vsn, _}, lists:keyfind(footz, 1, AppVsns))
+                          ?assertMatch({futz, Vsn}, lists:keyfind(futz, 1, AppVsns)),
+                          ?assertMatch({fitz, Vsn}, lists:keyfind(fitz, 1, AppVsns)),
+                          ?assertMatch({footz, Vsn}, lists:keyfind(footz, 1, AppVsns))
                   end, [{"one", "0.1.0"},
                         {"two", "0.2.0"},
                         {"three", "0.3.0"}]),
