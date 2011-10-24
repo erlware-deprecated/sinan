@@ -5,7 +5,7 @@
 %%% @end
 %%% Created :  5 Sep 2011 by Eric Merritt <ericbmerritt@gmail.com>
 %%%-------------------------------------------------------------------
--module(sin_test_project_gen).
+-module(sint_test_project_gen).
 
 -export([a_generated_project/0,
          a_generated_project/1,

@@ -12,7 +12,7 @@
 -export([given/3, 'when'/3, then/3]).
 
 given([a,generated,project], _State, _) ->
-    sin_test_project_gen:a_generated_project();
+    sint_test_project_gen:a_generated_project();
 given([that,project,contains,a,parse,transform], State={ProjectDir, _}, _) ->
     File = filename:join([ProjectDir, "src", "sint_gh50_z_some_module.erl"]),
     ok = file:write_file(File, transform_contents()),

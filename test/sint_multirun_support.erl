@@ -5,7 +5,7 @@
 %%% @end
 %%% Created :  5 Sep 2011 by Eric Merritt <ericbmerritt@gmail.com>
 %%%-------------------------------------------------------------------
--module(sin_multirun_support).
+-module(sint_multirun_support).
 
 -export([given/3, 'when'/3, then/3]).
 
@@ -20,7 +20,7 @@ given([two, generated, projects], _, _) ->
                           ProjectName = "foobachoo" ++
                               erlang:integer_to_list(Number),
                           {ProjectDir, _} =
-                              sin_test_project_gen:single_app_project(BaseDir,
+                              sint_test_project_gen:single_app_project(BaseDir,
                                                                       ProjectName),
                           {ProjectName, ProjectDir}
                   end,
@@ -40,7 +40,7 @@ then([sinan, should, build, both, projects, without, a, problem],
      ProjectDescs, _) ->
     ?assertMatch(true,
                  lists:all(fun({{ProjectName, ProjectDir}, {ok, _}}) ->
-                                   ok == sin_test_project_gen:validate_single_app_project(ProjectDir, ProjectName);
+                                   ok == sint_test_project_gen:validate_single_app_project(ProjectDir, ProjectName);
                               ({_, {error, _}}) ->
                                    false
                            end, ProjectDescs)),

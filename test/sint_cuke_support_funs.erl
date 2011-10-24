@@ -1,4 +1,4 @@
--module(sin_cuke_support_funs).
+-module(sint_cuke_support_funs).
 
 -export([app_src/1, delete_if_exists/1]).
 
