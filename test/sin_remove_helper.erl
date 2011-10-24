@@ -28,4 +28,3 @@ then([sinan, should, 'not', generate, the, erlware,helper],
     ?assertMatch(false,
                  sin_utils:file_exists(sin_state:new(), BinFile)),
     {ok, State}.
-
