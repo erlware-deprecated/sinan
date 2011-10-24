@@ -5,7 +5,7 @@
 -export([given/3, 'when'/3, then/3]).
 
 given([a,generated,project], _State, _) ->
-    sin_test_project_gen:a_generated_project();
+    sin_test_project_gen:a_generated_project("sin_escript_exe_proj");
 given([a, escript, file, that, should, become, the, base],
       State = {ProjectDir, ProjectName}, _) ->
     AppBin =filename:join([ProjectDir, "bin"]),
@@ -18,7 +18,7 @@ given([a, project, name, named, module, with, a, main, function],
       State = {ProjectDir, ProjectName}, _) ->
     AppSrc = filename:join([ProjectDir, "src"]),
     ?assertMatch(ok,
-                 file:write_file(filename:join([AppSrc, "super_foo.erl"]),
+                 file:write_file(filename:join([AppSrc, ProjectName ++ ".erl"]),
                                  escript_contents(ProjectName, true))),
     {ok, State};
 given([a, escript, directive, in, the, build, config],
@@ -72,5 +72,3 @@ escript_directive(ProjectName) ->
                    "{ignore_apps, []}. \n"
                    "\n",
                    "{escript, [{source, \"bin/test_escript\"}]}.\n"]).
-
-

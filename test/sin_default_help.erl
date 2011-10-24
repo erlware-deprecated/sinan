@@ -25,5 +25,3 @@ then([display, a, list, 'of',
     DisplayedCommands = sin_state:get_value(help_displayed, BuildState),
     ?assertMatch({command_list, _}, DisplayedCommands),
     {ok, State}.
-
-

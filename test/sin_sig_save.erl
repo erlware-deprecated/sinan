@@ -29,4 +29,3 @@ then([save,state,to,a,single,file,on,close],
     SigFile = filename:join(BuildDir, ".sig"),
     ?assertMatch(true, sin_utils:file_exists(sin_state:new(), SigFile)),
     {ok, State}.
-

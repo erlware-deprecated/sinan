@@ -24,5 +24,3 @@ then([sinan,should,build,the,app,normally],
     ?assertMatch([], sin_state:get_run_errors(BuildState)),
     sin_test_project_gen:validate_single_app_project(ProjectDir, ProjectName),
     {ok, {ProjectDir, ProjectName, BuildState}}.
-
-
