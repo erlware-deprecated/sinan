@@ -1,11 +1,11 @@
--module(sin_default_help).
+-module(sint_default_help).
 
 -include_lib("eunit/include/eunit.hrl").
 
 -export([given/3, 'when'/3, then/3]).
 
 given([a,generated,project], _State, _) ->
-    sin_test_project_gen:a_generated_project().
+    sint_test_project_gen:a_generated_project().
 
 'when'([a, step, is, run, on, the,
         project, with, an, empty, arglist], {ProjectDir, ProjectName}, _) ->

@@ -1,11 +1,11 @@
--module(sin_escript_exe).
+-module(sint_escript_exe).
 
 -include_lib("eunit/include/eunit.hrl").
 
 -export([given/3, 'when'/3, then/3]).
 
 given([a,generated,project], _State, _) ->
-    sin_test_project_gen:a_generated_project("sin_escript_exe_proj");
+    sint_test_project_gen:a_generated_project("sin_escript_exe_proj");
 given([a, escript, file, that, should, become, the, base],
       State = {ProjectDir, ProjectName}, _) ->
     AppBin =filename:join([ProjectDir, "bin"]),

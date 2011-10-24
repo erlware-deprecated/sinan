@@ -1,4 +1,4 @@
--module(sin_configurable_dependencies).
+-module(sint_configurable_dependencies).
 
 -include_lib("eunit/include/eunit.hrl").
 
@@ -15,7 +15,7 @@ given([a, generated, project, that, contains, a, dependency, spec], _State, _) -
                            "sin_configurable_dependencies_footz"],
                           ["0.1.0", "0.2.0", "0.3.0", "0.4.0"]),
     {ProjectDir, _} =
-        sin_test_project_gen:single_app_project(BaseDir, ProjectName, "0.1.1"),
+        sint_test_project_gen:single_app_project(BaseDir, ProjectName, "0.1.1"),
     AppSrc = filename:join([ProjectDir, "src", ProjectName ++ ".app.src"]),
     ?assertMatch(ok, file:write_file(AppSrc,
                                      app_contents(ProjectName, "0.1.1"))),
@@ -103,7 +103,7 @@ generate_dependencies(BaseDir, DepDir, Apps, Versions) ->
 
 generate_dependency(BaseDir, DepDir, App, Vsn) ->
     {ProjectDir, _} =
-        sin_test_project_gen:single_app_project(BaseDir, App, Vsn),
+        sint_test_project_gen:single_app_project(BaseDir, App, Vsn),
     ?assertMatch({ok, _}, sinan:main(["-s", ProjectDir, "build"])),
     DepApp = filename:join([ProjectDir, "_build", App, "lib", App ++ "-" ++ Vsn]),
     DepTarget = filename:join(DepDir, App ++ "-" ++ Vsn),

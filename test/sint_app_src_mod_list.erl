@@ -1,4 +1,4 @@
--module(sin_app_src_mod_list).
+-module(sint_app_src_mod_list).
 
 -include_lib("eunit/include/eunit.hrl").
 
@@ -8,18 +8,18 @@ given([a,generated,project,that,contains,an,'ebin/app'], _State, _) ->
     BaseDir = ec_file:mkdtemp(),
     ProjectName = "super_foo",
     {ProjectDir, _} =
-        sin_test_project_gen:single_app_project(BaseDir, ProjectName),
+        sint_test_project_gen:single_app_project(BaseDir, ProjectName),
     AppEbin = filename:join([ProjectDir, "ebin", ProjectName ++ ".app"]),
     AppSrc = filename:join([ProjectDir, "src", ProjectName ++ ".app.src"]),
     ?assertMatch(ok, file:write_file(AppEbin,
-                                     sin_cuke_support_funs:app_src(ProjectName))),
-    sin_cuke_support_funs:delete_if_exists(AppSrc),
+                                     sint_cuke_support_funs:app_src(ProjectName))),
+    sint_cuke_support_funs:delete_if_exists(AppSrc),
     {ok, {ProjectDir, ProjectName}};
 given([a,generated,project,that,contains,an,'app.src'], _State, _) ->
     BaseDir = ec_file:mkdtemp(),
     ProjectName = "super_foo",
     {ProjectDir, _} =
-        sin_test_project_gen:single_app_project(BaseDir, ProjectName),
+        sint_test_project_gen:single_app_project(BaseDir, ProjectName),
     {ok, {ProjectDir, ProjectName}}.
 
 'when'([a,build,step,is,run,on,this,project],

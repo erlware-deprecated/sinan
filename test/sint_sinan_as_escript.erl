@@ -1,4 +1,4 @@
--module(sin_sinan_as_escript).
+-module(sint_sinan_as_escript).
 
 -include_lib("eunit/include/eunit.hrl").
 
@@ -9,7 +9,7 @@ given([sinan, has, nothing, in, its, priv, dir], State, _) ->
     ?assertMatch(false, sin_utils:file_exists(sin_state:new(), "./priv")),
     {ok, State};
 given([a, project, generated, by, gen], _State, _) ->
-    sin_test_project_gen:a_generated_project().
+    sint_test_project_gen:a_generated_project().
 
 'when'([a,build,step,is,run,on,this,project],
     {ProjectDir, ProjectName}, _) ->
@@ -22,5 +22,5 @@ then([sinan,should,build,the,app,normally],
     ?assertMatch({ok, _}, Ret),
     {ok, BuildState} = Ret,
     ?assertMatch([], sin_state:get_run_errors(BuildState)),
-    sin_test_project_gen:validate_single_app_project(ProjectDir, ProjectName),
+    sint_test_project_gen:validate_single_app_project(ProjectDir, ProjectName),
     {ok, {ProjectDir, ProjectName, BuildState}}.

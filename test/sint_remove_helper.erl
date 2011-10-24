@@ -1,4 +1,4 @@
--module(sin_remove_helper).
+-module(sint_remove_helper).
 
 -include_lib("eunit/include/eunit.hrl").
 
@@ -11,7 +11,7 @@ given([an, empty, directory], _State, _) ->
 'when'([a, project, is, generated], BaseDir, _) ->
     ProjectName = "super_foo",
     {ProjectDir, _} =
-        sin_test_project_gen:single_app_project(BaseDir, ProjectName),
+        sint_test_project_gen:single_app_project(BaseDir, ProjectName),
     {ok, {ProjectDir, ProjectName}}.
 
 then([should, 'not', generate, the, exe, script],
