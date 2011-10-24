@@ -51,7 +51,13 @@ process_file(State0, Path0, Includes) ->
 format_exception({pe, _, {_Module, _Line,
                           {unable_to_include, Include, Name}}}) ->
     io_lib:format("Unable to find include \"~s\" when processing module: ~p",
-                  [Include, Name]).
+                  [Include, Name]);
+format_exception({pe, _, {_Module, _Line,
+                          {unable_process, Name, Reason}}}) ->
+    io_lib:format("Unable to find process ~p due to the following error: ~p",
+                  [Name, Reason]).
+
+
 
 %%====================================================================
 %% Internal Functions
@@ -146,5 +152,7 @@ parse_tuple(State, {error,{_,epp,{include,lib,Include}}}, #module{name=Name}) ->
     ?SIN_RAISE(State, {unable_to_include, Include, Name});
 parse_tuple(State, {error,{_,epp,{include,file,Include}}}, #module{name=Name}) ->
     ?SIN_RAISE(State, {unable_to_include, Include, Name});
+parse_tuple(State, {error, Error}, #module{name=Name}) ->
+    ?SIN_RAISE(State, {unable_to_process, Name, Error});
 parse_tuple(_, _, Mod) ->
     Mod.
