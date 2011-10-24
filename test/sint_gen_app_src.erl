@@ -5,7 +5,7 @@
 %%% @end
 %%% Created :  5 Sep 2011 by Eric Merritt <ericbmerritt@gmail.com>
 %%%-------------------------------------------------------------------
--module(sin_gen_app_src).
+-module(sint_gen_app_src).
 
 -include_lib("eunit/include/eunit.hrl").
 
@@ -21,7 +21,7 @@ given([an, empty, temp, directory, with, no, project], _State,
 'when'([the, sinan, gen, task, is, called], BaseDir, _) ->
     ProjectName = "super_foo",
     {ProjectDir, _} =
-        sin_test_project_gen:single_app_project(BaseDir, ProjectName),
+        sint_test_project_gen:single_app_project(BaseDir, ProjectName),
     {ok, {ProjectDir, ProjectName}};
 'when'([a, build, is, run],
        {ProjectDir, ProjectName}, _) ->
@@ -42,6 +42,6 @@ then([sinan, should, generate, an, 'app.src',
 then([build, the, project, normally],
     State = {ProjectDir, ProjectName, BuildState}, _) ->
     ?assertMatch({ok, _}, BuildState),
-    sin_test_project_gen:validate_single_app_project(ProjectDir,
-                                                     ProjectName),
+    sint_test_project_gen:validate_single_app_project(ProjectDir,
+                                                      ProjectName),
     {ok, State}.

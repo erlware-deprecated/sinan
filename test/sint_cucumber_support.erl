@@ -5,7 +5,7 @@
 %%% @end
 %%% Created :  5 Sep 2011 by Eric Merritt <ericbmerritt@gmail.com>
 %%%-------------------------------------------------------------------
--module(sin_cucumber_support).
+-module(sint_cucumber_support).
 
 -export([given/3, 'when'/3, then/3]).
 
@@ -14,7 +14,7 @@
 %% Step definitions for the sample calculator Addition feature.
 
 given([a, generated, project], _, _) ->
-    sin_test_project_gen:a_generated_project();
+    sint_test_project_gen:a_generated_project();
 given([a, feature, file, in, the, features, directory, 'of',
        that, project], {ProjectDir, ProjectName}, _) ->
     ?assertMatch(ok,
@@ -36,7 +36,7 @@ given([an, implementation, 'of', that, feature, that, fails],
 'when'([a, cucumber, step, is, run, on, this, project],
        {ProjectDir, ProjectName, FeaturePath}, _) ->
     Result = sinan:main(["-s", ProjectDir, "cucumber"]),
-    sin_test_project_gen:validate_single_app_project(ProjectDir, ProjectName),
+    sint_test_project_gen:validate_single_app_project(ProjectDir, ProjectName),
     {ok, {FeaturePath, Result}}.
 
 then([then, sinan, should, run, cucumberl, on,

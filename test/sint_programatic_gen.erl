@@ -5,7 +5,7 @@
 %%% @end
 %%% Created :  5 Sep 2011 by Eric Merritt <ericbmerritt@gmail.com>
 %%%-------------------------------------------------------------------
--module(sin_programatic_gen).
+-module(sint_programatic_gen).
 
 -export([given/3, 'when'/3, then/3]).
 
@@ -20,7 +20,7 @@ given([an, empty, temp, directory, with, no, project], _State,
         available, user, input], BaseDir, _) ->
     ProjectName = "super_foo",
     {ProjectDir, _} =
-        sin_test_project_gen:single_app_project(BaseDir, ProjectName),
+        sint_test_project_gen:single_app_project(BaseDir, ProjectName),
     {ok, {ProjectDir, ProjectName}};
 'when'([a, build, is, run], State = {ProjectDir, _ProjectName}, _) ->
     sinan:main(["-s", ProjectDir, "build"]),
@@ -28,4 +28,4 @@ given([an, empty, temp, directory, with, no, project], _State,
 
 then([sinan, should, build, the, project, normally],
      {ProjectDir, ProjectName}, _) ->
-    sin_test_project_gen:validate_single_app_project(ProjectDir, ProjectName).
+    sint_test_project_gen:validate_single_app_project(ProjectDir, ProjectName).

@@ -5,7 +5,7 @@
 %%%
 %%% @end
 %%%-------------------------------------------------------------------
--module(sin_config_proper).
+-module(sint_config_proper).
 
 -export([]).
 

@@ -5,7 +5,7 @@
 %%% @end
 %%% Created :  5 Sep 2011 by Eric Merritt <ericbmerritt@gmail.com>
 %%%-------------------------------------------------------------------
--module(sin_testability).
+-module(sint_testability).
 
 -export([given/3, 'when'/3, then/3]).
 
@@ -13,7 +13,7 @@
 
 given([a, generated, project, in, a, different, location, then, the, cwd],
       _, _) ->
-    sin_test_project_gen:a_generated_project().
+    sint_test_project_gen:a_generated_project().
 
 'when'([a, build, step, is, run, on, this, project],
        Ret = {ProjectDir, _}, _) ->
@@ -26,5 +26,5 @@ given([a, generated, project, in, a, different, location, then, the, cwd],
 
 then([sinan, should, build, the, project, in, the, location,
       specified, by, the, start, dir], {ProjectDir, ProjectName}, _) ->
-    sin_test_project_gen:validate_single_app_project(ProjectDir, ProjectName),
+    sint_test_project_gen:validate_single_app_project(ProjectDir, ProjectName),
     ok.
