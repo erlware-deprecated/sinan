@@ -207,12 +207,13 @@ prepare_app(State0, App0 = #app{name=AppName, path=Path}, BuildDir, Ignorables) 
 
     State2 = sin_state:store({apps, AppName, builddir},
                              Path, State1),
-    {State3, Mods} =
-        process_source_files(State2, AppDir),
 
     Ebin = filename:join(Path, "ebin"),
     ec_file:mkdir_path(Ebin),
     true = code:add_patha(Ebin),
+
+    {State3, Mods} =
+        process_source_files(State2, AppDir),
     {State3, App0#app{sources=Mods}}.
 
 -spec process_source_files(sin_state:state(), atom()) ->

@@ -49,7 +49,7 @@ process_file(State0, Path0, Includes) ->
 -spec format_exception(sin_exceptions:exception()) ->
     string().
 format_exception({pe, _, {_Module, _Line,
-                          {error, unable_to_include, Include, Name}}}) ->
+                          {unable_to_include, Include, Name}}}) ->
     io_lib:format("Unable to find include \"~s\" when processing module: ~p",
                   [Include, Name]).
 
@@ -124,8 +124,6 @@ parse_form(_, _, Mod0) ->
     Mod0.
 
 -spec parse_tuple(sin_state:state(), term(), mod()) -> mod().
-parse_tuple(State, {error,{_,epp,{include,file,Include}}}, #module{name=Name}) ->
-    ?SIN_RAISE(State, {error, unable_to_include, Include, Name});
 parse_tuple(_State, {attribute, _, module, Name}, Mod) ->
     Mod#module{name=Name};
 parse_tuple(State, {attribute, _ , file, {Include, _}},
@@ -144,5 +142,9 @@ parse_tuple(_State, {attribute, _, compile, {parse_transform, Module}},
 parse_tuple(_State, {attribute, _, behaviour, Module},
            Mod = #module{module_deps=Modules}) ->
     Mod#module{module_deps=sets:add_element(Module, Modules)};
+parse_tuple(State, {error,{_,epp,{include,lib,Include}}}, #module{name=Name}) ->
+    ?SIN_RAISE(State, {unable_to_include, Include, Name});
+parse_tuple(State, {error,{_,epp,{include,file,Include}}}, #module{name=Name}) ->
+    ?SIN_RAISE(State, {unable_to_include, Include, Name});
 parse_tuple(_, _, Mod) ->
     Mod.
