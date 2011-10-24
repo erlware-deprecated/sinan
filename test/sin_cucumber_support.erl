@@ -19,7 +19,7 @@ given([a, feature, file, in, the, features, directory, 'of',
        that, project], {ProjectDir, ProjectName}, _) ->
     ?assertMatch(ok,
                  ec_file:mkdir_path(filename:join([ProjectDir, "features"]))),
-    FeatureName = "test_feature",
+    FeatureName = "sin_cucumber_support_test_feature",
     FeaturePath = filename:join([ProjectDir, "features", FeatureName ++
                                      ".feature"]),
     file:write_file(FeaturePath, feature()),
@@ -61,7 +61,7 @@ then([report, the, build, as, passing],
 write_impl(Impl, ProjectDir, FeatureName) ->
     ?assertMatch(ok,
                  ec_file:mkdir_path(filename:join([ProjectDir, "test"]))),
-    FeatureName = "test_feature",
+    FeatureName = "sin_cucumber_support_test_feature",
     FeatureImplPath = filename:join([ProjectDir, "test", FeatureName ++
                                          ".erl"]),
     file:write_file(FeatureImplPath, Impl),
@@ -80,7 +80,7 @@ feature() ->
         "    Then the result should be 120 on the screen\n".
 
 pass_feature_impl() ->
-    "-module(test_feature).\n"
+    "-module(sin_cucumber_support_test_feature).\n"
         "\n"
         "-export([setup/0, teardown/1,\n"
         "         given/3, 'when'/3, then/3]).\n"
@@ -121,7 +121,7 @@ pass_feature_impl() ->
         "    X * Y.\n".
 
 fail_feature_impl() ->
-    "-module(test_feature).\n"
+    "-module(sin_cucumber_support_test_feature).\n"
         "\n"
         "-export([setup/0, teardown/1,\n"
         "         given/3, 'when'/3, then/3]).\n"

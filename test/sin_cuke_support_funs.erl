@@ -23,4 +23,3 @@ delete_if_exists(Path) ->
         Error ->
             throw(Error)
     end.
-
