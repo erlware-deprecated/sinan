@@ -28,8 +28,7 @@
 -spec format_exception(exception()) -> string().
 format_exception({pe, _, {Module, Line, {Reason, Description}}})
   when is_list(Reason) ->
-    io_lib:format("~s:~p [~p] ~s", [Module, Line, Reason, Description]);
+    io_lib:format("~s:~p [~p] ~s", [Module, Line, Reason,
+                                    lists:flatten(Description)]);
 format_exception({pe, _, {Module, Line, Reason}}) ->
     io_lib:format("~s:~p [~p]", [Module, Line, Reason]).
-
-
