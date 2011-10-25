@@ -41,6 +41,10 @@
                 opts :: list()}).          % The list of options that the task requires/understands
 
 
+-define(SIN_EXEP_UNPARSE(S, Problem, Description),
+        {pe, S, {_, _, {Problem, Description}}}).
+-define(SIN_EXEP_UNPARSE(S, Problem),
+        {pe, S, {_, _, Problem}}).
 
 -define(SIN_RAISE(State, Problem),
         throw({pe,
@@ -61,10 +65,12 @@
                sin_state:add_run_error(?MODULE,
                                        {?MODULE, ?LINE,
                                         {Problem,
-                                         io_lib:format(Description,
-                                                       DescArgs)}}, State),
+                                         lists:flatten(
+                                           io_lib:format(Description,
+                                                         DescArgs))}}, State),
                {?MODULE, ?LINE,
-                {Problem, io_lib:format(Description, DescArgs)}}})).
+                {Problem,
+                 lists:flatten(io_lib:format(Description, DescArgs))}}})).
 
 -define(WARN(State, Warnings),
         ((fun() ->
@@ -78,6 +84,6 @@
         ((fun() ->
                 WarnRef =
                      sin_state:add_run_warning(?MODULE,
-                                                io_lib:format(Warnings, Detail), State),
+                                                lists:flatten(io_lib:format(Warnings, Detail)), State),
                  WarnRef
           end)())).
