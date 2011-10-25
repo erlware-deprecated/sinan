@@ -69,8 +69,7 @@ do_task_full(Config0, State0, Task) when is_atom(Task) ->
             ec_talk:say("No build config found."),
             sin_state:add_run_error(Task, no_build_config, State0);
         Error = {pe, NewState, {Module, _, _}} ->
-            ec_talk:say("build problem ~s",
-                         [Module:format_exception(Error)]),
+            ec_talk:say(Module:format_exception(Error)),
             NewState;
         Type:Exception ->
             ec_talk:say("build problem ~p:~p:~p",
