@@ -116,9 +116,15 @@ find_config(ProjectDir, Config, State) ->
                          sin_state:state()) ->
     sin_config:config().
 process_raw_config(ProjectDir, FileConfig, CommandLineConfig, State0) ->
+    HomeDir = get_home_dir(CommandLineConfig),
     DefaultConfig =
         sin_config:new_from_terms(default_config_terms(), []),
-    Config0 = sin_config:merge(CommandLineConfig, sin_config:merge(FileConfig, DefaultConfig)),
+    HomeConfig = get_home_config(State0, HomeDir),
+    Config0 =
+        sin_config:merge(CommandLineConfig,
+                         sin_config:merge(FileConfig,
+                                          sin_config:merge(HomeConfig,
+                                                           DefaultConfig))),
     BuildDir = sin_config:match(build_dir, Config0),
     ReleaseDir = filename:join([ProjectDir,
                                 BuildDir,
@@ -130,6 +136,7 @@ process_raw_config(ProjectDir, FileConfig, CommandLineConfig, State0) ->
                               {build_dir, ReleaseDir},
                               {apps_dir, filename:join(ReleaseDir, "lib")},
                               {release_dir, filename:join(ReleaseDir, "releases")},
+                              {home_dir, HomeDir},
                               {project_dir, ProjectDir}], State0),
 
 
@@ -476,8 +483,24 @@ get_release_name(Config) ->
             sin_config:match(project_name, Config)
     end.
 
+get_home_dir(Config) ->
+    sin_config:match(user_dir, os:getenv("HOME"), Config).
+
+get_home_config(State, HomeDir) ->
+    HomeConfigPath = filename:join(HomeDir, ".sinan.config"),
+    case sin_utils:file_exists(State, HomeConfigPath) of
+        true ->
+            try
+                sin_config:new_from_file(HomeConfigPath, [])
+            catch
+                throw:{error_accessing_file,
+                       HomeConfigPath, enoent} ->
+                    sin_config:new()
+            end;
+        false ->
+            sin_config:new()
+    end.
+
 %%====================================================================
 %% tests
 %%====================================================================
-
-

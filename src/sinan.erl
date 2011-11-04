@@ -180,6 +180,8 @@ option_spec_list() ->
     [{verbose, $v, "verbose", {boolean, false},
       "Be verbose about what gets done"},
      {start_dir, $s, "start-dir", string, "The search location for the project"},
+     {user_dir, $u, "user-dir", string,
+      "The directory to use as the users home directory"},
      {release, $r, "release", string, "the release to build"},
      {project, $p, "project", string, "the name of the project"},
      {version, $n, "nversion", string, "the version of the project"}].
@@ -233,6 +235,7 @@ setup_config_overrides(Options, Args) ->
                                         sin_config:new()),
                          Options,
                          [{release, '-r'},
+                          {user_dir, user_dir},
                           {start_dir, start_dir},
                           {project, project_name},
                           {version, project_vsn}]).
