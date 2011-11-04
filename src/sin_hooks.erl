@@ -31,7 +31,7 @@ get_hooks_function(State, ProjectRoot) ->
        false ->
             no_hooks;
        true ->
-            gen_build_hooks_function(State, HooksDir)
+            gen_build_hooks_function(HooksDir)
     end.
 
 %% @doc Format an exception thrown by this module
@@ -45,51 +45,62 @@ format_exception(Exception) ->
 %%%===================================================================
 
 %% @doc Generate a function that can be run pre and post task
--spec gen_build_hooks_function(sin_state:state(),
-                               HooksDir::string()) -> function().
-gen_build_hooks_function(State, HooksDir) ->
-    fun(Type, Task, BuildState) ->
-            do_hook(State, Type, Task, BuildState, HooksDir)
+-spec gen_build_hooks_function(HooksDir::string()) -> function().
+gen_build_hooks_function(HooksDir) ->
+    fun(Type, Task, State) ->
+            do_hook(State, Type, Task, HooksDir)
     end.
 
 %% @doc Setup to run the hook and run it if it exists.
 -spec do_hook(sin_state:state(),
-              Type::atom(), Task::atom(), BuildState::string(),
+              Type::atom(), Task::atom(),
               HooksDir::string()) -> ok.
-do_hook(State, Type, Task, BuildState, HooksDir) when is_atom(Task) ->
+do_hook(State, Type, Task, HooksDir) when is_atom(Task) ->
     HookName = atom_to_list(Type) ++ "_" ++ atom_to_list(Task),
     HookPath = filename:join(HooksDir, HookName),
     case sin_utils:file_exists(State, HookPath) of
        true ->
-            run_hook(State, HookPath, BuildState, list_to_atom(HookName));
+            ec_talk:say("hook: ~s", [HookName]),
+            run_hook(State, HookPath, list_to_atom(HookName));
        _ ->
             State
     end.
 
 %% @doc Setup the execution environment and run the hook.
 -spec run_hook(sin_state:state(),
-               HookPath::list(), BuildState::list(), HookName::atom()) -> ok.
-run_hook(State, HookPath, BuildState, HookName) ->
-    Env = sin_state:get_pairs(BuildState),
-    command(State, HookPath, stringify(Env, []), BuildState, HookName).
+               HookPath::list(), HookName::atom()) -> ok.
+run_hook(State, HookPath, HookName) ->
+    command(State, HookPath, create_env(State), HookName).
 
-%% @doc Take a list of key value pairs and convert them to string based key
-%% value pairs.
--spec stringify(PairList::list(), Acc::list()) -> list().
-stringify([{Key, Value} | Rest], Acc) ->
-    stringify(Rest, [{lists:flatten(sin_utils:term_to_list(Key)),
-                      lists:flatten(sin_utils:term_to_list(Value))} | Acc]);
-stringify([], Acc) ->
-    Acc.
+%% @doc create a minimal env for the hook from the state.
+-spec create_env(sin_state:state()) -> Env::[{string(), string()}].
+create_env(State) ->
+    Env =
+        [{"SIN_RELEASE",
+          erlang:atom_to_list(sin_state:get_value(release, State))},
+         {"SIN_RELEASE_VSN", sin_state:get_value(release_vsn, State)},
+         {"SIN_BUILD_ROOT", sin_state:get_value(build_root, State)},
+         {"SIN_BUILD_DIR", sin_state:get_value(build_dir, State)},
+         {"SIN_APPS_DIR", sin_state:get_value(apps_dir, State)},
+         {"SIN_RELEASE_DIR", sin_state:get_value(release_dir, State)},
+         {"SIN_HOME_DIR", sin_state:get_value(home_dir, State)},
+         {"SIN_PROJECT_DIR", sin_state:get_value(project_dir, State)}] ++
+        [[{"SIN_" ++ erlang:atom_to_list(Name) ++
+               "_VSN", Vsn},
+          {"SIN_" ++ erlang:atom_to_list(Name) ++
+               "_DIR", AppDir}] ||
+            #app{name=Name, vsn=Vsn, path=AppDir}
+                <- sin_state:get_value(release_apps, [], State)],
+    lists:flatten(Env).
 
 %% @doc Given a command an an environment run that command with the environment
 -spec command(sin_state:state(), Command::list(), Env::list(),
-              BuildState::list(), HookName::atom()) -> list().
-command(State, Cmd, Env, BuildState, HookName) ->
+              HookName::atom()) -> list().
+command(State, Cmd, Env, HookName) ->
     Opt =  [{env, Env}, stream, exit_status, use_stdio,
             stderr_to_stdout, in, eof],
     P = open_port({spawn, Cmd}, Opt),
-    get_data(State, P, BuildState, HookName, []).
+    get_data(State, P, HookName, []).
 
 %% @doc Event results only at newline boundaries.
 -spec event_newline(BuildState::list(), HookName::atom(),
@@ -106,13 +117,13 @@ event_newline(_BuildState, _HookName, [], Acc) ->
     lists:reverse(Acc).
 
 %% @doc Recieve the data from the port and exit when complete.
--spec get_data(sin_state:state(), P::port(), BuildState::list(),
+-spec get_data(sin_state:state(), P::port(),
                HookName::atom(), Acc::list()) -> sin_state:state().
-get_data(State, P, BuildState, HookName, Acc) ->
+get_data(State, P, HookName, Acc) ->
     receive
         {P, {data, D}} ->
-            NewAcc = event_newline(BuildState, HookName, Acc ++ D, []),
-            get_data(State, P, BuildState, HookName, NewAcc);
+            NewAcc = event_newline(State, HookName, Acc ++ D, []),
+            get_data(State, P, HookName, NewAcc);
         {P, eof} ->
             ec_talk:say(Acc),
             port_close(P),
@@ -125,6 +136,3 @@ get_data(State, P, BuildState, HookName, Acc) ->
                                [HookName, N])
             end
     end.
-
-
-
