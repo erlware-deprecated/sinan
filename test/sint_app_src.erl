@@ -60,12 +60,10 @@ then([sinan, should, put, the, app, file, in, 'ebin/.app'],
     {ok, State};
 then([sinan, should, warn, the, user, that,
       both, an, 'ebin/app', 'and', 'app.src', exists],
-     State = {ProjectDir, _, BuildState}, _) ->
+     State = {_ProjectDir, _, BuildState}, _) ->
     ?assertMatch(
        [{sin_discover,
-         {sin_discover, _,
-          {"conflict: ~s has both an ebin/*.app and a src/*.app.src ",
-           [ProjectDir]}}}],
+         {sin_discover, _, {ebin_src_conflict, _}}}],
        sin_state:get_run_errors(BuildState)),
     {ok, State};
 then([warn, the, user, that, the,
