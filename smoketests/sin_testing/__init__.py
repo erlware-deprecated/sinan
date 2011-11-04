@@ -193,9 +193,7 @@ class SmokeTest(unittest.TestCase):
     def do_gen(self, appdesc):
         return self.do_apply(["run_gen", "verify_gen"], appdesc)
 
-    # build the project
-    @sinan("build")
-    def do_build(self, child, appdesc):
+    def build_validate(self, child, appdesc):
         child.expect(pexpect.EOF)
 
         build_tmp = self.get_build_root_path()
@@ -216,8 +214,12 @@ class SmokeTest(unittest.TestCase):
                                     ["src", n + "_app.erl"],
                                     ["ebin", n + "_sup.beam"],
                                     ["ebin", n + "_app.beam"])
-
         return appdesc
+
+    # build the project
+    @sinan("build")
+    def do_build(self, child, appdesc):
+        return self.build_validate(child, appdesc)
 
 
     # clean the project
