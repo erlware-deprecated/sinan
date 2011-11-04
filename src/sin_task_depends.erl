@@ -139,7 +139,20 @@ solve_deps(Config, State0, ProjectApps) ->
         sin_sig:save_sig_info(?MODULE,
                               {RuntimeDeps1, CompiletimeDeps1}, State0),
 
+    ec_talk:say("~ncompile time dependencies:~n"),
+    lists:foreach(fun format_app/1, CompiletimeDeps1),
+
+    ec_talk:say("~nruntime dependencies:~n"),
+    lists:foreach(fun format_app/1, RuntimeDeps1),
+
     {State1, {RuntimeDeps1, CompiletimeDeps1}}.
+
+-spec format_app(sinan:app()) -> ok.
+format_app(#app{name=Name0, vsn=Vsn0, path=Path}) ->
+    Name1 = string:left(erlang:atom_to_list(Name0), 25),
+    Vsn1 = string:left(Vsn0, 10),
+    ec_talk:say("    ~s ~s : ~s", [Name1, Vsn1, Path]).
+
 
 %% @doc Format an exception thrown by this module
 -spec format_exception(sin_exceptions:exception()) ->
