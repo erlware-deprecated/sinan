@@ -54,12 +54,12 @@ do_task(Config, State0) ->
                                                        State0),
                         Changed0 orelse sin_sig:changed(deps, AppF, State0)
                     end, false, ProjectApps),
-    {State1, {RuntimeDeps0, CompiletimeDeps}} =
+    {State1, {ReleaseApps, RuntimeDeps0, CompiletimeDeps}} =
         case Changed1 of
             true ->
                 case sin_sig:get_sig_info(?MODULE, State0) of
-                    {ok, Deps} ->
-                        {State0, Deps};
+                    {ok, {RelApps, RunDeps, CompDeps}} ->
+                        {State0, {RelApps, RunDeps, CompDeps}};
                     _ ->
                         solve_deps(Config, State0, ProjectApps)
                 end;
@@ -72,31 +72,25 @@ do_task(Config, State0) ->
                           true = code:add_patha(Ebin)
                   end, CompiletimeDeps),
 
-    {State4, ReleaseApps, RuntimeDeps1} =
-        lists:foldl(fun(App0=#app{name=AppName, path=Path},
-                        {State2, ReleaseApps0, RuntimeApps0}) ->
-                            case lists:member(AppName, ProjectApps) of
-                                true ->
-                                    App1 = App0#app{project=true},
-                                    {State2, [App1 | ReleaseApps0],
-                                     [App1 | RuntimeApps0]};
-                                false ->
-                                    Ebin = filename:join(Path, "ebin"),
-                                    true = code:add_patha(Ebin),
-                                    {State2, ReleaseApps0, [App0 | RuntimeApps0]}
-                            end
-                    end, {State1, [], []}, RuntimeDeps0),
 
-    MergedDeps = RuntimeDeps0 ++ lists:filter(fun(#app{name=App, vsn=Vsn}) ->
-                                                      not lists:member({App, Vsn}, RuntimeDeps0)
-                                              end, CompiletimeDeps),
+    MergedDeps = RuntimeDeps0 ++ CompiletimeDeps,
 
-    sin_state:store(release_runtime_deps, RuntimeDeps1,
-                    sin_state:store(release_compile_deps,
-                                    CompiletimeDeps,
-                                    sin_state:store(release_deps, MergedDeps,
-                                                    sin_state:store(release_apps,
-                                                                    ReleaseApps, State4)))).
+    ec_talk:say("~ncompile time dependencies:~n"),
+    lists:foreach(fun format_app/1, CompiletimeDeps),
+
+    ec_talk:say("~nruntime dependencies:~n"),
+    lists:foreach(fun format_app/1, RuntimeDeps0),
+
+    ec_talk:say("~nproject applications:~n"),
+    lists:foreach(fun format_app/1, ReleaseApps),
+
+
+    sin_state:store([{release_runtime_deps, RuntimeDeps0},
+                     {release_compile_deps, CompiletimeDeps},
+                     {release_deps, MergedDeps},
+                     {project_apps, ReleaseApps},
+                     {release_apps, MergedDeps ++ ReleaseApps}],
+                    State1).
 
 -spec solve_deps(sin_config:config(), sin_state:state(), [atom()]) ->
                         {sin_state:state(), term()}.
@@ -116,36 +110,55 @@ solve_deps(Config, State0, ProjectApps) ->
         get_compiletime_deps(State0, Config, SolverState1, DefaultConstraints),
 
     ResolverState1 = sin_dep_solver:extract_resolver_state(SolverState2),
-    RuntimeDeps1 =
-        lists:map(fun({App, Vsn}) ->
+    {ReleaseApps1, RuntimeDeps2} =
+        lists:foldl(fun({App, Vsn}, {ReleaseApps0, RuntimeDeps1}) ->
                           {_, Path} =
-                              sin_dep_resolver:resolve(ResolverState1, App, Vsn),
-
-                          #app{name=App, vsn=Vsn, path=Path,
-                               type=runtime, project=lists:member(App, ProjectApps)}
-                  end, RuntimeDeps0),
+                              sin_dep_resolver:resolve(ResolverState1,
+                                                       App, Vsn),
+                            case lists:member(App, ProjectApps) of
+                                true ->
+                                    {[#app{name=App, vsn=Vsn, path=Path,
+                                         type=runtime,
+                                         project=true} | ReleaseApps0],
+                                     RuntimeDeps1};
+                                false ->
+                                    {ReleaseApps0,
+                                     [#app{name=App, vsn=Vsn, path=Path,
+                                         type=runtime,
+                                         project=folse} | RuntimeDeps1]}
+                            end
+                  end, {[], []}, RuntimeDeps0),
 
     CompiletimeDeps1 =
-        lists:map(fun({App, Vsn}) ->
-                          {_, Path} =
-                              sin_dep_resolver:resolve(ResolverState1, App, Vsn),
-                          #app{name=App, vsn=Vsn, path=Path,
-                               type=compiletime, project=false}
-
-                  end, CompiletimeDeps0),
+        lists:foldl(fun({App, Vsn}, Acc) ->
+                            case in_runtime(App, RuntimeDeps2) of
+                                true ->
+                                    Acc;
+                                false ->
+                                    {_, Path} =
+                                        sin_dep_resolver:resolve(ResolverState1,
+                                                                 App, Vsn),
+                                    [#app{name=App, vsn=Vsn, path=Path,
+                                         type=compiletime, project=false} |
+                                     Acc]
+                            end
+                  end, [], CompiletimeDeps0),
 
 
     State1 =
         sin_sig:save_sig_info(?MODULE,
-                              {RuntimeDeps1, CompiletimeDeps1}, State0),
+                              {ReleaseApps1, RuntimeDeps2, CompiletimeDeps1},
+                              State0),
 
-    ec_talk:say("~ncompile time dependencies:~n"),
-    lists:foreach(fun format_app/1, CompiletimeDeps1),
+    {State1, {ReleaseApps1, RuntimeDeps2, CompiletimeDeps1}}.
 
-    ec_talk:say("~nruntime dependencies:~n"),
-    lists:foreach(fun format_app/1, RuntimeDeps1),
-
-    {State1, {RuntimeDeps1, CompiletimeDeps1}}.
+in_runtime(App0, RuntimeDeps) ->
+    lists:any(fun(#app{name=AppName})
+                    when App0 == AppName ->
+                      true;
+                 (_) ->
+                      false
+              end, RuntimeDeps).
 
 -spec format_app(sinan:app()) -> ok.
 format_app(#app{name=Name0, vsn=Vsn0, path=Path}) ->

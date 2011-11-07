@@ -52,7 +52,7 @@ do_task(_Config, State) ->
 
     Apps = lists:map(fun(#app{name=App}) ->
                              App
-                     end, sin_state:get_value(release_apps, State)),
+                     end, sin_state:get_value(project_apps, State)),
 
     ModuleInfo =
         lists:flatten(lists:map(fun(App) ->
