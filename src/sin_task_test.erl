@@ -46,7 +46,7 @@ description() ->
 %% @doc run all tests for all modules in the system
 do_task(_Config, State) ->
     test_apps(State,
-              sin_state:get_value(release_apps, State), []),
+              sin_state:get_value(project_apps, State), []),
     State.
 
 

@@ -69,10 +69,10 @@ description() ->
 -spec do_task(sin_config:config(), sin_state:state()) -> sin_state:state().
 do_task(Config, State0) ->
     ensure_build_dir(State0),
-    Apps0 = sin_state:get_value(release_apps, State0),
+    Apps0 = sin_state:get_value(project_apps, State0),
     NApps = reorder_apps_according_to_deps(State0, Apps0),
     {State1, Apps1} = build_apps(Config, State0, NApps),
-    sin_app_meta:populate(Config, sin_state:store(release_apps, Apps1, State1)).
+    sin_app_meta:populate(Config, sin_state:store(project_apps, Apps1, State1)).
 
 
 %% @doc Gather up all the errors and warnings for output.

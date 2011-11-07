@@ -90,7 +90,7 @@ create_env(State) ->
           {"SIN_" ++ erlang:atom_to_list(Name) ++
                "_DIR", AppDir}] ||
             #app{name=Name, vsn=Vsn, path=AppDir}
-                <- sin_state:get_value(release_apps, [], State)],
+                <- sin_state:get_value(project_apps, [], State)],
     lists:flatten(Env).
 
 %% @doc Given a command an an environment run that command with the environment
