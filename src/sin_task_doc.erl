@@ -43,7 +43,7 @@ description() ->
 %% @doc run edoc on all applications
 -spec do_task(sin_config:config(), sin_state:state()) -> sin_state:state().
 do_task(_Config, State) ->
-    Apps = sin_state:get_value(release_apps, State),
+    Apps = sin_state:get_value(project_apps, State),
     run_docs(State, Apps),
     State.
 

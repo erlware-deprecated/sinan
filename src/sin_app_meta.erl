@@ -22,7 +22,7 @@
 %% @doc do the system preparation
 -spec populate(sin_config:matcher(), sin_state:state()) -> sin_state:state().
 populate(_Config, State0) ->
-    ProjectApps = sin_state:get_value(release_apps, State0),
+    ProjectApps = sin_state:get_value(project_apps, State0),
     lists:foldl(fun(App, State1) ->
                         prepare_app(State1, App)
                   end, State0, ProjectApps).

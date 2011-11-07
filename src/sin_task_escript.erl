@@ -78,8 +78,8 @@ description() ->
 -spec do_task(sin_config:matcher(), sin_state:state()) -> sin_state:state().
 do_task(Config, State) ->
     ProjectDir = sin_state:get_value(project_dir, State),
-    AllDeps = sin_state:get_value(release_deps, State),
     ReleaseApps = sin_state:get_value(release_apps, State),
+    ProjectApps = sin_state:get_value(project_apps, State),
     BuildDir = sin_state:get_value(build_dir, State),
     EscriptDir = filename:join([BuildDir, "escript"]),
     EscriptWorkingDir = filename:join(EscriptDir, ".ez"),
@@ -96,9 +96,10 @@ do_task(Config, State) ->
                              ReleaseName,
                              EscriptWorkingDir,
                              gather_dirs(State, EscriptWorkingDir,
-                                         filter_apps(AllDeps, EscriptOptions)
+                                         filter_apps(ReleaseApps,
+                                                     EscriptOptions)
                                          ++
-                                             ReleaseApps, []));
+                                             ProjectApps, []));
             _ ->
                 ec_talk:say("With escript you may have source files "
                              "or archive files, but you may not have "
