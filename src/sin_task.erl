@@ -51,6 +51,7 @@ get_task_list(State, TaskName) ->
 -spec get_tasks() -> [record(task)].
 get_tasks() ->
     [sin_task_depends:description(),
+     sin_task_dialyzer:description(),
      sin_task_version:description(),
      sin_task_test:description(),
      sin_task_shell:description(),
