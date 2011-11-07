@@ -52,6 +52,9 @@ cucumber: main
 test: main
 	erl -pa $(BEAMDIR) -s sinan main -extra -s $(CURDIR) test all
 
+dialyzer: main
+	erl -pa $(BEAMDIR) -s sinan main -extra -s $(CURDIR) dialyzer
+
 run: main
 	$(ERL) -pa $(BEAMDIR)
 
