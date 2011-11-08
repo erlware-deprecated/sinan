@@ -44,11 +44,15 @@ description() ->
 %% @doc Run the shell command.
 -spec do_task(sin_config:config(), sin_state:state()) -> sin_state:state().
 do_task(_Config, State) ->
+
+    lists:foreach(fun(#app{path=Path}) ->
+                          Ebin = filename:join(Path, "ebin"),
+                          true = code:add_patha(Ebin)
+                  end, sin_state:get_value(release_deps, State)),
+
     shell:server(false, false),
     State.
 
 %%====================================================================
 %%% Internal functions
 %%====================================================================
-
-
