@@ -49,8 +49,11 @@ escript: main
 cucumber: main
 	erl -pa $(BEAMDIR) -s sinan main -extra -s $(CURDIR) cucumber
 
-test: main
-	erl -pa $(BEAMDIR) -s sinan main -extra -s $(CURDIR) test all
+proper: main
+	erl -pa $(BEAMDIR) -s sinan main -extra -s $(CURDIR) proper
+
+eunit: main
+	erl -pa $(BEAMDIR) -s sinan main -extra -s $(CURDIR) eunit
 
 dialyzer: main
 	erl -pa $(BEAMDIR) -s sinan main -extra -s $(CURDIR) dialyzer
