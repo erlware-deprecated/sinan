@@ -48,16 +48,21 @@ process_file(State0, Path0, Includes) ->
 %% @doc Format an exception thrown by this module
 -spec format_exception(sin_exceptions:exception()) ->
     string().
-format_exception({pe, _, {_Module, _Line,
-                          {unable_to_include, Include, Name}}}) ->
+format_exception(?SIN_EXEP_UNPARSE(_, {unable_to_include, Include, Name})) ->
     io_lib:format("Unable to find include \"~s\" when processing module: ~p",
                   [Include, Name]);
-format_exception({pe, _, {_Module, _Line,
-                          {unable_process, Name, Reason}}}) ->
-    io_lib:format("Unable to find process ~p due to the following error: ~p",
-                  [Name, Reason]).
-
-
+format_exception(?SIN_EXEP_UNPARSE(_, {unable_to_process, Name,
+                                       {_, Module, Error}})) ->
+        io_lib:format("Unable to find process ~p due to the following"
+                      "error: ~s",
+                      [Name, lists:flatten(Module:format_error(Error))]);
+format_exception(?SIN_EXEP_UNPARSE(_, {unable_to_parse_file, Path,
+                                       {_, Module, Error}})) ->
+        io_lib:format("Unable to find process ~s due to the following"
+                      "error: ~s",
+                      [Path, lists:flatten(Module:format_error(Error))]);
+format_exception(Exception) ->
+    sin_exceptions:format_exception(Exception).
 
 %%====================================================================
 %% Internal Functions
