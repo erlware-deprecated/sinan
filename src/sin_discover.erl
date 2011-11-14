@@ -63,6 +63,30 @@ discover(Config0, State0) ->
 %% @doc Format an exception thrown by this module
 -spec format_exception(sin_exceptions:exception()) ->
     string().
+format_exception(?SIN_EXEP_UNPARSE(_, {ebin_src_conflict, Dir})) ->
+    io_lib:format("conflict: ~s has both an ebin/*.app "
+                  "and a src/*.app.src.", [Dir]);
+format_exception(?SIN_EXEP_UNPARSE(_, unable_to_intuit_config)) ->
+    "Unable to generate a project configuration from available metadata.";
+format_exception(?SIN_EXEP_UNPARSE(_, {unable_to_read_config,
+                                   AppFilePath, Error})) ->
+    io_lib:format("unable parse *.app file ~s:~s.",
+                  [AppFilePath, file:format_error(Error)]);
+format_exception(?SIN_EXEP_UNPARSE(_, {invalid_app_file, bad_name,
+                                    AppFile, AppName, WrongAppName})) ->
+    io_lib:format("~s file has wrong app name. Should be ~p,"
+                  " but is ~p.", [AppFile, AppName, WrongAppName]);
+format_exception(?SIN_EXEP_UNPARSE(_, {invalid_app_file, AppFile,
+                                    _AppName, Error})) ->
+    io_lib:format("Unable to parse *.app file ~s due to ~p.",
+                  [AppFile, Error]);
+format_exception(?SIN_EXEP_UNPARSE(_, {no_app_file_available,
+                                    AppFile, _AppName, Error})) ->
+    io_lib:format("Unable to access file ~s due to  ~p.", [AppFile, Error]);
+format_exception(?SIN_EXEP_UNPARSE(_, {no_app_directories,
+                                    ProjectDir})) ->
+    io_lib:format("Unable to find any application directories "
+                  "searching down from ~s aborting now.", [ProjectDir]);
 format_exception(Exception) ->
     sin_exceptions:format_exception(Exception).
 
@@ -126,10 +150,8 @@ intuit_build_config(ProjectDir, Config, State) ->
         AppFilePath = get_app_file(ProjectDir, AppName, Config),
         case file:consult(AppFilePath) of
             {error, enoent} ->
-                ?SIN_RAISE(State, unable_to_intuit_config,
-                           "Unable to generate a project config");
+                ?SIN_RAISE(State, unable_to_intuit_config);
             {error, Error} ->
-                ewl_talk:say("~s:~s", [AppFilePath, file:format_error(Error)]),
                 ?SIN_RAISE(State, {unable_to_read_config,
                                    AppFilePath, Error});
             {ok, [{application, _, Rest}]} ->
@@ -294,15 +316,17 @@ build_app_info(State0, [H|T], Acc) ->
                             Details),
 
             build_app_info(State3,  T, [AppName | Acc]);
+        {ok, [{application, WrongAppName, _Details}]} ->
+            ?SIN_RAISE(State0,
+                       {invalid_app_file, bad_name,
+                        AppFile, AppName, WrongAppName});
+
         {error, {_, Module, Desc}} ->
             Error = Module:format_error(Desc),
-            ?SIN_RAISE(State0, {invalid_app_file, Error},
-                       "*.app file is invalid for ~s at ~s",
-                       [AppName, AppFile]);
+            ?SIN_RAISE(State0, {invalid_app_file, AppFile, AppName, Error});
         {error, Error} ->
-            ?SIN_RAISE(State0, {no_app_file, Error},
-                       "No *.app file found for ~s at ~s",
-                       [AppName, AppFile])
+            ?SIN_RAISE(State0,
+                       {no_app_file_available, AppFile, AppName, Error})
     end;
 build_app_info(State, [], Acc) ->
     sin_state:store(project_applist, Acc, State).
@@ -343,9 +367,7 @@ look_for_app_dirs(Config, State0, BuildDir, ProjectDir) ->
     case process_possible_app_dir(State1, BuildDir, ProjectDir,
                                   Ignorables, []) of
         [] ->
-            ?SIN_RAISE(State1, no_app_directories,
-                       "Unable to find any application directories."
-                       " aborting now");
+            ?SIN_RAISE(State1, {no_app_directories, ProjectDir});
         Else ->
             {Else, State1}
     end.
@@ -368,9 +390,7 @@ process_possible_app_dir(State, BuildDir, TargetDir, Ignorables, Acc) ->
                                      TargetDir, Dirs),
             case {AppSrc, Ebin} of
                 {true, true} ->
-                    ?SIN_RAISE(State,
-                               "conflict: ~s has both an ebin/*.app "
-                               "and a src/*.app.src ", [TargetDir]);
+                    ?SIN_RAISE(State, {ebin_src_conflict, TargetDir});
                 {true, _} ->
                     [{appsrc, TargetDir} | Acc];
                 {_, true}  ->
