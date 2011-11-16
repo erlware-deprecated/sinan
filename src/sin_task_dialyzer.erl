@@ -36,7 +36,7 @@ description() ->
             useful information. You can get around this by asking the
             dialyzer task to ignore certain applications. Do this in
             your build config with the following entry.  <break>  <break>
-            {plt_ignore, [some_app1, some_app2]}.  <break>  <break>
+            {dialyzer_ignore, [some_app1, some_app2]}.  <break>  <break>
             The downside, of course, is figuring out which apps actually
             have the problem. This task tries to help by printing out a
             list of applications that where under analysis when the blowup
@@ -44,7 +44,7 @@ description() ->
 
             By default all dialyzer warnings are enabled. You can
             override this with the directive  <break>  <break>
-            {plt_warnings, []}. <break>  <break>
+            {dialyzer_warnings, []}. <break>  <break>
 
             Just put the warning options listed in the dialyzer
             documentation to get the specific warnings that you would like
@@ -72,7 +72,7 @@ do_task(Config0, State0) ->
     ec_talk:say("Doing plt for project apps ..."),
     update_dep_plt(Config0, State0, ProjectPlt, AppList),
 
-    WarningTypes = Config0:match(plt_warnings, default_warnings()),
+    WarningTypes = Config0:match(dialyzer_warnings, default_warnings()),
     Paths = [filename:join(Path, "ebin") ||
               #app{path=Path} <- AppList],
     Opts = [{analysis_type, succ_typings},
@@ -106,9 +106,9 @@ format_exception(?SIN_EXEP_UNPARSE(_,
                end, AppList)];
 format_exception(?SIN_EXEP_UNPARSE(_,
                                    {warnings, Warnings, _AppList})) ->
-    lists:map(fun(Warning) ->
+    [lists:map(fun(Warning) ->
                       dialyzer:format_warning(Warning)
-              end, Warnings);
+              end, Warnings), "~n"];
 format_exception(Exception) ->
     sin_exceptions:format_exception(Exception).
 
@@ -120,7 +120,7 @@ get_plt_location(BuildDir) ->
      filename:join([BuildDir, "deps.plt"])}.
 
 update_dep_plt(Config0, State0, DepPlt, AppList0) ->
-    Ignores = Config0:match(plt_ignore, []),
+    Ignores = Config0:match(dialyzer_ignore, []),
     AppList1 = [App ||
                    App = #app{name=Name} <- AppList0,
                    not lists:member(Name, Ignores)],
@@ -162,6 +162,4 @@ default_warnings() ->
      race_conditions,
      behaviours,
      unmatched_returns,
-     overspecs,
-     underspecs,
-     specdiffs].
+     underspecs].
