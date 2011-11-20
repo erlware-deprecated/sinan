@@ -69,6 +69,7 @@ do_task(Config, State0) ->
 
     lists:foreach(fun(#app{path=Path}) ->
                           Ebin = filename:join(Path, "ebin"),
+                          ec_file:mkdir_path(Ebin),
                           true = code:add_patha(Ebin)
                   end, CompiletimeDeps),
 
