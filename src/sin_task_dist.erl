@@ -56,7 +56,8 @@ description() ->
 -spec do_task(sin_config:matcher(), sin_state:state()) -> sin_state:state().
 do_task(Config, State) ->
     ProjectDir = sin_state:get_value(project_dir, State),
-    ReleaseApps = sin_state:get_value(release_runtime_deps, State),
+    ReleaseApps = sin_state:get_value(release_runtime_deps, State) ++
+        sin_state:get_value(project_apps, State),
     make_tar(Config, State, ProjectDir, ReleaseApps).
 
 %% @doc Format an exception thrown by this module
