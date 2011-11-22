@@ -92,7 +92,8 @@ generate_rel_file(Config, State, ReleaseDir, Name, Version) ->
                 Erts = get_erts_info(),
                 Deps0 =
                     process_deps(Config:match(types, []),
-                                 sin_state:get_value(release_runtime_deps, State), []),
+                                 sin_state:get_value(release_runtime_deps, State) ++
+                                     sin_state:get_value(project_apps, State), []),
                 Deps1 = lists:map(fun({App, AppVersion}) ->
                                           {App, AppVersion}
                                   end, Deps0),
@@ -213,5 +214,7 @@ generate_sys_config_file(RelSysConfPath) ->
 -spec get_code_paths(sin_state:state()) -> sin_config:config().
 get_code_paths(State) ->
     [filename:join([Path, "ebin"]) ||
-        #app{path=Path} <- sin_state:get_value(release_runtime_deps, State)].
+        #app{path=Path} <-
+            sin_state:get_value(release_runtime_deps, State) ++
+            sin_state:get_value(project_apps, State)].
 
