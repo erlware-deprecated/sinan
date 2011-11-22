@@ -43,7 +43,7 @@ description() ->
 %% @doc run all tests for all modules in the system
 do_task(_Config, State0) ->
     lists:foldl(fun(#app{name=AppName, modules=Modules}, State1) ->
-                   io:format("PropEr testing app ~p~n", [AppName]),
+                   io:format("Eunit testing app ~p~n", [AppName]),
                    case Modules == undefined orelse length(Modules) =< 0 of
                        true ->
                            ec_talk:say("No modules defined for ~p.",
