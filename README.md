@@ -47,3 +47,10 @@ Hopefully thats enough to get you started, but sinan has many options
 to do various things with projects from small single app projects to
 very large multiple app projects. To get more information take a look
 at the sinan manual.
+
+More Information
+----------------
+
+Sinan has extensive further documentation in its
+[wiki on github](https://github.com/erlware/sinan/wiki). Check there
+for more information.
