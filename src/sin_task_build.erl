@@ -203,7 +203,7 @@ prepare_app(State0, App0 = #app{name=AppName, path=Path}, BuildDir, Ignorables) 
     %% Ignore the build dir when copying or we will create a deep monster in a
     %% few builds
     State1 = sin_utils:copy_dir(State0, Path, AppDir, "",
-                                [BuildDir | Ignorables]),
+                                [BuildDir | Ignorables], []),
 
     State2 = sin_state:store({apps, AppName, builddir},
                              Path, State1),

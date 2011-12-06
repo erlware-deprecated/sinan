@@ -24,6 +24,7 @@ class TestFoo(st.SmokeTest):
                     [{exclude, app4},
                      {exclude, app1}]}.
 
+               {{include_erts, [{release, r1}]}, true}.
         """ % {"project_name" : app_desc.project_name,
                "project_version" : app_desc.project_version}
 
@@ -79,6 +80,9 @@ class TestFoo(st.SmokeTest):
                                     "%s-%s.tar.gz" % (self.release_name,
                                                       self.release_version)])
 
+        BuildDir = os.path.join("_build", "r1")
+        BuildDirList = os.listdir(BuildDir)
+        self.assertTrue(len([x for x in BuildDirList if x.startswith("erts-")]) == 1)
 
 if __name__ == '__main__':
     unittest.main()

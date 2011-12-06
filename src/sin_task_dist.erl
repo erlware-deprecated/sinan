@@ -169,11 +169,10 @@ hooks_dir(State, TopLevel, ProjectDir) ->
 %% @doc If an erts version should be included in the dist include it copy it.
 -spec erts_dir(sin_config:matcher(), string()) -> {string(), string()}.
 erts_dir(Config, TopLevel) ->
-    Prefix = code:root_dir(),
-    ErtsVersion = erlang:system_info(version),
-    ErtsToInclude = filename:join([Prefix, "erts-" ++ ErtsVersion]),
+    ErtsToInclude = sin_utils:get_erts_dir(),
     case Config:match(include_erts, false) of
         true ->
+            ErtsVersion = erlang:system_info(version),
             [{ErtsToInclude,
               filename:join([TopLevel, "erts-" ++ ErtsVersion])}];
         _ ->

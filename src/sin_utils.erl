@@ -16,6 +16,8 @@
 -export([copy_dir/3,
          copy_dir/4,
          copy_dir/5,
+         copy_dir/6,
+         copy_entire_dir/3,
          delete_dir/1,
          file_exists/2,
          get_application_env/2,
@@ -25,7 +27,8 @@
          term_to_list/1,
          to_bool/1,
          format_exception/1,
-         basename/1]).
+         basename/1,
+         get_erts_dir/0]).
 
 %%====================================================================
 %% API
@@ -88,21 +91,40 @@ file_exists(State, FileName) ->
 -spec copy_dir(sin_state:state(), string(),
                string()) -> ok.
 copy_dir(State, To, From) ->
-    copy_dir(State, To, From, [], []).
+    copy_dir(State, To, From, [], [], []).
+
+-spec copy_dir(sin_state:state(), string(),
+               string(), list()) -> ok.
+copy_dir(State, To, From, Options) ->
+    copy_dir(State, To, From, [], [], Options).
 
 -spec copy_dir(sin_state:state(),
                string(),
                string(),
-               string()) -> ok.
-copy_dir(State, To, From, Sub) ->
-    copy_dir(State, To, From, Sub, []).
+               string(),
+               list()) -> ok.
+copy_dir(State, To, From, Sub, Options) ->
+    copy_dir(State, To, From, Sub, [], Options).
 
 -spec copy_dir(sin_state:state(),
                string(),
                string(),
                string(),
-               Ignorables::string()) -> sin_state:state().
-copy_dir(State0, To, From, SubDir, Ignorables) ->
+               Ignorables::string(),
+               list()) -> sin_state:state().
+copy_dir(State0, To, From, SubDir, Ignorables, Options) ->
+    case lists:member(keep_parent, Options) of
+        %% Copy the enitre directory, instead of just subdirs/files
+        true ->
+            ParentDir = hd(lists:reverse(filename:split(From))),
+            NewTo = filename:join([To, ParentDir]),
+            filelib:ensure_dir(NewTo),
+            copy_dir2(State0, NewTo, From, SubDir, Ignorables);
+        false ->
+            copy_dir2(State0, To, From, SubDir, Ignorables)
+    end.
+
+copy_dir2(State0, To, From, SubDir, Ignorables) ->
     check_not_circular(State0, To, From, SubDir),
     case are_dirs_ignorable(SubDir, Ignorables) of
         true ->
@@ -120,7 +142,7 @@ copy_dir(State0, To, From, SubDir, Ignorables) ->
                                     {true, _} ->
                                         State1;
                                     {_, true} ->
-                                        copy_dir(State1,
+                                        copy_dir2(State1,
                                                  To, From,
                                                  SubDir ++ [IFile], Ignorables);
                                     {_, false} ->
@@ -129,6 +151,12 @@ copy_dir(State0, To, From, SubDir, Ignorables) ->
                         end,
                         State0, Files)
     end.
+
+%% @doc Copy the enitre directory, instead of just subdirs/files
+-spec copy_entire_dir(sin_state:state(), string(),
+               string()) -> ok.
+copy_entire_dir(State, To, From) ->
+    copy_dir(State, To, From, [], []).
 
 %% @doc Remove the specified code paths from the system code paths.
 -spec remove_code_paths(Paths::[string()]) -> ok.
@@ -162,6 +190,13 @@ basename(File) ->
     string().
 format_exception(Exception) ->
     sin_exceptions:format_exception(Exception).
+
+%% @doc Get the directory were erts is located
+-spec get_erts_dir() -> string().
+get_erts_dir() ->
+    Prefix = code:root_dir(),
+    ErtsVersion = erlang:system_info(version),
+    filename:join([Prefix, "erts-" ++ ErtsVersion]).
 
 %%====================================================================
 %% Internal functions
