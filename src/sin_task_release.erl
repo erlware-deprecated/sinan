@@ -62,6 +62,7 @@ do_task(Config, State0) ->
                                     ReleaseName, Version),
     State1 = sin_state:store(rel, ReleaseInfo, State0),
     copy_or_generate_sys_config_file(Config, ReleaseDir, Version),
+    optionally_include_erts(State1, Config, filename:join([ReleaseDir,".."])),
     make_boot_script(State1, ReleaseInfo),
     State1.
 
@@ -218,3 +219,13 @@ get_code_paths(State) ->
             sin_state:get_value(release_runtime_deps, State) ++
             sin_state:get_value(project_apps, State)].
 
+%% @doc Optionally add erts directory to release, if defined.
+-spec optionally_include_erts(sin_state:state(), sin_config:config(), string()) -> ok.
+optionally_include_erts(State, Config, ReleaseRootDir) ->
+    case Config:match(include_erts, undefined) of
+        undefined ->
+            ok;
+        true ->
+            ErtsDir = sin_utils:get_erts_dir(),
+            sin_utils:copy_dir(State, ReleaseRootDir, ErtsDir, [keep_parent])
+    end.
