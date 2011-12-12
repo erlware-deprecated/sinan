@@ -39,9 +39,21 @@ description() ->
 
         This configuration allows you to specify the type of application this is
         for the release. (Again review the release information for details).
+        <break><break> You may substitute your own release file (completely
+        replacing the generated file) by placing a file in
+        releases/<release-name>.rel<break><break>
+
+        At times you may wish to use the release directory under _build as a
+        full release directory. This may require the inclusion of the erts
+        executable. If you so desire you can have sinan include erts when it the
+        release task is run so the _build/<release name> directory can be used
+        as a full self contained release. <break><break>
+
+        The option is:
         <break><break>
-        You may substitute your own release file (completely replacing the
-        generated file) by placing a file in releases/<release-name>.rel" ,
+        {include_erts, true}.
+        <break><break>
+        Put this in your sinan.config to for erts inclusion in the build area." ,
 
     #task{name = ?TASK,
           task_impl = ?MODULE,
