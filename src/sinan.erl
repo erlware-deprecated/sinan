@@ -35,6 +35,19 @@
 %%====================================================================
 %% API
 %%====================================================================
+do(undefined, _, Options) ->
+    do(help, [], Options);
+do(Target, Rest, Options) ->
+    Result = do_task(Target,
+                     find_start_dir(Options),
+                     setup_config_overrides(Options, Rest)),
+    case sin_state:get_run_errors(Result) of
+        [] ->
+            {ok, Result};
+        _ ->
+            {error, Result}
+    end.
+
 %% @doc run the specified task with a full project dir
 -spec do_task_full(sin_config:config(), sin_state:state(), task_name()) -> ok.
 do_task_full(Config0, State0, Task) when is_atom(Task) ->
@@ -86,8 +99,10 @@ run_sinan() ->
 main(Args) ->
     manual_start(),
     case getopt:parse(option_spec_list(), Args) of
-        {ok, {Options, NonOptArgs}} ->
-            do_build(Options, NonOptArgs);
+        {ok, {Options, [Target | Rest]}} ->
+            do(erlang:list_to_atom(Target), Rest, Options);
+        {ok, {Options, []}} ->
+            do(undefined, [], Options);
         {error, {Reason, Data}} ->
             io:format("Error: ~s ~p~n~n", [Reason, Data]),
             usage(),
@@ -151,20 +166,6 @@ do_task(Task, StartDir, Config) ->
             ec_talk:say("Task not found ~s.", [TaskName]),
             NewState
     end.
-
--spec do_build(term(), [string()]) -> {ok | error, sin_state:state()}.
-do_build(Options, [Target | Rest]) ->
-    Result = do_task(list_to_atom(Target),
-                     find_start_dir(Options),
-                     setup_config_overrides(Options, Rest)),
-    case sin_state:get_run_errors(Result) of
-        [] ->
-            {ok, Result};
-        _ ->
-            {error, Result}
-    end;
-do_build(Options, []) ->
-    do_build(Options, ["help"]).
 
 usage(OptSpecList) ->
     getopt:usage(OptSpecList, "", "[command] [option1 option2]....",
