@@ -22,7 +22,7 @@
               app/0]).
 
 -include_lib("sinan/include/sinan.hrl").
--include_lib("eunit/include/eunit.hrl").
+
 
 %%====================================================================
 %% Types
@@ -262,6 +262,9 @@ push_values_if_exist(Config, _Options, []) ->
 %%====================================================================
 %% Tests
 %%====================================================================
+-ifndef(NOTEST).
+-include_lib("eunit/include/eunit.hrl").
+
 push_values_if_exist_test() ->
     Options = [{foo, "bar"},
                {bar, "baz"},
@@ -273,3 +276,5 @@ push_values_if_exist_test() ->
     ?assertMatch("baz", sin_config:match(monsefu, Config)),
     ?assertMatch(333, sin_config:match(chiclayo, Config)),
     ?assertMatch(undefined, sin_config:match(noid, undefined, Config)).
+
+-endif.
