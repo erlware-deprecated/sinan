@@ -32,7 +32,7 @@ description() ->
     Desc = "This task analyzes all of the dependencies in the project and
         provides that" " information to the build state for use by other
         tasks. It is not a command intended to be called directly by the
-        user. Though you can if that floats your boat.",
+user. Though you can if that floats your boat.",
 
     #task{name = ?TASK,
           task_impl = ?MODULE,
@@ -52,7 +52,7 @@ do_task(Config, State0) ->
         lists:foldl(fun(AppName, Changed0) ->
                             AppF = sin_state:get_value({apps, AppName, dotapp},
                                                        State0),
-                        Changed0 orelse sin_sig:changed(deps, AppF, State0)
+                            Changed0 orelse sin_sig:changed(deps, AppF, State0)
                     end, false, ProjectApps),
     {State1, {ReleaseApps, RuntimeDeps0, CompiletimeDeps}} =
         case Changed1 of
@@ -113,22 +113,22 @@ solve_deps(Config, State0, ProjectApps) ->
     ResolverState1 = sin_dep_solver:extract_resolver_state(SolverState2),
     {ReleaseApps1, RuntimeDeps2} =
         lists:foldl(fun({App, Vsn}, {ReleaseApps0, RuntimeDeps1}) ->
-                          {_, Path} =
-                              sin_dep_resolver:resolve(ResolverState1,
-                                                       App, Vsn),
+                            {_, Path} =
+                                sin_dep_resolver:resolve(ResolverState1,
+                                                         App, Vsn),
                             case lists:member(App, ProjectApps) of
                                 true ->
                                     {[#app{name=App, vsn=Vsn, path=Path,
-                                         type=runtime,
-                                         project=true} | ReleaseApps0],
+                                           type=runtime,
+                                           project=true} | ReleaseApps0],
                                      RuntimeDeps1};
                                 false ->
                                     {ReleaseApps0,
                                      [#app{name=App, vsn=Vsn, path=Path,
-                                         type=runtime,
-                                         project=folse} | RuntimeDeps1]}
+                                           type=runtime,
+                                           project=false} | RuntimeDeps1]}
                             end
-                  end, {[], []}, RuntimeDeps0),
+                    end, {[], []}, RuntimeDeps0),
 
     CompiletimeDeps1 =
         lists:foldl(fun({App, Vsn}, Acc) ->
@@ -140,10 +140,10 @@ solve_deps(Config, State0, ProjectApps) ->
                                         sin_dep_resolver:resolve(ResolverState1,
                                                                  App, Vsn),
                                     [#app{name=App, vsn=Vsn, path=Path,
-                                         type=compiletime, project=false} |
+                                          type=compiletime, project=false} |
                                      Acc]
                             end
-                  end, [], CompiletimeDeps0),
+                    end, [], CompiletimeDeps0),
 
 
     State1 =
