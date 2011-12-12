@@ -14,7 +14,6 @@
 -export([main/0,
          main/1,
          run_sinan/0,
-         do_task/3,
          manual_start/0,
          usage/0]).
 
@@ -36,25 +35,6 @@
 %%====================================================================
 %% API
 %%====================================================================
-
-%% @doc run the specified task
--spec do_task(task_name(), string(), sin_config:config()) -> ok.
-do_task(Task, StartDir, Config) ->
-    try
-        State = sin_state:store(start_dir, StartDir, sin_state:new()),
-        TaskDesc = sin_task:get_task(State, Task),
-        case TaskDesc#task.bare of
-            false ->
-                do_task_full(Config, State, Task);
-            true ->
-                do_task_bare(StartDir, Config, State, Task)
-        end
-    catch
-        {pe, NewState, {_, _, {task_not_found, TaskName}}} ->
-            ec_talk:say("Task not found ~s.", [TaskName]),
-            NewState
-    end.
-
 %% @doc run the specified task with a full project dir
 -spec do_task_full(sin_config:config(), sin_state:state(), task_name()) -> ok.
 do_task_full(Config0, State0, Task) when is_atom(Task) ->
@@ -153,6 +133,24 @@ usage() ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
+
+%% @doc run the specified task
+-spec do_task(task_name(), string(), sin_config:config()) -> ok.
+do_task(Task, StartDir, Config) ->
+    try
+        State = sin_state:store(start_dir, StartDir, sin_state:new()),
+        TaskDesc = sin_task:get_task(State, Task),
+        case TaskDesc#task.bare of
+            false ->
+                do_task_full(Config, State, Task);
+            true ->
+                do_task_bare(StartDir, Config, State, Task)
+        end
+    catch
+        {pe, NewState, {_, _, {task_not_found, TaskName}}} ->
+            ec_talk:say("Task not found ~s.", [TaskName]),
+            NewState
+    end.
 
 -spec do_build(term(), [string()]) -> {ok | error, sin_state:state()}.
 do_build(Options, [Target | Rest]) ->
