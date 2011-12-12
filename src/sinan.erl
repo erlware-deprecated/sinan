@@ -11,7 +11,10 @@
 -module(sinan).
 
 %% API
--export([main/0,
+-export([do/1,
+         do/2,
+         do/3,
+         main/0,
          main/1,
          run_sinan/0,
          manual_start/0,
@@ -35,6 +38,17 @@
 %%====================================================================
 %% API
 %%====================================================================
+-spec do(atom()) -> ok | error.
+do(Task) ->
+    {Res, _} = do(Task, [], []),
+    Res.
+
+-spec do(atom(), [{atom(), term()}]) -> ok | error.
+do(Task, Options) ->
+    {Res, _} = do(Task, [], Options),
+    Res.
+
+-spec do(atom(), [string()], term()) -> {ok | error, sin_state:state()}.
 do(undefined, _, Options) ->
     do(help, [], Options);
 do(Target, Rest, Options) ->
