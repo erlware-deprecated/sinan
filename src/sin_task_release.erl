@@ -81,6 +81,8 @@ do_task(Config, State0) ->
 %% @doc Format an exception thrown by this module
 -spec format_exception(sin_exceptions:exception()) ->
     string().
+format_exception(?SIN_EXEP_UNPARSE(_, release_script_generation_error, Description)) ->
+    Description;
 format_exception(Exception) ->
     sin_exceptions:format_exception(Exception).
 
@@ -166,7 +168,7 @@ make_boot_script(State, {{Location, File}, {release, {Name, _}, _, _}}) ->
     Options = [{path, [Location | get_code_paths(State)]},
                no_module_tests, silent],
     case systools_make:make_script(Name,
-                                   File, [{outdir, Location} | Options]) of
+                                   File, [no_warn_sasl, {outdir, Location} | Options]) of
         ok ->
             ok;
         error ->
@@ -175,12 +177,10 @@ make_boot_script(State, {{Location, File}, {release, {Name, _}, _, _}}) ->
             ok;
         {ok,Module,Warnings} ->
             Detail = lists:flatten(Module:format_warning(Warnings)),
-            ec_talk:say("~s", Detail),
             ?SIN_RAISE(State, release_script_generation_error,
                        "~s~n", [Detail]);
         {error,Module,Error} ->
             Detail = lists:flatten(Module:format_error(Error)),
-            ec_talk:say("~s", Detail),
             ?SIN_RAISE(State, release_script_generation_error,
                        "~s~n", [Detail])
     end.
