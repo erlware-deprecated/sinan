@@ -39,9 +39,21 @@ description() ->
 
         This configuration allows you to specify the type of application this is
         for the release. (Again review the release information for details).
+        <break><break> You may substitute your own release file (completely
+        replacing the generated file) by placing a file in
+        releases/<release-name>.rel<break><break>
+
+        At times you may wish to use the release directory under _build as a
+        full release directory. This may require the inclusion of the erts
+        executable. If you so desire you can have sinan include erts when it the
+        release task is run so the _build/<release name> directory can be used
+        as a full self contained release. <break><break>
+
+        The option is:
         <break><break>
-        You may substitute your own release file (completely replacing the
-        generated file) by placing a file in releases/<release-name>.rel" ,
+        {include_erts, true}.
+        <break><break>
+        Put this in your sinan.config to for erts inclusion in the build area." ,
 
     #task{name = ?TASK,
           task_impl = ?MODULE,
@@ -69,6 +81,8 @@ do_task(Config, State0) ->
 %% @doc Format an exception thrown by this module
 -spec format_exception(sin_exceptions:exception()) ->
     string().
+format_exception(?SIN_EXEP_UNPARSE(_, release_script_generation_error, Description)) ->
+    Description;
 format_exception(Exception) ->
     sin_exceptions:format_exception(Exception).
 
@@ -153,8 +167,7 @@ get_erts_info() ->
 make_boot_script(State, {{Location, File}, {release, {Name, _}, _, _}}) ->
     Options = [{path, [Location | get_code_paths(State)]},
                no_module_tests, silent],
-    case systools_make:make_script(Name,
-                                   File, [{outdir, Location} | Options]) of
+    case make_script(Name, File, Location, Options)  of
         ok ->
             ok;
         error ->
@@ -163,16 +176,30 @@ make_boot_script(State, {{Location, File}, {release, {Name, _}, _, _}}) ->
             ok;
         {ok,Module,Warnings} ->
             Detail = lists:flatten(Module:format_warning(Warnings)),
-            ec_talk:say("~s", Detail),
             ?SIN_RAISE(State, release_script_generation_error,
                        "~s~n", [Detail]);
         {error,Module,Error} ->
             Detail = lists:flatten(Module:format_error(Error)),
-            ec_talk:say("~s", Detail),
             ?SIN_RAISE(State, release_script_generation_error,
                        "~s~n", [Detail])
     end.
 
+-spec make_script(string(), string(), string(), [term()]) ->
+                         ok | error | {ok, term(), []} |
+                         {ok, atom(), [term()]} |
+                         {ok, atom(), [term()]}.
+make_script(Name, File, Location, Options) ->
+    %% Erts 5.9 introduced a non backwards compatible option to
+    %% erlang this takes that into account
+    case ec_string:compare_versions(erlang:system_info(version), "5.8") of
+        true ->
+            systools_make:make_script(Name,
+                                      File, [no_warn_sasl,
+                                             {outdir, Location} | Options]);
+        _ ->
+            systools_make:make_script(Name,
+                                      File, [{outdir, Location} | Options])
+    end.
 
 %% @doc copy config/sys.config or generate one to releases/VSN/sys.config
 -spec copy_or_generate_sys_config_file(sin_config:config(), string(),

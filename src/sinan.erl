@@ -11,10 +11,12 @@
 -module(sinan).
 
 %% API
--export([main/0,
+-export([do/1,
+         do/2,
+         do/3,
+         main/0,
          main/1,
          run_sinan/0,
-         do_task/3,
          manual_start/0,
          usage/0]).
 
@@ -23,7 +25,7 @@
               app/0]).
 
 -include_lib("sinan/include/sinan.hrl").
--include_lib("eunit/include/eunit.hrl").
+
 
 %%====================================================================
 %% Types
@@ -36,23 +38,28 @@
 %%====================================================================
 %% API
 %%====================================================================
+-spec do(atom()) -> ok | error.
+do(Task) ->
+    {Res, _} = do(Task, [], []),
+    Res.
 
-%% @doc run the specified task
--spec do_task(task_name(), string(), sin_config:config()) -> ok.
-do_task(Task, StartDir, Config) ->
-    try
-        State = sin_state:store(start_dir, StartDir, sin_state:new()),
-        TaskDesc = sin_task:get_task(State, Task),
-        case TaskDesc#task.bare of
-            false ->
-                do_task_full(Config, State, Task);
-            true ->
-                do_task_bare(StartDir, Config, State, Task)
-        end
-    catch
-        {pe, NewState, {_, _, {task_not_found, TaskName}}} ->
-            ec_talk:say("Task not found ~s.", [TaskName]),
-            NewState
+-spec do(atom(), [{atom(), term()}]) -> ok | error.
+do(Task, Options) ->
+    {Res, _} = do(Task, [], Options),
+    Res.
+
+-spec do(atom(), [string()], term()) -> {ok | error, sin_state:state()}.
+do(undefined, _, Options) ->
+    do(help, [], Options);
+do(Target, Rest, Options) ->
+    Result = do_task(Target,
+                     find_start_dir(Options),
+                     setup_config_overrides(Options, Rest)),
+    case sin_state:get_run_errors(Result) of
+        [] ->
+            {ok, Result};
+        _ ->
+            {error, Result}
     end.
 
 %% @doc run the specified task with a full project dir
@@ -106,8 +113,10 @@ run_sinan() ->
 main(Args) ->
     manual_start(),
     case getopt:parse(option_spec_list(), Args) of
-        {ok, {Options, NonOptArgs}} ->
-            do_build(Options, NonOptArgs);
+        {ok, {Options, [Target | Rest]}} ->
+            do(erlang:list_to_atom(Target), Rest, Options);
+        {ok, {Options, []}} ->
+            do(undefined, [], Options);
         {error, {Reason, Data}} ->
             io:format("Error: ~s ~p~n~n", [Reason, Data]),
             usage(),
@@ -154,19 +163,23 @@ usage() ->
 %% Internal functions
 %%====================================================================
 
--spec do_build(term(), [string()]) -> {ok | error, sin_state:state()}.
-do_build(Options, [Target | Rest]) ->
-    Result = do_task(list_to_atom(Target),
-                     find_start_dir(Options),
-                     setup_config_overrides(Options, Rest)),
-    case sin_state:get_run_errors(Result) of
-        [] ->
-            {ok, Result};
-        _ ->
-            {error, Result}
-    end;
-do_build(Options, []) ->
-    do_build(Options, ["help"]).
+%% @doc run the specified task
+-spec do_task(task_name(), string(), sin_config:config()) -> ok.
+do_task(Task, StartDir, Config) ->
+    try
+        State = sin_state:store(start_dir, StartDir, sin_state:new()),
+        TaskDesc = sin_task:get_task(State, Task),
+        case TaskDesc#task.bare of
+            false ->
+                do_task_full(Config, State, Task);
+            true ->
+                do_task_bare(StartDir, Config, State, Task)
+        end
+    catch
+        {pe, NewState, {_, _, {task_not_found, TaskName}}} ->
+            ec_talk:say("Task not found ~s.", [TaskName]),
+            NewState
+    end.
 
 usage(OptSpecList) ->
     getopt:usage(OptSpecList, "", "[command] [option1 option2]....",
@@ -263,6 +276,9 @@ push_values_if_exist(Config, _Options, []) ->
 %%====================================================================
 %% Tests
 %%====================================================================
+-ifndef(NOTEST).
+-include_lib("eunit/include/eunit.hrl").
+
 push_values_if_exist_test() ->
     Options = [{foo, "bar"},
                {bar, "baz"},
@@ -274,3 +290,5 @@ push_values_if_exist_test() ->
     ?assertMatch("baz", sin_config:match(monsefu, Config)),
     ?assertMatch(333, sin_config:match(chiclayo, Config)),
     ?assertMatch(undefined, sin_config:match(noid, undefined, Config)).
+
+-endif.

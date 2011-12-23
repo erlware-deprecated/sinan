@@ -28,11 +28,14 @@ get_target(BuildDir, File, ".erl") ->
 build_file(_Config, State, Module=#module{path=File}, Options, _Target) ->
     ec_talk:say("Building ~s", [File]),
     case compile:file(File, Options) of
-        {ok, _ModuleName} ->
+        {ok, ModuleName} ->
+            reload_module(ModuleName),
             {State, [Module]};
-        {ok, _ModuleName, []} ->
+        {ok, ModuleName, []} ->
+            reload_module(ModuleName),
             {State, [Module]};
-        {ok, _ModuleName, Warnings0} ->
+        {ok, ModuleName, Warnings0} ->
+            reload_module(ModuleName),
             Warnings1 = sin_task_build:gather_fail_info(Warnings0, "warning"),
             {?WARN(State,
                   {build_warnings, Warnings1}),
@@ -58,3 +61,7 @@ format_exception(Exception) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+-spec reload_module(atom()) -> {ok, atom()}.
+reload_module(Module) ->
+    code:purge(Module),
+    code:load_file(Module).

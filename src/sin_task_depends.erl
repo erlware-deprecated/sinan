@@ -32,7 +32,7 @@ description() ->
     Desc = "This task analyzes all of the dependencies in the project and
         provides that" " information to the build state for use by other
         tasks. It is not a command intended to be called directly by the
-        user. Though you can if that floats your boat.",
+user. Though you can if that floats your boat.",
 
     #task{name = ?TASK,
           task_impl = ?MODULE,
@@ -52,7 +52,7 @@ do_task(Config, State0) ->
         lists:foldl(fun(AppName, Changed0) ->
                             AppF = sin_state:get_value({apps, AppName, dotapp},
                                                        State0),
-                        Changed0 orelse sin_sig:changed(deps, AppF, State0)
+                            Changed0 orelse sin_sig:changed(deps, AppF, State0)
                     end, false, ProjectApps),
     {State1, {ReleaseApps, RuntimeDeps0, CompiletimeDeps}} =
         case Changed1 of
@@ -113,22 +113,22 @@ solve_deps(Config, State0, ProjectApps) ->
     ResolverState1 = sin_dep_solver:extract_resolver_state(SolverState2),
     {ReleaseApps1, RuntimeDeps2} =
         lists:foldl(fun({App, Vsn}, {ReleaseApps0, RuntimeDeps1}) ->
-                          {_, Path} =
-                              sin_dep_resolver:resolve(ResolverState1,
-                                                       App, Vsn),
+                            {_, Path} =
+                                sin_dep_resolver:resolve(ResolverState1,
+                                                         App, Vsn),
                             case lists:member(App, ProjectApps) of
                                 true ->
                                     {[#app{name=App, vsn=Vsn, path=Path,
-                                         type=runtime,
-                                         project=true} | ReleaseApps0],
+                                           type=runtime,
+                                           project=true} | ReleaseApps0],
                                      RuntimeDeps1};
                                 false ->
                                     {ReleaseApps0,
                                      [#app{name=App, vsn=Vsn, path=Path,
-                                         type=runtime,
-                                         project=folse} | RuntimeDeps1]}
+                                           type=runtime,
+                                           project=false} | RuntimeDeps1]}
                             end
-                  end, {[], []}, RuntimeDeps0),
+                    end, {[], []}, RuntimeDeps0),
 
     CompiletimeDeps1 =
         lists:foldl(fun({App, Vsn}, Acc) ->
@@ -140,10 +140,10 @@ solve_deps(Config, State0, ProjectApps) ->
                                         sin_dep_resolver:resolve(ResolverState1,
                                                                  App, Vsn),
                                     [#app{name=App, vsn=Vsn, path=Path,
-                                         type=compiletime, project=false} |
+                                          type=compiletime, project=false} |
                                      Acc]
                             end
-                  end, [], CompiletimeDeps0),
+                    end, [], CompiletimeDeps0),
 
 
     State1 =
@@ -170,7 +170,18 @@ format_app(#app{name=Name0, vsn=Vsn0, path=Path}) ->
 
 %% @doc Format an exception thrown by this module
 -spec format_exception(sin_exceptions:exception()) ->
-    string().
+                              string().
+format_exception(?SIN_EXEP_UNPARSE(_, {failed, {possible_culprit, SpecList1}})) ->
+    ["Unable to resolve compile time dependencies, probably do "
+     "to the following constraints:~n",
+     lists:map(fun({AppName, LimitSet, Sources}) ->
+                       io_lib:format(" constraint on ~p with constraints ~p "
+                                     "originating from these application(s) ~p",
+                                     [AppName, sets:to_list(LimitSet),
+                                      sets:to_list(Sources)]);
+                  (AppName) when is_atom(AppName) ->
+                       [" application", erlang:atom_to_list(AppName), " in the project "]
+               end, SpecList1)];
 format_exception(Exception) ->
     sin_exceptions:format_exception(Exception).
 
@@ -192,26 +203,14 @@ get_compiletime_deps(State0, Config, SolverState0, DefaultSpecs) ->
         case sin_dep_solver:all_deps(SolverState0,
                                      CompiletimeApps1,
                                      CompileSpecs) of
-            Error1 = {failed, {possible_culprit, SpecList1}} ->
-            ec_talk:say("Unable to resolve compile time dependencies, probably do "
-                         "to the following constraints:"),
-            lists:foreach(fun({AppName, LimitSet, Sources}) ->
-                                  ec_talk:say(" constraint on ~p with constraints ~p "
-                                               "originating from these application(s) ~p",
-                                               [AppName, sets:to_list(LimitSet),
-                                                sets:to_list(Sources)]);
-                             (AppName) when is_atom(AppName) ->
-                                  ec_talk:say(" application ~p in the project ",
-                                               [AppName])
-
-                          end, SpecList1),
-            ?SIN_RAISE(State0, Error1);
-        {_, Deps1} ->
-            lists:filter(fun({excluded, _}) ->
-                                 false;
-                            (_) ->
-                                 true
-                         end, Deps1)
+            Error1 = {failed, {possible_culprit, _SpecList1}} ->
+                ?SIN_RAISE(State0, Error1);
+            {_, Deps1} ->
+                lists:filter(fun({excluded, _}) ->
+                                     false;
+                                (_) ->
+                                     true
+                             end, Deps1)
         end,
     {SolverState0, CompiletimeDeps0}.
 
@@ -219,18 +218,7 @@ get_compiletime_deps(State0, Config, SolverState0, DefaultSpecs) ->
 get_runtime_deps(State0, SolverState0, Apps, Specs) ->
     case sin_dep_solver:all_deps(SolverState0, Apps,
                                  Specs) of
-        Error1 = {failed, {possible_culprit, SpecList1}} ->
-            ec_talk:say("Unable to resolve runtime dependencies, probably do "
-                         "to the following constraints:"),
-            lists:foreach(fun({AppName, LimitSet, Sources}) ->
-                                  ec_talk:say(" constraint on ~p with constraints ~p "
-                                               "originating from these application(s) ~p",
-                                               [AppName, sets:to_list(LimitSet),
-                                                sets:to_list(Sources)]);
-                             (AppName) when is_atom(AppName) ->
-                                  ec_talk:say(" application ~p in the project ",
-                                               [AppName])
-                          end, SpecList1),
+        Error1 = {failed, {possible_culprit, _SpecList1}} ->
             ?SIN_RAISE(State0, Error1);
         {SolverState1, Deps0} ->
             {SolverState1,
@@ -251,12 +239,12 @@ remove_excluded(State0, Apps0, Constraints) ->
                          end, Apps0),
     DefaultSpecs =
         lists:map(fun(AppName) ->
-                         case sin_state:get_value({apps, AppName, vsn},
-                                                  State0) of
-                             undefined ->
-                                 AppName;
-                             Vsn ->
-                                 {AppName, Vsn}
-                         end
+                          case sin_state:get_value({apps, AppName, vsn},
+                                                   State0) of
+                              undefined ->
+                                  AppName;
+                              Vsn ->
+                                  {AppName, Vsn}
+                          end
                   end, Apps1),
     {Apps1, DefaultSpecs ++ Constraints}.

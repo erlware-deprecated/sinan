@@ -102,6 +102,7 @@ initialize(Path, Type) ->
             module_deps=sets:new(),
             includes=sets:new(),
             tags=sets:new(),
+            include_timestamps=[],
             called_modules=sets:new()}.
 
 -spec remove_self(string(), mod()) -> mod().
@@ -157,7 +158,5 @@ parse_tuple(State, {error,{_,epp,{include,lib,Include}}}, #module{name=Name}) ->
     ?SIN_RAISE(State, {unable_to_include, Include, Name});
 parse_tuple(State, {error,{_,epp,{include,file,Include}}}, #module{name=Name}) ->
     ?SIN_RAISE(State, {unable_to_include, Include, Name});
-parse_tuple(State, {error, Error}, #module{name=Name}) ->
-    ?SIN_RAISE(State, {unable_to_process, Name, Error});
 parse_tuple(_, _, Mod) ->
     Mod.
