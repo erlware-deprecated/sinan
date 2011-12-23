@@ -2,7 +2,7 @@
 
 {application, sinan,
  [{description, "Build system for erlang"},
-  {vsn, "2.0.24a"},
+  {vsn, "2.0.25a"},
   {modules, []},
   {registered, [sin_sup]},
   {applications, [kernel, stdlib, compiler, erlware_commons,
