@@ -41,24 +41,36 @@ description() ->
           opts = []}.
 
 %% @doc run all tests for all modules in the system
-do_task(_Config, State0) ->
-    lists:foldl(fun(#app{name=AppName, modules=Modules}, State1) ->
-                   io:format("PropEr testing app ~p~n", [AppName]),
-                   case Modules == undefined orelse length(Modules) =< 0 of
-                       true ->
-                           ec_talk:say("No modules defined for ~p.",
-                                       [AppName]),
-                           State1;
-                       false ->
-                           run_module_tests(Modules),
-                           State1
-                   end
-                end, State0, sin_state:get_value(project_apps, State0)).
+do_task(Config, State0) ->
+    lists:foldl(
+      fun(#app{name=AppName, modules=Modules}, State1) ->
+              io:format("PropEr testing app ~p~n", [AppName]),
+              case Modules == undefined orelse length(Modules) =< 0 of
+                  true ->
+                      ec_talk:say("No modules defined for ~p.",
+                                  [AppName]),
+                      State1;
+                  false ->
+                      run_module_tests(filter_modules(Config, Modules)),
+                      State1
+              end
+      end, State0, sin_state:get_value(project_apps, State0)).
 
 
 %%====================================================================
 %%% Internal functions
 %%====================================================================
+
+filter_modules(Config, Modules) ->
+    AdditionalArgs = Config:match(additional_args),
+    case AdditionalArgs of
+        [] ->
+            Modules;
+        FilterModules ->
+            [Mod || Mod <- Modules,
+                    lists:member(atom_to_list(Mod#module.name),
+                                 FilterModules)]
+    end.
 
 %% @doc Run tests for each module that has a test/0 function
 -spec run_module_tests([sin_file_info:mod()]) -> ok.
