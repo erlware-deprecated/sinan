@@ -42,9 +42,9 @@ description() ->
 
 %% @doc run edoc on all applications
 -spec do_task(sin_config:config(), sin_state:state()) -> sin_state:state().
-do_task(_Config, State) ->
+do_task(Config, State) ->
     Apps = sin_state:get_value(project_apps, State),
-    run_docs(State, Apps),
+    run_docs(Config, State, Apps),
     State.
 
 %% @doc Format an exception thrown by this module
@@ -59,21 +59,31 @@ format_exception(Exception) ->
 
 %% @doc
 %%  Run edoc on all the modules in all of the applications.
--spec run_docs(sin_state:state(), [AppInfo::tuple()]) -> ok.
-run_docs(State, [#app{name=AppName, path=Path} | T]) ->
+-spec run_docs(sin_config:config(),
+               sin_state:state(), [AppInfo::tuple()]) -> ok.
+run_docs(Config, State, [#app{name=AppName, path=Path} | T]) ->
     DocDir = filename:join([Path, "docs"]),
     filelib:ensure_dir(filename:join([DocDir, "tmp"])),
 
     try
         edoc:application(AppName,
                          Path,
-                         [{dir, DocDir}])
+                         get_options(Config:specialize([{app, AppName}]),
+                                     DocDir))
     catch
         throw:Error ->
             ?SIN_RAISE(State, Error)
     end,
-    run_docs(State, T);
-run_docs(_State, []) ->
+    run_docs(Config, State, T);
+run_docs(_Config, _State, []) ->
     ok.
 
+get_options(Config, DocDir) ->
+    Options = Config:match(edoc_options, []),
+    case proplists:get_value(dir, Options) of
+        undefined ->
+            [{dir, DocDir} | Options];
+        _ ->
+            Options
+    end.
 
