@@ -61,7 +61,14 @@ format_exception(Exception) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+%% We don't want to do this on ourselves
 -spec reload_module(atom()) -> {ok, atom()}.
-reload_module(Module) ->
+reload_module(Module)
+  when not Module == ?MODULE ->
     code:purge(Module),
-    code:load_file(Module).
+    code:load_file(Module),
+    code:purge(Module),
+    code:load_file(Module);
+reload_module(_) ->
+    ok.
+
