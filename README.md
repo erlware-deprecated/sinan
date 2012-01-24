@@ -10,6 +10,12 @@ and Applications. Sinan leverages the metadata artifacts provided by
 OTP to do a good job building, testing, releasing, etc with very
 little or no additional input from the developer.
 
+Getting Sinan
+-------------
+
+By far the easiest way to get sinan is to download it from the
+[downloads site](https://github.com/erlware/sinan/downloads).
+
 Quick Start
 -----------
 
