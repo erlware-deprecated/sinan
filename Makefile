@@ -41,13 +41,13 @@ $(BEAMDIR)/%.beam: %.erl
 	+warnings_as_errors +bin_opt_info +debug_info -W -o $(BEAMDIR) $<
 
 build: main
-	$(ERL) -pa $(BEAMDIR) -s sinan manual_start -s sinan main -extra -s $(CURDIR) build
+	$(ERL) -pa $(BEAMDIR) -s sinan manual_start -extra -s $(CURDIR) build
 
 escript: main
-	$(ERL) -pa $(BEAMDIR) -s sinan manual_start -s sinan main -extra -s $(CURDIR) escript
+	$(ERL) -pa $(BEAMDIR) -s sinan manual_start -extra -s $(CURDIR) escript
 
 cucumber: main
-	$(ERL) -pa $(BEAMDIR) -s sinan manual_start -s sinan main -extra -s $(CURDIR) cucumber
+	$(ERL) -pa $(BEAMDIR) -s sinan manual_start -extra -s $(CURDIR) cucumber
 
 proper: main
 	$(ERL) -pa $(BEAMDIR) -s sinan main -extra -s $(CURDIR) proper
