@@ -16,6 +16,16 @@ Getting Sinan
 By far the easiest way to get sinan is to download it from the
 [downloads site](https://github.com/erlware/sinan/downloads).
 
+More Information and FAQ
+------------------------
+
+Sinan has extensive further documentation in its
+[wiki on github](https://github.com/erlware/sinan/wiki). Check there
+for more information.
+
+The Sinan FAQ is available at
+[here](https://github.com/erlware/sinan/wiki/FAQ).
+
 Quick Start
 -----------
 
