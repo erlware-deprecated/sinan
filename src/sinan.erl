@@ -40,26 +40,21 @@
 %%====================================================================
 -spec do(atom()) -> ok | error.
 do(Task) ->
-    {Res, _} = do(Task, [], []),
-    Res.
+    do(Task, [], []).
 
 -spec do(atom(), [{atom(), term()}]) -> ok | error.
 do(Task, Options) ->
-    {Res, _} = do(Task, [], Options),
-    Res.
+    do(Task, [], Options).
 
 -spec do(atom(), [string()], term()) -> {ok | error, sin_state:state()}.
 do(undefined, _, Options) ->
     do(help, [], Options);
 do(Target, Rest, Options) ->
-    Result = do_task(Target,
-                     find_start_dir(Options),
-                     setup_config_overrides(Options, Rest)),
-    case sin_state:get_run_errors(Result) of
-        [] ->
-            {ok, Result};
-        _ ->
-            {error, Result}
+    case do_internal(Target, Rest, Options) of
+        {ok, _} ->
+            ok;
+        {error, _} ->
+            error
     end.
 
 %% @doc run the specified task with a full project dir
@@ -114,9 +109,9 @@ main(Args) ->
     manual_start(),
     case getopt:parse(option_spec_list(), Args) of
         {ok, {Options, [Target | Rest]}} ->
-            do(erlang:list_to_atom(Target), Rest, Options);
+            do_internal(erlang:list_to_atom(Target), Rest, Options);
         {ok, {Options, []}} ->
-            do(undefined, [], Options);
+            do_internal(undefined, [], Options);
         {error, {Reason, Data}} ->
             io:format("Error: ~s ~p~n~n", [Reason, Data]),
             usage(),
@@ -273,6 +268,22 @@ push_values_if_exist(Config, Options, [{Name, Key} | Rest]) ->
 push_values_if_exist(Config, _Options, []) ->
     Config.
 
+
+
+-spec do_internal(atom(), [string()], term()) -> {ok | error, sin_state:state()}.
+do_internal(undefined, _, Options) ->
+    do_internal(help, [], Options);
+do_internal(Target, Rest, Options) ->
+    Result = do_task(Target,
+                     find_start_dir(Options),
+                     setup_config_overrides(Options, Rest)),
+
+    case sin_state:get_run_errors(Result) of
+        [] ->
+            {ok, Result};
+        _ ->
+            {error, Result}
+    end.
 %%====================================================================
 %% Tests
 %%====================================================================
