@@ -47,7 +47,9 @@ do_task(Config, State) ->
         case Config:match(additional_args) of
             [] ->
                 sinan:usage(),
-                ec_talk:say(" available commands are as follows~n~n"),
+                ec_talk:say(" available commands are as follows~n"),
+                ec_talk:say("~nfor more information run 'sinan help <command>'~n~n"),
+
                 TaskNames =
                     lists:map(fun(Task) ->
                                       ec_talk:say("  ~-20s: ~s", [Task#task.name,
@@ -55,7 +57,7 @@ do_task(Config, State) ->
                                       Task#task.name
                               end,
                               Tasks),
-                ec_talk:say("~nfor more information run 'sinan help <command>'"),
+
                 {command_list, TaskNames};
 
         [Task, "len", LineLen] ->
