@@ -38,10 +38,10 @@ description() ->
     my_cool_feature where my_cool_app <break> <break> This will result in a
     my_cool_feature.erl skeleton implementation in the test directory of
     my_cool_app in your project. The feature name should be specified by name
-    only. That is, without the .feature part of the file name. <break><break>
+    only. That is, without the .feature part of the file name. <BREAK> <BREAK>
 
     If you wish to run a subset of tests you can do so on the command line in
-    the form:<break><break>
+    the form: <BREAK> <BREAK>
 
     sinan cucumber my_feature_one my_feature_two my_feature_three ...",
 
