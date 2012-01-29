@@ -35,7 +35,7 @@ given([an, implementation, 'of', that, feature, that, fails],
 
 'when'([a, cucumber, step, is, run, on, this, project],
        {ProjectDir, ProjectName, FeaturePath}, _) ->
-    Result = sinan:main(["-s", ProjectDir, "cucumber"]),
+    Result = sinan:run_sinan(["-s", ProjectDir, "cucumber"]),
     sint_test_project_gen:validate_single_app_project(ProjectDir, ProjectName),
     {ok, {FeaturePath, Result}}.
 

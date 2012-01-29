@@ -35,7 +35,7 @@ given([has, multiple, releases], {ProjectDir, ProjectName, DepDir}, _) ->
        {ProjectDir, ProjectName, _}, _) ->
     Results =
         lists:map(fun(RelName) ->
-                          Ret = sinan:main(["-s", ProjectDir, "-r", RelName,
+                          Ret = sinan:run_sinan(["-s", ProjectDir, "-r", RelName,
                                             "release"]),
                           ?assertMatch({ok, _}, Ret),
                           {_, TrueRet} = Ret,
@@ -44,7 +44,7 @@ given([has, multiple, releases], {ProjectDir, ProjectName, DepDir}, _) ->
     {ok, {ProjectDir, ProjectName, Results}};
 'when'([a, build, step, is, run, on, this, project],
        {ProjectDir, ProjectName, _}, _) ->
-    Ret = sinan:main(["-s", ProjectDir, "release"]),
+    Ret = sinan:run_sinan(["-s", ProjectDir, "release"]),
     ?assertMatch({ok, _}, Ret),
     {_, TrueRet} = Ret,
     {ok, {ProjectDir, ProjectName, TrueRet}}.
@@ -104,7 +104,7 @@ generate_dependencies(BaseDir, DepDir, Apps, Versions) ->
 generate_dependency(BaseDir, DepDir, App, Vsn) ->
     {ProjectDir, _} =
         sint_test_project_gen:single_app_project(BaseDir, App, Vsn),
-    ?assertMatch({ok, _}, sinan:main(["-s", ProjectDir, "build"])),
+    ?assertMatch({ok, _}, sinan:run_sinan(["-s", ProjectDir, "build"])),
     DepApp = filename:join([ProjectDir, "_build", App, "lib", App ++ "-" ++ Vsn]),
     DepTarget = filename:join(DepDir, App ++ "-" ++ Vsn),
     ec_file:mkdir_path(DepTarget),

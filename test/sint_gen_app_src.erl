@@ -25,7 +25,7 @@ given([an, empty, temp, directory, with, no, project], _State,
     {ok, {ProjectDir, ProjectName}};
 'when'([a, build, is, run],
        {ProjectDir, ProjectName}, _) ->
-    Ret = sinan:main(["-s", ProjectDir, "build"]),
+    Ret = sinan:run_sinan(["-s", ProjectDir, "build"]),
     {ok, {ProjectDir, ProjectName, Ret}}.
 
 

@@ -27,7 +27,7 @@ given([that,project,contains,a,module,that,
 
 'when'([a,build,step,is,run,on,this,project],
        {ProjectDir, ProjectName}, _) ->
-    Ret = sinan:main(["-s", ProjectDir, "build"]),
+    Ret = sinan:run_sinan(["-s", ProjectDir, "build"]),
     ?assertMatch({_, _}, Ret),
     {_, TrueRet} = Ret,
     {ok, {ProjectDir, ProjectName, TrueRet}}.

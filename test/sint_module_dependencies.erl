@@ -17,7 +17,7 @@ given([an,erlang,project,that,contains,a,behaviour], _State, _) ->
     Result.
 
 'when'([a,build,step,is,run,on,the,project], {ProjectDir, ProjectName}, _) ->
-    Ret = sinan:main(["-s", ProjectDir, "build"]),
+    Ret = sinan:run_sinan(["-s", ProjectDir, "build"]),
     ?assertMatch({_, _}, Ret),
     {ok, {ProjectDir, ProjectName, Ret}}.
 

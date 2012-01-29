@@ -32,7 +32,7 @@ given([a, escript, directive, in, the, build, config],
 
 'when'([an, escript, step, is, run, on, this, project],
        {ProjectDir, ProjectName}, _) ->
-    Ret = sinan:main(["-s", ProjectDir, "escript"]),
+    Ret = sinan:run_sinan(["-s", ProjectDir, "escript"]),
     ?assertMatch({_, _}, Ret),
     {ok, {ProjectDir, ProjectName, Ret}}.
 
