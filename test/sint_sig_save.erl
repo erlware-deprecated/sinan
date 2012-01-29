@@ -9,7 +9,7 @@ given([a,generated,project], _State, _) ->
 
 'when'([a,build,step,is,run,on,this,project],
        {ProjectDir, ProjectName}, _) ->
-    Ret = sinan:main(["-s", ProjectDir, "build"]),
+    Ret = sinan:run_sinan(["-s", ProjectDir, "build"]),
     ?assertMatch({_, _}, Ret),
     {ok, {ProjectDir, ProjectName, Ret}}.
 

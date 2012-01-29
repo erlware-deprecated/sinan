@@ -17,6 +17,7 @@
          main/0,
          main/1,
          run_sinan/0,
+         run_sinan/1,
          manual_start/0,
          usage/0]).
 
@@ -96,16 +97,25 @@ main() ->
             init:stop(101)
     end.
 
+-spec main([string()]) -> sin_config:config() | ok.
+main(Args) ->
+    case run_sinan(Args) of
+        {ok, _} ->
+            init:stop();
+        {error, _} ->
+            init:stop(101)
+    end.
+
 %% @doc do the full run of sinan as required by the command line args
 -spec run_sinan() -> sin_config:config() | ok.
 run_sinan() ->
     Args = init:get_plain_arguments(),
-    main(Args).
+    run_sinan(Args).
 
 %% @doc do a full run of sinan with arbitrary args that may be parsed like
 %% command line args
--spec main([string()]) -> sin_config:config().
-main(Args) ->
+-spec run_sinan([string()]) -> sin_config:config().
+run_sinan(Args) ->
     manual_start(),
     case getopt:parse(option_spec_list(), Args) of
         {ok, {Options, [Target | Rest]}} ->
@@ -117,6 +127,8 @@ main(Args) ->
             usage(),
             {error, failed}
     end.
+
+
 
 %%% @doc allow the sinan application to manually start itself
 %%% and all dependencies

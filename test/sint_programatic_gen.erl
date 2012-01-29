@@ -23,7 +23,7 @@ given([an, empty, temp, directory, with, no, project], _State,
         sint_test_project_gen:single_app_project(BaseDir, ProjectName),
     {ok, {ProjectDir, ProjectName}};
 'when'([a, build, is, run], State = {ProjectDir, _ProjectName}, _) ->
-    sinan:main(["-s", ProjectDir, "build"]),
+    sinan:run_sinan(["-s", ProjectDir, "build"]),
     {ok, State}.
 
 then([sinan, should, build, the, project, normally],

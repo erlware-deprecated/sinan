@@ -17,7 +17,7 @@ given([a, generated, project, in, a, different, location, then, the, cwd],
 
 'when'([a, build, step, is, run, on, this, project],
        Ret = {ProjectDir, _}, _) ->
-    sinan:main(["-s", ProjectDir, "build"]),
+    sinan:run_sinan(["-s", ProjectDir, "build"]),
     {ok, Ret};
 'when'([a, start, dir, is, passed, to, the, build], Ret, _) ->
     %% Nothing really to be done here since the start dir is passed when

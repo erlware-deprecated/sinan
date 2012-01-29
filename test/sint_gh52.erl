@@ -26,7 +26,7 @@ given([a,sinan,config,in,that,home,directory], State={_, _, NewHomeDir}, _) ->
     {ok, State};
 'when'([a,build,step,is,run,on,this,project],
        {ProjectDir, PN, NewHomeDir}, _) ->
-    Ret = sinan:main(["-u", NewHomeDir, "-s", ProjectDir, "build"]),
+    Ret = sinan:run_sinan(["-u", NewHomeDir, "-s", ProjectDir, "build"]),
     ?assertMatch({_, _}, Ret),
     {_, TrueRet} = Ret,
     {ok, {ProjectDir, PN, TrueRet, NewHomeDir}}.
