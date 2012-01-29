@@ -69,7 +69,7 @@ smoketests: main
 		PYTHONPATH=$(PYPATH) python2 $$f ; \
 	done
 
-testall : cucumber test smoketests
+testall : cucumber proper eunit smoketests
 
 gh-pages:
 	./do-gh-pages
