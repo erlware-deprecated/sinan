@@ -26,6 +26,14 @@ for more information.
 The Sinan FAQ is available at
 [here](https://github.com/erlware/sinan/wiki/FAQ).
 
+### The Community
+
+A community exists around Sinan and the other Erlware projects. You
+may participate in the community and ask questions by joining the
+[erlware-questions](http://groups.google.com/group/erlware-questions)
+mailing list.
+
+
 Quick Start
 -----------
 
@@ -64,9 +72,3 @@ to do various things with projects from small single app projects to
 very large multiple app projects. To get more information take a look
 at the sinan manual.
 
-More Information
-----------------
-
-Sinan has extensive further documentation in its
-[wiki on github](https://github.com/erlware/sinan/wiki). Check there
-for more information.
