@@ -304,7 +304,9 @@ read_config(ConfigFile) ->
 -spec process_term(partial_entry(), spec_opts()) ->
     internal_config_entry().
 process_term({Key, Value}, Opts) ->
-    {process_key(Key, Opts), Value}.
+    {process_key(Key, Opts), Value};
+process_term({Key, SpecOpts, Value}, Opts) ->
+    {process_key(Key, SpecOpts ++ Opts), Value}.
 
 %% @doc convert the user entered key into an expanded full key tuple
 -spec process_key(partial_entry(),  spec_opts()) ->
