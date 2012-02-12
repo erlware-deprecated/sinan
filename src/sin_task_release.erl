@@ -53,7 +53,20 @@ description() ->
         <break><break>
         {include_erts, true}.
         <break><break>
-        Put this in your sinan.config to for erts inclusion in the build area." ,
+        Put this in your sinan.config to for erts inclusion in the build area.
+
+        You may also add additional options to the sys_tools:make_script
+        call. The one you probably want to add most is the local option, but you
+        may add any valid option. You do this by adding the following call to
+        your sinan.config.
+
+        <break><break>
+
+         {script_args, [local]}.
+
+        <break><break>
+
+        Not that the value for script_args must always be a list" ,
 
     #task{name = ?TASK,
           task_impl = ?MODULE,
@@ -75,7 +88,7 @@ do_task(Config, State0) ->
     State1 = sin_state:store(rel, ReleaseInfo, State0),
     copy_or_generate_sys_config_file(Config, ReleaseDir, Version),
     optionally_include_erts(State1, Config, filename:join([ReleaseDir,".."])),
-    make_boot_script(State1, ReleaseInfo),
+    make_boot_script(State1, Config, ReleaseInfo),
     State1.
 
 %% @doc Format an exception thrown by this module
@@ -162,11 +175,11 @@ get_erts_info() ->
     erlang:system_info(version).
 
 %% @doc Gather up the path information and make the boot/script files.
--spec make_boot_script(sin_state:state(), {{string(), string()}, term()}) ->
+-spec make_boot_script(sin_state:state(), sin_config:config(), {{string(), string()}, term()}) ->
     ok.
-make_boot_script(State, {{Location, File}, {release, {Name, _}, _, _}}) ->
+make_boot_script(State, Config, {{Location, File}, {release, {Name, _}, _, _}}) ->
     Options = [{path, [Location | get_code_paths(State)]},
-               no_module_tests, silent],
+               no_module_tests, silent] ++ Config:match(script_args, []),
     case make_script(Name, File, Location, Options)  of
         ok ->
             ok;
