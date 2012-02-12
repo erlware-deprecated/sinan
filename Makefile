@@ -1,4 +1,4 @@
-VSN=2.0.27a
+VSN=2.0.28a
 ERLC=/usr/bin/env erlc
 ERL=/usr/bin/env erl
 APPDIR= $(abspath ./_build/sinan/lib/sinan-$(VSN))
@@ -19,7 +19,7 @@ ERL_TEST_OBJ = $(patsubst test/%.erl,$(BEAMDIR)/%.beam, $(wildcard $(TESTDIR)/*e
 
 all: main
 
-setup: 
+setup:
 	for f in $(COPYDIRS) ; do	\
 		mkdir -p $(APPDIR)/$$f ; \
 		rsync $(RSYNC_OPTIONS) $$f $(APPDIR); \
