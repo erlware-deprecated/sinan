@@ -364,7 +364,7 @@ sinan help command.
       -p, --project     the name of the project
       -n, --nversion    the version of the project
       var=value         Variables that will affect the compilation (e.g. debug=1)
-      command           Commands that will be executed by erlb (e.g. compile)
+      command           Commands that will be executed by sinan (e.g. build)
 
      available commands are as follows
 
