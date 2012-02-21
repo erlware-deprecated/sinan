@@ -193,7 +193,7 @@ usage(OptSpecList) ->
                  [{"var=value",
                    "Variables that will affect the compilation (e.g. debug=1)"},
                   {"command",
-                   "Commands that will be executed by erlb (e.g. compile)"}]).
+                   "Commands that will be executed by sinan (e.g. build)"}]).
 
 -spec option_spec_list() -> list().
 option_spec_list() ->
