@@ -18,11 +18,4 @@ Feature: Support app.src files in the src directory
     Then sinan should put the app file in ebin/.app
     And build the app normally
 
-  Scenario: Have a build errors when an ebin/app and src/app.src exists
-    Given a generated project that contains an app.src
-    And contains an ebin/app
-    When a build step is run on this project
-    Then sinan should warn the user that both an ebin/app and app.src exists
-    And the build should fail
-
 
