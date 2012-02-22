@@ -197,7 +197,7 @@ get_app_file(ProjectDir, AppName, Config) ->
     sin_config:config().
 build_out_intuited_config(AppName, Rest) ->
    {value, {vsn, ProjectVsn}} = lists:keysearch(vsn, 1, Rest),
-    sin_config:add_all([{project_name, erlang:list_to_atom(AppName)},
+    sin_config:add_all([{project_name, AppName},
                         {project_vsn, ProjectVsn}], sin_config:new()).
 
 %% @doc The override is command line override values that are provided by the
@@ -491,7 +491,13 @@ get_release_name(Config) ->
         erlang:list_to_atom(sin_config:match('-r', Config))
     catch
         throw:not_found ->
-            sin_config:match(project_name, Config)
+            ProjectName = sin_config:match(project_name, Config),
+            case erlang:is_list(ProjectName) of
+                true ->
+                    erlang:list_to_atom(ProjectName);
+                false ->
+                    ProjectName
+            end
     end.
 
 get_home_dir(Config) ->
