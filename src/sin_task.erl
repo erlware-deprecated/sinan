@@ -55,6 +55,7 @@ get_tasks() ->
      sin_task_version:description(),
      sin_task_eunit:description(),
      sin_task_proper:description(),
+     sin_task_eqc:description(),
      sin_task_shell:description(),
      sin_task_release:description(),
      sin_task_help:description(),
