@@ -339,12 +339,10 @@ build_app_info(State, [], Acc) ->
     sin_state:store(project_applist, Acc, State).
 
 -spec get_app_info({ebin | appsrc, string()}) -> {string(), string()}.
-get_app_info({ebin, Dir}) ->
-    AppName = filename:basename(Dir),
+get_app_info({ebin, Dir, AppName}) ->
     AppFile = filename:join([Dir, "ebin", string:concat(AppName, ".app")]),
     {erlang:list_to_atom(AppName), AppFile, Dir};
-get_app_info({appsrc, Dir}) ->
-    AppName = filename:basename(Dir),
+get_app_info({appsrc, Dir, AppName}) ->
     AppFile = filename:join([Dir, "src", string:concat(AppName, ".app.src")]),
     {erlang:list_to_atom(AppName), AppFile, Dir}.
 
@@ -386,22 +384,16 @@ look_for_app_dirs(Config, State0, BuildDir, ProjectDir) ->
                                Ignorables::[string()], Acc::list()) ->
                                       ListOfDirs::[{ebin | appsrc, string()}].
 process_possible_app_dir(State, BuildDir, TargetDir, Ignorables, Acc) ->
-    PossibleAppName = filename:basename(TargetDir),
     case filelib:is_dir(TargetDir) andalso not
         sin_utils:is_dir_ignorable(TargetDir, Ignorables) of
         true ->
             {ok, Dirs} = file:list_dir(TargetDir),
-            Ebin = has_src_ebin_dotapp(State, PossibleAppName,
-                                       TargetDir, Dirs),
-            AppSrc =  has_src_appsrc(State, PossibleAppName,
-                                     TargetDir, Dirs),
-            case {AppSrc, Ebin} of
-                {true, true} ->
-                    ?SIN_RAISE(State, {ebin_src_conflict, TargetDir});
-                {true, _} ->
-                    [{appsrc, TargetDir} | Acc];
-                {_, true}  ->
-                    [{ebin, TargetDir} | Acc];
+            Res = has_src_ebin(State, TargetDir, Dirs),
+            case Res of
+                Val = {Type, TargetDir, _} when Type =:= appsrc;
+                                             Type =:= ebin ->
+                    [Val | Acc];
+
                 _ ->
                     lists:foldl(fun(Sub, NAcc) ->
                                         Dir = filename:join([TargetDir, Sub]),
@@ -417,26 +409,45 @@ process_possible_app_dir(State, BuildDir, TargetDir, Ignorables, Acc) ->
             Acc
     end.
 
--spec has_src_ebin_dotapp(sin_state:state(),
-                          string(), string(), [string()]) ->
-                                 boolean().
-has_src_ebin_dotapp(State, BaseName, BaseDir, SubDirs) ->
-    lists:member("ebin", SubDirs) andalso
-        lists:member("src", SubDirs) andalso
-        sin_utils:file_exists(State,
-                              filename:join([BaseDir, "ebin",
-                                             BaseName ++
-                                                 ".app"])).
+-spec has_src_ebin(sin_state:state(),
+                   string(), [string()]) ->
+                          false | {appsrc | ebin, string()}.
+has_src_ebin(_State, BaseDir, SubDirs) ->
+    case lists:member("ebin", SubDirs) andalso
+        lists:member("src", SubDirs) of
+        true ->
+            case has_file(BaseDir, "src", ".app.src") of
+                false ->
+                    case has_file(BaseDir, "ebin", ".app") of
+                        false ->
+                            false;
+                        AppName ->
+                            {ebin, BaseDir, AppName}
+                    end;
+                AppName ->
+                    {appsrc, BaseDir, AppName}
+            end;
+       false ->
+            false
+    end.
 
--spec has_src_appsrc(sin_state:state(),
-                     string(), string(), [string()]) ->
-                            boolean().
-has_src_appsrc(State, BaseName, BaseDir, SubDirs) ->
-    lists:member("src", SubDirs) andalso
-        sin_utils:file_exists(State,
-                              filename:join([BaseDir, "src",
-                                             BaseName ++
-                                                 ".app.src"])).
+has_file(BaseDir, SrcDir, Ext) ->
+    case file:list_dir(filename:join(BaseDir, SrcDir)) of
+        {ok, Names} ->
+            lists:foldl(fun(Name, false) ->
+                                case filename:basename(Name, Ext) of
+                                    Name ->
+                                        false;
+                                    BaseName ->
+                                        BaseName
+                                end;
+                           (_, Acc) ->
+                                Acc
+                        end, false, Names);
+        _ ->
+            false
+    end.
+
 
 
 %% @doc Gather the list of modules that currently may need to be built.
