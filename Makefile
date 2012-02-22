@@ -1,4 +1,4 @@
-VSN=2.0.29a
+VSN=2.1.0
 ERLC=/usr/bin/env erlc
 ERL=/usr/bin/env erl
 APPDIR= $(abspath ./_build/sinan/lib/sinan-$(VSN))
