@@ -145,6 +145,9 @@ parse_tuple(State, {attribute, _ , file, {Include, _}},
 parse_tuple(_State, {attribute, _, compile, {parse_transform, proper_transformer}},
            Mod = #module{tags=Tags}) ->
     Mod#module{tags=sets:add_element(proper, Tags)};
+parse_tuple(_State, {attribute, _, compile, {parse_transform, eqc_warn}},
+           Mod = #module{tags=Tags}) ->
+    Mod#module{tags=sets:add_element(eqc, Tags)};
 parse_tuple(_State, {attribute, _, compile, {parse_transform, eunit_autoexport}},
            Mod = #module{tags=Tags}) ->
     Mod#module{tags=sets:add_element(eunit, Tags)};
