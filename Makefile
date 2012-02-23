@@ -9,7 +9,10 @@ BEAMDIR=$(APPDIR)/ebin
 SMOKETEST_DIR=$(CURDIR)/smoketests
 PYPATH=$(PYTHONPATH):$(SMOKETEST_DIR)
 BEHAVIOURS= src/sin_task.erl src/sin_dep_resolver.erl
+
 SINFLAGS=-s $(CURDIR) -p sinan -n $(VSN)
+ERLFLAGS= -noinput -pa $(BEAMDIR)
+
 RSYNC_OPTIONS=-vaz --delete
 .SUFFIXES: .erl .beam .yrl
 
@@ -42,28 +45,28 @@ $(BEAMDIR)/%.beam: %.erl
 	+warnings_as_errors +bin_opt_info +debug_info -W -o $(BEAMDIR) $<
 
 build: main
-	$(ERL) -pa $(BEAMDIR) -s sinan main -extra $(SINFLAGS) build
+	$(ERL) $(ERLFLAGS) -s sinan main -extra $(SINFLAGS) build
 
 escript: main
-	$(ERL) -pa $(BEAMDIR) -s sinan main -extra $(SINFLAGS) escript
+	$(ERL) $(ERLFLAGS) -s sinan main -extra $(SINFLAGS) escript
 
 cucumber: main
-	$(ERL) -pa $(BEAMDIR) -s sinan main -extra $(SINFLAGS) cucumber
+	$(ERL) $(ERLFLAGS) -s sinan main -extra $(SINFLAGS) cucumber
 
 proper: main
-	$(ERL) -pa $(BEAMDIR) -s sinan main -extra $(SINFLAGS) proper
+	$(ERL) $(ERLFLAGS) -s sinan main -extra $(SINFLAGS) proper
 
 eunit: main
-	$(ERL) -pa $(BEAMDIR) -s sinan main -extra $(SINFLAGS) eunit
+	$(ERL) $(ERLFLAGS) -s sinan main -extra $(SINFLAGS) eunit
 
 dialyzer: main
-	$(ERL) -pa $(BEAMDIR) -s sinan main -extra $(SINFLAGS) dialyzer
+	$(ERL) $(ERLFLAGS) -s sinan main -extra $(SINFLAGS) dialyzer
 
 run: main
 	$(ERL) -pa $(BEAMDIR)
 
 debug: main
-	$(ERL) -pa $(BEAMDIR) -s debugger start
+	$(ERL) $(ERLFLAGS) -s debugger start
 
 smoketests: main
 	for f in $(wildcard $(SMOKETEST_DIR)/tests/*.py) ; do	\
