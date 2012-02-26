@@ -15,6 +15,10 @@ SMOKETEST_DIR=$(CURDIR)/smoketests
 PYPATH=$(PYTHONPATH):$(SMOKETEST_DIR)
 BEHAVIOURS= src/sin_task.erl src/sin_dep_resolver.erl
 
+.PHONY=all setup build escript cucumber proper eunit dialyzer \
+	run debug smoketests testall gh-pages clean install-deb \
+	build-deb publish-ppa
+
 SINFLAGS=-s $(CURDIR) -p sinan -n $(VSN)
 ERLFLAGS= -noinput -pa $(BEAMDIR)
 
