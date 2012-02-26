@@ -1,10 +1,9 @@
-VSN=2.1.1
+VSN=2.1.2
 ERLC=/usr/bin/env erlc
 ERL=/usr/bin/env erl
 APPDIR= $(abspath ./_build/sinan/lib/sinan-$(VSN))
 BINDIR=$(DESTDIR)/usr/bin
 INSTALL_TARGET=$(DESTDIR)/usr/lib/erlang/lib/sinan-$(VSN)
-TMPDIR := $(shell mktemp -d)
 
 TARBALL=../erlang-sinan_$(VSN).orig.tar.gz
 SRCDIR=src

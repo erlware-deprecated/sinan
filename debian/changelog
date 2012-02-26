@@ -1,3 +1,9 @@
+erlang-sinan (2.1.2-afiniate1) oneiric; urgency=low
+
+  * New release.
+
+ -- Eric B Merritt <eric@afiniate.com>  Thu, 23 Feb 2012 11:29:03 -0600
+
 erlang-sinan (2.1.1-afiniate1) oneiric; urgency=low
 
   * New upstream release.
