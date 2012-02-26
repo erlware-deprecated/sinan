@@ -388,7 +388,7 @@ process_possible_app_dir(State, BuildDir, TargetDir, Ignorables, Acc) ->
         sin_utils:is_dir_ignorable(TargetDir, Ignorables) of
         true ->
             {ok, Dirs} = file:list_dir(TargetDir),
-            Res = has_src_ebin(State, TargetDir, Dirs),
+            Res = has_src(State, TargetDir, Dirs),
             case Res of
                 Val = {Type, TargetDir, _} when Type =:= appsrc;
                                              Type =:= ebin ->
@@ -409,23 +409,33 @@ process_possible_app_dir(State, BuildDir, TargetDir, Ignorables, Acc) ->
             Acc
     end.
 
--spec has_src_ebin(sin_state:state(),
+-spec has_src(sin_state:state(),
                    string(), [string()]) ->
                           false | {appsrc | ebin, string()}.
-has_src_ebin(_State, BaseDir, SubDirs) ->
-    case lists:member("ebin", SubDirs) andalso
-        lists:member("src", SubDirs) of
+has_src(State, BaseDir, SubDirs) ->
+    case lists:member("src", SubDirs) of
         true ->
             case has_file(BaseDir, "src", ".app.src") of
                 false ->
-                    case has_file(BaseDir, "ebin", ".app") of
-                        false ->
-                            false;
-                        AppName ->
-                            {ebin, BaseDir, AppName}
-                    end;
+                    has_ebin(State, BaseDir, SubDirs);
                 AppName ->
                     {appsrc, BaseDir, AppName}
+            end;
+       false ->
+            has_ebin(State, BaseDir, SubDirs)
+    end.
+
+-spec has_ebin(sin_state:state(),
+                   string(), [string()]) ->
+                          false | {appsrc | ebin, string()}.
+has_ebin(_State, BaseDir, SubDirs) ->
+    case lists:member("ebin", SubDirs) of
+        true ->
+            case has_file(BaseDir, "ebin", ".app") of
+                false ->
+                    false;
+                AppName ->
+                    {ebin, BaseDir, AppName}
             end;
        false ->
             false
