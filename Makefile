@@ -2,6 +2,11 @@ VSN=2.1.1
 ERLC=/usr/bin/env erlc
 ERL=/usr/bin/env erl
 APPDIR= $(abspath ./_build/sinan/lib/sinan-$(VSN))
+BINDIR=$(DESTDIR)/usr/bin
+INSTALL_TARGET=$(DESTDIR)/usr/lib/erlang/lib/sinan-$(VSN)
+TMPDIR := $(shell mktemp -d)
+
+TARBALL=../erlang-sinan_$(VSN).orig.tar.gz
 SRCDIR=src
 TESTDIR=test
 COPYDIRS= include src test
@@ -79,5 +84,29 @@ gh-pages:
 	./do-gh-pages
 
 clean:
-	rm -rf _build ;
+	rm -f $(TARBALL)
+	rm -f ../erlang-sinan_*.deb
+	rm -f ../erlang-sinan_*.changes
+	rm -rf _build
 	rm -rf erl_crash.dump
+
+##
+## Debian packaging support for sinan
+##
+
+$(TARBALL):
+	git archive --format=tar --prefix=sinan/ HEAD | gzip > $(TARBALL)
+
+install-deb:
+	mkdir -p $(INSTALL_TARGET)
+	mkdir -p $(BINDIR)
+	cp -r $(APPDIR)/* $(INSTALL_TARGET)
+	cp -r _build/sinan/escript/sinan $(BINDIR)
+
+build-deb: $(TARBALL)
+	pdebuild
+	debuild -S
+
+
+publish-ppa: build-deb
+	dput -f ppa:afiniate/ppa ../erlang-sinan_$(VSN)-*_source.changes
