@@ -88,11 +88,14 @@ gh-pages:
 	./do-gh-pages
 
 clean:
-	rm -f $(TARBALL)
-	rm -f ../erlang-sinan_*.deb
+	rm -f ../erlang-sinan_*.debian.tar.gz
+	rm -f ../erlang-sinan_*.dsc
+	rm -f ../erlang-sinan_*.build
 	rm -f ../erlang-sinan_*.changes
+	rm -rf debian/patches
 	rm -rf _build
 	rm -rf erl_crash.dump
+	find smoketests -name \*.pyc -exec rm -f {} \;
 
 ##
 ## Debian packaging support for sinan

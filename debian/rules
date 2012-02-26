@@ -21,4 +21,3 @@ override_dh_auto_install:
 
 override_dh_auto_test:
 	$(MAKE) testall
-	find smoketests -name \*.pyc -exec rm -f {} \;
