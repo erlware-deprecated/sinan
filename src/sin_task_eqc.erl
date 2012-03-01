@@ -47,8 +47,8 @@ do_task(Config, State0) ->
               io:format("Quick Check testing app ~p~n", [AppName]),
               case Modules == undefined orelse length(Modules) =< 0 of
                   true ->
-                      ec_talk:say("No modules defined for ~p.",
-                                  [AppName]),
+                      sin_log:verbose(Config, "No modules defined for ~p.",
+                                      [AppName]),
                       State1;
                   false ->
                       run_module_tests(State1, filter_modules(Config, Modules))

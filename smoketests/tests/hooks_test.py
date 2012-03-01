@@ -16,9 +16,8 @@ class TestHooks(st.SmokeTest):
         f.close()
         os.chmod(hook_file, 0777)
 
-    @st.sinan("build")
+    @st.sinan("build -v ")
     def do_test_build(self, child, appdesc):
-        child.expect("hook: pre_build")
         child.expect("HELLO WORLD!")
         return self.build_validate(child, appdesc)
 

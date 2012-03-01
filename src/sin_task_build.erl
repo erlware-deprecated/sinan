@@ -189,7 +189,7 @@ build_apps(Config, State0, Apps0) ->
 
     {State2, Apps2} =
         lists:foldl(fun(App0 = #app{project=true}, {State1, Apps1}) ->
-                            {State2, App1} = prepare_app(State1, App0, BuildDir,
+                            {State2, App1} = prepare_app(Config, State1, App0, BuildDir,
                                                          Ignorables),
                             {State3, App2} = build_app(Config, State2, App1),
                             {State3, [App2 | Apps1]}
@@ -197,12 +197,12 @@ build_apps(Config, State0, Apps0) ->
     Apps3 = lists:reverse(Apps2),
     {State2, Apps3}.
 
-prepare_app(State0, App0 = #app{name=AppName, path=Path}, BuildDir, Ignorables) ->
+prepare_app(Config, State0, App0 = #app{name=AppName, path=Path}, BuildDir, Ignorables) ->
     AppDir = sin_state:get_value({apps, AppName, basedir}, State0),
 
     %% Ignore the build dir when copying or we will create a deep monster in a
     %% few builds
-    State1 = sin_utils:copy_dir(State0, Path, AppDir, "",
+    State1 = sin_utils:copy_dir(Config, State0, Path, AppDir, "",
                                 [BuildDir | Ignorables], []),
 
     State2 = sin_state:store({apps, AppName, builddir},
@@ -338,9 +338,9 @@ event_compile_args(Config, Options) ->
             undefined ->
                 ok;
             true ->
-                ec_talk:say("Compile args:~n~p", [Options]);
+                sin_log:normal(Config, "Compile args:~n~p", [Options]);
             "True" ->
-                ec_talk:say("Compile args:~n~p", [Options])
+                sin_log:normal(Config, "Compile args:~n~p", [Options])
          end.
 
 get_build_module(_, erl) ->

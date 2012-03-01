@@ -38,14 +38,14 @@ description() ->
 
 %% @doc Get the version of sinan that is currently running
 -spec do_task(sin_config:config(), sin_state:state()) -> sin_state:state().
-do_task(_Config, State) ->
+do_task(Config, State) ->
     Version = case get_version() of
                   unknown_version ->
                       "unknown";
                   SinVersion ->
                       SinVersion
               end,
-    ec_talk:say("sinan version: ~s", [Version]),
+    sin_log:normal(Config, "sinan version: ~s", [Version]),
     sin_state:store(sinan_vsn, Version, State).
 
 %%====================================================================

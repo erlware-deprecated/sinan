@@ -85,7 +85,7 @@ make_tar(Config, State, ProjectDir, ReleaseApps) ->
     List3 = List1 ++ copy_additional_dirs(Config, State, ReleaseName, ProjectDir) ++
         get_release_dirs(Config, State, ProjectDir) ++
         add_defaults(State, ProjectDir, ReleaseName),
-    create_tar_file(State, filename:join([TarDir,
+    create_tar_file(Config, State, filename:join([TarDir,
                                    lists:flatten([ReleaseName, ".tar.gz"])]),
                     List3),
     State.
@@ -108,12 +108,12 @@ add_defaults(State, ProjectDir, TopLevel) ->
                 [Bin]).
 
 %% @doc Actually create the tar file and write in all of the contents.
--spec create_tar_file(sin_state:state(), string(), [string()]) ->
+-spec create_tar_file(sin_config:config(), sin_state:state(), string(), [string()]) ->
     ok.
-create_tar_file(State, FileName, TarContents) ->
+create_tar_file(Config, State, FileName, TarContents) ->
     case erl_tar:open(FileName, [compressed, write]) of
         Error = {error, _} ->
-            ec_talk:say("Unable to open tar file ~s, unable to build "
+            sin_log:log(Config, "Unable to open tar file ~s, unable to build "
                          "distribution.", [FileName]),
             ?SIN_RAISE(State, {unable_to_build_dist, Error});
         {ok, Tar} ->

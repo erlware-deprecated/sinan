@@ -13,10 +13,10 @@
 -include_lib("sinan/include/sinan.hrl").
 
 %% API
--export([copy_dir/3,
-         copy_dir/4,
+-export([copy_dir/4,
          copy_dir/5,
          copy_dir/6,
+         copy_dir/7,
          copy_entire_dir/3,
          delete_dir/1,
          file_exists/2,
@@ -88,44 +88,46 @@ file_exists(State, FileName) ->
 
 %% @doc Copies the specified directory down to the build dir on a file by file
 %% basis. It only copies if the file has .
--spec copy_dir(sin_state:state(), string(),
+-spec copy_dir(sin_config:config(), sin_state:state(), string(),
                string()) -> ok.
-copy_dir(State, To, From) ->
-    copy_dir(State, To, From, [], [], []).
+copy_dir(Config, State, To, From) ->
+    copy_dir(Config, State, To, From, [], [], []).
 
--spec copy_dir(sin_state:state(), string(),
+-spec copy_dir(sin_config:config(), sin_state:state(), string(),
                string(), list()) -> ok.
-copy_dir(State, To, From, Options) ->
-    copy_dir(State, To, From, [], [], Options).
+copy_dir(Config, State, To, From, Options) ->
+    copy_dir(Config, State, To, From, [], [], Options).
 
--spec copy_dir(sin_state:state(),
+-spec copy_dir(sin_config:config(),
+               sin_state:state(),
                string(),
                string(),
                string(),
                list()) -> ok.
-copy_dir(State, To, From, Sub, Options) ->
-    copy_dir(State, To, From, Sub, [], Options).
+copy_dir(Config, State, To, From, Sub, Options) ->
+    copy_dir(Config, State, To, From, Sub, [], Options).
 
--spec copy_dir(sin_state:state(),
+-spec copy_dir(sin_config:config(),
+               sin_state:state(),
                string(),
                string(),
                string(),
                Ignorables::string(),
                list()) -> sin_state:state().
-copy_dir(State0, To, From, SubDir, Ignorables, Options) ->
+copy_dir(Config, State0, To, From, SubDir, Ignorables, Options) ->
     case lists:member(keep_parent, Options) of
         %% Copy the enitre directory, instead of just subdirs/files
         true ->
             ParentDir = hd(lists:reverse(filename:split(From))),
             NewTo = filename:join([To, ParentDir]),
             filelib:ensure_dir(NewTo),
-            copy_dir2(State0, NewTo, From, SubDir, Ignorables);
+            copy_dir2(Config, State0, NewTo, From, SubDir, Ignorables);
         false ->
-            copy_dir2(State0, To, From, SubDir, Ignorables)
+            copy_dir2(Config, State0, To, From, SubDir, Ignorables)
     end.
 
-copy_dir2(State0, To, From, SubDir, Ignorables) ->
-    check_not_circular(State0, To, From, SubDir),
+copy_dir2(Config, State0, To, From, SubDir, Ignorables) ->
+    check_not_circular(Config, State0, To, From, SubDir),
     case are_dirs_ignorable(SubDir, Ignorables) of
         true ->
             State0;
@@ -142,11 +144,11 @@ copy_dir2(State0, To, From, SubDir, Ignorables) ->
                                     {true, _} ->
                                         State1;
                                     {_, true} ->
-                                        copy_dir2(State1,
+                                        copy_dir2(Config, State1,
                                                  To, From,
                                                  SubDir ++ [IFile], Ignorables);
                                     {_, false} ->
-                                        copy_file(State1, Target, IFile, File)
+                                        copy_file(Config, State1, Target, IFile, File)
                                 end
                         end,
                         State0, Files)
@@ -203,21 +205,21 @@ get_erts_dir() ->
 %%====================================================================
 
 %% @doc Copies the file specified by file to the target specified by ifile.
--spec copy_file(sin_state:state(),
+-spec copy_file(sin_config:config(), sin_state:state(),
                 Target::string(), IFile::string(), File::string()) ->
                        sin_state:state().
-copy_file(State, _Target, [$. | _], _File) ->
+copy_file(_Config, State, _Target, [$. | _], _File) ->
             State;
-copy_file(State, Target, IFile, File) ->
+copy_file(Config, State, Target, IFile, File) ->
     NFile = filename:join([Target, IFile]),
     case sin_sig:changed(copy, File, State) of
         file_not_found ->
-            ec_talk:say("File ~s is not does not exist in the "
+            sin_log:normal(Config, "File ~s is not does not exist in the "
                        "file System. This shouldn't happen.",
                          [File]),
             ?SIN_RAISE(State, {file_not_on_disc, File});
         unable_to_access ->
-            ec_talk:say("File ~s exists but is inaccessable.",
+            sin_log:normal(Config, "File ~s exists but is inaccessable.",
                          [File]),
             ?SIN_RAISE(State, {file_inaccessable, File});
         true ->
@@ -319,13 +321,14 @@ get_application_env(State, Key) ->
                        [Key])
     end.
 
--spec check_not_circular(sin_state:state(), string(), string(), string()) ->
+-spec check_not_circular(sin_config:config(),
+                         sin_state:state(), string(), string(), string()) ->
     ok.
-check_not_circular(State, Target, Source, SubDir) ->
+check_not_circular(Config, State, Target, Source, SubDir) ->
     case filename:split(Source) ++ SubDir ==
         filename:split(Target) of
         true ->
-            ec_talk:say("Can't copy a directory to itself (~p "
+            sin_log:normal(Config, "Can't copy a directory to itself (~p "
                          "to ~p)",
                          [filename:join([Source | SubDir]), Target]),
             ?SIN_RAISE(State, circular_recursion);

@@ -25,8 +25,8 @@ get_target(BuildDir, File, ".erl") ->
 -spec build_file(sin_config:matcher(), sin_state:state(),
                  sin_file_info:mod(), [term()], string()) ->
                         {module(), sin_config:config()}.
-build_file(_Config, State, Module=#module{path=File}, Options, _Target) ->
-    ec_talk:say("Building ~s", [File]),
+build_file(Config, State, Module=#module{path=File}, Options, _Target) ->
+    sin_log:verbose(Config, "Building ~s", [File]),
     case compile:file(File, Options) of
         {ok, ModuleName} ->
             reload_module(ModuleName),
@@ -46,10 +46,10 @@ build_file(_Config, State, Module=#module{path=File}, Options, _Target) ->
                                                                "error"),
                                sin_task_build:gather_fail_info(Warnings,
                                                                "warning")]),
-            ec_talk:say(lists:flatten(ErrorStrings)),
+            sin_log:normal(Config, lists:flatten(ErrorStrings)),
             ?SIN_RAISE(State, {build_error, error_building_erl_file, File});
         error ->
-            ec_talk:say("Unknown error occured during build"),
+            sin_log:normal(Config, "Unknown error occured during build"),
             ?SIN_RAISE(State, {build_error, error_building_erl_file, File})
     end.
 

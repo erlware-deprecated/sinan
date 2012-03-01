@@ -31,39 +31,39 @@ description() ->
     Desc = "This takes the current project and turns it into an executable
     escript. <break> <break>
 
-     Be aware though that there are significant
-    limitations in escript. These are not limitations of sinan, but limitations
-    in the built in escript functionality. These limitations are <break> <break>
+Be aware though that there are significant
+limitations in escript. These are not limitations of sinan, but limitations
+in the built in escript functionality. These limitations are <break> <break>
 
-    - Your escript may be built off of a single script OR Erlang OTP
-    Applications but not both <break> <break> <break>
+- Your escript may be built off of a single script OR Erlang OTP
+Applications but not both <break> <break> <break>
 
-    The system will warn you
-    if you violate these restrictions. <break> <break>
+The system will warn you
+if you violate these restrictions. <break> <break>
 
-    The escript task allows for a few options in the sinan.config file. The
-    options are specified as follows: <break> <break>
+The escript task allows for a few options in the sinan.config file. The
+options are specified as follows: <break> <break>
 
-    {escript, [{OptionKey, OptionValue}]}. <break> <break>
+{escript, [{OptionKey, OptionValue}]}. <break> <break>
 
-    The keys available are: <break> <break>
+The keys available are: <break> <break>
 
-    {source, <Path To Source File Rooted in the Project Dir>} <break>
+{source, <Path To Source File Rooted in the Project Dir>} <break>
 
-    {emu_args, \"String Of Escript Emulator Args\"}. <break> <break>
+{emu_args, \"String Of Escript Emulator Args\"}. <break> <break>
 
     {include_apps, [the, non-project, apps, i, want, in, my,
-        escript]}. <break> <break>
+                    escript]}. <break> <break>
 
-    So a fully configured escript config would look like: <break> <break>
+So a fully configured escript config would look like: <break> <break>
 
-     {escript,
-       [{source, \"bin/my_cool_escript_file\"}, <break>
+{escript,
+ [{source, \"bin/my_cool_escript_file\"}, <break>
        {emu_args, \"-smp disable\"},
        {include_apps, [kernel, stdlib, my_dep]}. <break> <break>
 
-    See the escript documentation for details and remember to only pass the
-    script option if you want that to be your escript.",
+See the escript documentation for details and remember to only pass the
+script option if you want that to be your escript.",
 
     #task{name = ?TASK,
           task_impl = ?MODULE,
@@ -87,24 +87,24 @@ do_task(Config, State) ->
     ReleaseName = sin_state:get_value(release, State),
 
     EscriptOptions = Config:match(escript, []),
-    PossibleSourceFile = get_source_file(State, ProjectDir, EscriptOptions),
+    PossibleSourceFile = get_source_file(Config, State, ProjectDir, EscriptOptions),
 
     Body =
         case PossibleSourceFile of
             [] ->
-                make_archive(State,
+                make_archive(Config, State,
                              ReleaseName,
                              EscriptWorkingDir,
-                             gather_dirs(State, EscriptWorkingDir,
+                             gather_dirs(Config, State, EscriptWorkingDir,
                                          filter_apps(ReleaseApps,
                                                      EscriptOptions)
                                          ++
                                              ProjectApps, []));
             _ ->
-                ec_talk:say("With escript you may have source files "
-                             "or archive files, but you may not have "
-                             "both. Since script files are defined "
-                             "I am omiting dependency archives"),
+                sin_log:normal(Config, "With escript you may have source files "
+                               "or archive files, but you may not have "
+                               "both. Since script files are defined "
+                               "I am omiting dependency archives"),
                 []
         end,
 
@@ -117,8 +117,8 @@ do_task(Config, State) ->
             false ->
                 [];
             {emu_args, BadArgs} ->
-                ec_talk:say("emu_args to escript must be a list! not ~p",
-                             [BadArgs]),
+                sin_log:normal(Config, "emu_args to escript must be a list! not ~p",
+                               [BadArgs]),
                 ?SIN_RAISE(State, {bad_emu_args, BadArgs})
         end,
 
@@ -126,11 +126,11 @@ do_task(Config, State) ->
                         lists:flatten([shebang, EmuArgs,
                                        PossibleSourceFile, Body])) of
         ok ->
-            ec_talk:say("Escript created at ~s",
-                         [EscriptTarget]);
+            sin_log:normal(Config, "Escript created at ~s",
+                           [EscriptTarget]);
         Error = {error, _} ->
-            ec_talk:say("Enable to create escript at ~s due to ~p!",
-                         [EscriptTarget, Error]),
+            sin_log:normal(Config, "Enable to create escript at ~s due to ~p!",
+                           [EscriptTarget, Error]),
             ?SIN_RAISE(State, {unable_to_create_escript, Error})
     end,
     %% Execute owner 8#00100, Execute group 8#00010, Execute other 8#00001
@@ -145,7 +145,7 @@ do_task(Config, State) ->
 
 %% @doc Format an exception thrown by this module
 -spec format_exception(sin_exceptions:exception()) ->
-    string().
+                              string().
 format_exception(Exception) ->
     sin_exceptions:format_exception(Exception).
 
@@ -153,19 +153,20 @@ format_exception(Exception) ->
 %%% Internal functions
 %%====================================================================
 
--spec gather_dirs(sin_state:state(), string(), [tuple()], [string()]) ->
-    [string()].
-gather_dirs(State0, EscriptTargetDir,
+-spec gather_dirs(sin_config:config(),
+                  sin_state:state(), string(), [tuple()], [string()]) ->
+                         [string()].
+gather_dirs(Config, State0, EscriptTargetDir,
             [#app{name=AppName, vsn=Vsn, path=Path} | T], FileList) ->
     FileName = erlang:atom_to_list(AppName) ++ "-" ++ Vsn,
     Target = filename:join(EscriptTargetDir, FileName),
     ok = ec_file:mkdir_path(Target),
-    State1 = sin_utils:copy_dir(State0, Target, Path),
-    gather_dirs(State1, EscriptTargetDir, T, [FileName | FileList]);
-gather_dirs(_State, _, [], FileList) ->
+    State1 = sin_utils:copy_dir(Config, State0, Target, Path),
+    gather_dirs(Config, State1, EscriptTargetDir, T, [FileName | FileList]);
+gather_dirs(_, _State, _, [], FileList) ->
     FileList.
 
-make_archive(State, ProjectName, CWD, FileList) ->
+make_archive(Config, State, ProjectName, CWD, FileList) ->
     EscriptPath = filename:join([CWD,
                                  erlang:atom_to_list(ProjectName) ++ ".ez"]),
     case zip:create(EscriptPath,
@@ -176,28 +177,28 @@ make_archive(State, ProjectName, CWD, FileList) ->
         {ok, EscriptPath} ->
             ok;
         {error, enoent} ->
-            ec_talk:say("Error trying to write ez archive "
-                         "for applications in ~s. This is "
-                         "probably due to dot files (.* .#* "
-                         "like emacs archive files in the "
-                         "application directory. Do a sinan clean,"
-                         "clean out the project directory and "
-                         "try again", [EscriptPath]),
+            sin_log:normal(Config, "Error trying to write ez archive "
+                           "for applications in ~s. This is "
+                           "probably due to dot files (.* .#* "
+                           "like emacs archive files in the "
+                           "application directory. Do a sinan clean,"
+                           "clean out the project directory and "
+                           "try again", [EscriptPath]),
             ?SIN_RAISE(State, {error_creating_archive, EscriptPath});
         Error ->
-            ec_talk:say("Unknown error (~p) occured while "
-                         "trying to write ~s to ~s",
-                         [Error, CWD, EscriptPath]),
+            sin_log:normal(Config, "Unknown error (~p) occured while "
+                           "trying to write ~s to ~s",
+                           [Error, CWD, EscriptPath]),
             ?SIN_RAISE(State, {error_creating_archive, Error})
     end,
     {archive, EscriptPath}.
 
 
-get_source_file(State, ProjectDir, EscriptOptions) ->
+get_source_file(Config, State, ProjectDir, EscriptOptions) ->
     Sources =
         lists:foldl(fun({source, SourceFile}, Acc) ->
                             AbsoluteSourcePath = filename:join(ProjectDir,
-                                                              SourceFile),
+                                                               SourceFile),
                             case file:read_file(AbsoluteSourcePath) of
                                 {ok, Source} ->
                                     [{source, Source} | Acc];
@@ -215,8 +216,8 @@ get_source_file(State, ProjectDir, EscriptOptions) ->
         [Source] ->
             [Source];
         _ ->
-            ec_talk:say("You may only have one source entry in your "
-                         "escript directive"),
+            sin_log:normal(Config, "You may only have one source entry in your "
+                           "escript directive"),
             ?SIN_RAISE(State, {multiple_source_entries, Sources})
     end.
 

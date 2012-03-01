@@ -41,7 +41,7 @@ single_app_project(BaseDir, ProjectName, Vsn) ->
            {erts_version, erlang:system_info(version)},
            {single_app_project, true},
            {wants_build_config, true}],
-    sin_gen:gen(Env),
+    sin_gen:gen(sin_config:new(), Env),
     {ProjectDir, Env}.
 
 multi_app_project(BaseDir, ProjectName, Apps) ->
@@ -57,7 +57,7 @@ multi_app_project(BaseDir, ProjectName, Apps) ->
            {single_app_project, false},
            {apps, Apps},
            {wants_build_config, true}],
-    sin_gen:gen(Env),
+    sin_gen:gen(sin_config:new(), Env),
     {ProjectDir, Env}.
 
 validate_single_app_project(ProjectDir, ProjectName) ->

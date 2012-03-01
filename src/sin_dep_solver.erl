@@ -1,6 +1,6 @@
 -module(sin_dep_solver).
 
--export([new/1, deps/3, all_deps/3, extract_resolver_state/1]).
+-export([new/1, deps/4, all_deps/4, extract_resolver_state/1]).
 
 -export_type([spec/0, app_path/0,
               state/0, app/0, version/0]).
@@ -37,25 +37,26 @@
 new(R0) ->
     #state{r=R0, dc=dict:new(), vc=dict:new(), deps=sets:new()}.
 
--spec deps(state(), app(), version()) ->
+-spec deps(sin_config:config(),
+           state(), app(), version()) ->
                   {state(), [{app(), version()}]}.
-deps(State0, App, Ver) ->
-    Limits = add_limit(State0, '__top_level__', new_limits(), {App, Ver}),
-    deps(State0#state{deps=sets:add_element(App, sets:new())},
+deps(Config, State0, App, Ver) ->
+    Limits = add_limit(Config, State0, '__top_level__', new_limits(), {App, Ver}),
+    deps(Config, State0#state{deps=sets:add_element(App, sets:new())},
          [], App, Limits, []).
 
--spec all_deps(state(), [app()], [{app(), spec()}]) ->
+-spec all_deps(sin_config:config(), state(), [app()], [{app(), spec()}]) ->
                       {state(), [{app(), version()}]}.
-all_deps(State0, Apps, Limits0) ->
+all_deps(Config, State0, Apps, Limits0) ->
     Limits2 = lists:foldl(fun(Dep, Limits1) ->
-                                  add_limit(State0, '__top_level__', Limits1, Dep)
+                                  add_limit(Config, State0, '__top_level__', Limits1, Dep)
                           end, new_limits(), Limits0),
     D2 = lists:foldl(fun(App, D1) ->
                              sets:add_element(App, D1)
                      end, sets:new(), Apps),
-    case all_deps(State0#state{deps=D2}, [], Apps, Limits2, []) of
+    case all_deps(Config, State0#state{deps=D2}, [], Apps, Limits2, []) of
         {_, fail} ->
-            shrink_deps(State0#state{deps=D2}, Apps, Limits2);
+            shrink_deps(Config, State0#state{deps=D2}, Apps, Limits2);
         Res ->
             Res
     end.
@@ -72,9 +73,9 @@ extract_resolver_state(#state{r=R0}) ->
 %% powerset of those limits. Sorts them to broadest first, then runs
 %% the resolver on each set of limits until it finds one that
 %% passes. Then the possible culprits are the inverse of those limits.
--spec shrink_deps(state(), [app()], [spec()]) ->
+-spec shrink_deps(sin_config:config(), state(), [app()], [spec()]) ->
                          {failed, {possible_culprit, [ app() | spec()]}}.
-shrink_deps(State0, Apps, Limits0) ->
+shrink_deps(Config, State0, Apps, Limits0) ->
     AdjustedLimits = lists:foldl(fun(NApp, Acc) ->
                                          case lists:keysearch(NApp, 1, Limits0) of
                                              false ->
@@ -83,21 +84,21 @@ shrink_deps(State0, Apps, Limits0) ->
                                                  Acc
                                          end
                                  end, [], Apps) ++ Limits0,
-    ec_talk:say("It looks like we couldn't satisfy all the dependency constraints"
-                " We are going to search the space to see what the problem is"
-                " but this could take a while"),
-    ec_talk:say("Getting the powerset of all constraints"),
+    sin_log:normal(Config, "It looks like we couldn't satisfy all the dependency constraints"
+                   " We are going to search the space to see what the problem is"
+                   " but this could take a while"),
+    sin_log:verbose(Config, "Getting the powerset of all constraints"),
     PS = powerset(AdjustedLimits),
-    ec_talk:say("Power set contains ~p elements", [erlang:length(PS)]),
-    ec_talk:say("Doing optimal sort of the power set"),
+    sin_log:verbose(Config, "Power set contains ~p elements", [erlang:length(PS)]),
+    sin_log:verbose(Config, "Doing optimal sort of the power set"),
     BroadestFirst = broadest_first(remove_empty(PS)),
-    ec_talk:say("Looking for the first passing constraint set"),
+    sin_log:verbose(Config, "Looking for the first passing constraint set"),
     FirstPassingSet =
         case ec_lists:find(fun([]) ->
                                    false;
                               (LimitSet) ->
                                    {Apps1, Limits1} = disambiguate_set(LimitSet),
-                                   case all_deps(State0, [], Apps1, Limits1, []) of
+                                   case all_deps(Config, State0, [], Apps1, Limits1, []) of
                                        {_, fail} ->
                                            false;
                                        _ ->
@@ -152,10 +153,10 @@ broadest_first(Limits) ->
                        erlang:length(L1) > erlang:length(L2)
                end, Limits).
 
--spec all_deps(state(), app_path(), [app()], [internal_spec()],
+-spec all_deps(sin_config:config(), state(), app_path(), [app()], [internal_spec()],
                [{app_path(), [app()]}]) ->
                       {state(), [{app(), version()}]}.
-all_deps(State0, _, [], Limits, []) ->
+all_deps(_Config, State0, _, [], Limits, []) ->
         lists:foldl(fun({App0, Lims, _Sources}, {State1=#state{deps=D0}, AppVsns}) ->
                             {State2, AppVsn} =
                                 lists_some(fun (State3, App1)
@@ -184,24 +185,25 @@ all_deps(State0, _, [], Limits, []) ->
                                     {State2, [AppVsn | AppVsns]}
                             end
                 end, {State0, []}, Limits);
-all_deps(State0, _OldAppPath, [], Limits, [{AppPath, Apps} | OtherApps]) ->
-    all_deps(State0, AppPath, Apps, Limits, OtherApps);
-all_deps(State0, AppPath, [App | Apps], Limits, OtherApps) ->
-    deps(State0, AppPath, App, Limits, [{AppPath, Apps} | OtherApps]).
+all_deps(Config, State0, _OldAppPath, [], Limits, [{AppPath, Apps} | OtherApps]) ->
+    all_deps(Config, State0, AppPath, Apps, Limits, OtherApps);
+all_deps(Config, State0, AppPath, [App | Apps], Limits, OtherApps) ->
+    deps(Config, State0, AppPath, App, Limits, [{AppPath, Apps} | OtherApps]).
 
--spec deps(state(), [app()], app(), [spec()], [app()]) ->
+-spec deps(sin_config:config(),
+           state(), [app()], app(), [spec()], [app()]) ->
                   {state(), [{app(), version()}]}.
-deps(State0, AppPath, App, Limits, OtherApps) ->
+deps(Config, State0, AppPath, App, Limits, OtherApps) ->
     F = fun (State1=#state{deps=D0}, Ver) ->
                 check_circular(App, Ver, AppPath),
                 {State2, Deps} = get_deps(State1, App, Ver, Limits),
 
-                ULimits = extend_limits(State0, App, Limits, [{App, Ver} | Deps]),
+                ULimits = extend_limits(Config, State0, App, Limits, [{App, Ver} | Deps]),
                 DepApps = lists:map(fun dep_app/1, Deps),
                 D2 = lists:foldl(fun(Dep, D1) ->
                                          sets:add_element(Dep, D1)
                                  end, D0, DepApps),
-                all_deps(State2#state{deps=D2},
+                all_deps(Config, State2#state{deps=D2},
                          [{App, Ver} | AppPath], DepApps, ULimits, OtherApps)
         end,
     lists_some(F, limited_app_versions(State0, App, Limits), fail).
@@ -240,11 +242,11 @@ dep_app(App) when is_atom(App) -> App.
 -spec new_limits() -> [spec()].
 new_limits() -> [].
 
--spec add_limit(sin_state:state(), app(), [spec()], spec()) -> [spec()].
-add_limit(State, Source, AppsLimits, NewLimit) ->
+-spec add_limit(sin_config:config(), sin_state:state(), app(), [spec()], spec()) -> [spec()].
+add_limit(Config, State, Source, AppsLimits, NewLimit) ->
     case is_valid_limit(NewLimit) of
         false ->
-            ec_talk:say("Invalid constraint ~p found originating at ~p",
+            sin_config:normal(Config, "Invalid constraint ~p found originating at ~p",
                          [NewLimit, Source]),
             ?SIN_RAISE(State, {invalid_constraint, NewLimit, Source});
         true ->
@@ -266,9 +268,9 @@ get_limits(AppsLimits, App) ->
         {value, {App, Limits, _sources}} -> sets:to_list(Limits)
     end.
 
--spec extend_limits(sin_state:state(), app(), [internal_spec()], [spec()]) -> [internal_spec()].
-extend_limits(State, Source, AppsLimits, Deps) ->
-    lists:foldl(fun (Dep, PLs) -> add_limit(State, Source, PLs, Dep) end,
+-spec extend_limits(sin_config:config(), sin_state:state(), app(), [internal_spec()], [spec()]) -> [internal_spec()].
+extend_limits(Config, State, Source, AppsLimits, Deps) ->
+    lists:foldl(fun (Dep, PLs) -> add_limit(Config, State, Source, PLs, Dep) end,
                 AppsLimits, Deps).
 
 -spec limited_app_versions(state(), app(), [internal_spec()]) ->
@@ -419,13 +421,13 @@ passing_test() ->
                       {app2,"3.0"},
                       {app4,"6.0.0"},
                       {app3,"0.1.3"},
-                      {app5,"6.0.0"}]}, deps(State, app1, "3.0")),
+                      {app5,"6.0.0"}]}, deps(sin_config:new(), State, app1, "3.0")),
 
     ?assertMatch({_, [{app1,"3.0"},
                       {app3,"0.1.3"},
                       {app2,"3.0"},
                       {app4,"6.0.0"},
-                      {app5,"6.0.0"}]}, all_deps(State, [app1, app2, app5], [])).
+                      {app5,"6.0.0"}]}, all_deps(sin_config:new(), State, [app1, app2, app5], [])).
 
 
 conflicting_passing_test() ->
@@ -487,13 +489,13 @@ conflicting_passing_test() ->
                       {app2,"3.0"},
                       {app4,"5.0.0"},
                       {app3,"0.1.3"},
-                      {app5,"2.0.0"}]}, deps(State, app1, "3.0")),
+                      {app5,"2.0.0"}]}, deps(sin_config:new(), State, app1, "3.0")),
 
     ?assertMatch({_, [{app1,"3.0"},
                       {app3,"0.1.3"},
                       {app2,"3.0"},
                       {app4,"5.0.0"},
-                      {app5,"2.0.0"}]}, all_deps(State, [app1, app2, app5], [])).
+                      {app5,"2.0.0"}]}, all_deps(sin_config:new(), State, [app1, app2, app5], [])).
 
 
 
@@ -514,7 +516,7 @@ circular_dependencies_test() ->
                   {dependency_path, [{app1,"0.1.0"},
                                      {app2,"0.0.1"},
                                      {app1,"0.1.0"}]}},
-                  deps(State, app1, "0.1.0")).
+                  deps(sin_config:new(), State, app1, "0.1.0")).
 
 conflicting_failing_test() ->
     App1Deps = [app2,
@@ -570,7 +572,7 @@ conflicting_failing_test() ->
     State = new(Res),
 
     ?assertMatch({failed,{possible_culprit,[app3]}},
-                 all_deps(State, [app1, app3], [])).
+                 all_deps(sin_config:new(), State, [app1, app3], [])).
 
 
 conflicting_exclude_test() ->
@@ -631,7 +633,7 @@ conflicting_exclude_test() ->
                       {app2,"3.0"},
                       {app4,"5.0.0"},
                       {app5,"2.0.0"}]},
-                 all_deps(State, [app1], [{exclude, app3}])).
+                 all_deps(sin_config:new(), State, [app1], [{exclude, app3}])).
 
 
 -endif.

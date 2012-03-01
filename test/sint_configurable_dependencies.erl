@@ -108,7 +108,7 @@ generate_dependency(BaseDir, DepDir, App, Vsn) ->
     DepApp = filename:join([ProjectDir, "_build", App, "lib", App ++ "-" ++ Vsn]),
     DepTarget = filename:join(DepDir, App ++ "-" ++ Vsn),
     ec_file:mkdir_path(DepTarget),
-    sin_utils:copy_dir(sin_state:new(), DepTarget, DepApp),
+    sin_utils:copy_dir(sin_config:new(), sin_state:new(), DepTarget, DepApp),
     sin_utils:delete_dir(ProjectDir).
 
 app_contents(ProjectName, Vsn) ->

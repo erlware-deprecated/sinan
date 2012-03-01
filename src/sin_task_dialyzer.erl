@@ -29,28 +29,28 @@ description() ->
 
     Desc = "This task runs dialyzer on a project. It checks the 'dialyzer'
             state of the project and builds or updates the relevant per
-            project plt files. This task may take a long time to complete.
-            One problem that dialyzer has is that all applications being
-            analyzed project apps and dependencies must be built with debug
-            information. If not, dialyzer will blow up with some not very
-            useful information. You can get around this by asking the
-            dialyzer task to ignore certain applications. Do this in
-            your build config with the following entry.  <break>  <break>
-            {dialyzer_ignore, [some_app1, some_app2]}.  <break>  <break>
-            The downside, of course, is figuring out which apps actually
-            have the problem. This task tries to help by printing out a
-            list of applications that where under analysis when the blowup
-            occurred.
+        project plt files. This task may take a long time to complete.
+One problem that dialyzer has is that all applications being
+analyzed project apps and dependencies must be built with debug
+information. If not, dialyzer will blow up with some not very
+useful information. You can get around this by asking the
+dialyzer task to ignore certain applications. Do this in
+your build config with the following entry.  <break>  <break>
+{dialyzer_ignore, [some_app1, some_app2]}.  <break>  <break>
+The downside, of course, is figuring out which apps actually
+have the problem. This task tries to help by printing out a
+list of applications that where under analysis when the blowup
+                                                    occurred.
 
-            By default all dialyzer warnings are enabled. You can
-            override this with the directive  <break>  <break>
-            {dialyzer_warnings, []}. <break>  <break>
+By default all dialyzer warnings are enabled. You can
+override this with the directive  <break>  <break>
+{dialyzer_warnings, []}. <break>  <break>
 
-            Just put the warning options listed in the dialyzer
-            documentation to get the specific warnings that you would like
-            to see. Unfortunately, you can not do over ride that on a per
-            application basis as dialyzer is a whole program analysis
-            system. ",
+Just put the warning options listed in the dialyzer
+documentation to get the specific warnings that you would like
+to see. Unfortunately, you can not do over ride that on a per
+application basis as dialyzer is a whole program analysis
+system. ",
 
     #task{name = ?TASK,
           task_impl = ?MODULE,
@@ -62,19 +62,19 @@ description() ->
           opts = []}.
 
 do_task(Config0, State0) ->
-    ec_talk:say("Starting analyzation, this may take awhile ..."),
+    sin_log:verbose(Config0, "Starting analyzation, this may take awhile ..."),
     BuildDir = sin_state:get_value(build_dir,State0),
     {ProjectPlt, DepPlt} = get_plt_location(BuildDir),
     DepList = sin_state:get_value(release_deps, State0),
     AppList = sin_state:get_value(project_apps, State0),
-    ec_talk:say("Doing plt for all dependencies ..."),
+    sin_log:verbose(Config0, "Doing plt for all dependencies ..."),
     update_dep_plt(Config0, State0, DepPlt, DepList),
-    ec_talk:say("Doing plt for project apps ..."),
+    sin_log:verbose(Config0, "Doing plt for project apps ..."),
     update_dep_plt(Config0, State0, ProjectPlt, AppList),
 
     WarningTypes = Config0:match(dialyzer_warnings, default_warnings()),
     Paths = [filename:join(Path, "ebin") ||
-              #app{path=Path} <- AppList],
+                #app{path=Path} <- AppList],
     Opts = [{analysis_type, succ_typings},
             {from, byte_code},
             {files_rec, Paths},
@@ -96,7 +96,7 @@ do_task(Config0, State0) ->
     State0.
 
 -spec format_exception(sin_exceptions:exception()) ->
-    string().
+                              string().
 format_exception(?SIN_EXEP_UNPARSE(_,
                                    {error_processing_apps, Error, AppList})) ->
     [io_lib:format("~s~n", [Error]),
@@ -107,8 +107,8 @@ format_exception(?SIN_EXEP_UNPARSE(_,
 format_exception(?SIN_EXEP_UNPARSE(_,
                                    {warnings, Warnings, _AppList})) ->
     [lists:map(fun(Warning) ->
-                      dialyzer:format_warning(Warning)
-              end, Warnings), "~n"];
+                       dialyzer:format_warning(Warning)
+               end, Warnings), "~n"];
 format_exception(Exception) ->
     sin_exceptions:format_exception(Exception).
 
@@ -127,18 +127,18 @@ update_dep_plt(Config0, State0, DepPlt, AppList0) ->
     Opts0 =
         case sin_utils:file_exists(State0, DepPlt) of
             true ->
-                ec_talk:say("Plt is built, checking/updating ..."),
+                sin_log:verbose(Config0, "Plt is built, checking/updating ..."),
                 [{analysis_type, plt_check},
                  {plts, [DepPlt]}];
             false ->
-                ec_talk:say("Building the plt, this is really going to "
-                            "take a long time ..."),
+                sin_log:verbose(Config0, "Building the plt, this is really going to "
+                                "take a long time ..."),
                 [{analysis_type, plt_build},
                  {output_plt, DepPlt}]
         end,
 
     Paths = [filename:join(Path, "ebin") ||
-              #app{path=Path} <- AppList1],
+                #app{path=Path} <- AppList1],
 
     Opts = [{files_rec, Paths},
             {from, byte_code}] ++ Opts0,

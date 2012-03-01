@@ -7,7 +7,7 @@ class TestXref(st.SmokeTest):
 
     @st.sinan("xref")
     def do_xref(self, child):
-       child.expect("Looking for Calls to Deprecated Functions")
+       child.expect("Calls to Deprecated Functions")
        child.expect(pexpect.EOF)
 
     def test_xref(self):
