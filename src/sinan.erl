@@ -69,13 +69,13 @@ do_task_full(Config0, State0, Task) when is_atom(Task) ->
         sin_sig:save(sin_state:get_value(build_dir, State3), State3)
     catch
         no_build_config ->
-            ec_talk:say("No build config found."),
+            sin_log:normal(Config0, "No build config found."),
             sin_state:add_run_error(Task, no_build_config, State0);
         Error = {pe, NewState, {Module, _, _}} ->
-            ec_talk:say(Module:format_exception(Error)),
+            sin_log:normal(Config0, Module:format_exception(Error)),
             NewState;
         Type:Exception ->
-            ec_talk:say("build problem ~p:~p:~p",
+            sin_log:normal(Config0, "build problem ~p:~p:~p",
                          [Type, Exception, erlang:get_stacktrace()]),
             sin_state:add_run_error(Task, Exception, State0)
     end.
@@ -184,7 +184,7 @@ do_task(Task, StartDir, Config) ->
         end
     catch
         {pe, NewState, {_, _, {task_not_found, TaskName}}} ->
-            ec_talk:say("Task not found ~s.", [TaskName]),
+            sin_log:normal(Config, "Task not found ~s.", [TaskName]),
             NewState
     end.
 
@@ -215,7 +215,7 @@ run_task(Task, ProjectDir, Config0, State0) ->
         no_hooks ->
             lists:foldl(
               fun(TaskDesc, State1) ->
-                      ec_talk:say("starting: ~p",
+                      sin_log:verbose(Config0, "starting: ~p",
                                    TaskDesc#task.name),
                       Matcher = sin_config:create_matcher([{release,
                                                             sin_state:get_value(release, State0)},
@@ -226,13 +226,13 @@ run_task(Task, ProjectDir, Config0, State0) ->
         HooksFun ->
             lists:foldl(
               fun(TaskDesc, State1) ->
-                      ec_talk:say("starting: ~p", TaskDesc#task.name),
-                      State2 = HooksFun(pre, TaskDesc#task.name, State1),
+                      sin_log:verbose(Config0, "starting: ~p", TaskDesc#task.name),
+                      State2 = HooksFun(pre, TaskDesc#task.name, Config0, State1),
                       Matcher = sin_config:create_matcher([{task, TaskDesc#task.name}],
                                                           Config0),
                       State3 =
                           (TaskDesc#task.task_impl):do_task(Matcher, State2),
-                      HooksFun(post, TaskDesc#task.name, State3)
+                      HooksFun(post, TaskDesc#task.name, Config0, State3)
               end, State0, Tasks)
        end.
 
@@ -255,6 +255,7 @@ setup_config_overrides(Options, Args) ->
                                         sin_config:new()),
                          Options,
                          [{release, '-r'},
+                          {verbose, verbose},
                           {user_dir, user_dir},
                           {start_dir, start_dir},
                           {project, project_name},

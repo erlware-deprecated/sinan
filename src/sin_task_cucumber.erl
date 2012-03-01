@@ -70,9 +70,9 @@ do_task(Config, State) ->
                    gen_feature(State, F, TargetApp)}
                   || F <- Features, filename:basename(F, ".feature") == Name];
             [] ->
-                [ {F, run_feature(State, F)} || F <- Features ];
+                [ {F, run_feature(Config, State, F)} || F <- Features ];
             FeatureNames when is_list(FeatureNames) ->
-                [ {F, run_feature(State,
+                [ {F, run_feature(Config, State,
                                   filename:join(FeatureRoot, F ++ ".feature"))}
                   || F <- FeatureNames ]
         end,
@@ -98,18 +98,18 @@ format_exception(Exception) ->
 %%====================================================================
 %%% Internal functions
 %%====================================================================
-run_feature(State, FeatureFile) ->
+run_feature(Config, State, FeatureFile) ->
     try
         case cucumberl:run(FeatureFile) of
             {ok, _}  ->
                 ok;
             {failed, #cucumberl_stats{failures=Failed}} ->
-                io:format("~p failed steps.~n", [length(Failed)]),
+               sin_log:normal(Config, "~p failed steps.~n", [length(Failed)]),
                 {failed, Failed}
         end
     catch
         throw:{error, nofile} ->
-            ec_talk:say("No behavior implementation for ~s", [FeatureFile]),
+            sin_log:normal(Config, "No behavior implementation for ~s", [FeatureFile]),
             ?SIN_RAISE(State, {no_implementation, FeatureFile})
     end.
 

@@ -27,7 +27,7 @@ build_file(Config, State0, Module=#module{path=File}, Options, Target) ->
     ErlTarget = filename:join([AppDir,"src"]),
     ErlName = filename:join([ErlTarget,
                              lists:flatten([ErlFile, ".erl"])]),
-    ec_talk:say("Building ~s", [File]),
+    sin_log:verbose(Config, "Building ~s", [File]),
     {State2, ErlModule1} =
         case yecc:file(File, [{parserfile, ErlName} |
                               sin_task_build:strip_options(Options)]) of

@@ -47,7 +47,6 @@ class TestFoo(st.SmokeTest):
         self.gen_release_file(app_desc)
         for r in ["r1", "r2", "r3", "r4"]:
             def run_dist(self, child):
-                child.expect("starting: dist")
                 child.expect(pexpect.EOF)
 
             self.release_name = r

@@ -38,9 +38,9 @@ description() ->
 
 %% @doc Get the version of sinan that is currently running
 -spec do_task(sin_config:config(), sin_state:state()) -> sin_state:state().
-do_task(_Config, State) ->
-    ec_talk:say("erts-~s (~s)", [erlang:system_info(version),
-                                 erlang:system_info(otp_release)]),
+do_task(Config, State) ->
+    sin_log:normal(Config, "erts-~s (~s)", [erlang:system_info(version),
+                                            erlang:system_info(otp_release)]),
     State.
 
 

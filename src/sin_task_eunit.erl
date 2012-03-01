@@ -43,14 +43,14 @@ description() ->
 %% @doc run all tests for all modules in the system
 do_task(Config, State0) ->
     lists:foldl(fun(#app{name=AppName, modules=Modules}, State1) ->
-                   io:format("Eunit testing app ~p~n", [AppName]),
+                   sin_log:verbose(Config, "Eunit testing app ~p~n", [AppName]),
                    case Modules == undefined orelse length(Modules) =< 0 of
                        true ->
-                           ec_talk:say("No modules defined for ~p.",
-                                       [AppName]),
+                           sin_log:verbose(Config, "No modules defined for ~p.",
+                                           [AppName]),
                            State1;
                        false ->
-                           run_module_tests(State1, filter_modules(Config, Modules))
+                           run_module_tests(Config, State1, filter_modules(Config, Modules))
                    end
                 end, State0, sin_state:get_value(project_apps, State0)).
 
@@ -69,14 +69,15 @@ filter_modules(Config, Modules) ->
     end.
 
 %% @doc Run tests for each module that has a test/0 function
--spec run_module_tests(sin_state:state(), [sin_file_info:mod()]) -> ok.
-run_module_tests(State0, AllModules) ->
+-spec run_module_tests(sin_config:config(),
+                       sin_state:state(), [sin_file_info:mod()]) -> ok.
+run_module_tests(Config, State0, AllModules) ->
     lists:foldl(
       fun(#module{name=Name, tags=Tags}, State1) ->
               case sets:is_element(eunit, Tags) of
                   true ->
-                      ec_talk:say("testing ~p", [Name]),
-                      case eunit:test(Name) of
+                      sin_log:normal(Config, "testing ~p", [Name]),
+                      case eunit:test(Name, [{verbose, Config:match(verbose, false)}]) of
                           error ->
                               sin_state:add_run_error(Name, eunit_failure, State1);
                           _ ->

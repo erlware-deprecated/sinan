@@ -45,7 +45,7 @@ description() ->
 %% @doc do the xref task
 -spec do_task(sin_config:config(), sin_state:state()) ->
                      sin_state:state().
-do_task(_Config, State) ->
+do_task(Config, State) ->
     ServerName = get_a_uniquish_name(),
     ExistingPaths = code:get_path(),
     xref:start(ServerName),
@@ -56,14 +56,14 @@ do_task(_Config, State) ->
 
     ModuleInfo =
         lists:flatten(lists:map(fun(App) ->
-                                        xref_app(State, ServerName, App),
+                                        xref_app(Config, State, ServerName, App),
                                         gather_modules(State, App)
                                 end,
                                 Apps)),
 
     lists:foreach(fun({Analysis, Name}) ->
-                          ec_talk:say("Looking for ~s", [Name]),
-                          notify_user(State, ModuleInfo, Analysis,
+                          sin_log:normal(Config, "Looking for ~s", [Name]),
+                          notify_user(Config, State, ModuleInfo, Analysis,
                                       xref:analyze(ServerName, Analysis))
                   end,
                   [{undefined_function_calls, "Undefined Function Calls"},
@@ -82,10 +82,10 @@ gather_modules(State, AppName) ->
 
 
 %% @doc add the application to the specified xref system
--spec xref_app(sin_state:state(),
+-spec xref_app(sin_config:config(), sin_state:state(),
                ServerName::atom(), AppName::atom()) ->
     ok | fail.
-xref_app(State, ServerName, AppName) ->
+xref_app(Config, State, ServerName, AppName) ->
     Paths = sin_state:get_value({apps, AppName, code_paths}, State),
 
     xref:set_library_path(ServerName, Paths),
@@ -97,7 +97,7 @@ xref_app(State, ServerName, AppName) ->
         {ok, _AppNameVsn} ->
             ok;
         Error = {error, Module, Reason} ->
-            ec_talk:say(Module:format_error(Reason)),
+            sin_log:normal(Config, Module:format_error(Reason)),
             ?SIN_RAISE(State, {Error, Module:format_error(Reason)})
     end.
 
@@ -106,37 +106,38 @@ xref_app(State, ServerName, AppName) ->
 %%====================================================================
 
 %% @doc print out the appropriate message for the responce
--spec notify_user(sin_state:state(),
+-spec notify_user(sin_config:config(),
+                  sin_state:state(),
                   [term()], atom(), {error, atom(), term()} |
                   {ok, [term()]}) ->
     ok.
-notify_user(State, _, _, Error = {error, Module, Reason}) ->
-    ec_talk:say(Module:format_error(Reason)),
+notify_user(Config, State, _, _, Error = {error, Module, Reason}) ->
+    sin_log:normal(Config, Module:format_error(Reason)),
     ?SIN_RAISE(State, {Error, Module:format_error(Reason)});
-notify_user(_, ModuleInfo, Analysis, {ok, AnswerList}) ->
+notify_user(Config, _State, ModuleInfo, Analysis, {ok, AnswerList}) ->
     lists:foreach(fun(Answer) ->
-                          display_answer(Analysis, ModuleInfo, Answer)
+                          display_answer(Config, Analysis, ModuleInfo, Answer)
                   end, AnswerList).
 
 %% @doc print out an answer from the xref system
--spec display_answer(atom(), [term()], term()) ->
+-spec display_answer(sin_config:config(), atom(), [term()], term()) ->
     ok.
-display_answer(exports_not_used, _, MFA) ->
+display_answer(Config, exports_not_used, _, MFA) ->
     case is_eunit_test(MFA) of
         false ->
-            ec_talk:say("~s is exported but not used", [format_mfa(MFA)]);
+           sin_log:normal(Config, "~s is exported but not used", [format_mfa(MFA)]);
         true ->
             ok
     end;
-display_answer(locals_not_used, _, MFA) ->
-    ec_talk:say("~s is defined but not used", [format_mfa(MFA)]);
-display_answer(undefined_function_calls, ModuleInfo, {Caller, Callee}) ->
-    ec_talk:say("~s:~s calls the undefined function ~s ",
+display_answer(Config, locals_not_used, _, MFA) ->
+    sin_log:normal(Config, "~s is defined but not used", [format_mfa(MFA)]);
+display_answer(Config, undefined_function_calls, ModuleInfo, {Caller, Callee}) ->
+    sin_log:normal(Config, "~s:~s calls the undefined function ~s ",
                  [find_module(ModuleInfo, Caller),
                   format_mfa(Caller),
                   format_mfa(Callee)]);
-display_answer(deprecated_function_calls, ModuleInfo, {Caller, Callee}) ->
-    ec_talk:say("~s:~s calls the deprecated function ~s ",
+display_answer(Config, deprecated_function_calls, ModuleInfo, {Caller, Callee}) ->
+    sin_log:normal(Config, "~s:~s calls the deprecated function ~s ",
                  [find_module(ModuleInfo, Caller),
                   format_mfa(Caller),
                   format_mfa(Callee)]).

@@ -47,30 +47,30 @@ format_exception(Exception) ->
 %% @doc Generate a function that can be run pre and post task
 -spec gen_build_hooks_function(HooksDir::string()) -> function().
 gen_build_hooks_function(HooksDir) ->
-    fun(Type, Task, State) ->
-            do_hook(State, Type, Task, HooksDir)
+    fun(Type, Task, Config, State) ->
+            do_hook(Config, State, Type, Task, HooksDir)
     end.
 
 %% @doc Setup to run the hook and run it if it exists.
--spec do_hook(sin_state:state(),
+-spec do_hook(sin_config:config(), sin_state:state(),
               Type::atom(), Task::atom(),
               HooksDir::string()) -> ok.
-do_hook(State, Type, Task, HooksDir) when is_atom(Task) ->
+do_hook(Config, State, Type, Task, HooksDir) when is_atom(Task) ->
     HookName = atom_to_list(Type) ++ "_" ++ atom_to_list(Task),
     HookPath = filename:join(HooksDir, HookName),
     case sin_utils:file_exists(State, HookPath) of
        true ->
-            ec_talk:say("hook: ~s", [HookName]),
-            run_hook(State, HookPath, list_to_atom(HookName));
+            sin_log:verbose(Config, "hook: ~s", [HookName]),
+            run_hook(Config, State, HookPath, list_to_atom(HookName));
        _ ->
             State
     end.
 
 %% @doc Setup the execution environment and run the hook.
--spec run_hook(sin_state:state(),
+-spec run_hook(sin_config:config(), sin_state:state(),
                HookPath::list(), HookName::atom()) -> ok.
-run_hook(State, HookPath, HookName) ->
-    command(State, HookPath, create_env(State), HookName).
+run_hook(Config, State, HookPath, HookName) ->
+    command(Config, State, HookPath, create_env(State), HookName).
 
 %% @doc create a minimal env for the hook from the state.
 -spec create_env(sin_state:state()) -> Env::[{string(), string()}].
@@ -94,38 +94,38 @@ create_env(State) ->
     lists:flatten(Env).
 
 %% @doc Given a command an an environment run that command with the environment
--spec command(sin_state:state(), Command::list(), Env::list(),
+-spec command(sin_config:config(), sin_state:state(), Command::list(), Env::list(),
               HookName::atom()) -> list().
-command(State, Cmd, Env, HookName) ->
+command(Config, State, Cmd, Env, HookName) ->
     Opt =  [{env, Env}, stream, exit_status, use_stdio,
             stderr_to_stdout, in, eof],
     P = open_port({spawn, Cmd}, Opt),
-    get_data(State, P, HookName, []).
+    get_data(Config, State, P, HookName, []).
 
 %% @doc Event results only at newline boundaries.
--spec event_newline(BuildState::list(), HookName::atom(),
+-spec event_newline(sin_config:config(), BuildState::list(), HookName::atom(),
                     Line::list(), Acc::list()) -> ok.
-event_newline(BuildState, HookName, [?NEWLINE | T], Acc) ->
-    ec_talk:say(lists:reverse(Acc)),
-    event_newline(BuildState, HookName, T, []);
-event_newline(BuildState, HookName, [?CARRIAGE_RETURN | T], Acc) ->
-    ec_talk:say(lists:reverse(Acc)),
-    event_newline(BuildState, HookName, T, []);
-event_newline(BuildState, HookName, [H | T], Acc) ->
-    event_newline(BuildState, HookName, T, [H | Acc]);
-event_newline(_BuildState, _HookName, [], Acc) ->
+event_newline(Config, BuildState, HookName, [?NEWLINE | T], Acc) ->
+    sin_log:verbose(Config, lists:reverse(Acc)),
+    event_newline(Config, BuildState, HookName, T, []);
+event_newline(Config, BuildState, HookName, [?CARRIAGE_RETURN | T], Acc) ->
+    sin_log:verbose(Config, lists:reverse(Acc)),
+    event_newline(Config, BuildState, HookName, T, []);
+event_newline(Config, BuildState, HookName, [H | T], Acc) ->
+    event_newline(Config, BuildState, HookName, T, [H | Acc]);
+event_newline(_Config, _BuildState, _HookName, [], Acc) ->
     lists:reverse(Acc).
 
 %% @doc Recieve the data from the port and exit when complete.
--spec get_data(sin_state:state(), P::port(),
+-spec get_data(sin_config:config(), sin_state:state(), P::port(),
                HookName::atom(), Acc::list()) -> sin_state:state().
-get_data(State, P, HookName, Acc) ->
+get_data(Config, State, P, HookName, Acc) ->
     receive
         {P, {data, D}} ->
-            NewAcc = event_newline(State, HookName, Acc ++ D, []),
-            get_data(State, P, HookName, NewAcc);
+            NewAcc = event_newline(Config, State, HookName, Acc ++ D, []),
+            get_data(Config, State, P, HookName, NewAcc);
         {P, eof} ->
-            ec_talk:say(Acc),
+            sin_log:verbose(Config, Acc),
             port_close(P),
             receive
                 {P, {exit_status, 0}} ->

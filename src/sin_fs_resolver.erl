@@ -31,9 +31,9 @@ new(Config, State) ->
                                           get_erl_lib_path(ErlLib) ++
                                               Config:match(dep_dirs, [])])),
 
-    ec_talk:say("Using the following lib directories to resolve dependencies:~n"),
+    sin_log:verbose(Config, "Using the following lib directories to resolve dependencies:~n"),
     lists:foreach(fun(DepDir) ->
-                          ec_talk:say("    ~s", [DepDir])
+                          sin_log:verbose(Config, "    ~s", [DepDir])
                   end, DepDirs),
     {DepDirs, State,
      sin_state:get_value(project_applist, State)}.

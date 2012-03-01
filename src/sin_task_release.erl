@@ -131,7 +131,7 @@ generate_rel_file(Config, State, ReleaseDir, Name, Version) ->
             RelInfo ->
                 RelInfo
         end,
-    {save_release(State, ReleaseDir, Name, Version, Release), Release}.
+    {save_release(Config, State, ReleaseDir, Name, Version, Release), Release}.
 
 %% @doc Process the dependencies into a format useful for the rel depends area.
 -spec process_deps([atom()],
@@ -148,19 +148,19 @@ process_deps(_, [], Acc) ->
     Acc.
 
 %% @doc Save the release terms to a releases file for later use by the system.
--spec save_release(sin_state:state(), string(),
+-spec save_release(sin_config:config(), sin_state:state(), string(),
                    string(), string(), term()) ->
     {Location::string(), RelBase::string()}.
-save_release(State, RelDir, Name, Version, RelInfo) ->
+save_release(Config, State, RelDir, Name, Version, RelInfo) ->
     Location = filename:join(RelDir, Version),
     filelib:ensure_dir(filename:join([Location, "tmp"])),
     Relbase = filename:join([Location, Name]),
     Relf = lists:flatten([Relbase, ".rel"]),
     case file:open(Relf, write) of
         {error, _} ->
-            ec_talk:say("Couldn't open ~s for writing. Unable to "
-                         "write release information",
-                         [Relf]),
+            sin_log:normal(Config, "Couldn't open ~s for writing. Unable to "
+                           "write release information",
+                           [Relf]),
             ?SIN_RAISE(State,
                        unable_to_write_rel_info);
         {ok, IoDev} ->
@@ -268,5 +268,5 @@ optionally_include_erts(State, Config, ReleaseRootDir) ->
             ok;
         true ->
             ErtsDir = sin_utils:get_erts_dir(),
-            sin_utils:copy_dir(State, ReleaseRootDir, ErtsDir, [keep_parent])
+            sin_utils:copy_dir(Config, State, ReleaseRootDir, ErtsDir, [keep_parent])
     end.

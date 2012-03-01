@@ -76,15 +76,17 @@ do_task(Config, State0) ->
 
     MergedDeps = RuntimeDeps0 ++ CompiletimeDeps,
 
-    ec_talk:say("~ncompile time dependencies:~n"),
-    lists:foreach(fun format_app/1, CompiletimeDeps),
+    FA = fun (App) ->
+                 format_app(Config, App)
+         end,
+    sin_log:verbose(Config, "~ncompile time dependencies:~n"),
+    lists:foreach(FA, CompiletimeDeps),
 
-    ec_talk:say("~nruntime dependencies:~n"),
-    lists:foreach(fun format_app/1, RuntimeDeps0),
+    sin_log:verbose(Config, "~nruntime dependencies:~n"),
+    lists:foreach(FA, RuntimeDeps0),
 
-    ec_talk:say("~nproject applications:~n"),
-    lists:foreach(fun format_app/1, ReleaseApps),
-
+    sin_log:verbose(Config, "~nproject applications:~n"),
+    lists:foreach(FA, ReleaseApps),
 
     sin_state:store([{release_runtime_deps, RuntimeDeps0},
                      {release_compile_deps, CompiletimeDeps},
@@ -106,9 +108,9 @@ solve_deps(Config, State0, ProjectApps) ->
     SolverState0 = sin_dep_solver:new(ResolverState0),
 
     {SolverState1, RuntimeDeps0} =
-        get_runtime_deps(State0, SolverState0, Apps, ActualSpecs),
+        get_runtime_deps(Config, State0, SolverState0, Apps, ActualSpecs),
     {SolverState2, CompiletimeDeps0} =
-        get_compiletime_deps(State0, Config, SolverState1, DefaultConstraints),
+        get_compiletime_deps(Config, State0, SolverState1, DefaultConstraints),
 
     ResolverState1 = sin_dep_solver:extract_resolver_state(SolverState2),
     {ReleaseApps1, RuntimeDeps2} =
@@ -161,11 +163,11 @@ in_runtime(App0, RuntimeDeps) ->
                       false
               end, RuntimeDeps).
 
--spec format_app(sinan:app()) -> ok.
-format_app(#app{name=Name0, vsn=Vsn0, path=Path}) ->
+-spec format_app(sin_config:config(), sinan:app()) -> ok.
+format_app(Config, #app{name=Name0, vsn=Vsn0, path=Path}) ->
     Name1 = string:left(erlang:atom_to_list(Name0), 25),
     Vsn1 = string:left(Vsn0, 10),
-    ec_talk:say("    ~s ~s : ~s", [Name1, Vsn1, Path]).
+    sin_log:verbose(Config, "    ~s ~s : ~s", [Name1, Vsn1, Path]).
 
 
 %% @doc Format an exception thrown by this module
@@ -188,11 +190,12 @@ format_exception(Exception) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
--spec get_compiletime_deps(sin_state:state(), sin_config:config(),
+-spec get_compiletime_deps(sin_config:config(),
+                           sin_state:state(),
                            sin_dep_solver:state(),
                            [sin_dep_solver:spec()]) ->
                                   {sin_dep_solver:state(), [sin_dep_solver:spec()]}.
-get_compiletime_deps(State0, Config, SolverState0, DefaultSpecs) ->
+get_compiletime_deps(Config, State0, SolverState0, DefaultSpecs) ->
     CompiletimeApps0 = [eunit, proper] ++
         Config:match(compile_deps, []),
 
@@ -200,7 +203,7 @@ get_compiletime_deps(State0, Config, SolverState0, DefaultSpecs) ->
                                                        CompiletimeApps0,
                                                        DefaultSpecs),
     CompiletimeDeps0 =
-        case sin_dep_solver:all_deps(SolverState0,
+        case sin_dep_solver:all_deps(Config, SolverState0,
                                      CompiletimeApps1,
                                      CompileSpecs) of
             Error1 = {failed, {possible_culprit, _SpecList1}} ->
@@ -215,8 +218,8 @@ get_compiletime_deps(State0, Config, SolverState0, DefaultSpecs) ->
     {SolverState0, CompiletimeDeps0}.
 
 
-get_runtime_deps(State0, SolverState0, Apps, Specs) ->
-    case sin_dep_solver:all_deps(SolverState0, Apps,
+get_runtime_deps(Config, State0, SolverState0, Apps, Specs) ->
+    case sin_dep_solver:all_deps(Config, SolverState0, Apps,
                                  Specs) of
         Error1 = {failed, {possible_culprit, _SpecList1}} ->
             ?SIN_RAISE(State0, Error1);
