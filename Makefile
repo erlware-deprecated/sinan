@@ -115,4 +115,4 @@ build-deb: $(TARBALL)
 
 
 publish-ppa: build-deb
-	dput -f ppa:afiniate/ppa ../erlang-sinan_$(VSN)-*_source.changes
+	dput -f ppa:afiniate/ppa ../erlang-sinan_$(VSN)_source.changes
