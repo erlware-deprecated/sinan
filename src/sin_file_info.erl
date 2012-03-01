@@ -10,7 +10,7 @@
 -module(sin_file_info).
 
 %% API
--export([process_file/3, format_exception/1]).
+-export([process_file/3]).
 -export_type([date/0, time/0, date_time/0, mod/0]).
 
 -include_lib("sinan/include/sinan.hrl").
@@ -30,7 +30,6 @@
 
 -type date_time() :: {date() , time()}.
 -type mod() :: record(module).
--type type() :: hrl | erl | yrl | {other, string()}.
 
 %%====================================================================
 %% API
@@ -45,25 +44,6 @@ process_file(State0, Path0, Includes) ->
                                   do_extract(State1, Path1,  Includes)
                           end, State0).
 
-%% @doc Format an exception thrown by this module
--spec format_exception(sin_exceptions:exception()) ->
-    string().
-format_exception(?SIN_EXEP_UNPARSE(_, {unable_to_include, Include, Name})) ->
-    io_lib:format("Unable to find include \"~s\" when processing module: ~p",
-                  [Include, Name]);
-format_exception(?SIN_EXEP_UNPARSE(_, {unable_to_process, Name,
-                                       {_, Module, Error}})) ->
-        io_lib:format("Unable to find process ~p due to the following"
-                      "error: ~s",
-                      [Name, lists:flatten(Module:format_error(Error))]);
-format_exception(?SIN_EXEP_UNPARSE(_, {unable_to_parse_file, Path,
-                                       {_, Module, Error}})) ->
-        io_lib:format("Unable to find process ~s due to the following"
-                      "error: ~s",
-                      [Path, lists:flatten(Module:format_error(Error))]);
-format_exception(Exception) ->
-    sin_exceptions:format_exception(Exception).
-
 %%====================================================================
 %% Internal Functions
 %%====================================================================
@@ -75,44 +55,24 @@ deps_changed(#module{include_timestamps=Includes}, State) ->
 
 -spec do_extract(sin_state:state(), string(), [string()]) ->
                         {sin_state:state(), mod()}.
-do_extract(State, Path, Includes) ->
-    case epp:parse_file(Path, Includes, []) of
-        {ok, AST} ->
-            Mod0 =
-                case filename:extension(Path) of
-                    ".erl" ->
-                        parse_form(State, AST, initialize(Path, erl));
-                    ".hrl" ->
-                        parse_form(State, AST, initialize(Path, hrl));
-                    ".yrl" ->
-                        parse_form(State, AST, initialize(Path, yrl));
-                    Other ->
-                        parse_form(State, AST, initialize(Path, {other, Other}))
-                end,
-            Mod1 = add_stamp_info(State, Path, Mod0, AST),
-            {State, remove_self(Path, Mod1)};
+do_extract(State0, Path, Includes) ->
+    case filename:extension(Path) of
+        Ext when Ext == ".erl";
+                 Ext == ".hrl";
+                 Ext == ".yrl" ->
+            {State1, Mod0, ChangeSig} = sin_erl_info:process_file(State0,
+                                                                  Path,
+                                                                  Includes),
+            Mod1 = add_stamp_info(State1, Path, Mod0, ChangeSig),
+            {State1, Mod1};
         Error ->
-            ?SIN_RAISE(State, {unable_to_parse_file, Path, Error})
+            ?SIN_RAISE(State0, {unable_to_parse_file, Path, Error})
     end.
 
--spec initialize(string(), type()) -> mod().
-initialize(Path, Type) ->
-    #module{type=Type,
-            path=Path,
-            module_deps=sets:new(),
-            includes=sets:new(),
-            tags=sets:new(),
-            include_timestamps=[],
-            called_modules=sets:new()}.
-
--spec remove_self(string(), mod()) -> mod().
-remove_self(Path, Mod1=#module{includes=Includes}) ->
-     Mod1#module{includes=sets:del_element(Path, Includes)}.
-
 -spec add_stamp_info(sin_state:state(), string(), mod(), term()) -> mod().
-add_stamp_info(State, Path, Mod, AST) ->
+add_stamp_info(State, Path, Mod, ChangeSig) ->
     Mod#module{changed=get_timestamp_info(State, Path),
-               change_sig=erlang:phash2(AST)}.
+               change_sig=ChangeSig}.
 
 -spec get_timestamp_info(sin_state:state(), string()) -> non_neg_integer().
 get_timestamp_info(State, Path) ->
@@ -125,41 +85,3 @@ get_timestamp_info(State, Path) ->
             ?SIN_RAISE(State, {unable_to_get_file_info, Path, Reason})
     end.
 
--spec parse_form(sin_state:state(), term(), mod()) -> mod().
-parse_form(State, Tuple, Mod) when is_tuple(Tuple) ->
-    parse_tuple(State, Tuple, Mod);
-parse_form(State, List, Mod0) when is_list(List) ->
-    lists:foldl(fun(Element, Mod1) ->
-                        parse_form(State, Element, Mod1)
-                end, Mod0, List);
-parse_form(_, _, Mod0) ->
-    Mod0.
-
--spec parse_tuple(sin_state:state(), term(), mod()) -> mod().
-parse_tuple(_State, {attribute, _, module, Name}, Mod) ->
-    Mod#module{name=Name};
-parse_tuple(State, {attribute, _ , file, {Include, _}},
-           Mod = #module{includes=Includes, include_timestamps=ITS}) ->
-    Mod#module{includes=sets:add_element(Include, Includes),
-              include_timestamps=[{Include, get_timestamp_info(State, Include)} | ITS]};
-parse_tuple(_State, {attribute, _, compile, {parse_transform, proper_transformer}},
-           Mod = #module{tags=Tags}) ->
-    Mod#module{tags=sets:add_element(proper, Tags)};
-parse_tuple(_State, {attribute, _, compile, {parse_transform, eqc_warn}},
-           Mod = #module{tags=Tags}) ->
-    Mod#module{tags=sets:add_element(eqc, Tags)};
-parse_tuple(_State, {attribute, _, compile, {parse_transform, eunit_autoexport}},
-           Mod = #module{tags=Tags}) ->
-    Mod#module{tags=sets:add_element(eunit, Tags)};
-parse_tuple(_State, {attribute, _, compile, {parse_transform, Module}},
-           Mod = #module{module_deps=Modules}) ->
-    Mod#module{module_deps=sets:add_element(Module, Modules)};
-parse_tuple(_State, {attribute, _, behaviour, Module},
-           Mod = #module{module_deps=Modules}) ->
-    Mod#module{module_deps=sets:add_element(Module, Modules)};
-parse_tuple(State, {error,{_,epp,{include,lib,Include}}}, #module{name=Name}) ->
-    ?SIN_RAISE(State, {unable_to_include, Include, Name});
-parse_tuple(State, {error,{_,epp,{include,file,Include}}}, #module{name=Name}) ->
-    ?SIN_RAISE(State, {unable_to_include, Include, Name});
-parse_tuple(_, _, Mod) ->
-    Mod.
