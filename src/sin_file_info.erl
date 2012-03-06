@@ -10,7 +10,7 @@
 -module(sin_file_info).
 
 %% API
--export([process_file/3]).
+-export([file_regex/0, process_file/3, initialize/2]).
 -export_type([date/0, time/0, date_time/0, mod/0]).
 
 -include_lib("sinan/include/sinan.hrl").
@@ -31,9 +31,14 @@
 -type date_time() :: {date() , time()}.
 -type mod() :: record(module).
 
+-type type() :: hrl | erl | yrl | jxa | {other, string()}.
+
 %%====================================================================
 %% API
 %%====================================================================
+file_regex() ->
+    "^((.+\.erl)|(.+\.hrl)|(.+\.yrl)|(.+\.jxa))$".
+
 -spec process_file(sin_state:state(), string(), [string()]) ->
                           sinan:mod().
 process_file(State0, Path0, Includes) ->
@@ -43,6 +48,18 @@ process_file(State0, Path0, Includes) ->
                           fun(Path1, State1) ->
                                   do_extract(State1, Path1,  Includes)
                           end, State0).
+
+-spec initialize(string(), type()) ->
+                        sin_file_info:mod().
+initialize(Path, Type) ->
+    #module{type=Type,
+            path=Path,
+            module_deps=sets:new(),
+            includes=sets:new(),
+            tags=sets:new(),
+            include_timestamps=[],
+            called_modules=sets:new()}.
+
 
 %%====================================================================
 %% Internal Functions
@@ -61,6 +78,12 @@ do_extract(State0, Path, Includes) ->
                  Ext == ".hrl";
                  Ext == ".yrl" ->
             {State1, Mod0, ChangeSig} = sin_erl_info:process_file(State0,
+                                                                  Path,
+                                                                  Includes),
+            Mod1 = add_stamp_info(State1, Path, Mod0, ChangeSig),
+            {State1, Mod1};
+        Ext when Ext == ".jxa" ->
+            {State1, Mod0, ChangeSig} = sin_jxa_info:process_file(State0,
                                                                   Path,
                                                                   Includes),
             Mod1 = add_stamp_info(State1, Path, Mod0, ChangeSig),
