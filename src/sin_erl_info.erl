@@ -16,10 +16,6 @@
 -include_lib("kernel/include/file.hrl").
 
 
-%%====================================================================
-%% Types
-%%====================================================================
--type type() :: hrl | erl | yrl | {other, string()}.
 
 %%====================================================================
 %% API
@@ -32,19 +28,18 @@ process_file(State0, Path0, Includes) ->
             Mod0 =
                 case filename:extension(Path0) of
                     ".erl" ->
-                        parse_form(State0, AST, initialize(Path0, erl));
+                        parse_form(State0, AST, sin_file_info:initialize(Path0, erl));
                     ".hrl" ->
-                        parse_form(State0, AST, initialize(Path0, hrl));
+                        parse_form(State0, AST, sin_file_info:initialize(Path0, hrl));
                     ".yrl" ->
-                        parse_form(State0, AST, initialize(Path0, yrl));
+                        parse_form(State0, AST, sin_file_info:initialize(Path0, yrl));
                     Other ->
-                        parse_form(State0, AST, initialize(Path0, {other, Other}))
+                        parse_form(State0, AST, sin_file_info:initialize(Path0, {other, Other}))
                 end,
             {State0, remove_self(Path0, Mod0), erlang:phash2(AST)};
         Error ->
             ?SIN_RAISE(State0, {unable_to_parse_file, Path0, Error})
     end.
-
 
 %% @doc Format an exception thrown by this module
 -spec format_exception(sin_exceptions:exception()) ->
@@ -69,16 +64,6 @@ format_exception(Exception) ->
 %% Internal Functions
 %%====================================================================
 
--spec initialize(string(), type()) ->
-                        sin_file_info:mod().
-initialize(Path, Type) ->
-    #module{type=Type,
-            path=Path,
-            module_deps=sets:new(),
-            includes=sets:new(),
-            tags=sets:new(),
-            include_timestamps=[],
-            called_modules=sets:new()}.
 
 -spec remove_self(string(),  sin_file_info:mod()) ->
                          sin_file_info:mod().

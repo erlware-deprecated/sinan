@@ -230,7 +230,7 @@ process_source_files(State0, AppDir) ->
 -spec process_source_files_in_path(sin_state:state(), string(), [string()]) ->
                                           {sin_state:state(), sinan:mod()}.
 process_source_files_in_path(State0, Dir, Includes) ->
-    filelib:fold_files(Dir, "^((.+\.erl)|(.+\.hrl)|(.+\.erl))$", true,
+    filelib:fold_files(Dir, sin_file_info:file_regex(), true,
                        fun(Path, {State1, Acc}) ->
                                {State2, Rec} =
                                    sin_file_info:process_file(State1, Path, Includes),
@@ -266,7 +266,7 @@ build_source_if_required(Config0, State0,
                                         change_sig=NewSig},
                          AppDir,  Target, AllModules) ->
     case Type of
-        T when T == yrl; T == erl ->
+        T when T == jxa; T == yrl; T == erl ->
             case sin_sig:get_sig_info({?MODULE, Name}, State0) of
                 {ok, Sig} ->
                     case Sig == NewSig of
@@ -345,6 +345,8 @@ event_compile_args(Config, Options) ->
 
 get_build_module(_, erl) ->
     sin_compile_erl;
+get_build_module(_, jxa) ->
+    sin_compile_jxa;
 get_build_module(_, yrl) ->
     sin_compile_yrl;
 get_build_module(State, Ext) ->
