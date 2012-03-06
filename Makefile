@@ -92,6 +92,8 @@ clean:
 	rm -f ../erlang-sinan_*.build
 	rm -f ../erlang-sinan_*.changes
 	rm -rf debian/patches
+	rm -rf debian/erlang-sinan
+	rm -rf $(CURDIR)/usr
 	rm -rf _build
 	rm -rf erl_crash.dump
 	find smoketests -name \*.pyc -exec rm -f {} \;
