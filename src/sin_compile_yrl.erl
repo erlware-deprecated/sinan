@@ -33,10 +33,13 @@ build_file(Config, State0, Module=#module{path=File}, Options, Target) ->
                               sin_task_build:strip_options(Options)]) of
             {ok, _ModuleName} ->
                 {State1, ErlModule0} = sin_file_info:process_file(State0, File, []),
-                sin_compile_erl:build_file(Config, State1, ErlModule0, Options, Target);
+                sin_compile_erl:build_file(Config, State1,
+                                           rename_path(ErlModule0, ErlName),
+                                           Options, Target);
             {ok, _ModuleName, []} ->
                 {State1, ErlModule0} = sin_file_info:process_file(State0, File, []),
-                sin_compile_erl:build_file(Config, State1, ErlModule0, Options, Target);
+                sin_compile_erl:build_file(Config, State1, rename_path(ErlModule0, ErlName),
+                                           Options, Target);
             {ok, _ModuleName, Warnings0} ->
                 Warnings1 = sin_task_build:gather_fail_info(Warnings0, "warning"),
                 ?SIN_RAISE(State0, {build_error, error_building_yecc, File, Warnings1});
@@ -48,6 +51,9 @@ build_file(Config, State0, Module=#module{path=File}, Options, Target) ->
                 ?SIN_RAISE(State0, {build_error, error_building_yecc, File})
         end,
     {State2, [ErlModule1, Module]}.
+
+rename_path(Mod, NewPath) ->
+    Mod#module{path=NewPath}.
 
 %% @doc Format an exception thrown by this module
 -spec format_exception(sin_exceptions:exception()) ->
