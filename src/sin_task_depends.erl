@@ -174,7 +174,7 @@ format_app(Config, #app{name=Name0, vsn=Vsn0, path=Path}) ->
 -spec format_exception(sin_exceptions:exception()) ->
                               string().
 format_exception(?SIN_EXEP_UNPARSE(_, {failed, {possible_culprit, SpecList1}})) ->
-    ["Unable to resolve compile time dependencies, probably do "
+    ["Unable to resolve compile time dependencies, probably due "
      "to the following constraints:~n",
      lists:map(fun({AppName, LimitSet, Sources}) ->
                        io_lib:format(" constraint on ~p with constraints ~p "
