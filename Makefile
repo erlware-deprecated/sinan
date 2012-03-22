@@ -16,7 +16,7 @@ BEHAVIOURS= src/sin_task.erl src/sin_dep_resolver.erl
 
 .PHONY=all setup build escript cucumber proper eunit dialyzer \
 	run debug smoketests testall gh-pages clean install-deb \
-	build-deb publish-ppa
+	build-deb publish-ppa update-version
 
 SINFLAGS=-s $(CURDIR) -p sinan -n $(VSN)
 ERLFLAGS= -noinput -pa $(BEAMDIR)
@@ -97,6 +97,17 @@ clean:
 	rm -rf _build
 	rm -rf erl_crash.dump
 	find smoketests -name \*.pyc -exec rm -f {} \;
+
+update-version:
+	awk '{sub(/project_vsn, \"[0-9]+\.[0-9]+\.[0-9]+\w?\"/,"project_vsn, \"$(VSN)\"");print}' sinan.config > tmp.txt
+	@mv tmp.txt sinan.config
+	awk '{sub(/vsn, \"[0-9]+\.[0-9]+\.[0-9]+\w?\"/,"vsn, \"$(VSN)\"");print}' ebin/sinan.app > tmp.txt
+	@mv tmp.txt ebin/sinan.app
+	git add sinan.config
+	git add Makefile
+	git add ebin/sinan.app
+	git commit -m "Version bump $(VSN)"
+	git tag v$(VSN)
 
 ##
 ## Debian packaging support for sinan
