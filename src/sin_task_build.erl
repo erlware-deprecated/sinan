@@ -221,7 +221,8 @@ prepare_app(Config, State0, App0 = #app{name=AppName, path=Path}, BuildDir, Igno
 process_source_files(State0, AppDir) ->
     SrcDir = filename:join(AppDir, "src"),
     TestDir = filename:join(AppDir, "test"),
-    Includes = [SrcDir, TestDir],
+    IncludeDir = filename:join(AppDir, "include"),
+    Includes = [SrcDir, TestDir, IncludeDir],
 
     {State1, SrcModules} = process_source_files_in_path(State0, SrcDir, Includes),
     {State2, TestModules} = process_source_files_in_path(State1, TestDir, Includes),
