@@ -54,7 +54,17 @@ description() ->
 
         <break><break>
 
-        Not that the value for script_args must always be a list" ,
+        Not that the value for script_args must always be a list
+
+        You may also include additional directories into the release with
+
+        <break>
+        <break>
+        {include_dirs, List}.
+        <break>
+        <break>
+
+" ,
 
     #task{name = ?TASK,
           task_impl = ?MODULE,
@@ -75,10 +85,11 @@ do_task(Config, State0) ->
     ReleaseInfo = generate_rel_file(Config, State0, ReleaseDir,
                                     ReleaseName, Version),
     State1 = sin_state:store(rel, ReleaseInfo, State0),
+    copy_include_dirs(Config, State1, BuildDir),
+    copy_apps(Config, State1),
     create_bin_file(State1, BuildDir,
                     ReleaseName, Version, get_erts_info()),
     copy_or_generate_sys_config_file(Config, ReleaseDir, Version),
-    copy_apps(Config, State1, BuildDir),
     include_erts(Config, State1, BuildDir),
     make_boot_script(State1, Config, ReleaseInfo),
     State1.
@@ -258,12 +269,30 @@ include_erts(Config, State, ReleaseRootDir) ->
     ErtsDir = sin_utils:get_erts_dir(),
     sin_utils:copy_dir(Config, State, ReleaseRootDir, ErtsDir, [keep_parent]).
 
-copy_apps(Config, State, BuildDir) ->
-    LibDir = filename:join(BuildDir, "lib"),
+copy_apps(Config, State) ->
+    LibDir = sin_state:get_value(apps_dir, State),
     Apps = sin_state:get_value(release_runtime_deps, State),
     lists:foreach(fun(#app{path=Path}) ->
                           sin_utils:copy_dir(Config, State, LibDir, Path, [keep_parent])
                   end, Apps).
+
+copy_include_dirs(Config, State, BuildDir) ->
+    case Config:match(include_dirs, undefined) of
+        undefined ->
+            [];
+        RequiredDirs ->
+            lists:foreach(fun(File) ->
+                                  case sin_utils:file_exists(State, File) of
+                                      true ->
+                                          sin_utils:copy_dir(Config, State, BuildDir,
+                                                             File, [keep_parent]);
+                                      false ->
+                                          ok
+                                  end
+                                  %% Bin is always included by default
+                          end, ["bin" | RequiredDirs])
+        end.
+
 create_bin_file(State, BuildDir, RelName, RelVsn, ErtsVsn) ->
     BinDir = filename:join([BuildDir, "bin"]),
     filelib:ensure_dir(filename:join(BinDir, "tmp")),
@@ -285,9 +314,6 @@ create_bin_file(State, BuildDir, RelName, RelVsn, ErtsVsn) ->
         _ ->
             ok
     end.
-
-
-
 
 
 bin_file_contents(RelName, RelVsn, ErtsVsn) ->
