@@ -43,18 +43,6 @@ description() ->
         replacing the generated file) by placing a file in
         releases/<release-name>.rel<break><break>
 
-        At times you may wish to use the release directory under _build as a
-        full release directory. This may require the inclusion of the erts
-        executable. If you so desire you can have sinan include erts when it the
-        release task is run so the _build/<release name> directory can be used
-        as a full self contained release. <break><break>
-
-        The option is:
-        <break><break>
-        {include_erts, true}.
-        <break><break>
-        Put this in your sinan.config to for erts inclusion in the build area.
-
         You may also add additional options to the sys_tools:make_script
         call. The one you probably want to add most is the local option, but you
         may add any valid option. You do this by adding the following call to
@@ -80,14 +68,18 @@ description() ->
 %% @doc create an otp release
 -spec do_task(sin_config:matcher(), sin_state:state()) -> sin_state:state().
 do_task(Config, State0) ->
+    BuildDir = sin_state:get_value(build_dir, State0),
     ReleaseDir = sin_state:get_value(release_dir, State0),
     ReleaseName = sin_state:get_value(release, State0),
     Version = sin_state:get_value(release_vsn, State0),
     ReleaseInfo = generate_rel_file(Config, State0, ReleaseDir,
                                     ReleaseName, Version),
     State1 = sin_state:store(rel, ReleaseInfo, State0),
+    create_bin_file(State1, BuildDir,
+                    ReleaseName, Version, get_erts_info()),
     copy_or_generate_sys_config_file(Config, ReleaseDir, Version),
-    optionally_include_erts(State1, Config, filename:join([ReleaseDir,".."])),
+    copy_apps(Config, State1, BuildDir),
+    include_erts(Config, State1, BuildDir),
     make_boot_script(State1, Config, ReleaseInfo),
     State1.
 
@@ -261,12 +253,90 @@ get_code_paths(State) ->
             sin_state:get_value(project_apps, State)].
 
 %% @doc Optionally add erts directory to release, if defined.
--spec optionally_include_erts(sin_state:state(), sin_config:config(), string()) -> ok.
-optionally_include_erts(State, Config, ReleaseRootDir) ->
-    case Config:match(include_erts, undefined) of
-        undefined ->
-            ok;
-        true ->
-            ErtsDir = sin_utils:get_erts_dir(),
-            sin_utils:copy_dir(Config, State, ReleaseRootDir, ErtsDir, [keep_parent])
+-spec include_erts(sin_config:config(), sin_state:state(), string()) -> ok.
+include_erts(Config, State, ReleaseRootDir) ->
+    ErtsDir = sin_utils:get_erts_dir(),
+    sin_utils:copy_dir(Config, State, ReleaseRootDir, ErtsDir, [keep_parent]).
+
+copy_apps(Config, State, BuildDir) ->
+    LibDir = filename:join(BuildDir, "lib"),
+    Apps = sin_state:get_value(release_runtime_deps, State),
+    lists:foreach(fun(#app{path=Path}) ->
+                          sin_utils:copy_dir(Config, State, LibDir, Path, [keep_parent])
+                  end, Apps).
+create_bin_file(State, BuildDir, RelName, RelVsn, ErtsVsn) ->
+    BinDir = filename:join([BuildDir, "bin"]),
+    filelib:ensure_dir(filename:join(BinDir, "tmp")),
+    VsnRel = filename:join(BinDir, erlang:atom_to_list(RelName) ++ "-" ++ RelVsn),
+    BareRel = filename:join(BinDir, erlang:atom_to_list(RelName)),
+    StartFile = bin_file_contents(RelName, RelVsn, ErtsVsn),
+    case sin_utils:file_exists(State, VsnRel) of
+        false ->
+            ok = file:write_file(VsnRel, StartFile),
+            ok = file:change_mode(VsnRel, 8#777);
+        _ ->
+            ok
+    end,
+
+    case sin_utils:file_exists(State, BareRel) of
+        false ->
+            ok = file:write_file(BareRel, StartFile),
+            ok = file:change_mode(BareRel, 8#777);
+        _ ->
+            ok
     end.
+
+
+
+
+
+bin_file_contents(RelName, RelVsn, ErtsVsn) ->
+
+[<<"#!/bin/sh
+
+set -e
+
+SCRIPT_DIR=`dirname $0`
+RELEASE_ROOT_DIR=`cd $SCRIPT_DIR/.. && pwd`
+REL_NAME=">>, erlang:atom_to_list(RelName), <<"
+REL_VSN=">>, RelVsn, <<"
+ERTS_VSN=">>, ErtsVsn, <<"
+ERTS_DIR=
+SYS_CONFIG=
+ROOTDIR=
+
+find_erts_dir() {
+    local erts_dir=$RELEASE_ROOT_DIR/erts-$ERTS_VSN
+    if [ -d \"$erts_dir\" ]; then
+        ERTS_DIR=$erts_dir;
+        ROOTDIR=$RELEASE_ROOT_DIR
+    else
+        local erl=`which erl`
+        local erl_root=`$erl -noshell -eval \"io:format(\\\"~s\\\", [code:root_dir()]).\" -s init stop`
+        ERTS_DIR=$erl_root/erts-$ERTS_VSN
+        ROOTDIR=$erl_root
+    fi
+
+}
+
+find_sys_config() {
+    local possible_sys=$RELEASE_ROOT_DIR/releases/$REL_VSN/sys.config
+    if [ -f \"$possible_sys\" ]; then
+        SYS_CONFIG=\"-config $possible_sys\"
+    fi
+}
+
+find_erts_dir
+find_sys_config
+
+export ROOTDIR=$RELEASE_ROOT_DIR
+export BINDIR=$ERTS_DIR/bin
+export EMU=beam
+export PROGNAME=erl
+export LD_LIBRARY_PATH=$ERTS_DIR/lib
+
+REL_DIR=$RELEASE_ROOT_DIR/releases/$REL_VSN
+
+$BINDIR/erlexec $SYS_CONFIG -boot $REL_DIR/$REL_NAME $@
+">>].
+
