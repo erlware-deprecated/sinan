@@ -103,9 +103,12 @@ update-version:
 	@mv tmp.txt sinan.config
 	awk '{sub(/vsn, \"[0-9]+\.[0-9]+\.[0-9]+\w?\"/,"vsn, \"$(VSN)\"");print}' ebin/sinan.app > tmp.txt
 	@mv tmp.txt ebin/sinan.app
+	awk '{sub(/v\"v[0-9]+\.[0-9]+\.[0-9]+\w?\"/,"\"v$(VSN)\"");print}' src/sin_task_version.erl > tmp.txt
+	@mv tmp.txt src/sin_task_version.erl
 	git add sinan.config
 	git add Makefile
 	git add ebin/sinan.app
+	git add src/sin_task_version.erl
 	git commit -m "Version bump $(VSN)"
 	git tag v$(VSN)
 
