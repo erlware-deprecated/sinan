@@ -1,3 +1,9 @@
+erlang-sinan (3.0.1a) oneiric; urgency=low
+
+  * New release.
+
+ -- Eric B Merritt <eric@afiniate.com>  Fri, 23 Mar 2012 18:44:00 -0600
+
 erlang-sinan (3.0.0a) oneiric; urgency=low
 
   * New release.
