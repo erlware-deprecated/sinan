@@ -160,6 +160,5 @@ default_warnings() ->
      no_fail_call,
      error_handling,
      race_conditions,
-     behaviours,
      unmatched_returns,
      underspecs].
