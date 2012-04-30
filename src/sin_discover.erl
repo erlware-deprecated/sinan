@@ -369,7 +369,7 @@ source_details(Dir, AppName, State0) ->
 look_for_app_dirs(Config, State0, BuildDir, ProjectDir) ->
     Ignorables = sin_config:match(ignore_dirs, Config) ++ [BuildDir],
     State1 = sin_state:store(ignore_dirs, Ignorables, State0),
-    case process_possible_app_dir(State1, BuildDir, ProjectDir,
+    case process_possible_app_dir(State1, ProjectDir,
                                   Ignorables, []) of
         [] ->
             ?SIN_RAISE(State1, {no_app_directories, ProjectDir});
@@ -379,11 +379,10 @@ look_for_app_dirs(Config, State0, BuildDir, ProjectDir) ->
 
 %% @doc Process the app dir to see if it is an application directory.
 -spec process_possible_app_dir(sin_state:state(),
-                               BuildDir::string(),
                                TargetDir::string(),
                                Ignorables::[string()], Acc::list()) ->
                                       ListOfDirs::[{ebin | appsrc, string()}].
-process_possible_app_dir(State, BuildDir, TargetDir, Ignorables, Acc) ->
+process_possible_app_dir(State, TargetDir, Ignorables, Acc) ->
     case filelib:is_dir(TargetDir) andalso not
         sin_utils:is_dir_ignorable(TargetDir, Ignorables) of
         true ->
@@ -398,7 +397,6 @@ process_possible_app_dir(State, BuildDir, TargetDir, Ignorables, Acc) ->
                     lists:foldl(fun(Sub, NAcc) ->
                                         Dir = filename:join([TargetDir, Sub]),
                                         process_possible_app_dir(State,
-                                                                 BuildDir,
                                                                  Dir,
 
                                                                  Ignorables,
