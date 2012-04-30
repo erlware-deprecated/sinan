@@ -31,30 +31,8 @@ description() ->
 
     Desc = "This command creates a release, then tars that release into a
     standard erlang distribution tarball that can be deployed in the standard
-    erlang manner. Check the erlang documentation about sys_tools and
-    distribution tarballs. Configuration options are as follows:
-     <break>
-     <break>
-        {include_dirs, List}.
-    <break>
-    <break>
-
-    This is a list of directories rooted at the project that you would like
-    included in the tarball. You do not need to include your OTP Application
-    directories or metadata files as they are included automatically. However,
-    you should include any additionally directories that you would like to
-    ship.
-
-    <break>
-    <break>
-         {include_erts, true | false}.
-     <break>
-    <break>
-
-    This is a boolean that indicates to the system whether or not you want the
-    Erlang runtime system included in the tarball. This allows you to distribute
-    the vm with your release but has the drawback of turning your tarball into a
-    platform specific thing.",
+    erlang manner. This command simply tars up the 'release' dir in the same way
+    that tar would. So things in the release dir are kept.",
 
     #task{name = ?TASK,
           task_impl = ?MODULE,
@@ -74,7 +52,7 @@ do_task(Config, State) ->
     ReleaseName = erlang:atom_to_list(sin_state:get_value(release, State)) ++ "-"
         ++ sin_state:get_value(release_vsn, State),
     BuildDir = sin_state:get_value(build_dir, State),
-    List1 = exclude_erts_dir(Config, ReleaseName, gather_dirs(BuildDir, ReleaseName)),
+    List1 = gather_dirs(BuildDir, ReleaseName),
     create_tar_file(Config, State, filename:join([TarDir,
                                    lists:flatten([ReleaseName, ".tar.gz"])]),
                     List1),
@@ -107,16 +85,6 @@ create_tar_file(Config, State, FileName, TarContents) ->
                           end, TarContents),
 
             erl_tar:close(Tar)
-    end.
-
-exclude_erts_dir(Config, TopLevel, Entries) ->
-    case Config:match(include_erts, false) of
-        true ->
-            ErtsVersion = erlang:system_info(version),
-            [Entry || Entry={_, Erts} <- Entries,
-                      Erts =/= filename:join(TopLevel, "erts-" ++ ErtsVersion)];
-        _ ->
-            Entries
     end.
 
 %% @doc Gather up the applications and return a list of {DirName, InTarName}
