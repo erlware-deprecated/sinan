@@ -171,15 +171,14 @@ remove_code_paths([]) ->
 %%  return true, otherwise return false.
 -spec is_dir_ignorable(Directory::string(), ListOfIgnores::[string()]) ->
     boolean().
-is_dir_ignorable(Sub, [Ignore | Rest]) ->
-    case ignore_dir(Sub, Ignore) of
-        true ->
-            true;
-        false ->
-            is_dir_ignorable(Sub, Rest)
-    end;
-is_dir_ignorable(_Sub, []) ->
-    false.
+is_dir_ignorable(Dir, Ignorables) ->
+    BaseName = filename:basename(Dir),
+    lists:any(fun(Ignore) ->
+                      (BaseName == Ignore orelse
+                       Dir == Ignore orelse
+                       string:rstr(Dir, Ignore) == 1 orelse
+                       string:rstr(BaseName, Ignore) == 1 )
+              end, Ignorables).
 
 %% Strip the extension off of a base.
 -spec basename(string()) ->
@@ -240,17 +239,6 @@ is_symlink(FileName) ->
         _Else ->
             false
     end.
-
-%% @doc Check the directory against the possible ignores to see if the prefix
-%%  matches.
--spec ignore_dir(Directory::string(), PossibleIgnorePrefix::[string()]) ->
-    boolean().
-ignore_dir([Char | SubRest], [Char | IgRest]) ->
-    ignore_dir(SubRest, IgRest);
-ignore_dir(_Sub, []) ->
-    true;
-ignore_dir(_Sub, _Ignorable) ->
-    false.
 
 %% @doc If any dirs in the list are ignorable ignore it
 -spec are_dirs_ignorable(ListOfDirs::[string()], Igs::[string()]) -> boolean().
