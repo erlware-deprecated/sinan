@@ -64,7 +64,14 @@ description() ->
         <break>
         <break>
 
-" ,
+        {include_erts, true | false}.
+        <break>
+        <break>
+
+        This is a boolean that indicates to the system whether or not you want the
+        Erlang runtime system included in the tarball. This allows you to distribute
+        the vm with your release but has the drawback of turning your tarball into a
+        platform specific thing.",
 
     #task{name = ?TASK,
           task_impl = ?MODULE,
@@ -266,8 +273,13 @@ get_code_paths(State) ->
 %% @doc Optionally add erts directory to release, if defined.
 -spec include_erts(sin_config:config(), sin_state:state(), string()) -> ok.
 include_erts(Config, State, ReleaseRootDir) ->
-    ErtsDir = sin_utils:get_erts_dir(),
-    sin_utils:copy_dir(Config, State, ReleaseRootDir, ErtsDir, [keep_parent]).
+    case Config:match(include_erts, false) of
+        true ->
+            ErtsDir = sin_utils:get_erts_dir(),
+            sin_utils:copy_dir(Config, State, ReleaseRootDir, ErtsDir, [keep_parent]);
+        _ ->
+            ok
+    end.
 
 copy_apps(Config, State) ->
     LibDir = sin_state:get_value(apps_dir, State),
