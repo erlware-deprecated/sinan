@@ -285,7 +285,14 @@ copy_apps(Config, State) ->
     LibDir = sin_state:get_value(apps_dir, State),
     Apps = sin_state:get_value(release_runtime_deps, State),
     lists:foreach(fun(#app{path=Path}) ->
-                          sin_utils:copy_dir(Config, State, LibDir, Path, [keep_parent])
+                          %% Don't copy it if it already exists in the libdir
+                          AppName = filename:basename(Path),
+                          case sin_utils:file_exists(State, filename:join(LibDir, AppName)) of
+                              false ->
+                                  sin_utils:copy_dir(Config, State, LibDir, Path, [keep_parent]);
+                              true ->
+                                  ok
+                          end
                   end, Apps).
 
 copy_include_dirs(Config, State, BuildDir) ->
