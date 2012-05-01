@@ -41,7 +41,7 @@ description() ->
 do_task(Config, State) ->
     Version = case get_version() of
                   unknown_version ->
-                      "v3.0.1a";
+                      "v4.0.0";
                   SinVersion ->
                       SinVersion
               end,
