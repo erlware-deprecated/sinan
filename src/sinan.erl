@@ -114,7 +114,7 @@ run_sinan() ->
 
 %% @doc do a full run of sinan with arbitrary args that may be parsed like
 %% command line args
--spec run_sinan([string()]) -> sin_config:config().
+-spec run_sinan([string()]) -> {ok, sin_config:config()} | {error, term()}.
 run_sinan(Args) ->
     case manual_start() of
         ok ->
