@@ -45,7 +45,7 @@ do_task(Config, State) ->
                   SinVersion ->
                       SinVersion
               end,
-    sin_log:normal(Config, "sinan version: ~s", [Version]),
+    sin_log:normal(Config, "~s", [Version]),
     sin_state:store(sinan_vsn, Version, State).
 
 %%====================================================================
