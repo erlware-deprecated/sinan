@@ -99,11 +99,11 @@ clean:
 	find smoketests -name \*.pyc -exec rm -f {} \;
 
 update-version:
-	awk '{sub(/project_vsn, \"[0-9]+\.[0-9]+\.[0-9]+\w?\"/,"project_vsn, \"$(VSN)\"");print}' sinan.config > tmp.txt
+	awk '{sub(/project_vsn, \"[0-9]+\.[0-9]+\.[0-9]+[a-z]?\"/,"project_vsn, \"$(VSN)\"");print}' sinan.config > tmp.txt
 	@mv tmp.txt sinan.config
-	awk '{sub(/vsn, \"[0-9]+\.[0-9]+\.[0-9]+\w?\"/,"vsn, \"$(VSN)\"");print}' ebin/sinan.app > tmp.txt
+	awk '{sub(/vsn, \"[0-9]+\.[0-9]+\.[0-9]+[a-z]?\"/,"vsn, \"$(VSN)\"");print}' ebin/sinan.app > tmp.txt
 	@mv tmp.txt ebin/sinan.app
-	awk '{sub(/\"v[0-9]+\.[0-9]+\.[0-9]+\w?\"/,"\"v$(VSN)\"");print}' src/sin_task_version.erl > tmp.txt
+	awk '{sub(/\"v[0-9]+\.[0-9]+\.[0-9]+[a-z]?\"/,"\"v$(VSN)\"");print}' src/sin_task_version.erl > tmp.txt
 	@mv tmp.txt src/sin_task_version.erl
 	git add sinan.config
 	git add Makefile
