@@ -196,8 +196,7 @@ format_exception(Exception) ->
                            [sin_dep_solver:spec()]) ->
                                   {sin_dep_solver:state(), [sin_dep_solver:spec()]}.
 get_compiletime_deps(Config, State0, SolverState0, DefaultSpecs) ->
-    CompiletimeApps0 = [eunit, proper] ++
-        Config:match(compile_deps, []),
+    CompiletimeApps0 = Config:match(compile_deps, []),
 
     {CompiletimeApps1, CompileSpecs} = remove_excluded(State0,
                                                        CompiletimeApps0,
