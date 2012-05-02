@@ -160,6 +160,7 @@ manual_start() ->
                    crypto,
                    proper,
                    erlware_commons,
+                   joxa,
                    sinan]).
 
 -spec usage() -> ok.
