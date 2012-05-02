@@ -8,5 +8,5 @@
   {applications, [kernel, stdlib, compiler, erlware_commons,
                   edoc, syntax_tools, eunit, proper, tools,
                   xmerl, mnesia, erlware_commons,
-                  cucumberl,
+                  cucumberl, joxa,
                   parsetools, getopt]}]}.
