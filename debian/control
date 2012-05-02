@@ -17,6 +17,7 @@ Build-Depends: debhelper (>= 8.0.0),
                erlang-cucumberl,
                erlang-erlware-commons,
                erlang-getopt,
+               joxa,
                python-pexpect
 Standards-Version: 3.9.2
 Homepage: https://github.com/erlware/sinan
@@ -38,6 +39,7 @@ Depends: ${misc:Depends},
          erlang-proper,
          erlang-cucumberl,
          erlang-erlware-commons,
+         joxa,
          erlang-getopt
 Description: Sinan is a build tool designed to build Erlang/OTP Projects
  Sinan is a build tool designed to build Erlang/OTP Projects, Releases

@@ -26,7 +26,7 @@ process_file(State0, Path0, _Includes) ->
                                end,
                                Mod0#module{name=ModName},
                                Deps),
-            {State0,  Mod1, erlang:phash2(Deps)};
+            {State0,  Mod1, erlang:phash2(file:read_file(Path0))};
         Error ->
             ?SIN_RAISE(State0, {unable_to_parse_file, Path0, Error})
     end.

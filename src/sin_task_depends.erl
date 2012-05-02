@@ -48,24 +48,8 @@ user. Though you can if that floats your boat.",
                      sin_state:state().
 do_task(Config, State0) ->
     ProjectApps = sin_state:get_value(project_applist, State0),
-    Changed1 =
-        lists:foldl(fun(AppName, Changed0) ->
-                            AppF = sin_state:get_value({apps, AppName, dotapp},
-                                                       State0),
-                            Changed0 orelse sin_sig:changed(deps, AppF, State0)
-                    end, false, ProjectApps),
     {State1, {ReleaseApps, RuntimeDeps0, CompiletimeDeps}} =
-        case Changed1 of
-            true ->
-                case sin_sig:get_sig_info(?MODULE, State0) of
-                    {ok, {RelApps, RunDeps, CompDeps}} ->
-                        {State0, {RelApps, RunDeps, CompDeps}};
-                    _ ->
-                        solve_deps(Config, State0, ProjectApps)
-                end;
-            _ ->
-                solve_deps(Config, State0, ProjectApps)
-        end,
+        solve_deps(Config, State0, ProjectApps),
 
     lists:foreach(fun(#app{path=Path}) ->
                           Ebin = filename:join(Path, "ebin"),
@@ -196,8 +180,7 @@ format_exception(Exception) ->
                            [sin_dep_solver:spec()]) ->
                                   {sin_dep_solver:state(), [sin_dep_solver:spec()]}.
 get_compiletime_deps(Config, State0, SolverState0, DefaultSpecs) ->
-    CompiletimeApps0 = [eunit, proper] ++
-        Config:match(compile_deps, []),
+    CompiletimeApps0 = Config:match(compile_deps, []),
 
     {CompiletimeApps1, CompileSpecs} = remove_excluded(State0,
                                                        CompiletimeApps0,
