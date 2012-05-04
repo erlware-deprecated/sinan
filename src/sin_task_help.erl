@@ -59,12 +59,8 @@ do_task(Config, State) ->
                               Tasks),
 
                 {command_list, TaskNames};
-
-        [Task, "len", LineLen] ->
-                process_task_entry(Config, Task, Tasks, erlang:list_to_integer(LineLen)),
-                {help_detail, Task};
         [Task] ->
-                process_task_entry(Config, Task, Tasks, 80),
+                process_task_entry(Config, Task, Tasks),
                 {help_detail, Task}
     end,
     sin_state:store(help_displayed, Result, State).
@@ -74,8 +70,9 @@ do_task(Config, State) ->
 %%====================================================================
 
 %% @doc Prints out the task description.
--spec process_task_entry(sin_config:config(), string(), sin_task:task_description(), integer()) -> ok.
-process_task_entry(Config, TaskName, Tasks, LineLen) ->
+-spec process_task_entry(sin_config:config(), string(),
+                         sin_task:task_description()) -> ok.
+process_task_entry(Config, TaskName, Tasks) ->
     AtomName = list_to_atom(TaskName),
     ActualTask = lists:foldl(fun(Task, Acc) ->
                                      case Task#task.name == AtomName of
@@ -93,24 +90,8 @@ process_task_entry(Config, TaskName, Tasks, LineLen) ->
         _ ->
             sin_log:normal(Config, "~nexample: sinan ~s", [ActualTask#task.example]),
             sin_log:normal(Config, ""),
-            break(ActualTask#task.desc, LineLen)
+            sin_log:normal(Config, ActualTask#task.desc)
     end.
-
-
-break(Line, LineLen) ->
-    Tokens = string:tokens(lists:flatten(Line), [$\s, $\n, $\t, $\f, $\r]),
-    lists:foldl(fun("<break>", _Count) ->
-                        io:format("~n"),
-                        0;
-                   (Word, Count) when Count < LineLen ->
-                        io:format("~s ", [Word]),
-                        Count + erlang:length(Word);
-                   (Word, _) ->
-                        io:format("~s~n", [Word]),
-                        erlang:length(Word)
-                end, 0, Tokens),
-    io:format("~n").
-
 
 
 
