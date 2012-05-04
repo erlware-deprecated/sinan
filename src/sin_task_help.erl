@@ -25,10 +25,12 @@
 -spec description() -> sin_task:task_description().
 description() ->
 
-    Desc = "Provides helpful information about the tasks available and how to "
-        "invoke them. <break> <break> he additional args for <command> len
-        <integer> allows the user to control the line length of the help
-        printouts",
+    Desc = "
+help Task
+=========
+
+Provides helpful information about the tasks available in Sinan and how to
+invoke them. ",
 
     #task{name = ?TASK,
           task_impl = ?MODULE,

@@ -25,7 +25,12 @@
 -spec description() -> sin_task:task_description().
 description() ->
 
-    Desc = "A very simple command that prints erts version sinan is running on",
+    Desc = "
+erts Task
+=========
+
+A very simple command that prints out the current version of the
+Erlang Runtime System that Sinan is running on",
 
     #task{name = ?TASK,
           task_impl = ?MODULE,

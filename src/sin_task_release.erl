@@ -26,52 +26,58 @@
 -spec description() -> sin_task:task_description().
 description() ->
 
-    Desc = "This command creates all the artifacts needed to start the current
-        project as an otp release. This creates the *.rel, *.boot and *.script
-files into the output area of the project. Those files maybe found at:
-<break> <break> <build-area>/realeases/<project-name>-<vsn> |
-<release-name>-<vsn> <break> <break> Check the erlang documentation for
-releases to understand what this means. <break> <break>"
+    Desc = "
+release Task
+============
 
-        "The release task tasks a single configuration that looks like
-         {types, [{AppName1, RelType},<break>
-                      {AppName2, RelType}]}. <break>
+This command creates all the artifacts needed to start the current
+project as an otp release. This creates the `*.rel`, `*.boot` and `*.script`
+files into the output area of the project.
 
-This configuration allows you to specify the type of application this is
-for the release. (Again review the release information for details).
-<break><break> You may substitute your own release file (completely
-                                                         replacing the generated file) by placing a file in
-releases/<release-name>.rel<break><break>
+Those files maybe found at: `<build-area>/<release-name>/releases/<release-vsn>`
+
+To understand what those files are and why they are important you should check
+the erlang documentation on releases.
+
+Configuration Options
+---------------------
+
+### Application Load Types
+
+This configuration allows you to specify the load type for the application
+specified in `AppName` for the release. (Again review the release information
+for details).
+
+    {types, [{AppName1::atom(), RelType::atom()},
+             {AppName2::atom(), RelType::atom()}]}.
+
+### Script Args
 
 You may also add additional options to the sys_tools:make_script
 call. The one you probably want to add most is the local option, but you
 may add any valid option. You do this by adding the following call to
 your sinan.config.
 
-<break><break>
-
-{script_args, [local]}.
-
-<break><break>
+    {script_args, [term()]}.
 
 Not that the value for script_args must always be a list
 
-You may also include additional directories into the release with
+### Additional Release Dirs
 
-<break>
-<break>
-{include_dirs, List}.
-<break>
-<break>
+By default the release only includes directories directly relevant to the erlang
+otp release. It is common to want to include additional directories. You can do
+that with the following configuration.
 
-{include_erts, true | false}.
-<break>
-<break>
+    {include_dirs, [string()]}.
+
+### Including The Erts Dir
 
 This is a boolean that indicates to the system whether or not you want the
 Erlang runtime system included in the tarball. This allows you to distribute
 the vm with your release but has the drawback of turning your tarball into a
-platform specific thing.",
+platform specific thing.
+
+{include_erts, boolean()}.",
 
     #task{name = ?TASK,
           task_impl = ?MODULE,

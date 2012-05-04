@@ -34,10 +34,14 @@
 -spec description() -> ok.
 description() ->
 
-    Desc = "This command asks the user a series of questions about the new
-    project that he wants to create. It then generates a buildable skeleton for
-    that project in the current directory. Try it out, you can always delete it
-    later.",
+    Desc = "
+gen Task
+========
+
+This command generates a new Erlang project. It asks the user a series of
+questions about the new project that he wants to create. It then generates a
+buildable skeleton for that project in the current directory. Try it out,
+you can always delete it later.",
 
     #task{name = ?TASK,
           task_impl = ?MODULE,

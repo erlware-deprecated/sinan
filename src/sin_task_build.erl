@@ -33,28 +33,46 @@
 -spec description() -> sin_task:task_description().
 description() ->
 
-    Desc = "This command builds all of the source files for all of the otp
-    applications in the project. Currently, it support erl and yrl
-    files. <break> <break> It currently supports the following configuration
-    options: <break> {compile_args, List}. <break> <break> This is a list of
-    compile argumnents to be used when building the system. See the erlang
-    compile module for details of what compile args are available. <break>
-    <break> {print_args, true | false}. <break> <break> This is a boolean
-    indicating whether or not you would like to see the args used on each file
-    as it is compiled. Defaults to false. <break> <break> You may specialize any
-    of these arguments on the release, application or the module or any mix of
-    those three things. For example, lets say you had application foo and bar
-    and you wanted to pass debug info to application foo but not to
-    application. That could be accomplishied as follows: <break> <break>
-    {compile_args, [{app, foo}], [debug_info]}. <break> {compile_args, [{app,
-    bar}], []}. <break> <break> You may also specify this down to the module
-    level. So lets say that in application bar you want to specifiy debug info
-    for the module 'my_important_module' you could do that with a module
-    speciliazation as follows: <break> <break> {compile_args, [{app, bar},
-    {module, my_important_module}], [debug_info]}. <break> <break> In this case,
-    if you have both the latter configuration options, the compile argument
-    'debug_info' will only be passed to the module 'my_important_module' in
-    application bar and not to any other module in application bar. ",
+    Desc = "
+build Task
+==========
+
+This command builds all of the source files for all of the otp applications in
+the project. Currently, it support erl, yrl, and jxa files.
+
+Configuration Options
+---------------------
+
+    {compile_args, [term()]}.
+
+ This is a list of compile argumnents to be used when
+building the system. See the erlang compile module for details of what compile
+args are available.
+
+    {print_args, boolean()}.
+
+This is a boolean indicating whether or not you would like to see the args used
+on each file as it is compiled. Defaults to false.
+
+You may specialize any of these arguments on the release, application or the
+module or any mix of those three things. For example, lets say you had
+application foo and bar and you wanted to pass debug info to application foo but
+not to application. That could be accomplishied as follows:
+
+    {compile_args, [{app, foo}], [debug_info]}.
+    {compile_args, [{app, bar}], []}.
+
+ You may also specify this down to the module level. So lets say that in
+application bar you want to specifiy debug info for the module
+`my_important_module` you could do that with a module speciliazation as follows:
+
+    {compile_args, [{app, bar},
+                    {module, my_important_module}],
+                   [debug_info]}.
+
+In this case, if you have both the latter configuration options, the compile
+argument `debug_info` will only be passed to the module `my_important_module` in
+application bar and not to any other module in application bar. ",
 
     #task{name = ?TASK,
           task_impl = ?MODULE,

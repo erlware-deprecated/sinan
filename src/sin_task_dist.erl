@@ -29,10 +29,13 @@
 -spec description() -> sin_task:task_description().
 description() ->
 
-    Desc = "This command creates a release, then tars that release into a
-    standard erlang distribution tarball that can be deployed in the standard
-    erlang manner. This command simply tars up the 'release' dir in the same way
-    that tar would. So things in the release dir are kept.",
+    Desc = "
+dist Task
+=========
+
+This command packages up the release directory into a tarball that can be
+deployed in the standard erlang manner. Everything in the release dir
+ends up in the tarball.",
 
     #task{name = ?TASK,
           task_impl = ?MODULE,
