@@ -28,8 +28,13 @@
 -spec description() ->  sin_task:task_description().
 description() ->
 
-    Desc = "This command runs all eunit tests available in the
-        project. ",
+    Desc = "
+eunit Task
+==========
+
+This command searches the project for
+[Eunit](http://www.erlang.org/doc/apps/eunit/chapter.html) tests and runs any
+tests that it finds.",
 
     #task{name = ?TASK,
           task_impl = ?MODULE,

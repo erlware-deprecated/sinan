@@ -25,13 +25,17 @@
 -spec description() -> sin_task:task_description().
 description() ->
 
-    Desc = "This command the built in erlang xref checker on all code in the
-        project. It outputs several different sections corresponding to the
-        information available from xref. xref does have the problem that if
-        dependent code is not compiled with debug_info it will display any calls
-        to that code as unresolved. This is unfortunate much of the code
-        in the core library is not compiled with debug info. So you will get
-        false positive reports for this code.",
+    Desc = "
+xref Task
+=========
+
+This command the built in erlang xref checker on all code in the
+project. It outputs several different sections corresponding to the
+information available from xref. xref does have the problem that if
+dependent code is not compiled with debug_info it will display any calls
+to that code as unresolved. This is unfortunate much of the code
+in the core library is not compiled with debug info. So you will get
+false positive reports for this code.",
 
     #task{name = ?TASK,
           task_impl = ?MODULE,
