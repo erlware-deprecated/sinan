@@ -1,0 +1,56 @@
+@title Welcome to Sinan
+@doc
+
+<h1>Overview</h1>
+
+<p>Sinan is our flagship build system. It is a build system designed expressly for
+Erlang OTP projects. It simply will not work on projects that are not based on
+the OTP principles. Fortunately, this shouldn't be too much of a problem because
+you shouldn't really be writing significant Erlang applications without using
+OTP.</p>
+
+<p>By choosing to build only OTP projects we are able to make use of all that
+wonderful OTP metadata. This allows us, in the vast majority of cases, to simply
+'Do the Right Thing' while building a project. This approach allows us to build
+a project with little or no input from the user. It also allows us to do a lot
+of the grunt work of OTP automatically.</p>
+
+<h1>Features</h1>
+
+<p>As of this writing Sinan will do the following things for you.</p>
+
+<ul>
+
+<li>Manage dependencies</li>
+<li>Retrieve packages to meet dependencies</li>
+<li>Run Unit Tests and provide code coverage metrics</li>
+<li>Warn about OTP layout and metadata issues</li>
+<li>Compile Erlang files</li>
+<li>Generate <code>*.rel</code> files</li>
+<li>Generate <code>*.boot, *.script,</code> and other files required by the otp release
+system</li>
+
+<li>Run Dialyzer across all of the code in the project</li>
+<li>Create a tar file that the OTP releases system understands and can use</li>
+<li>Clean up after itself</li>
+</ul>
+
+<h1>Whats in a Name?</h1>
+
+<p>I usually try to pick good googleable project names. This usually means that I
+have to pick and arbitrary name and build meaning around it, since almost all of
+the proper nouns that would fit a project are taken or already well represented
+on the net. Since I had to pick a name for a build system I decided to use the
+name of a famous architect or builder from history. There is no small number of
+possible options. Unfortunately, many of them are already used for various open
+source projects out there. In my searches for possible names, I came across
+<a href="http://en.wikipedia.org/wiki/Sinan">Ḳoca Mi‘mār Sinān Āġā</a> a famous builder
+from the Ottoman Empire. He worked primarily in Istanbul. Well this caught my
+attention. At one time Istanbul was Constantinople and before that Byzantium and
+I have a certain fascination with Byzantine history. The fact that Sinan was a
+brilliant architect just kind of sealed the deal. So what I ended up with is a
+nice googleable name that is memorable and short enough to type on the command
+line, also having an interesting historical meaning.</p>
+
+@author Eric Merritt
+@copyright 2007, 2008 Erlware
