@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="Sinan : Erlang/OTP oriented build system" />
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Sinan - Common Test</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+      <header class="inner">
+        <a id="forkme_banner" href="https://github.com/erlware/sinan">View on GitHub</a>
+
+        <h1 id="project_title">Sinan</h1>
+        <h2 id="project_tagline">Using Common Test</h2>
+
+        <section id="downloads">
+          <a class="zip_download_link" href="https://github.com/erlware/sinan/zipball/master">Download this project as a .zip file</a>
+          <a class="tar_download_link" href="https://github.com/erlware/sinan/tarball/master">Download this project as a tar.gz file</a>
+        </section>
+      </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+
+        <h2>ct Task</h2>
+
+        <p>The ct task is a method of running the <a href="http://www.erlang.org/doc/apps/common_test/users_guide.html">Common Test
+            Framework</a> on a the
+          project. You should be familiar with the common test framework to use this task.</p>
+
+        <h2>Configuration</h2>
+
+        <p>In this case Sinan does not do <em>any</em> configuration for you outside of
+          setting up the proper code paths. Sinan does however give you several variables
+          that you can use in your options (at least those options that contain directory
+          specifications).</p>
+
+        <p>These exist to help you configure your tests. It is suggested that you put all
+          output under the 'build_dir' and not in your project itself. Otherwise sinan
+          clean will be <em>unable</em> to clean the project correctly. However, this is
+          completely up to you.</p>
+
+        <h3>Available Variables</h3>
+
+        <p>These are the variables available in your configuration options.</p>
+
+        <p><em>Project Dir</em></p>
+
+        <p>This is the project directory. This should be the same as CWD, since Sinan sets
+          the projec directory to be the current directory.</p>
+
+        <pre><code>$project_dir$
+        </code></pre>
+
+        <p><em>Build Root</em></p>
+
+        <p>The build root points to the top level of the build directory. This usually
+          points <code>$project_dir$/_build</code>. You shouldn't put too much at this level directory,
+          because you can have multiple releases that may step on each other.</p>
+
+        <pre><code>$build_root$
+        </code></pre>
+
+        <p><em>Build Dir</em></p>
+
+        <p>Build dir points to the build output directory, that is the release directory
+          where all build output ends up.</p>
+
+        <pre><code>$build_dir$
+        </code></pre>
+
+        <p><em>Release</em></p>
+
+        <p>This is simply the name of the currently active release.</p>
+
+        <pre><code>$release$
+        </code></pre>
+
+        <p><em>Release Version</em></p>
+
+        <p>This is the currently set version of the <em>release</em>.</p>
+
+        <pre><code>$release_vsn$
+        </code></pre>
+
+        <p><em>Apps Dir</em></p>
+
+        <p>This points to the 'lib' dir of the release directory. This is equivalent to
+          <code>$apps_dir$/lib</code>.</p>
+
+        <pre><code>$apps_dir$
+        </code></pre>
+
+        <p><em>Release Dir</em></p>
+
+        <p>This points to the directory containing the release metadata. It is equivalent
+          to <code>$build_dir$/releases/$release_vsn$</code></p>
+
+        <pre><code>$release_dir$
+        </code></pre>
+
+        <p><em>Home Dir</em></p>
+
+        <p>This is simply the user's home directory.</p>
+
+        <pre><code>$home_dir$
+        </code></pre>
+
+        <p><em>Application Directory</em></p>
+
+        <p>Lets say we had an application called foo. The variable <code>$foo_dir$</code> would point
+          to the root directory of that application. So in this model the ebin directory
+          of foo would look like '$foo_dir$/ebin'.</p>
+
+        <pre><code>$&lt;app_name&gt;_dir$
+        </code></pre>
+
+        <p><em>Application Version</em></p>
+
+        <p>The is similar to <code>$&lt;app_name&gt;_dir$</code> except contains the version of the
+          application instead of its dir. So for our foo example if we wanted the version
+          of foo we would do <code>$foo_vsn$</code>.</p>
+
+        <h3>Multiple Common Test Configurations</h3>
+
+        <p>Sinan gives you the ability to have multiple common test configurations. The
+          configurations are are specified as follows.</p>
+
+        <pre><code>{ct_config, [{config_name(), terms()}]}.
+        </code></pre>
+
+        <p>Lets say we had a configuration call alternate in our bar release. We might
+          configure it as follows.</p>
+
+        <pre><code>{ct_config, [{alternate, [{dir, \"$foo_dir$/test\"}]}]}.
+        </code></pre>
+
+        <p>To run that configuration you would simple call this from the command line</p>
+
+        <pre><code>$&gt; sinan ct alternate
+        </code></pre>
+
+        <h3>Available Configuration Options</h3>
+
+        <p>These are exactly the same options taken by
+          <a href="http://www.erlang.org/doc/man/ct.html#run-1">ct:run/1</a>. Look there for the
+          common test documentation.</p>
+
+        <pre><code>
+            {dir, TestDirs}                      % Variables Supported
+            {suite, Suites}
+            {group, Groups}
+            {testcase, Cases}
+            {spec, TestSpecs}
+            {label, Label}
+            {config, CfgFiles}                   % Variables Supported
+            {userconfig, UserConfig}             % Variables Supported
+            {allow_user_terms, Bool}
+            {logdir, LogDir}                     % Variables Supported
+            {silent_connections, Conns}
+            {stylesheet, CSSFile}                % Variables Supported
+            {cover, CoverSpecFile}               % Variables Supported
+            {step, StepOpts}
+            {event_handler, EventHandlers}
+            {include, InclDirs}                  % Variables Supported
+            {auto_compile, Bool}
+            {create_priv_dir, CreatePrivDir}
+            {multiply_timetraps, M}
+            {scale_timetraps, Bool}
+            {repeat, N}
+            {duration, DurTime}
+            {until, StopTime}
+            {force_stop, Bool}
+            {decrypt, DecryptKeyOrFile}          % Variables Supported
+            {refresh_logs, LogDir}               % Variables Supported
+            {logopts, LogOpts}
+            {basic_html, Bool}
+            {ct_hooks, CTHs}
+            {enable_builtin_hooks, Bool}
+        </code></pre>
+    </div>
+</div>
+</div>
+
+
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Sinan maintained by <a href="https://github.com/erlware">erlware</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
