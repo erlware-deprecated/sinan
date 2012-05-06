@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="Sinan : Erlang/OTP oriented build system" />
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Sinan</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/erlware/sinan">View on GitHub</a>
+
+          <h1 id="project_title">Sinan</h1>
+          <h2 id="project_tagline">Erlang/OTP oriented build system</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/erlware/sinan/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/erlware/sinan/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h2>What is Sinan</h2>
+
+<p>Sinan is a build tool designed to build Erlang/OTP Projects, Releases
+and Applications. Sinan leverages the metadata artifacts provided by
+OTP to do a good job building, testing, releasing, etc with very
+little or no additional input from the developer.</p>
+
+<h2>Getting Sinan</h2>
+
+<p>By far the easiest way to get sinan is to download it from the
+<a href="https://github.com/erlware/sinan/downloads">downloads site</a>.</p>
+
+<h2>More Information and FAQ</h2>
+
+<p>Sinan has extensive further documentation in its
+<a href="https://github.com/erlware/sinan/wiki">wiki on github</a>. Check there
+for more information.</p>
+
+<p>The Sinan FAQ is available at
+<a href="https://github.com/erlware/sinan/wiki/FAQ">here</a>.</p>
+
+<h3>The Community</h3>
+
+<p>A community exists around Sinan and the other Erlware projects. You
+may participate in the community and ask questions by joining the
+<a href="http://groups.google.com/group/erlware-questions">erlware-questions</a>
+mailing list.</p>
+
+<h2>Quick Start</h2>
+
+<p>To get started just cd into an OTP Application and type</p>
+
+<pre><code>sinan build
+</code></pre>
+
+<p>This will give you an fully built OTP application under the _build
+directory. You can then run the command</p>
+
+<pre><code>sinan shell
+</code></pre>
+
+<p>to get an erlang shell with all the paths pointing correctly to the
+various parts of your system.</p>
+
+<p>If you want to get adventurous you can run all the eunit tests in your
+app by running:</p>
+
+<pre><code>sinan test
+</code></pre>
+
+<p>and finially, if you want to package up a normal erlang release
+tarball you can run</p>
+
+<pre><code>sinan dist
+</code></pre>
+
+<p>The tarball will end up in</p>
+
+<pre><code>&lt;project-root&gt;/_build/&lt;release-name&gt;/tar/&lt;app-name&gt;-&lt;app-vsn&gt;.tar.gz
+</code></pre>
+
+<p>To get a list of all tasks currently available run the command</p>
+
+<pre><code>sinan help
+</code></pre>
+
+<p>Hopefully thats enough to get you started, but sinan has many options
+to do various things with projects from small single app projects to
+very large multiple app projects. To get more information take a look
+at the sinan manual.</p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Sinan maintained by <a href="https://github.com/erlware">erlware</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
