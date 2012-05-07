@@ -28,8 +28,15 @@
 -spec description() ->  sin_task:task_description().
 description() ->
 
-    Desc = "This command runs all quick check tests available in the
-        project. ",
+    Desc = "
+eqc Task
+========
+
+This task runs QuviQ Quick Check on the project, running any eqc tests that it
+finds. Note that you *must* have a licensed version of Quick Check installed
+ on the box for this to work.",
+
+
 
     #task{name = ?TASK,
           task_impl = ?MODULE,

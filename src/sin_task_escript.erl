@@ -28,39 +28,47 @@
 -spec description() -> sin_task:task_description().
 description() ->
 
-    Desc = "This takes the current project and turns it into an executable
-    escript. <break> <break>
+    Desc = "
+escript Task
+============
 
-Be aware though that there are significant
-limitations in escript. These are not limitations of sinan, but limitations
-in the built in escript functionality. These limitations are <break> <break>
+This takes the current project and turns it into an executable
+[Escript](http://www.erlang.org/doc/man/escript.html).
 
-- Your escript may be built off of a single script OR Erlang OTP
-Applications but not both <break> <break> <break>
+Be aware though that there are significant limitations in escript. These are not
+limitations of Sinan, but limitations in the built in escript
+functionality. Your escript may be built off of a single script OR Erlang OTP
+Applications but not both The system will warn you if you violate these
+restrictions.
 
-The system will warn you
-if you violate these restrictions. <break> <break>
+Configuration Options
+---------------------
 
 The escript task allows for a few options in the sinan.config file. The
-options are specified as follows: <break> <break>
+options are specified as follows:
 
-{escript, [{OptionKey, OptionValue}]}. <break> <break>
+    {escript, [{Key::atom()), term()}]}.
 
-The keys available are: <break> <break>
+The keys available are:
 
-{source, <Path To Source File Rooted in the Project Dir>} <break>
+    {source, Path::string()}
 
-{emu_args, \"String Of Escript Emulator Args\"}. <break> <break>
+The source command is used if you want to include a single source file as the
+escript.
 
-    {include_apps, [the, non-project, apps, i, want, in, my,
-                    escript]}. <break> <break>
+   {emu_args, Args::string()}.
 
-So a fully configured escript config would look like: <break> <break>
+   {include_apps, [App::term()]}.
 
-{escript,
- [{source, \"bin/my_cool_escript_file\"}, <break>
-       {emu_args, \"-smp disable\"},
-       {include_apps, [kernel, stdlib, my_dep]}. <break> <break>
+include_apps is a list of all the apps that are not part of the project that you
+want to include in the escript. The project apps are all included by default.
+
+So a fully configured escript config might look like:
+
+    {escript,
+     [{source, \"bin/my_cool_escript_file\"},
+      {emu_args, \"-smp disable\"},
+     {include_apps, [kernel, stdlib, my_dep]}.
 
 See the escript documentation for details and remember to only pass the
 script option if you want that to be your escript.",

@@ -29,10 +29,74 @@
 -spec description() -> sin_task:task_description().
 description() ->
 
-    Desc = "This task analyzes all of the dependencies in the project and
-        provides that" " information to the build state for use by other
-        tasks. It is not a command intended to be called directly by the
-user. Though you can if that floats your boat.",
+    Desc = "
+depends Task
+============
+
+This task analyzes all of the dependencies in the project and
+provides that information to the build state for use by other
+tasks.
+
+Dependencies are taken from three areas.
+
+1. Dependencies specified in the `applications` and `included_applications`
+element in each OTP app metadata file.
+2. Dependency constraints specified in the projects `sinan.config`
+3. Dependency constraints in a `dep_constraints` element in the OTP App metadata.
+
+`dep_constraints` is a Sinan only addition to the metadata that OTP ignores.
+
+
+Constraining Dependency Versions
+--------------------------------
+
+To constrain the versions of set of dependencies that you rely on you
+must add a `dep_constraints` tuple to either the [[OTPApplication]]
+dotapp file or the `sinan.config`. The `dep_constraints` tuple
+contains a list of dependency constraints for the [[OTPApplication]]
+in the case of the dotapp or for the entire project in the case of the
+`sinan.config`. An individual dependency constraint may look as follows.
+
+    {<app-name>, <version>, <type>}
+
+or
+
+    {<app-name>, <version 1>, <version 2>, <type>}
+
+or
+
+    {<app-name>, <version>}
+
+In the above case type may be one of the following
+
+* gte: greater than or equal
+* lte: less than or equal
+* lt: less than
+* gt: greater than
+* eql: equal
+* between: between two versions
+
+`between` is the specifier that takes two versions. So if we depended
+on my_app between versions 0.1 and 5.0 we would have the entry:
+
+     {my_foo, \"0.1\", \"5.0\", between}
+
+that would provide the constraints we need.
+
+The form `{<app-name>, <version>}` is exactly equivalent to
+`{<app-name>, <version>, eql}` and is provided as a convenience.
+
+Lets look at a complete example used in sinan itself. This is from
+sinan's `sinan.config`.
+
+
+    {dep_constraints,
+     [{cucumberl, \"0.0.4\", gte},
+      {erlware_commons, \"0.6.0\", gte},
+      {getopt, \"0.0.1\", gte}]}.
+
+This is specifying the versions for the entire sinan project.
+",
 
     #task{name = ?TASK,
           task_impl = ?MODULE,
