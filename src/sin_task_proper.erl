@@ -28,8 +28,13 @@
 -spec description() ->  sin_task:task_description().
 description() ->
 
-    Desc = "This command runs all proper tests available in the
-        project. ",
+    Desc = "
+proper Task
+===========
+
+[PropEr](https://github.com/manopapad/proper) is a Quick Check like testing
+framework for Erlang. This command runs all proper tests available in
+the project. ",
 
     #task{name = ?TASK,
           task_impl = ?MODULE,
