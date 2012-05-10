@@ -48,7 +48,7 @@ you can always delete it later.",
           bare = true,
           deps = ?DEPS,
           example = "gen",
-          short_desc = "generates a new skeleton project",
+          short_desc = "Generates a new skeleton project",
           desc = Desc,
           opts = []}.
 
