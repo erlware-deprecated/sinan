@@ -79,13 +79,16 @@ application bar and not to any other module in application bar. ",
           bare = false,
           deps = ?DEPS,
           example = "build",
-          short_desc = "compiles the files in the project",
+          short_desc = "Compiles the files in the project",
           desc = Desc,
           opts = []}.
 
 %% @doc run the build task.
 -spec do_task(sin_config:config(), sin_state:state()) -> sin_state:state().
 do_task(Config, State0) ->
+    sin_task:ensure_started(compiler),
+    sin_task:ensure_started(syntax_tools),
+    sin_task:ensure_started(parsetools),
     ensure_build_dir(State0),
     Apps0 = sin_state:get_value(project_apps, State0),
     NApps = reorder_apps_according_to_deps(State0, Apps0),

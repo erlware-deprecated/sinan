@@ -102,7 +102,7 @@ This is specifying the versions for the entire sinan project.
           task_impl = ?MODULE,
           bare = false,
           example = "depends",
-          short_desc = "dependency resolution for the project",
+          short_desc = "Dependency resolution for the project",
           deps = ?DEPS,
           desc = Desc,
           opts = []}.
