@@ -62,6 +62,7 @@ the form:
 %% @doc run all the cucumber features in the system
 -spec do_task(sin_config:config(), sin_state:state()) -> sin_state:state().
 do_task(Config, State) ->
+    sin_task:ensure_started(cucumberl),
     ProjectRoot = sin_state:get_value(project_dir, State),
     FeatureRoot = filename:join([ProjectRoot, "features"]),
     Features = find_files(FeatureRoot,
