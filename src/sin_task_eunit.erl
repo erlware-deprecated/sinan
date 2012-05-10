@@ -47,6 +47,7 @@ tests that it finds.",
 
 %% @doc run all tests for all modules in the system
 do_task(Config, State0) ->
+    sin_task:ensure_started(eunit),
     lists:foldl(fun(#app{name=AppName, modules=Modules}, State1) ->
                    sin_log:verbose(Config, "Eunit testing app ~p~n", [AppName]),
                    case Modules == undefined orelse length(Modules) =< 0 of
