@@ -28,20 +28,25 @@
 -spec description() ->  sin_task:task_description().
 description() ->
 
-    Desc = "This command makes use of the cucumberl to run cucumberl on any
-    features in the <project-root>/features directory of project. The
-    implemenation of your features can be in any OTP Application in the system
-    in other the src or test directories. Check the documentation for cucumberl
-    and Cucumber for details of these systems. <break> <break> You may also use
-    this task to generate the cucumberl implementation after the feature card is
-    written with the following syntax: <break> <break> sinan cucumber gen
-    my_cool_feature where my_cool_app <break> <break> This will result in a
-    my_cool_feature.erl skeleton implementation in the test directory of
-    my_cool_app in your project. The feature name should be specified by name
-    only. That is, without the .feature part of the file name. <BREAK> <BREAK>
+    Desc = "
+cucumber Task
+=============
 
-    If you wish to run a subset of tests you can do so on the command line in
-    the form: <BREAK> <BREAK>
+This command makes use of the [cucumberl](https://github.com/membase/cucumberl)
+to run cucumberl on any features in the <project-root>/features directory of
+project. The implementation of your features can be in any OTP Application in
+the system in other the src or test directories. Check the documentation for
+cucumberl and Cucumber for details of these systems.
+
+You may also use this task to generate the cucumberl implementation after the
+feature card is written with the following syntax: <break> <break> sinan
+cucumber gen my_cool_feature where my_cool_app <break> <break> This will result
+in a my_cool_feature.erl skeleton implementation in the test directory of
+my_cool_app in your project. The feature name should be specified by name
+only. That is, without the .feature part of the file name.
+
+If you wish to run a subset of tests you can do so on the command line in
+the form:
 
     sinan cucumber my_feature_one my_feature_two my_feature_three ...",
 
@@ -57,6 +62,7 @@ description() ->
 %% @doc run all the cucumber features in the system
 -spec do_task(sin_config:config(), sin_state:state()) -> sin_state:state().
 do_task(Config, State) ->
+    sin_task:ensure_started(cucumberl),
     ProjectRoot = sin_state:get_value(project_dir, State),
     FeatureRoot = filename:join([ProjectRoot, "features"]),
     Features = find_files(FeatureRoot,
@@ -67,7 +73,9 @@ do_task(Config, State) ->
         case AdditionalArgs of
             ["gen", Name, "where", TargetApp] ->
                 [ {F,
-                   gen_feature(State, F, TargetApp)}
+                   gen_feature(F,
+                               sin_utils:find_app_by_name(erlang:list_to_atom(TargetApp),
+                                                          State))}
                   || F <- Features, filename:basename(F, ".feature") == Name];
             [] ->
                 [ {F, run_feature(Config, State, F)} || F <- Features ];
@@ -113,11 +121,9 @@ run_feature(Config, State, FeatureFile) ->
             ?SIN_RAISE(State, {no_implementation, FeatureFile})
     end.
 
-gen_feature(State, FeatureFile, TargetApp) ->
+gen_feature(FeatureFile, #app{basedir=BaseDir}) ->
     TargetDir =
-        filename:join(
-          [sin_state:get_value({apps, erlang:list_to_atom(TargetApp), basedir}, State),
-           "test"]),
+        filename:join(BaseDir, "test"),
     ok = ec_file:mkdir_path(TargetDir),
     ok = cucumberl_gen:gen(FeatureFile, TargetDir).
 

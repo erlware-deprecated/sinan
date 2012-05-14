@@ -25,13 +25,17 @@
 -spec description() -> sin_task:task_description().
 description() ->
 
-    Desc = "This command the built in erlang xref checker on all code in the
-        project. It outputs several different sections corresponding to the
-        information available from xref. xref does have the problem that if
-        dependent code is not compiled with debug_info it will display any calls
-        to that code as unresolved. This is unfortunate much of the code
-        in the core library is not compiled with debug info. So you will get
-        false positive reports for this code.",
+    Desc = "
+xref Task
+=========
+
+This command the built in erlang xref checker on all code in the
+project. It outputs several different sections corresponding to the
+information available from xref. xref does have the problem that if
+dependent code is not compiled with debug_info it will display any calls
+to that code as unresolved. This is unfortunate much of the code
+in the core library is not compiled with debug info. So you will get
+false positive reports for this code.",
 
     #task{name = ?TASK,
           task_impl = ?MODULE,
@@ -50,14 +54,12 @@ do_task(Config, State) ->
     ExistingPaths = code:get_path(),
     xref:start(ServerName),
 
-    Apps = lists:map(fun(#app{name=App}) ->
-                             App
-                     end, sin_state:get_value(project_apps, State)),
+    Apps = sin_state:get_value(project_apps, State),
 
     ModuleInfo =
-        lists:flatten(lists:map(fun(App) ->
+        lists:flatten(lists:map(fun(App=#app{modules=Modules}) ->
                                         xref_app(Config, State, ServerName, App),
-                                        gather_modules(State, App)
+                                        Modules
                                 end,
                                 Apps)),
 
@@ -74,23 +76,14 @@ do_task(Config, State) ->
     xref:stop(ServerName),
     State.
 
-%% Get the module detail information from the config
--spec gather_modules(sin_state:state(), AppName::string()) ->
-    [{Filename::string(), AppName::atom(), Extentions::string()}].
-gather_modules(State, AppName) ->
-    sin_state:get_value({apps, AppName, module_detail}, [], State).
-
-
 %% @doc add the application to the specified xref system
 -spec xref_app(sin_config:config(), sin_state:state(),
                ServerName::atom(), AppName::atom()) ->
     ok | fail.
-xref_app(Config, State, ServerName, AppName) ->
-    Paths = sin_state:get_value({apps, AppName, code_paths}, State),
+xref_app(Config, State, ServerName, #app{path=AppDir,properties=Props}) ->
+    Paths = proplists:get_value(code_paths, Props),
 
     xref:set_library_path(ServerName, Paths),
-
-    AppDir = sin_state:get_value({apps, AppName, builddir}, State),
 
     case xref:add_application(ServerName, AppDir,
                               [{warnings, true}]) of

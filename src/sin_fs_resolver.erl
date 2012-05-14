@@ -44,12 +44,19 @@ new(Config, State) ->
                               {sin_dep_resolver:state(),
                                [sin_dep_solver:spec()]}.
 app_dependencies(RState={PathList, State, ProjectApps}, App, Ver) ->
-    case lists:member(App, ProjectApps) of
-        true ->
-            {Deps, VersionedDeps} = get_app_constraints(State,
-                                            sin_state:get_value({apps, App, dotapp}, State)),
-            {RState, Deps ++ VersionedDeps};
-        false ->
+    case ec_lists:search(fun(#app{name=AppName,vsn=Vsn,
+                                  deps=Deps, dep_constraints=DepC}) ->
+                                 case App == AppName
+                                     andalso Vsn == Ver of
+                                     true ->
+                                         {ok, Deps ++ DepC};
+                                     _ ->
+                                         not_found
+                                 end
+                         end, ProjectApps) of
+        {ok, Deps, _} ->
+            {RState, Deps};
+        not_found ->
             case look_for_dependency_path(State, PathList, App, Ver) of
                 {ok, Path} ->
                     {RState, get_dependency_information(State, Path, App)};
@@ -62,10 +69,17 @@ app_dependencies(RState={PathList, State, ProjectApps}, App, Ver) ->
                           {sin_dep_resolver:impl(),
                            [sin_dep_solver:versions()]}.
 app_versions(RState={PathList, State, ProjectApps}, App) ->
-    case lists:member(App, ProjectApps) of
-        true ->
-            {RState, [get_app_vsn(State, sin_state:get_value({apps, App, dotapp}, State))]};
-        false ->
+    case ec_lists:search(fun(#app{name=AppName,vsn=Vsn}) ->
+                                 case App == AppName of
+                                     true ->
+                                         {ok, Vsn};
+                                     _ ->
+                                         not_found
+                                 end
+                         end, ProjectApps) of
+        {ok, Vsn, _} ->
+            {RState, [Vsn]};
+        not_found ->
             VsnList = get_available_versions(State, PathList, App),
             %% Make sure the elements are unique
             {RState, sets:to_list(sets:from_list(VsnList))}
@@ -75,7 +89,9 @@ app_versions(RState={PathList, State, ProjectApps}, App) ->
 -spec resolve(sin_dep_resolver:impl(), sin_dep_solver:app(), sin_dep_solver:version()) ->
                      {sin_dep_resolver:impl(), string()}.
 resolve(RState={PathList, State, ProjectApps}, App, Version) ->
-    case lists:member(App, ProjectApps) of
+    case lists:any(fun(#app{name=AppName}) ->
+                           AppName == App
+                   end, ProjectApps) of
         true ->
             AppsBuildDir = sin_state:get_value(apps_dir, State),
             Path =
@@ -224,20 +240,3 @@ get_available_versions(State, PathList, App) ->
                                            {unable_to_access_directory, Error, Path})
                         end
                 end, [], PathList).
-
--spec get_app_vsn(sin_state:state(), [string()]) ->
-                         string().
-get_app_vsn(State, AppConfigPath) ->
-    case file:consult(AppConfigPath) of
-        {ok, [{application, _AppName, Terms}]} ->
-                case lists:keyfind(vsn, 1, Terms) of
-                    {vsn, Vsn} ->
-                        Vsn;
-                    _ ->
-                        ?SIN_RAISE(State, {app_config_contains_no_version, AppConfigPath})
-                end;
-        {error, enoent} ->
-            ?SIN_RAISE(State, {no_app_config, AppConfigPath});
-        {error, SomeOtherError} ->
-            ?SIN_RAISE(State, {error_opening_file, AppConfigPath, SomeOtherError})
-    end.

@@ -25,14 +25,19 @@
 -spec description() -> sin_task:task_description().
 description() ->
 
-    Desc = "A very simple command that prints erts version sinan is running on",
+    Desc = "
+erts Task
+=========
+
+A very simple command that prints out the current version of the
+Erlang Runtime System that Sinan is running on",
 
     #task{name = ?TASK,
           task_impl = ?MODULE,
           bare = true,
           deps = ?DEPS,
           example = "erts",
-          short_desc = Desc,
+          short_desc = "Display the erts version sinan is running on",
           desc = Desc,
           opts = []}.
 
@@ -42,5 +47,3 @@ do_task(Config, State) ->
     sin_log:normal(Config, "erts-~s (~s)", [erlang:system_info(version),
                                             erlang:system_info(otp_release)]),
     State.
-
-

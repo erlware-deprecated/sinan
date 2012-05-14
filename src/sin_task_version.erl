@@ -25,7 +25,11 @@
 -spec description() -> sin_task:task_description().
 description() ->
 
-    Desc = "This command simply prents out the current version of sinan",
+    Desc = "
+version Task
+============
+
+This command simply prents out the current version of sinan",
 
     #task{name = ?TASK,
           task_impl = ?MODULE,
@@ -41,7 +45,7 @@ description() ->
 do_task(Config, State) ->
     Version = case get_version() of
                   unknown_version ->
-                      "v4.0.0";
+                      "v4.1.0";
                   SinVersion ->
                       SinVersion
               end,

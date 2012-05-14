@@ -27,24 +27,31 @@
 -spec description() -> sin_task:task_description().
 description() ->
 
-    Desc = "This task runs dialyzer on a project. It checks the 'dialyzer'
-            state of the project and builds or updates the relevant per
-        project plt files. This task may take a long time to complete.
-One problem that dialyzer has is that all applications being
-analyzed project apps and dependencies must be built with debug
-information. If not, dialyzer will blow up with some not very
-useful information. You can get around this by asking the
-dialyzer task to ignore certain applications. Do this in
-your build config with the following entry.  <break>  <break>
-{dialyzer_ignore, [some_app1, some_app2]}.  <break>  <break>
-The downside, of course, is figuring out which apps actually
-have the problem. This task tries to help by printing out a
-list of applications that where under analysis when the blowup
-                                                    occurred.
+    Desc = "
+dialyzer Task
+=============
+
+This task runs dialyzer on a project. It checks the 'dialyzer' state of the
+project and builds or updates the relevant per project plt files. This task may
+take a (very) long time to complete.
+
+One problem that dialyzer has is that all applications being analyzed project
+apps and dependencies must be built with debug information. If not, dialyzer
+will blow up with some not very useful information. You can get around this by
+asking the dialyzer task to ignore certain applications.
+
+Do this in your build config with the following entry.
+
+    {dialyzer_ignore, [IgnoredApps::atom()]}.
+
+The downside, of course, is figuring out which apps actually have the
+problem. This task tries to help by printing out a list of applications that
+where under analysis when the blowup occurred.
 
 By default all dialyzer warnings are enabled. You can
-override this with the directive  <break>  <break>
-{dialyzer_warnings, []}. <break>  <break>
+override this with the directive
+
+    {dialyzer_warnings, [Warnings::term()]}.
 
 Just put the warning options listed in the dialyzer
 documentation to get the specific warnings that you would like
@@ -56,7 +63,7 @@ system. ",
           task_impl = ?MODULE,
           bare = false,
           example = "dialyzer",
-          short_desc = "dialyzer",
+          short_desc = "Run the Dialyzer analyzer on the project",
           deps = ?DEPS,
           desc = Desc,
           opts = []}.

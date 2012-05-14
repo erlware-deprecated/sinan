@@ -28,7 +28,18 @@
 -spec description() ->  sin_task:task_description().
 description() ->
 
-    Desc = "This echos information to the command line",
+    Desc = "
+echo Task
+=========
+
+This task echos the information that the user requests to back to the caller in
+a way that erlang can make use of. It mostly exists to make it easier to
+integrate Sinan with make.
+
+The two support arguments at the moment are `paths` and `includes`
+
+You can get other information out of the state but it will not be nicely
+formatted",
 
     #task{name = ?TASK,
           task_impl = ?MODULE,
@@ -36,8 +47,7 @@ description() ->
           deps = ?DEPS,
           example = "echo paths",
           desc = Desc,
-          short_desc = "Displays the requested information on the command line
-          in a format that erlang can understand.",
+          short_desc = "Displays the requested information on the command line",
           opts = []}.
 
 %% @doc run all tests for all modules in the system
@@ -62,6 +72,3 @@ print_correct(Else, State) ->
     AtomRep = erlang:list_to_atom(Else),
     io:format("~s ", [sin_state:get_value(AtomRep, State)]),
     State.
-
-
-

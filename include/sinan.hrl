@@ -14,8 +14,25 @@
               path :: string(),
               type :: runtime | compiletime,
               project :: boolean(),
-              modules :: sin_file_info:mod(),
-              sources :: sin_file_info:mod()}).
+              %% Everything below will only be populated if the
+              %% project field above is true otherwise they will be
+              %% undefined.
+              id="" :: string() | list(),
+              maxP=infinity :: integer() | infinity,
+              maxT=infinity :: integer() | infinity,
+              env=[] :: list(),
+              start_phases = undefined :: term() | undefined,
+              basedir :: string() | undefined,
+              description="" :: string() | list(),
+              registered :: [atom()] | undefined,
+              applications :: [atom()] | undefined,
+              included_applications :: [atom()] | undefined,
+              dep_constraints :: term() | undefined,
+              mod :: term() | undefined,
+              dotapp :: string() | undefined,
+              deps :: [atom()] | undefined,
+              properties=[] :: proplists:proplist(),
+              modules :: [atom()] | undefined}).
 
 %% @doc describes a module in the system
 %%  - name: is the name of the module
@@ -24,7 +41,8 @@
                  path :: string(),
                  module_deps :: [module()],
                  includes :: [atom()],
-                 include_timestamps :: [{string(), sin_file_info:date_time()}],
+                 include_timestamps :: [{string(),
+                                         sin_file_info:date_time()}],
                  tags :: [atom()],
                  called_modules :: [atom()],
                  changed :: sin_file_info:date_time(),
