@@ -45,7 +45,7 @@ This command simply prents out the current version of sinan",
 do_task(Config, State) ->
     Version = case get_version() of
                   unknown_version ->
-                      "v4.0.1";
+                      "v4.1.0";
                   SinVersion ->
                       SinVersion
               end,
