@@ -3,7 +3,7 @@ ERLC=/usr/bin/env erlc
 ERL=/usr/bin/env erl
 
 RELDIR=$(CURDIR)/_build/sinan
-APPDIR=$(RELDIR)lib/sinan-$(VSN)
+APPDIR=$(RELDIR)/lib/sinan-$(VSN)
 LOGDIR=$(RELDIR)/logs
 BINDIR=$(DESTDIR)/usr/bin
 INSTALL_TARGET=$(DESTDIR)/usr/lib/erlang/lib/sinan-$(VSN)
