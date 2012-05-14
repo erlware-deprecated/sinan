@@ -73,7 +73,9 @@ do_task(Config, State) ->
         case AdditionalArgs of
             ["gen", Name, "where", TargetApp] ->
                 [ {F,
-                   gen_feature(State, F, TargetApp)}
+                   gen_feature(F,
+                               sin_utils:find_app_by_name(erlang:list_to_atom(TargetApp),
+                                                          State))}
                   || F <- Features, filename:basename(F, ".feature") == Name];
             [] ->
                 [ {F, run_feature(Config, State, F)} || F <- Features ];
@@ -119,11 +121,9 @@ run_feature(Config, State, FeatureFile) ->
             ?SIN_RAISE(State, {no_implementation, FeatureFile})
     end.
 
-gen_feature(State, FeatureFile, TargetApp) ->
+gen_feature(FeatureFile, #app{basedir=BaseDir}) ->
     TargetDir =
-        filename:join(
-          [sin_state:get_value({apps, erlang:list_to_atom(TargetApp), basedir}, State),
-           "test"]),
+        filename:join(BaseDir, "test"),
     ok = ec_file:mkdir_path(TargetDir),
     ok = cucumberl_gen:gen(FeatureFile, TargetDir).
 

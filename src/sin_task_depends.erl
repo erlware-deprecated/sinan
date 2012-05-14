@@ -121,7 +121,6 @@ do_task(Config, State0) ->
                           true = code:add_patha(Ebin)
                   end, CompiletimeDeps),
 
-
     MergedDeps = RuntimeDeps0 ++ CompiletimeDeps,
 
     FA = fun (App) ->
@@ -148,8 +147,7 @@ do_task(Config, State0) ->
 solve_deps(Config, State0, ProjectApps) ->
     DefaultConstraints = Config:match(dep_constraints, []),
 
-    {Apps, ActualSpecs} = remove_excluded(State0,
-                                          ProjectApps,
+    {Apps, ActualSpecs} = remove_excluded(ProjectApps,
                                           DefaultConstraints),
 
     ResolverState0 = sin_dep_resolver:new(sin_fs_resolver, Config, State0),
@@ -162,34 +160,18 @@ solve_deps(Config, State0, ProjectApps) ->
 
     ResolverState1 = sin_dep_solver:extract_resolver_state(SolverState2),
     {ReleaseApps1, RuntimeDeps2} =
-        lists:foldl(fun({App, Vsn}, {ReleaseApps0, RuntimeDeps1}) ->
-                            {_, Path} =
-                                sin_dep_resolver:resolve(ResolverState1,
-                                                         App, Vsn),
-                            case lists:member(App, ProjectApps) of
-                                true ->
-                                    {[#app{name=App, vsn=Vsn, path=Path,
-                                           type=runtime,
-                                           project=true} | ReleaseApps0],
-                                     RuntimeDeps1};
-                                false ->
-                                    {ReleaseApps0,
-                                     [#app{name=App, vsn=Vsn, path=Path,
-                                           type=runtime,
-                                           project=false} | RuntimeDeps1]}
-                            end
-                    end, {[], []}, RuntimeDeps0),
+        seperate_resolve_deps(ResolverState1, RuntimeDeps0, ProjectApps),
 
     CompiletimeDeps1 =
-        lists:foldl(fun({App, Vsn}, Acc) ->
-                            case in_runtime(App, RuntimeDeps2) of
+        lists:foldl(fun({AppName, Vsn}, Acc) ->
+                            case in_runtime(AppName, RuntimeDeps2) of
                                 true ->
                                     Acc;
                                 false ->
                                     {_, Path} =
                                         sin_dep_resolver:resolve(ResolverState1,
-                                                                 App, Vsn),
-                                    [#app{name=App, vsn=Vsn, path=Path,
+                                                                 AppName, Vsn),
+                                    [#app{name=AppName, vsn=Vsn, path=Path,
                                           type=compiletime, project=false} |
                                      Acc]
                             end
@@ -202,6 +184,36 @@ solve_deps(Config, State0, ProjectApps) ->
                               State0),
 
     {State1, {ReleaseApps1, RuntimeDeps2, CompiletimeDeps1}}.
+
+seperate_resolve_deps(ResolverState1, RuntimeDeps0, ProjectApps) ->
+    lists:foldl(fun({AppName, Vsn}, {ReleaseApps0, RuntimeDeps1}) ->
+                        {_, Path} =
+                            sin_dep_resolver:resolve(ResolverState1,
+                                                     AppName, Vsn),
+                            case get_project_app(AppName, ProjectApps)  of
+                                {ok, PApp, _}  ->
+                                    {[PApp#app{path=Path,
+                                               type=runtime,
+                                               project=true} | ReleaseApps0],
+                                     RuntimeDeps1};
+                                not_found ->
+                                    {ReleaseApps0,
+                                     [#app{name=AppName, vsn=Vsn, path=Path,
+                                           type=runtime,
+                                           project=false} | RuntimeDeps1]}
+                            end
+                    end, {[], []}, RuntimeDeps0).
+
+get_project_app(AppName, ProjectApps) ->
+    ec_lists:search(fun(PApp=#app{name=PAppName}) ->
+                           case PAppName == AppName of
+                               true ->
+                                   {ok,PApp};
+                               _ ->
+                                   not_found
+                           end
+                   end,
+                   ProjectApps).
 
 in_runtime(App0, RuntimeDeps) ->
     lists:any(fun(#app{name=AppName})
@@ -242,12 +254,12 @@ format_exception(Exception) ->
                            sin_state:state(),
                            sin_dep_solver:state(),
                            [sin_dep_solver:spec()]) ->
-                                  {sin_dep_solver:state(), [sin_dep_solver:spec()]}.
+                                  {sin_dep_solver:state(),
+                                   [sin_dep_solver:spec()]}.
 get_compiletime_deps(Config, State0, SolverState0, DefaultSpecs) ->
     CompiletimeApps0 = Config:match(compile_deps, []),
 
-    {CompiletimeApps1, CompileSpecs} = remove_excluded(State0,
-                                                       CompiletimeApps0,
+    {CompiletimeApps1, CompileSpecs} = remove_excluded(CompiletimeApps0,
                                                        DefaultSpecs),
     CompiletimeDeps0 =
         case sin_dep_solver:all_deps(Config, SolverState0,
@@ -279,22 +291,12 @@ get_runtime_deps(Config, State0, SolverState0, Apps, Specs) ->
                           end, Deps0)}
     end.
 
--spec remove_excluded(sin_state:state(),
-                      [sin_dep_solver:app()],
-                      [sin_dep_solver:spec()]) ->
-                             {[sin_dep_solver:app()], [sin_dep_solver:spec()]}.
-remove_excluded(State0, Apps0, Constraints) ->
-    Apps1 = lists:filter(fun(App) ->
-                                 not lists:member({exclude, App}, Constraints)
+remove_excluded(Apps0, Constraints) ->
+    Apps1 = lists:filter(fun(#app{name=AppName}) ->
+                                 not lists:member({exclude, AppName},
+                                                  Constraints)
                          end, Apps0),
     DefaultSpecs =
-        lists:map(fun(AppName) ->
-                          case sin_state:get_value({apps, AppName, vsn},
-                                                   State0) of
-                              undefined ->
-                                  AppName;
-                              Vsn ->
-                                  {AppName, Vsn}
-                          end
-                  end, Apps1),
-    {Apps1, DefaultSpecs ++ Constraints}.
+        [{AppName, Vsn} || #app{name=AppName, vsn=Vsn} <- Apps1],
+
+    {[AppName || #app{name=AppName} <- Apps1], DefaultSpecs ++ Constraints}.
