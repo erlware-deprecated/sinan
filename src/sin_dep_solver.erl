@@ -246,7 +246,7 @@ new_limits() -> [].
 add_limit(Config, State, Source, AppsLimits, NewLimit) ->
     case is_valid_limit(NewLimit) of
         false ->
-            sin_config:normal(Config, "Invalid constraint ~p found originating at ~p",
+            sin_log:normal(Config, "Invalid constraint ~p found originating at ~p",
                          [NewLimit, Source]),
             ?SIN_RAISE(State, {invalid_constraint, NewLimit, Source});
         true ->

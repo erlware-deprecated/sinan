@@ -52,6 +52,7 @@ into the project itself.",
 %% @doc run edoc on all applications
 -spec do_task(sin_config:config(), sin_state:state()) -> sin_state:state().
 do_task(Config, State) ->
+    sin_task:ensure_started(edoc),
     Apps = sin_state:get_value(project_apps, State),
     run_docs(Config, State, Apps),
     State.

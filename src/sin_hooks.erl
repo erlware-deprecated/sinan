@@ -94,45 +94,13 @@ create_env(State) ->
     lists:flatten(Env).
 
 %% @doc Given a command an an environment run that command with the environment
--spec command(sin_config:config(), sin_state:state(), Command::list(), Env::list(),
+-spec command(sin_config:config(), sin_state:state(),  Command::list(), Env::list(),
               HookName::atom()) -> list().
 command(Config, State, Cmd, Env, HookName) ->
-    Opt =  [{env, Env}, stream, exit_status, use_stdio,
-            stderr_to_stdout, in, eof],
-    P = open_port({spawn, Cmd}, Opt),
-    get_data(Config, State, P, HookName, []).
-
-%% @doc Event results only at newline boundaries.
--spec event_newline(sin_config:config(), BuildState::list(), HookName::atom(),
-                    Line::list(), Acc::list()) -> ok.
-event_newline(Config, BuildState, HookName, [?NEWLINE | T], Acc) ->
-    sin_log:verbose(Config, lists:reverse(Acc)),
-    event_newline(Config, BuildState, HookName, T, []);
-event_newline(Config, BuildState, HookName, [?CARRIAGE_RETURN | T], Acc) ->
-    sin_log:verbose(Config, lists:reverse(Acc)),
-    event_newline(Config, BuildState, HookName, T, []);
-event_newline(Config, BuildState, HookName, [H | T], Acc) ->
-    event_newline(Config, BuildState, HookName, T, [H | Acc]);
-event_newline(_Config, _BuildState, _HookName, [], Acc) ->
-    lists:reverse(Acc).
-
-%% @doc Recieve the data from the port and exit when complete.
--spec get_data(sin_config:config(), sin_state:state(), P::port(),
-               HookName::atom(), Acc::list()) -> sin_state:state().
-get_data(Config, State, P, HookName, Acc) ->
-    receive
-        {P, {data, D}} ->
-            NewAcc = event_newline(Config, State, HookName, Acc ++ D, []),
-            get_data(Config, State, P, HookName, NewAcc);
-        {P, eof} ->
-            sin_log:verbose(Config, Acc),
-            port_close(P),
-            receive
-                {P, {exit_status, 0}} ->
-                    State;
-                {P, {exit_status, N}} ->
-                    ?SIN_RAISE(State, bad_exit_status,
-                               "Hook ~s exited with status ~p",
-                               [HookName, N])
-            end
+    Opt =  [{env, Env}],
+    case sin_sh:sh(Config, Cmd, Opt) of
+        {ok, _} ->
+            State;
+        {error, Reason} ->
+            ?SIN_RAISE(State, {error_running_hook, HookName, Reason})
     end.

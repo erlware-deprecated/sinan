@@ -47,8 +47,7 @@ formatted",
           deps = ?DEPS,
           example = "echo paths",
           desc = Desc,
-          short_desc = "Displays the requested information on the command line
-          in a format that erlang can understand.",
+          short_desc = "Displays the requested information on the command line",
           opts = []}.
 
 %% @doc run all tests for all modules in the system
@@ -73,6 +72,3 @@ print_correct(Else, State) ->
     AtomRep = erlang:list_to_atom(Else),
     io:format("~s ", [sin_state:get_value(AtomRep, State)]),
     State.
-
-
-

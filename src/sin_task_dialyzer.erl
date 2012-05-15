@@ -63,7 +63,7 @@ system. ",
           task_impl = ?MODULE,
           bare = false,
           example = "dialyzer",
-          short_desc = "dialyzer",
+          short_desc = "Run the Dialyzer analyzer on the project",
           deps = ?DEPS,
           desc = Desc,
           opts = []}.
