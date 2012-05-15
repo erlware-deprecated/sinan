@@ -28,8 +28,13 @@
 -spec description() ->  sin_task:task_description().
 description() ->
 
-    Desc = "This command runs all eunit tests available in the
-        project. ",
+    Desc = "
+eunit Task
+==========
+
+This command searches the project for
+[Eunit](http://www.erlang.org/doc/apps/eunit/chapter.html) tests and runs any
+tests that it finds.",
 
     #task{name = ?TASK,
           task_impl = ?MODULE,
@@ -73,8 +78,14 @@ filter_modules(Config, Modules) ->
                        sin_state:state(), [sin_file_info:mod()]) -> ok.
 run_module_tests(Config, State0, AllModules) ->
     lists:foldl(
-      fun(#module{name=Name, tags=Tags}, State1) ->
-              case sets:is_element(eunit, Tags) of
+      fun(#module{name=PreName}, State1) ->
+              Name = case PreName of
+                         {Name0, _} ->
+                             Name0;
+                         Name0 ->
+                             Name0
+                     end,
+              case lists:member({test, 0}, Name:module_info(exports)) of
                   true ->
                       sin_log:normal(Config, "testing ~p", [Name]),
                       case eunit:test(Name, [{verbose, Config:match(verbose, false)}]) of

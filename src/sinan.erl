@@ -114,18 +114,22 @@ run_sinan() ->
 
 %% @doc do a full run of sinan with arbitrary args that may be parsed like
 %% command line args
--spec run_sinan([string()]) -> sin_config:config().
+-spec run_sinan([string()]) -> {ok, sin_config:config()} | {error, term()}.
 run_sinan(Args) ->
-    manual_start(),
-    case getopt:parse(option_spec_list(), Args) of
-        {ok, {Options, [Target | Rest]}} ->
-            do_internal(erlang:list_to_atom(Target), Rest, Options);
-        {ok, {Options, []}} ->
-            do_internal(undefined, [], Options);
-        {error, {Reason, Data}} ->
-            io:format("Error: ~s ~p~n~n", [Reason, Data]),
-            usage(),
-            {error, failed}
+    case manual_start() of
+        ok ->
+            case getopt:parse(option_spec_list(), Args) of
+                {ok, {Options, [Target | Rest]}} ->
+                    do_internal(erlang:list_to_atom(Target), Rest, Options);
+                {ok, {Options, []}} ->
+                    do_internal(undefined, [], Options);
+                {error, {Reason, Data}} ->
+                    io:format("Error: ~s ~p~n~n", [Reason, Data]),
+                    usage(),
+                    {error, failed}
+            end;
+        Else ->
+            Else
     end.
 
 
@@ -134,33 +138,39 @@ run_sinan(Args) ->
 %%% and all dependencies
 -spec manual_start() -> ok.
 manual_start() ->
-    lists:foreach(fun(App) ->
-                          case application:start(App) of
-                              {error, {already_started, App}} ->
-                                  ok;
-                              ok ->
-                                  ok;
-                              Error ->
-                                  throw(Error)
-                          end
-                  end,
-                  [kernel,
-                   stdlib,
-                   cucumberl,
-                   erlware_commons,
-                   compiler,
-                   syntax_tools,
-                   edoc,
-                   eunit,
-                   tools,
-                   xmerl,
-                   mnesia,
-                   parsetools,
-                   getopt,
-                   crypto,
-                   proper,
-                   erlware_commons,
-                   sinan]).
+    lists:foldl(fun(App, ok) ->
+                        case application:start(App) of
+                            {error, {already_started, App}} ->
+                                ok;
+                            ok ->
+                                ok;
+                            Error ->
+                                io:format("Error starting OTP Application ~p~n",
+                                          [Error]),
+                                Error
+                        end;
+                   (_App, Else) ->
+                        Else
+                end,
+                ok,
+                [kernel,
+                 stdlib,
+                 cucumberl,
+                 erlware_commons,
+                 compiler,
+                 syntax_tools,
+                 edoc,
+                 eunit,
+                 tools,
+                 xmerl,
+                 mnesia,
+                 parsetools,
+                 getopt,
+                 crypto,
+                 proper,
+                 erlware_commons,
+                 joxa,
+                 sinan]).
 
 -spec usage() -> ok.
 usage() ->

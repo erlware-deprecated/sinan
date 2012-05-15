@@ -1,5 +1,5 @@
 %% -*- mode: Erlang; fill-column: 80; comment-column: 75; -*-
-%%%%-------------------------------------------------------------------
+%%%-------------------------------------------------------------------
 %%% Copyright (c) 2007-2010 Erlware
 %%%
 %%% Permission is hereby granted, free of charge, to any
@@ -151,18 +151,16 @@ process_raw_config(ProjectDir, FileConfig, CommandLineConfig, State0) ->
                           sin_state:state()) ->
     sin_config:config().
 intuit_build_config(ProjectDir, Config, State) ->
-    %% App name is always the same as the name of the project dir
-    AppName = filename:basename(ProjectDir),
     try
-        AppFilePath = get_app_file(ProjectDir, AppName, Config),
+        AppFilePath = get_app_file(ProjectDir),
         case file:consult(AppFilePath) of
             {error, enoent} ->
                 ?SIN_RAISE(State, unable_to_intuit_config);
             {error, Error} ->
                 ?SIN_RAISE(State, {unable_to_read_config,
                                    AppFilePath, Error});
-            {ok, [{application, _, Rest}]} ->
-                build_out_intuited_config(AppName, Rest)
+            {ok, [All={application, _, _}]} ->
+                build_out_intuited_config(All)
         end
     catch
         throw:no_app_metadata_at_top_level ->
@@ -172,30 +170,35 @@ intuit_build_config(ProjectDir, Config, State) ->
 
 %% @doc the app file could be in ebin or src/app.src. we need to
 %% check for both
--spec get_app_file(string(), string(), sin_config:config()) ->
+-spec get_app_file(string()) ->
                           string().
-get_app_file(ProjectDir, AppName, Config) ->
-    EbinDir = filename:join([ProjectDir,
-                             "ebin",
-                             AppName ++ ".app"]),
-    SrcDir = filename:join([ProjectDir,
-                            "src",
-                             AppName ++ ".app.src"]),
-    case {sin_utils:file_exists(Config, EbinDir),
-          sin_utils:file_exists(Config, SrcDir)} of
-        {_, true} ->
-            SrcDir;
-        {true, _} ->
-            EbinDir;
+get_app_file(ProjectDir) ->
+    EbinDir = filename:join(ProjectDir,
+                            "ebin"),
+    SrcDir = filename:join(ProjectDir,
+                           "src"),
+    EbinPath = filelib:fold_files(EbinDir, "(.+)\.app", false,
+                                  fun(BaseName, Acc) ->
+                                          [filename:join(EbinDir, BaseName) | Acc]
+                                  end, []),
+    SrcPath =  filelib:fold_files(SrcDir, "(.+)\.app.src", false,
+                                 fun(BaseName, Acc) ->
+                                         [filename:join(EbinDir, BaseName) | Acc]
+                                  end, []),
+    case {EbinPath, SrcPath} of
+        {_, [RSrcDir]} ->
+            RSrcDir;
+        {[REbinDir], _} ->
+            REbinDir;
          _ ->
             throw(no_app_metadata_at_top_level)
     end.
 
 %% @doc Given information from the app dir that was found, create a new full
 %% populated correct build config.
--spec build_out_intuited_config(AppName::string(), Rest::[{atom(), term()}]) ->
+-spec build_out_intuited_config(All::{application, atom(), [{atom(), term()}]}) ->
     sin_config:config().
-build_out_intuited_config(AppName, Rest) ->
+build_out_intuited_config({application, AppName, Rest}) ->
    {value, {vsn, ProjectVsn}} = lists:keysearch(vsn, 1, Rest),
     sin_config:add_all([{project_name, AppName},
                         {project_vsn, ProjectVsn}], sin_config:new()).
@@ -369,7 +372,7 @@ source_details(Dir, AppName, State0) ->
 look_for_app_dirs(Config, State0, BuildDir, ProjectDir) ->
     Ignorables = sin_config:match(ignore_dirs, Config) ++ [BuildDir],
     State1 = sin_state:store(ignore_dirs, Ignorables, State0),
-    case process_possible_app_dir(State1, BuildDir, ProjectDir,
+    case process_possible_app_dir(State1, ProjectDir,
                                   Ignorables, []) of
         [] ->
             ?SIN_RAISE(State1, {no_app_directories, ProjectDir});
@@ -379,11 +382,10 @@ look_for_app_dirs(Config, State0, BuildDir, ProjectDir) ->
 
 %% @doc Process the app dir to see if it is an application directory.
 -spec process_possible_app_dir(sin_state:state(),
-                               BuildDir::string(),
                                TargetDir::string(),
                                Ignorables::[string()], Acc::list()) ->
                                       ListOfDirs::[{ebin | appsrc, string()}].
-process_possible_app_dir(State, BuildDir, TargetDir, Ignorables, Acc) ->
+process_possible_app_dir(State, TargetDir, Ignorables, Acc) ->
     case filelib:is_dir(TargetDir) andalso not
         sin_utils:is_dir_ignorable(TargetDir, Ignorables) of
         true ->
@@ -398,7 +400,6 @@ process_possible_app_dir(State, BuildDir, TargetDir, Ignorables, Acc) ->
                     lists:foldl(fun(Sub, NAcc) ->
                                         Dir = filename:join([TargetDir, Sub]),
                                         process_possible_app_dir(State,
-                                                                 BuildDir,
                                                                  Dir,
 
                                                                  Ignorables,

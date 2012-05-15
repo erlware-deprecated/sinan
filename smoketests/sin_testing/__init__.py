@@ -258,7 +258,7 @@ class SmokeTest(unittest.TestCase):
     @sinan("dist")
     def do_dist(self, child, appdesc):
         child.expect(pexpect.EOF)
-        build_tmp = self.get_build_root_path()
+        build_tmp = self.get_release_root_path()
         build_tmp.append("tar")
         build_tmp.append("%s-%s.tar.gz" %
                          (appdesc.project_name, appdesc.project_version))
@@ -286,8 +286,7 @@ class SmokeTest(unittest.TestCase):
 
     def get_build_root_path(self, project_dir=None, release_name=None,
                             release_version=None):
-        if not project_dir:
-            project_dir = self.project_dir
+        release_root = self.get_release_root_path(project_dir)
 
         if not release_name and not self.release_name:
             release_name = self.current_app_desc.project_name
@@ -299,7 +298,15 @@ class SmokeTest(unittest.TestCase):
         elif not release_version:
             release_version = self.release_version
 
+        release_root.append(release_name)
+        return release_root
+
+
+    def get_release_root_path(self, project_dir=None):
+        if not project_dir:
+            project_dir = self.project_dir
+
         return [project_dir,
-                "_build",
-                release_name]
+                "_build"]
+
 

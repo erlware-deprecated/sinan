@@ -74,8 +74,7 @@ class TestFoo(st.SmokeTest):
                                     self.release_name + ".script"])
 
 
-            self.assert_files_exist("_build",
-                                   [r, "tar",
+            self.assert_files_exist(["tar",
                                     "%s-%s.tar.gz" % (self.release_name,
                                                       self.release_version)])
 

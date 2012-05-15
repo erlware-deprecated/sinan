@@ -29,10 +29,74 @@
 -spec description() -> sin_task:task_description().
 description() ->
 
-    Desc = "This task analyzes all of the dependencies in the project and
-        provides that" " information to the build state for use by other
-        tasks. It is not a command intended to be called directly by the
-user. Though you can if that floats your boat.",
+    Desc = "
+depends Task
+============
+
+This task analyzes all of the dependencies in the project and
+provides that information to the build state for use by other
+tasks.
+
+Dependencies are taken from three areas.
+
+1. Dependencies specified in the `applications` and `included_applications`
+element in each OTP app metadata file.
+2. Dependency constraints specified in the projects `sinan.config`
+3. Dependency constraints in a `dep_constraints` element in the OTP App metadata.
+
+`dep_constraints` is a Sinan only addition to the metadata that OTP ignores.
+
+
+Constraining Dependency Versions
+--------------------------------
+
+To constrain the versions of set of dependencies that you rely on you
+must add a `dep_constraints` tuple to either the [[OTPApplication]]
+dotapp file or the `sinan.config`. The `dep_constraints` tuple
+contains a list of dependency constraints for the [[OTPApplication]]
+in the case of the dotapp or for the entire project in the case of the
+`sinan.config`. An individual dependency constraint may look as follows.
+
+    {<app-name>, <version>, <type>}
+
+or
+
+    {<app-name>, <version 1>, <version 2>, <type>}
+
+or
+
+    {<app-name>, <version>}
+
+In the above case type may be one of the following
+
+* gte: greater than or equal
+* lte: less than or equal
+* lt: less than
+* gt: greater than
+* eql: equal
+* between: between two versions
+
+`between` is the specifier that takes two versions. So if we depended
+on my_app between versions 0.1 and 5.0 we would have the entry:
+
+     {my_foo, \"0.1\", \"5.0\", between}
+
+that would provide the constraints we need.
+
+The form `{<app-name>, <version>}` is exactly equivalent to
+`{<app-name>, <version>, eql}` and is provided as a convenience.
+
+Lets look at a complete example used in sinan itself. This is from
+sinan's `sinan.config`.
+
+
+    {dep_constraints,
+     [{cucumberl, \"0.0.4\", gte},
+      {erlware_commons, \"0.6.0\", gte},
+      {getopt, \"0.0.1\", gte}]}.
+
+This is specifying the versions for the entire sinan project.
+",
 
     #task{name = ?TASK,
           task_impl = ?MODULE,
@@ -48,24 +112,8 @@ user. Though you can if that floats your boat.",
                      sin_state:state().
 do_task(Config, State0) ->
     ProjectApps = sin_state:get_value(project_applist, State0),
-    Changed1 =
-        lists:foldl(fun(AppName, Changed0) ->
-                            AppF = sin_state:get_value({apps, AppName, dotapp},
-                                                       State0),
-                            Changed0 orelse sin_sig:changed(deps, AppF, State0)
-                    end, false, ProjectApps),
     {State1, {ReleaseApps, RuntimeDeps0, CompiletimeDeps}} =
-        case Changed1 of
-            true ->
-                case sin_sig:get_sig_info(?MODULE, State0) of
-                    {ok, {RelApps, RunDeps, CompDeps}} ->
-                        {State0, {RelApps, RunDeps, CompDeps}};
-                    _ ->
-                        solve_deps(Config, State0, ProjectApps)
-                end;
-            _ ->
-                solve_deps(Config, State0, ProjectApps)
-        end,
+        solve_deps(Config, State0, ProjectApps),
 
     lists:foreach(fun(#app{path=Path}) ->
                           Ebin = filename:join(Path, "ebin"),
@@ -196,8 +244,7 @@ format_exception(Exception) ->
                            [sin_dep_solver:spec()]) ->
                                   {sin_dep_solver:state(), [sin_dep_solver:spec()]}.
 get_compiletime_deps(Config, State0, SolverState0, DefaultSpecs) ->
-    CompiletimeApps0 = [eunit, proper] ++
-        Config:match(compile_deps, []),
+    CompiletimeApps0 = Config:match(compile_deps, []),
 
     {CompiletimeApps1, CompileSpecs} = remove_excluded(State0,
                                                        CompiletimeApps0,
