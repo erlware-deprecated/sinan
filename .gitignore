@@ -3,3 +3,4 @@ erl_crash.dump
 *.pyc
 doc/_site
 .pc
+*.beam

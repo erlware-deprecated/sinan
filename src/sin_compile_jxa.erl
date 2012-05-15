@@ -25,6 +25,7 @@ get_target(BuildDir, File, ".jxa") ->
                  sin_file_info:mod(), [term()], string()) ->
                         {module(), sin_config:config()}.
 build_file(Config, State, Module=#module{path=File}, Options, _Target) ->
+    sin_task:ensure_started(proper),
     sin_log:verbose(Config, "Building ~s", [File]),
     case joxa.compiler:'do-compile'(File, Options) of
         Ctx when is_tuple(Ctx), element(1, Ctx) == context ->

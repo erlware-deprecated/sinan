@@ -37,7 +37,7 @@ Erlang Runtime System that Sinan is running on",
           bare = true,
           deps = ?DEPS,
           example = "erts",
-          short_desc = Desc,
+          short_desc = "Display the erts version sinan is running on",
           desc = Desc,
           opts = []}.
 
@@ -47,5 +47,3 @@ do_task(Config, State) ->
     sin_log:normal(Config, "erts-~s (~s)", [erlang:system_info(version),
                                             erlang:system_info(otp_release)]),
     State.
-
-

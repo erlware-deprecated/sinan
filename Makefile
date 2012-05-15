@@ -1,7 +1,10 @@
-VSN=4.0.0
+VSN=4.1.0
 ERLC=/usr/bin/env erlc
 ERL=/usr/bin/env erl
-APPDIR= $(abspath ./_build/sinan/lib/sinan-$(VSN))
+
+RELDIR=$(CURDIR)/_build/sinan
+APPDIR=$(RELDIR)/lib/sinan-$(VSN)
+LOGDIR=$(RELDIR)/logs
 BINDIR=$(DESTDIR)/usr/bin
 INSTALL_TARGET=$(DESTDIR)/usr/lib/erlang/lib/sinan-$(VSN)
 
@@ -45,7 +48,7 @@ build_behaviours: $(BEHAVIOURS)
 	+warn_obsolete_guard \
 	+warnings_as_errors +bin_opt_info +debug_info -W -o $(BEAMDIR) $(BEHAVIOURS)
 
-main: setup build_behaviours ${ERL_OBJ} ${ERL_TEST_OBJ}
+ main: setup build_behaviours ${ERL_OBJ} ${ERL_TEST_OBJ}
 
 $(BEAMDIR)/%.beam: %.erl
 	$(ERLC) -pa $(BEAMDIR) +warn_export_vars +warn_export_all \
@@ -81,6 +84,9 @@ smoketests: main
 		PYTHONPATH=$(PYPATH) python $$f ; \
 	done
 
+ct: main $(LOGDIR)
+	ct_run -dir $(CURDIR)/test -logdir $(LOGDIR) -erl_args -pa $(BEAMDIR)
+
 testall : cucumber proper eunit smoketests
 
 gh-pages:
@@ -111,6 +117,10 @@ update-version:
 	git add src/sin_task_version.erl
 	git commit -m "Version bump $(VSN)"
 	git tag v$(VSN)
+
+$(LOGDIR):
+	mkdir -p $(LOGDIR)
+
 
 ##
 ## Debian packaging support for sinan

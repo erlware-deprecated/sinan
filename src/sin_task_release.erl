@@ -151,9 +151,6 @@ generate_rel_file(Config, State, ReleaseDir, Name, Version) ->
     {save_release(Config, State, ReleaseDir, Name, Version, Release), Release}.
 
 %% @doc Process the dependencies into a format useful for the rel depends area.
--spec process_deps([atom()],
-                   [AppInfo::tuple()], [AppInfo::tuple()]) ->
-                          [AppInfo::tuple()].
 process_deps(Types, [#app{name=App, vsn=Vsn} | T], Acc) ->
     case lists:keyfind(App, 1, Types) of
         {App, Type} ->

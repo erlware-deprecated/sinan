@@ -15,7 +15,8 @@
          get_task_list/2,
          get_tasks/0,
          behaviour_info/1,
-         format_exception/1]).
+         format_exception/1,
+         ensure_started/1]).
 
 -export_type([task_description/0,
               task_name/0]).
@@ -30,6 +31,16 @@
 %%====================================================================
 %%% API Functions
 %%====================================================================
+-spec ensure_started(atom()) -> ok.
+ensure_started(App) ->
+    case application:start(App) of
+        {error, {already_started, _}} ->
+            ok;
+        ok ->
+            ok;
+        Error ->
+          erlang:throw({error_starting_app, App, Error})
+    end.
 
 %% @doc get a specific task description
 -spec get_task(sin_state:state(), task_name()) -> [task_name()].

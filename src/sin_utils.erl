@@ -20,6 +20,7 @@
          copy_entire_dir/3,
          delete_dir/1,
          file_exists/2,
+         get_file_with_ext/2,
          get_application_env/2,
          get_ignore_dirs/1,
          is_dir_ignorable/2,
@@ -33,7 +34,6 @@
 %%====================================================================
 %% API
 %%====================================================================
-
 %% @doc Trivially convert a value to a boolean
 -spec to_bool(any()) -> boolean().
 to_bool(true) ->
@@ -85,6 +85,33 @@ file_exists(State, FileName) ->
         _ ->
             true
     end.
+%% @doc Find the first file with the specified extension
+get_file_with_ext(Dir, Ext) ->
+    case file:list_dir(Dir) of
+        {ok, Names} ->
+            case ec_lists:search(fun(Name) ->
+                                         %% If the name comes back exactly the
+                                         %% same then there was no extension
+                                         %% that matched. If it came back
+                                         %% different then it did match and we
+                                         %% can go from there. This is a bit
+                                         %% hacky but works quite well
+                                         case filename:basename(Name, Ext) == Name of
+                                             false ->
+                                                 {ok, filename:join(Dir, Name)};
+                                             true ->
+                                                 not_found
+                                         end
+                                 end, Names) of
+                {ok, Value, _} ->
+                    Value;
+                not_found ->
+                    false
+            end;
+        _ ->
+            false
+    end.
+
 
 %% @doc Copies the specified directory down to the build dir on a file by file
 %% basis. It only copies if the file has .
@@ -331,8 +358,3 @@ basename1([H | Rest], Acc) ->
     basename1(Rest, [H | Acc]);
 basename1([], Acc) ->
     lists:reverse(Acc).
-
-%%====================================================================
-%% tests
-%%====================================================================
-

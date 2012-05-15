@@ -43,7 +43,7 @@ Basically this does the equivalent of:
           bare = false,
           deps = ?DEPS,
           example = "clean",
-          short_desc = "removes all build artifacts in the system",
+          short_desc = "Removes all build artifacts in the system",
           desc = Desc,
           opts = []}.
 

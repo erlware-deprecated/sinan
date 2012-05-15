@@ -21,6 +21,7 @@ Dependencies
 * [cucumberl](https://github.com/membase/cucumberl)
 * [getopt](https://github.com/jcomellas/getopt)
 * [proper](https://github.com/manopapad/proper)
+* [joxa](https://github.com/erlware/joxa)
 
 The versions of these OTP Applications that are required are detailed
 in the sinan.config located in the top level of the sinan project. If
