@@ -49,7 +49,8 @@ the project. ",
 do_task(Config, State0) ->
     sin_task:ensure_started(proper),
     lists:foldl(
-      fun(#app{name=AppName, modules=Modules}, State1) ->
+      fun(#app{name=AppName, properties=Props}, State1) ->
+              Modules = proplists:get_value(modules, Props),
               sin_log:verbose(Config, "PropEr testing app ~p~n", [AppName]),
               case Modules == undefined orelse length(Modules) =< 0 of
                   true ->

@@ -70,7 +70,7 @@ filter_modules(Config, Modules) ->
             Modules;
         FilterModules ->
             [Mod || Mod <- Modules,
-                    lists:member(atom_to_list(Mod#module.name),
+                    lists:member(atom_to_list(Mod),
                                  FilterModules)]
     end.
 
@@ -78,24 +78,18 @@ filter_modules(Config, Modules) ->
 -spec run_module_tests(sin_config:config(),
                        sin_state:state(), [sin_file_info:mod()]) -> ok.
 run_module_tests(Config, State0, AllModules) ->
-    lists:foldl(
-      fun(#module{name=PreName}, State1) ->
-              Name = case PreName of
-                         {Name0, _} ->
-                             Name0;
-                         Name0 ->
-                             Name0
-                     end,
-              case lists:member({test, 0}, Name:module_info(exports)) of
-                  true ->
-                      sin_log:normal(Config, "testing ~p", [Name]),
-                      case eunit:test(Name, [{verbose, Config:match(verbose, false)}]) of
-                          error ->
-                              sin_state:add_run_error(Name, eunit_failure, State1);
-                          _ ->
-                              State1
-                      end;
-                  _ ->
-                      State1
-              end
+    lists:foldl(fun(Name, State1) ->
+                        case lists:member({test, 0}, Name:module_info(exports)) of
+                            true ->
+                                sin_log:normal(Config, "testing ~p", [Name]),
+                                case eunit:test(Name,
+                                                [{verbose, Config:match(verbose, false)}]) of
+                                    error ->
+                                        sin_state:add_run_error(Name, eunit_failure, State1);
+                                    _ ->
+                                        State1
+                                end;
+                            _ ->
+                                State1
+                        end
       end, State0, AllModules).
