@@ -79,19 +79,27 @@ application bar and not to any other module in application bar. ",
           bare = false,
           deps = ?DEPS,
           example = "build",
-          short_desc = "compiles the files in the project",
+          short_desc = "Compiles the files in the project",
           desc = Desc,
           opts = []}.
 
 %% @doc run the build task.
 -spec do_task(sin_config:config(), sin_state:state()) -> sin_state:state().
 do_task(Config, State0) ->
+    sin_task:ensure_started(compiler),
+    sin_task:ensure_started(syntax_tools),
+    sin_task:ensure_started(parsetools),
     ensure_build_dir(State0),
     Apps0 = sin_state:get_value(project_apps, State0),
     NApps = reorder_apps_according_to_deps(State0, Apps0),
     {State1, Apps1} = build_apps(Config, State0, NApps),
-    sin_app_meta:populate(Config, sin_state:store(project_apps, Apps1, State1)).
-
+    Apps2 = [sin_app_meta:populate_modules(App) || App <- Apps1],
+    State2 =
+        sin_state:store(project_apps, Apps2, State1),
+    lists:foreach(fun(App) ->
+                          sin_app_meta:write_app_file(App)
+                  end, Apps2),
+    State2.
 
 %% @doc Gather up all the errors and warnings for output.
 -spec gather_fail_info([term()], string()) ->
@@ -148,9 +156,7 @@ format_exception(Exception) ->
                                      [sinan:app()]) -> list().
 reorder_apps_according_to_deps(State, AllApps) ->
     ReOrdered = lists:foldr(
-                  fun (#app{name=AppName}, Acc) ->
-                          AllDeps = sin_state:get_value({apps, AppName, deps},
-                                                        State),
+                  fun (#app{name=AppName, deps=AllDeps}, Acc) ->
                           case map_deps(AppName, AllDeps, AllApps) of
                               [] ->
                                   [{'NONE', AppName} | Acc];
@@ -215,24 +221,30 @@ build_apps(Config, State0, Apps0) ->
     Apps3 = lists:reverse(Apps2),
     {State2, Apps3}.
 
-prepare_app(Config, State0, App0 = #app{name=AppName, path=Path}, BuildDir, Ignorables) ->
-    AppDir = sin_state:get_value({apps, AppName, basedir}, State0),
+prepare_app(Config, State0,
+            App0 = #app{path=Path,basedir=AppDir},
+            BuildDir, Ignorables) ->
 
     %% Ignore the build dir when copying or we will create a deep monster in a
     %% few builds
     State1 = sin_utils:copy_dir(Config, State0, Path, AppDir, "",
                                 [BuildDir | Ignorables], []),
 
-    State2 = sin_state:store({apps, AppName, builddir},
-                             Path, State1),
+
+
+
+
+
+
+
 
     Ebin = filename:join(Path, "ebin"),
     ec_file:mkdir_path(Ebin),
     true = code:add_patha(Ebin),
 
-    {State3, Mods} =
-        process_source_files(State2, AppDir),
-    {State3, App0#app{sources=Mods}}.
+    {State2, Mods} =
+        process_source_files(State1, AppDir),
+    {State2, App0#app{properties=[{sources,Mods} | App0#app.properties]}}.
 
 -spec process_source_files(sin_state:state(), atom()) ->
                                   {sin_state:state(), [sinan:mod()]}.
@@ -241,7 +253,6 @@ process_source_files(State0, AppDir) ->
     TestDir = filename:join(AppDir, "test"),
     IncludeDir = filename:join(AppDir, "include"),
     Includes = [SrcDir, TestDir, IncludeDir],
-
     {State1, SrcModules} = process_source_files_in_path(State0, SrcDir, Includes),
     {State2, TestModules} = process_source_files_in_path(State1, TestDir, Includes),
     {State2, SrcModules ++ TestModules}.
@@ -260,22 +271,24 @@ process_source_files_in_path(State0, Dir, Includes) ->
 %% @doc Build an individual otp application.
 build_app(Config0, State0, App=#app{name=AppName,
                                     path=AppBuildDir,
-                                    sources=Modules0}) ->
+                                    basedir=AppDir,
+                                    properties=Properties}) ->
+    Sources = proplists:get_value(sources, Properties),
     Config1 = Config0:specialize([{app, AppName}]),
-    AppDir = sin_state:get_value({apps, AppName, basedir}, State0),
 
     Target = filename:join([AppBuildDir, "ebin"]),
 
-    {State3, NewModules} =
+    {State3, Modules} =
         lists:foldl(fun(Module, {State1, Modules1}) ->
                             {State2, Mods} =
                                 build_source_if_required(Config1, State1,
                                                          Module,
                                                          AppDir,
-                                                         Target, Modules0),
+                                                         Target, Sources),
                             {State2, [Mods | Modules1]}
-                    end, {State0, []}, Modules0),
-    {State3, App#app{modules=lists:flatten(NewModules)}}.
+                    end, {State0, []}, Sources),
+    {State3, App#app{properties=[{modules, lists:flatten(Modules)} |
+                                 Properties]}}.
 
 
 %% @doc go through each source file building with the correct build module.

@@ -1,6 +1,7 @@
 -module(sint_app_src).
 
 -include_lib("eunit/include/eunit.hrl").
+-include_lib("sinan/include/sinan.hrl").
 
 -export([given/3, 'when'/3, then/3]).
 
@@ -64,11 +65,10 @@ then([warn, the, user, that, the,
                  {ok, State}.
 
 verify_ebin_app(ProjectName, BuildState) ->
-    BaseDir = sin_state:get_value({apps,
-                                   erlang:list_to_atom(ProjectName),
-                                   builddir},
-                                  BuildState),
-    BasePath = filename:join([BaseDir, "ebin", ProjectName ++
+    App = sin_state:project_app_by_name(erlang:list_to_atom(ProjectName),
+                                        BuildState),
+
+    BasePath = filename:join([App#app.path, "ebin", ProjectName ++
                                   ".app"]),
     ?assertMatch(true,
                  sin_utils:file_exists(sin_state:new(), BasePath)),

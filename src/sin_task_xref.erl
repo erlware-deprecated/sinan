@@ -54,14 +54,12 @@ do_task(Config, State) ->
     ExistingPaths = code:get_path(),
     xref:start(ServerName),
 
-    Apps = lists:map(fun(#app{name=App}) ->
-                             App
-                     end, sin_state:get_value(project_apps, State)),
+    Apps = sin_state:get_value(project_apps, State),
 
     ModuleInfo =
-        lists:flatten(lists:map(fun(App) ->
+        lists:flatten(lists:map(fun(App=#app{modules=Modules}) ->
                                         xref_app(Config, State, ServerName, App),
-                                        gather_modules(State, App)
+                                        Modules
                                 end,
                                 Apps)),
 
@@ -78,23 +76,14 @@ do_task(Config, State) ->
     xref:stop(ServerName),
     State.
 
-%% Get the module detail information from the config
--spec gather_modules(sin_state:state(), AppName::string()) ->
-    [{Filename::string(), AppName::atom(), Extentions::string()}].
-gather_modules(State, AppName) ->
-    sin_state:get_value({apps, AppName, module_detail}, [], State).
-
-
 %% @doc add the application to the specified xref system
 -spec xref_app(sin_config:config(), sin_state:state(),
                ServerName::atom(), AppName::atom()) ->
     ok | fail.
-xref_app(Config, State, ServerName, AppName) ->
-    Paths = sin_state:get_value({apps, AppName, code_paths}, State),
+xref_app(Config, State, ServerName, #app{path=AppDir,properties=Props}) ->
+    Paths = proplists:get_value(code_paths, Props),
 
     xref:set_library_path(ServerName, Paths),
-
-    AppDir = sin_state:get_value({apps, AppName, builddir}, State),
 
     case xref:add_application(ServerName, AppDir,
                               [{warnings, true}]) of
