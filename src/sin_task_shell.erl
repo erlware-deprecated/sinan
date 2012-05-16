@@ -26,25 +26,28 @@
 -spec description() -> sin_task:task_description().
 description() ->
 
-    Desc = "The repl is an extraordinarily important part of any Erlang
-    development project. This command helps the developer by starting up an
-    erlang shell with all the paths to code utilized within the project already
-    set. This does not, however, attempt to start any of that code. That is left
-    up to the developer.<break>
-    <break>
-    options:<break>
-      {kernel_start_args, [foo, shortnames]}.<break>
-      <break>
-      {cookie, my_secret}.<break>
-      <break>
-      <break>
+    Desc = "
+shell Task
+==========
 
-    kernel_start_args are the args that will be passed to net_kernel:start/1
-    when the shell is started. cookie is the secret cookie to set.  <break>
+The repl is an extraordinarily important part of any Erlang
+development project. This command helps the developer by starting up an
+erlang shell with all the paths to code utilized within the project already
+set. This does not, however, attempt to start any of that code. That is left
+up to the developer.
 
-    if you specify these values erlang will ensure epmd is started and start the
-    networking kernel for erlang. Do not use these options if you do not want
-    networking started.",
+Configuration Options
+---------------------
+
+    {kernel_start_args, [foo, shortnames]}.
+    {cookie, my_secret}.
+
+kernel_start_args are the args that will be passed to net_kernel:start/1
+when the shell is started. cookie is the secret cookie to set.
+
+if you specify these values erlang will ensure epmd is started and start the
+networking kernel for erlang. Do not use these options if you do not want
+networking started.",
 
     #task{name = ?TASK,
           task_impl = ?MODULE,

@@ -28,8 +28,13 @@
 -spec description() ->  sin_task:task_description().
 description() ->
 
-    Desc = "This command runs all proper tests available in the
-        project. ",
+    Desc = "
+proper Task
+===========
+
+[PropEr](https://github.com/manopapad/proper) is a Quick Check like testing
+framework for Erlang. This command runs all proper tests available in
+the project. ",
 
     #task{name = ?TASK,
           task_impl = ?MODULE,
@@ -42,8 +47,10 @@ description() ->
 
 %% @doc run all tests for all modules in the system
 do_task(Config, State0) ->
+    sin_task:ensure_started(proper),
     lists:foldl(
-      fun(#app{name=AppName, modules=Modules}, State1) ->
+      fun(#app{name=AppName, properties=Props}, State1) ->
+              Modules = proplists:get_value(modules, Props),
               sin_log:verbose(Config, "PropEr testing app ~p~n", [AppName]),
               case Modules == undefined orelse length(Modules) =< 0 of
                   true ->

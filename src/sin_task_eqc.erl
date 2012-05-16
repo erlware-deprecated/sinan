@@ -28,8 +28,13 @@
 -spec description() ->  sin_task:task_description().
 description() ->
 
-    Desc = "This command runs all quick check tests available in the
-        project. ",
+    Desc = "
+eqc Task
+========
+
+This task runs QuviQ Quick Check on the project, running any eqc tests that it
+finds. Note that you *must* have a licensed version of Quick Check installed
+ on the box for this to work.",
 
     #task{name = ?TASK,
           task_impl = ?MODULE,
@@ -43,7 +48,8 @@ description() ->
 %% @doc run all tests for all modules in the system
 do_task(Config, State0) ->
     lists:foldl(
-      fun(#app{name=AppName, modules=Modules}, State1) ->
+      fun(#app{name=AppName, properties=Props}, State1) ->
+              Modules = proplists:get_value(modules, Props),
               io:format("Quick Check testing app ~p~n", [AppName]),
               case Modules == undefined orelse length(Modules) =< 0 of
                   true ->

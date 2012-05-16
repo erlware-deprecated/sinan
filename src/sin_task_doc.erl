@@ -28,8 +28,17 @@
 -spec description() -> sin_task:task_description().
 description() ->
 
-    Desc = "This command runs the erlang edoc across all sources in the project
-        and outputs to the build area: <break> <break> <build-area>/docs ",
+    Desc = "
+doc Task
+========
+
+This command runs Erlang's
+[Edoc](http://www.erlang.org/doc/apps/edoc/index.html) across all sources in the
+project.
+
+Output of the doc task will be as you expect in the docs directory of the build
+area of the relevent OTP App. Remember that Sinan never outputs generated files
+into the project itself.",
 
     #task{name = ?TASK,
           task_impl = ?MODULE,
@@ -43,6 +52,7 @@ description() ->
 %% @doc run edoc on all applications
 -spec do_task(sin_config:config(), sin_state:state()) -> sin_state:state().
 do_task(Config, State) ->
+    sin_task:ensure_started(edoc),
     Apps = sin_state:get_value(project_apps, State),
     run_docs(Config, State, Apps),
     State.

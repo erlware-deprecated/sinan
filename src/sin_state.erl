@@ -16,6 +16,7 @@
          get_value/2,
          get_value/3,
          get_pairs/1,
+         project_app_by_name/2,
          delete/2,
          add_run_error/3,
          get_run_errors/1,
@@ -87,6 +88,22 @@ get_value(Key, DefaultValue, State) ->
 -spec delete(key(), state()) -> state().
 delete(Key, State) ->
     dict:erase(Key, State).
+
+project_app_by_name(AppName, State) ->
+    ProjectApps = sin_state:get_value(project_apps, State),
+    case ec_lists:search(fun(App=#app{name=Name}) ->
+                                 case Name == AppName of
+                                     true ->
+                                         {ok, App};
+                                     _ ->
+                                         not_found
+                                 end
+                         end, ProjectApps) of
+        {ok, ProjApp, _} ->
+            ProjApp;
+        _ ->
+            not_found
+    end.
 
 %% @doc Get the complete state as key,value pairs
 -spec get_pairs(state()) -> [{key(), value()}].

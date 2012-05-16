@@ -155,22 +155,8 @@ manual_start() ->
                 ok,
                 [kernel,
                  stdlib,
-                 cucumberl,
                  erlware_commons,
-                 compiler,
-                 syntax_tools,
-                 edoc,
-                 eunit,
-                 tools,
-                 xmerl,
-                 mnesia,
-                 parsetools,
-                 getopt,
-                 crypto,
-                 proper,
-                 erlware_commons,
-                 joxa,
-                 sinan]).
+                 getopt]).
 
 -spec usage() -> ok.
 usage() ->

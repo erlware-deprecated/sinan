@@ -26,15 +26,24 @@
 -spec description() -> sin_task:config().
 description() ->
 
-    Desc = "This command removes *all* the build artifacts currently in the
-    system.",
+    Desc = "
+clean Task
+==========
+
+This command removes *all* the build artifacts currently in the
+system.
+
+Basically this does the equivalent of:
+
+    $> rm -rf _build
+",
 
     #task{name = ?TASK,
           task_impl = ?MODULE,
           bare = false,
           deps = ?DEPS,
           example = "clean",
-          short_desc = "removes all build artifacts in the system",
+          short_desc = "Removes all build artifacts in the system",
           desc = Desc,
           opts = []}.
 
