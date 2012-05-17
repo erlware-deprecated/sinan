@@ -37,19 +37,21 @@ write_app_file(#app{name=AppName,vsn=Vsn,path=Path,
                                   erlang:atom_to_list(AppName) ++
                                       ".app"]),
     MetaData = {application, AppName,
-                [{description, Desc},
-                 {id, Id},
-                 {vsn, Vsn},
-                 {modules, AppModules},
-                 {maxP, MaxP},
-                 {maxT, MaxT},
-                 {registered, Reg},
-                 {included_applications, IA},
-                 {applications, Appls},
-                 {env, Env},
-                 {mod, Mod},
-                 {start_phases, StartPhases}]},
-    file:write_file(MetaDataPath,
+                lists:flatten(
+                  [{description, Desc},
+                   is_not_default(Id, [], {id, Id}),
+                   {vsn, Vsn},
+                   {modules, AppModules},
+                   is_not_default(MaxP, infinity, {maxP, MaxP}),
+                   is_not_default(MaxT, infinity, {maxT, MaxT}),
+                   {registered, Reg},
+                   is_not_default(IA, [], {included_applications, IA}),
+                   {applications, Appls},
+                   is_not_default(Env, [], {env, Env}),
+                   is_not_default(Mod, undefined, {mod, Mod}),
+                   is_not_default(StartPhases, undefined, {start_phases, StartPhases})
+                  ])},
+                file:write_file(MetaDataPath,
                     io_lib:format("~p.\n",
                                   [MetaData])).
 
@@ -112,6 +114,12 @@ format_exception(Exception) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
+is_not_default(Value, Value, _) ->
+    [];
+is_not_default(_Value, _DefaultValue, Result) ->
+    Result.
+
+
 rewrite_vsn(Config, State, AppDir, BaseDetails) ->
     RWVSN = fun({vsn, VsnSpec}) ->
                     {vsn, vcs_vsn(Config, State, VsnSpec, AppDir)};
