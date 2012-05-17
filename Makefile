@@ -1,4 +1,4 @@
-VSN=4.1.0
+VSN=4.1.1
 ERLC=/usr/bin/env erlc
 ERL=/usr/bin/env erl
 
