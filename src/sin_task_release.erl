@@ -219,7 +219,7 @@ make_script(Name, File, Location, Options) ->
     %% Erts 5.9 introduced a non backwards compatible option to
     %% erlang this takes that into account
     Erts = erlang:system_info(version),
-    case Erts == "5.9" orelse ec_string:compare_versions(Erts, "5.9") of
+    case ec_semver:gte(Erts, "5.9") of
         true ->
             systools_make:make_script(Name,
                                       File, [no_warn_sasl,
